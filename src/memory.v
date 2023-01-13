@@ -11,20 +11,20 @@ module Memory #(
 reg [7:0] mem [MEMORY_SIZE-1:0];
 
 initial begin
-    mem[0] = 8'h11;
-    mem[1] = 8'h12;
-    mem[2] = 8'h13;
-    mem[3] = 8'h14;
+    mem[0] = 8'h03;
+    mem[1] = 8'h23;
+    mem[2] = 8'h80;
+    mem[3] = 8'h00;
 
-    mem[4] = 8'h21;
-    mem[5] = 8'h22;
-    mem[6] = 8'h23;
-    mem[7] = 8'h24;
+    mem[4] = 8'h11;
+    mem[5] = 8'h12;
+    mem[6] = 8'h13;
+    mem[7] = 8'h14;
 
-    mem[8] = 8'h31;
-    mem[9] = 8'h32;
-    mem[10] = 8'h33;
-    mem[11] = 8'h34;
+    mem[8] = 8'h22;
+    mem[9] = 8'h22;
+    mem[10] = 8'h22;
+    mem[11] = 8'h22;
 end
 
 assign inst = {mem[i_addr + 3], mem[i_addr + 2], mem[i_addr + 1], mem[i_addr]};
