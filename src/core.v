@@ -1,6 +1,7 @@
 module Core #(
     parameter WORD_LEN = 32,
-    parameter REGISTER_COUNT = 32
+    parameter REGISTER_COUNT = 32,
+    parameter REGISTER_COUNT_BIT = 5
 ) (
     input wire clk,
     input wire rst_n,
@@ -11,10 +12,27 @@ module Core #(
 
 // registers
 reg [WORD_LEN-1:0] regfile [REGISTER_COUNT-1:0];
+// initialize regfile
+integer loop_initial_regfile_i;
+initial begin
+    for (loop_initial_regfile_i = 0;
+        loop_initial_regfile_i < REGISTER_COUNT;
+        loop_initial_regfile_i = loop_initial_regfile_i + 1)
+        regfile[loop_initial_regfile_i] = 0;
+end
+
 reg [WORD_LEN-1:0] reg_pc = 0;
 
 // プログラムカウンタとメモリを接続
 assign memory_addr = reg_pc;
+
+// decode
+wire [REGISTER_COUNT_BIT-1:0] rs1_addr = memory_inst[19:15];
+wire [REGISTER_COUNT_BIT-1:0] rs2_addr = memory_inst[24:20];
+wire [REGISTER_COUNT_BIT-1:0] wb_addr  = memory_inst[11:7];
+
+wire [WORD_LEN:0] rs1_data = (rs1_addr == 0) ? 0 : regfile[rs1_addr];
+wire [WORD_LEN:0] rs2_data = (rs2_addr == 0) ? 0 : regfile[rs2_addr];
 
 // 終了判定
 assign exit = memory_inst == 32'h34333231;
@@ -27,8 +45,14 @@ always @(negedge rst_n or posedge clk) begin
             regfile[loop_i] <= 0;
     end else if (!exit) begin
         reg_pc <= reg_pc + 4;
-        $display("reg_pc : %d", reg_pc);
-        $display("inst   : 0x%H", memory_inst);
+
+        $display("reg_pc    : %d", reg_pc);
+        $display("inst      : 0x%H", memory_inst);
+        $display("rs1_addr  : %d", rs1_addr);
+        $display("rs2_addr  : %d", rs2_addr);
+        $display("wb_addr   : %d", wb_addr);
+        $display("rs1_data  : 0x%H", rs1_data);
+        $display("rs2_data  : 0x%H", rs2_data);
         $display("--------");
     end
 
