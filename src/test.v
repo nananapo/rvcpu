@@ -4,13 +4,13 @@ module test();
   wire [5:0] led;
 
   main #() m(
-    rst_n,
-    clk,
-    led
+    .rst_n(rst_n),
+    .clk(clk),
+    .led(led)
   );
 
   always
-    #1  clk = ~clk;
+    #1 clk = ~clk;
 
   initial begin
     $display("Starting");
@@ -18,7 +18,7 @@ module test();
   end
 
   initial begin
-    $dumpfile("uart.vcd");
+    $dumpfile("debug.vcd");
     $dumpvars(0,test);
   end
 
