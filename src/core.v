@@ -27,6 +27,9 @@ always @(negedge rst_n or posedge clk) begin
             regfile[loop_i] <= 0;
     end else if (!exit) begin
         reg_pc <= reg_pc + 4;
+        $display("reg_pc : %d", reg_pc);
+        $display("inst   : 0x%H", memory_inst);
+        $display("--------");
     end
 
 end
