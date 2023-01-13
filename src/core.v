@@ -1,7 +1,8 @@
 module Core #(
     parameter WORD_LEN = 32,
     parameter REGISTER_COUNT = 32,
-    parameter REGISTER_COUNT_BIT = 5
+    parameter REGISTER_COUNT_BIT = 5,
+    parameter IMM_I_BITWISE = 12
 ) (
     input wire clk,
     input wire rst_n,
@@ -33,6 +34,9 @@ wire [REGISTER_COUNT_BIT-1:0] wb_addr  = memory_inst[11:7];
 
 wire [WORD_LEN-1:0] rs1_data = (rs1_addr == 0) ? 0 : regfile[rs1_addr];
 wire [WORD_LEN-1:0] rs2_data = (rs2_addr == 0) ? 0 : regfile[rs2_addr];
+
+wire [IMM_I_BITWISE-1:0] imm_i = memory_inst[31:20];
+wire [WORD_LEN-1:0] imm_i_sext = {{WORD_LEN-IMM_I_BITWISE{imm_i[IMM_I_BITWISE-1]}}, imm_i};
 
 // 終了判定
 assign exit = memory_inst == 32'h34333231;
