@@ -31,8 +31,8 @@ wire [REGISTER_COUNT_BIT-1:0] rs1_addr = memory_inst[19:15];
 wire [REGISTER_COUNT_BIT-1:0] rs2_addr = memory_inst[24:20];
 wire [REGISTER_COUNT_BIT-1:0] wb_addr  = memory_inst[11:7];
 
-wire [WORD_LEN:0] rs1_data = (rs1_addr == 0) ? 0 : regfile[rs1_addr];
-wire [WORD_LEN:0] rs2_data = (rs2_addr == 0) ? 0 : regfile[rs2_addr];
+wire [WORD_LEN-1:0] rs1_data = (rs1_addr == 0) ? 0 : regfile[rs1_addr];
+wire [WORD_LEN-1:0] rs2_data = (rs2_addr == 0) ? 0 : regfile[rs2_addr];
 
 // 終了判定
 assign exit = memory_inst == 32'h34333231;
