@@ -18,16 +18,20 @@ module main #(
 */
 );
 
-wire [WORD_LEN-1:0] reg_memory_addr;
+wire [WORD_LEN-1:0] reg_memory_i_addr;
 wire [WORD_LEN-1:0] reg_memory_inst;
+wire [WORD_LEN-1:0] reg_memory_d_addr;
+wire [WORD_LEN-1:0] reg_memory_rdata;
 
 wire exit;
 
 Memory #(
     .WORD_LEN(WORD_LEN)
 ) memory (
-    .addr(reg_memory_addr),
-    .inst(reg_memory_inst)
+    .i_addr(reg_memory_i_addr),
+    .inst(reg_memory_inst),
+    .d_addr(reg_memory_d_addr),
+    .rdata(reg_memory_rdata)
 );
 
 Core #(
@@ -36,8 +40,10 @@ Core #(
     .clk(clk),
     .rst_n(rst_n),
     .exit(exit),
-    .memory_addr(reg_memory_addr),
-    .memory_inst(reg_memory_inst)
+    .memory_i_addr(reg_memory_i_addr),
+    .memory_inst(reg_memory_inst),
+    .memory_d_addr(reg_memory_d_addr),
+    .memory_rdata(reg_memory_rdata)
 );
 
 

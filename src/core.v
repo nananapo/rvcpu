@@ -7,8 +7,10 @@ module Core #(
     input wire clk,
     input wire rst_n,
     output wire exit,
-    output wire [WORD_LEN-1:0] memory_addr,
-    input wire [WORD_LEN-1:0] memory_inst
+    output wire [WORD_LEN-1:0] memory_i_addr,
+    input wire [WORD_LEN-1:0] memory_inst,
+    output wire [WORD_LEN-1:0] memory_d_addr,
+    input wire [WORD_LEN-1:0] memory_rdata
 );
 
 // registers
@@ -25,7 +27,7 @@ end
 reg [WORD_LEN-1:0] reg_pc = 0;
 
 // プログラムカウンタとメモリを接続
-assign memory_addr = reg_pc;
+assign memory_i_addr = reg_pc;
 
 // decode
 wire [REGISTER_COUNT_BIT-1:0] rs1_addr = memory_inst[19:15];
