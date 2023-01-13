@@ -1,5 +1,5 @@
 module test();
-  reg rst_n = 0;
+  reg rst_n = 1;
   reg clk = 0;
   wire [5:0] led;
 
