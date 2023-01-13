@@ -18,7 +18,7 @@ module main #(
 */
 );
 
-reg [WORD_LEN-1:0] reg_memory_addr = 0;
+wire [WORD_LEN-1:0] reg_memory_addr;
 wire [WORD_LEN-1:0] reg_memory_inst;
 
 wire exit;
@@ -26,8 +26,8 @@ wire exit;
 Memory #(
     .WORD_LEN(WORD_LEN)
 ) memory (
-    .addr(memory_addr),
-    .inst(memory_inst)
+    .addr(reg_memory_addr),
+    .inst(reg_memory_inst)
 );
 
 Core #(
@@ -36,8 +36,8 @@ Core #(
     .clk(clk),
     .rst_n(rst_n),
     .exit(exit),
-    .memory_addr(memory_addr),
-    .memory_inst(memory_inst)
+    .memory_addr(reg_memory_addr),
+    .memory_inst(reg_memory_inst)
 );
 
 
