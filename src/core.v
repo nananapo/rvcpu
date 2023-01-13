@@ -1,6 +1,6 @@
 module Core #(
-    WORD_LEN = 32,
-    REGISTER_COUNT = 32
+    parameter WORD_LEN = 32,
+    parameter REGISTER_COUNT = 32
 ) (
     input wire clk,
     input wire rst_n,
