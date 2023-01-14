@@ -59,7 +59,11 @@ wire inst_is_lw = (funct3 == INST_LW_FUNCT3 && opcode == INST_LW_OPCODE);
 wire inst_is_sw = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
 
 // EX STAGE
-wire [WORD_LEN-1:0] alu_out = (inst_is_lw ? rs1_addr + imm_i_sext : 0);
+wire [WORD_LEN-1:0] alu_out = (
+    inst_is_lw ? rs1_addr + imm_i_sext : 
+    inst_is_sw ? rs1_addr + imm_s_sext :
+    0
+);
 
 // MEM STAGE
 assign memory_d_addr = alu_out;
