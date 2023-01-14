@@ -138,6 +138,40 @@ wire inst_is_andi   = (funct3 == INST_ANDI_FUNCT3 && opcode == INST_ANDI_OPCODE)
 wire inst_is_ori    = (funct3 == INST_ORI_FUNCT3 && opcode == INST_ORI_OPCODE);
 wire inst_is_xori   = (funct3 == INST_XORI_FUNCT3 && opcode == INST_XORI_OPCODE);
 
+wire [3:0] exe_fun;// ALUの計算の種類
+wire [3:0] op1_sel;// ALUで計算するデータの1項目
+wire [3:0] op2_sel;// ALUで計算するデータの2項目
+wire [0:0] mem_wen;// メモリに書き込むか否か
+wire [0:0] rf_wen; // レジスタに書き込むか否か
+wire [3:0] wb_sel; // ライトバック先
+
+assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel} = (
+    inst_is_lw   ? {ALU_ADD, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_MEM} :
+    inst_is_sw   ? {ALU_ADD, OP1_RS1, OP2_IMS, MEN_S, REN_X, WB_X  } :
+    inst_is_add  ? {ALU_ADD, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_addi ? {ALU_ADD, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    inst_is_sub  ? {ALU_SUB, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_and  ? {ALU_AND, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_or   ? {ALU_OR , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_xor  ? {ALU_XOR, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_andi ? {ALU_AND, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    inst_is_ori  ? {ALU_OR , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    inst_is_xori ? {ALU_XOR, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    0
+);
+
+wire [WORD_LEN-1:0] op1_data = (
+    op1_sel == OP1_RS1 ? rs1_data :
+    0
+);
+
+wire [WORD_LEN-1:0] op2_data = (
+    op2_sel == OP2_RS2 ? rs2_data :
+    op2_sel == OP2_IMI ? imm_i_sext :
+    op2_sel == OP2_IMS ? imm_s_sext :
+    0
+);
+
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
     (inst_is_lw || inst_is_addi) ? rs1_data + imm_i_sext : 
