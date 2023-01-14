@@ -65,7 +65,22 @@ module Core #(
 
     parameter INST_SRAI_FUNCT7  = 7'b0100000,
     parameter INST_SRAI_FUNCT3  = 3'b101,
-    parameter INST_SRAI_OPCODE  = 7'b0010011
+    parameter INST_SRAI_OPCODE  = 7'b0010011,
+
+    parameter INST_SLT_FUNCT7  = 7'b0000000,
+    parameter INST_SLT_FUNCT3  = 3'b010,
+    parameter INST_SLT_OPCODE  = 7'b0110011,
+
+    parameter INST_SLTU_FUNCT7  = 7'b0000000,
+    parameter INST_SLTU_FUNCT3  = 3'b011,
+    parameter INST_SLTU_OPCODE  = 7'b0110011,
+
+    parameter INST_SLTI_FUNCT3  = 3'b010,
+    parameter INST_SLTI_OPCODE  = 7'b0010011,
+
+    parameter INST_SLTIU_FUNCT3  = 3'b011,
+    parameter INST_SLTIU_OPCODE  = 7'b0010011
+
 ) (
     input   wire                clk,
     input   wire                rst_n,
@@ -86,6 +101,8 @@ localparam ALU_XOR  = 4'b0100;
 localparam ALU_SLL  = 4'b0101;
 localparam ALU_SRL  = 4'b0110;
 localparam ALU_SRA  = 4'b0111;
+localparam ALU_SLT  = 4'b1000;
+localparam ALU_SLTU = 4'b1001;
 
 localparam OP1_RS1  = 4'b0000;
 
@@ -170,6 +187,10 @@ wire inst_is_sra    = (funct7 == INST_SRA_FUNCT7 && funct3 == INST_SRA_FUNCT3 &&
 wire inst_is_slli   = (funct7 == INST_SLLI_FUNCT7 && funct3 == INST_SLLI_FUNCT3 && opcode == INST_SLLI_OPCODE);
 wire inst_is_srli   = (funct7 == INST_SRLI_FUNCT7 && funct3 == INST_SRLI_FUNCT3 && opcode == INST_SRLI_OPCODE);
 wire inst_is_srai   = (funct7 == INST_SRAI_FUNCT7 && funct3 == INST_SRAI_FUNCT3 && opcode == INST_SRAI_OPCODE);
+wire inst_is_slt    = (funct7 == INST_SLT_FUNCT7 && funct3 == INST_SLT_FUNCT3 && opcode == INST_SLT_OPCODE);
+wire inst_is_sltu   = (funct7 == INST_SLTU_FUNCT7 && funct3 == INST_SLTU_FUNCT3 && opcode == INST_SLTU_OPCODE);
+wire inst_is_slti   = (funct3 == INST_SLTI_FUNCT3 && opcode == INST_SLTI_OPCODE);
+wire inst_is_sltiu  = (funct3 == INST_SLTIU_FUNCT3 && opcode == INST_SLTIU_OPCODE);
 
 wire [3:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
@@ -179,23 +200,27 @@ wire [0:0] rf_wen; // レジスタに書き込むか否か
 wire [3:0] wb_sel; // ライトバック先
 
 assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel} = (
-    inst_is_lw   ? {ALU_ADD, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_MEM} :
-    inst_is_sw   ? {ALU_ADD, OP1_RS1, OP2_IMS, MEN_S, REN_X, WB_X  } :
-    inst_is_add  ? {ALU_ADD, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-    inst_is_addi ? {ALU_ADD, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
-    inst_is_sub  ? {ALU_SUB, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-    inst_is_and  ? {ALU_AND, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-    inst_is_or   ? {ALU_OR , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-    inst_is_xor  ? {ALU_XOR, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-    inst_is_andi ? {ALU_AND, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
-    inst_is_ori  ? {ALU_OR , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
-    inst_is_xori ? {ALU_XOR, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
-	inst_is_sll  ? {ALU_SLL, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-	inst_is_srl  ? {ALU_SRL, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-	inst_is_sra  ? {ALU_SRA, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
-	inst_is_slli ? {ALU_SLL, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
-	inst_is_srli ? {ALU_SRL, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
-	inst_is_srai ? {ALU_SRA, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    inst_is_lw   ? {ALU_ADD , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_MEM} :
+    inst_is_sw   ? {ALU_ADD , OP1_RS1, OP2_IMS, MEN_S, REN_X, WB_X  } :
+    inst_is_add  ? {ALU_ADD , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_addi ? {ALU_ADD , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    inst_is_sub  ? {ALU_SUB , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_and  ? {ALU_AND , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_or   ? {ALU_OR  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_xor  ? {ALU_XOR , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+    inst_is_andi ? {ALU_AND , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    inst_is_ori  ? {ALU_OR  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+    inst_is_xori ? {ALU_XOR , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_sll  ? {ALU_SLL , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_srl  ? {ALU_SRL , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_sra  ? {ALU_SRA , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_slli ? {ALU_SLL , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_srli ? {ALU_SRL , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_srai ? {ALU_SRA , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_slt  ? {ALU_SLT , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_sltu ? {ALU_SLTU, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_slti ? {ALU_SLT , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_sltiu? {ALU_SLTU, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
     0
 );
 
@@ -213,14 +238,16 @@ wire [WORD_LEN-1:0] op2_data = (
 
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
-    exe_fun == ALU_ADD ? op1_data + op2_data :
-    exe_fun == ALU_SUB ? op1_data - op2_data :
-    exe_fun == ALU_AND ? op1_data & op2_data :
-    exe_fun == ALU_OR  ? op1_data | op2_data :
-    exe_fun == ALU_XOR ? op1_data ^ op2_data :
-	exe_fun == ALU_SLL ? op1_data << op2_data[4:0] :
-	exe_fun == ALU_SRL ? op1_data >> op2_data[4:0] :
-	exe_fun == ALU_SRA ? op1_data >>> op2_data[4:0] :
+    exe_fun == ALU_ADD  ? op1_data + op2_data :
+    exe_fun == ALU_SUB  ? op1_data - op2_data :
+    exe_fun == ALU_AND  ? op1_data & op2_data :
+    exe_fun == ALU_OR   ? op1_data | op2_data :
+    exe_fun == ALU_XOR  ? op1_data ^ op2_data :
+	exe_fun == ALU_SLL  ? op1_data << op2_data[4:0] :
+	exe_fun == ALU_SRL  ? op1_data >> op2_data[4:0] :
+	exe_fun == ALU_SRA  ? op1_data >>> op2_data[4:0] :
+	exe_fun == ALU_SLT  ? ($signed(op1_data) < $signed(op2_data)) :
+	exe_fun == ALU_SLTU ? op1_data < op2_data :
     0
 );
 
