@@ -5,7 +5,9 @@ module Core #(
     parameter IMM_I_BITWISE = 12,
 
     parameter INST_LW_FUNCT3 = 3'b010,
-    parameter INST_LW_OPCODE = 7'b0000011
+    parameter INST_LW_OPCODE = 7'b0000011,
+    parameter INST_SW_FUNCT3 = 3'b010,
+    parameter INST_SW_OPCODE = 7'b0100011
 ) (
     input wire clk,
     input wire rst_n,
