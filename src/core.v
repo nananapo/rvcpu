@@ -158,7 +158,10 @@ initial begin
         regfile[loop_initial_regfile_i] = 0;
 end
 
-reg [WORD_LEN-1:0] reg_pc = 0;
+reg  [WORD_LEN-1:0]  reg_pc = 0;
+wire [WORD_LEN-1:0] reg_pc_plus4 = reg_pc + 4;
+wire [0:0]          br_flg;
+wire [WORD_LEN-1:0] br_target;
 
 // プログラムカウンタとメモリを接続
 assign memory_i_addr = reg_pc;
@@ -289,6 +292,18 @@ wire [WORD_LEN-1:0] alu_out = (
 	exe_fun == ALU_SLTU ? op1_data < op2_data :
     0
 );
+
+assign br_flg = (
+	exe_fun == BR_BEQ   ? (op1_data == op2_data) :
+	exe_fun == BR_BNE   ? !(op1_data == op2_data) :
+	exe_fun == BR_BLT   ? ($signed(op1_data) < $signed(op2_data)) :
+	exe_fun == BR_BGE   ? ($signed(op1_data) < $signed(op2_data)) :
+	exe_fun == BR_BLTU  ? (op1_data < op2_data) :
+	exe_fun == BR_BGEU  ? !(op1_data < op2_data) :
+	0
+);
+
+assign br_target = reg_pc + imm_b_sext;
 
 // MEM STAGE
 assign memory_d_addr    = alu_out;
