@@ -4,6 +4,7 @@ module Core #(
     parameter REGISTER_COUNT_BIT= 5,
     parameter IMM_I_BITWISE     = 12,
     parameter IMM_S_BITWISE     = 12,
+    parameter IMM_B_BITWISE     = 11,
 
     parameter INST_LW_FUNCT3    = 3'b010,
     parameter INST_LW_OPCODE    = 7'b0000011,
@@ -152,6 +153,9 @@ wire [WORD_LEN-1:0] imm_i_sext = {{WORD_LEN-IMM_I_BITWISE{imm_i[IMM_I_BITWISE-1]
 
 wire [IMM_S_BITWISE-1:0] imm_s = {memory_inst[31:25], memory_inst[11:7]};
 wire [WORD_LEN-1:0] imm_s_sext = {{WORD_LEN-IMM_S_BITWISE{imm_s[IMM_S_BITWISE-1]}}, imm_s};
+
+wire [IMM_B_BITWISE-1:0] imm_b = {memory_inst[31], memory_inst[7], memory_inst[30:25], memory_inst[11:8]};
+wire [WORD_LEN-1:0] imm_b_sext = {{WORD_LEN-IMM_B_BITWISE-1{imm_b[IMM_B_BITWISE-1]}}, imm_b, 1'b0};
 
 // instructions
 wire [2:0] funct3 = memory_inst[14:12];
