@@ -41,7 +41,31 @@ module Core #(
     parameter INST_ORI_OPCODE    = 7'b0010011,
 
     parameter INST_XORI_FUNCT3   = 3'b100,
-    parameter INST_XORI_OPCODE   = 7'b0010011
+    parameter INST_XORI_OPCODE   = 7'b0010011,
+
+    parameter INST_SLL_FUNCT7   = 7'b0000000,
+    parameter INST_SLL_FUNCT3   = 3'b001,
+    parameter INST_SLL_OPCODE   = 7'b0110011,
+
+    parameter INST_SRL_FUNCT7   = 7'b0000000,
+    parameter INST_SRL_FUNCT3   = 3'b101,
+    parameter INST_SRL_OPCODE   = 7'b0110011,
+
+    parameter INST_SRA_FUNCT7   = 7'b0100000,
+    parameter INST_SRA_FUNCT3   = 3'b101,
+    parameter INST_SRA_OPCODE   = 7'b0110011,
+
+    parameter INST_SLLI_FUNCT7  = 7'b0000000,
+    parameter INST_SLLI_FUNCT3  = 3'b001,
+    parameter INST_SLLI_OPCODE  = 7'b0010011,
+
+    parameter INST_SRLI_FUNCT7  = 7'b0000000,
+    parameter INST_SRLI_FUNCT3  = 3'b101,
+    parameter INST_SRLI_OPCODE  = 7'b0010011,
+
+    parameter INST_SRAI_FUNCT7  = 7'b0100000,
+    parameter INST_SRAI_FUNCT3  = 3'b101,
+    parameter INST_SRAI_OPCODE  = 7'b0010011
 ) (
     input   wire                clk,
     input   wire                rst_n,
@@ -59,6 +83,9 @@ localparam ALU_SUB  = 4'b0001;
 localparam ALU_AND  = 4'b0010;
 localparam ALU_OR   = 4'b0011;
 localparam ALU_XOR  = 4'b0100;
+localparam ALU_SLL  = 4'b0101;
+localparam ALU_SRL  = 4'b0110;
+localparam ALU_SRA  = 4'b0111;
 
 localparam OP1_RS1  = 4'b0000;
 
@@ -137,6 +164,12 @@ wire inst_is_xor    = (funct7 == INST_XOR_FUNCT7 && funct3 == INST_XOR_FUNCT3 &&
 wire inst_is_andi   = (funct3 == INST_ANDI_FUNCT3 && opcode == INST_ANDI_OPCODE);
 wire inst_is_ori    = (funct3 == INST_ORI_FUNCT3 && opcode == INST_ORI_OPCODE);
 wire inst_is_xori   = (funct3 == INST_XORI_FUNCT3 && opcode == INST_XORI_OPCODE);
+wire inst_is_sll    = (funct7 == INST_SLL_FUNCT7 && funct3 == INST_SLL_FUNCT3 && opcode == INST_SLL_OPCODE);
+wire inst_is_srl    = (funct7 == INST_SRL_FUNCT7 && funct3 == INST_SRL_FUNCT3 && opcode == INST_SRL_OPCODE);
+wire inst_is_sra    = (funct7 == INST_SRA_FUNCT7 && funct3 == INST_SRA_FUNCT3 && opcode == INST_SRA_OPCODE);
+wire inst_is_slli   = (funct7 == INST_SLLI_FUNCT7 && funct3 == INST_SLLI_FUNCT3 && opcode == INST_SLLI_OPCODE);
+wire inst_is_srli   = (funct7 == INST_SRLI_FUNCT7 && funct3 == INST_SRLI_FUNCT3 && opcode == INST_SRLI_OPCODE);
+wire inst_is_srai   = (funct7 == INST_SRAI_FUNCT7 && funct3 == INST_SRAI_FUNCT3 && opcode == INST_SRAI_OPCODE);
 
 wire [3:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
@@ -157,6 +190,12 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel} = (
     inst_is_andi ? {ALU_AND, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
     inst_is_ori  ? {ALU_OR , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
     inst_is_xori ? {ALU_XOR, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_sll  ? {ALU_SLL, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_srl  ? {ALU_SRL, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_sra  ? {ALU_SRA, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
+	inst_is_slli ? {ALU_SLL, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_srli ? {ALU_SRL, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_srai ? {ALU_SRA, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
     0
 );
 
@@ -179,6 +218,9 @@ wire [WORD_LEN-1:0] alu_out = (
     exe_fun == ALU_AND ? op1_data & op2_data :
     exe_fun == ALU_OR  ? op1_data | op2_data :
     exe_fun == ALU_XOR ? op1_data ^ op2_data :
+	exe_fun == ALU_SLL ? op1_data << op2_data[4:0] :
+	exe_fun == ALU_SRL ? op1_data >> op2_data[4:0] :
+	exe_fun == ALU_SRA ? op1_data >>> op2_data[4:0] :
     0
 );
 
