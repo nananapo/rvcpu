@@ -184,7 +184,7 @@ wire [WORD_LEN-1:0] alu_out = (
 
 // MEM STAGE
 assign memory_d_addr    = alu_out;
-assign memory_wen       = inst_is_sw;
+assign memory_wen       = mem_wen == MEN_S;
 assign memory_wdata     = rs2_data;
 
 // WB STAGE
