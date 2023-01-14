@@ -117,22 +117,23 @@ module Core #(
     output  wire [WORD_LEN-1:0] memory_wdata
 );
 
-localparam ALU_ADD  = 4'b0000;
-localparam ALU_SUB  = 4'b0001;
-localparam ALU_AND  = 4'b0010;
-localparam ALU_OR   = 4'b0011;
-localparam ALU_XOR  = 4'b0100;
-localparam ALU_SLL  = 4'b0101;
-localparam ALU_SRL  = 4'b0110;
-localparam ALU_SRA  = 4'b0111;
-localparam ALU_SLT  = 4'b1000;
-localparam ALU_SLTU = 4'b1001;
-localparam BR_BEQ   = 4'b1010;
-localparam BR_BNE   = 4'b1011;
-localparam BR_BLT   = 4'b1100;
-localparam BR_BGE   = 4'b1101;
-localparam BR_BLTU  = 4'b1110;
-localparam BR_BGEU  = 4'b1111;
+localparam ALU_ADD  = 5'b00000;
+localparam ALU_SUB  = 5'b00001;
+localparam ALU_AND  = 5'b00010;
+localparam ALU_OR   = 5'b00011;
+localparam ALU_XOR  = 5'b00100;
+localparam ALU_SLL  = 5'b00101;
+localparam ALU_SRL  = 5'b00110;
+localparam ALU_SRA  = 5'b00111;
+localparam ALU_SLT  = 5'b01000;
+localparam ALU_SLTU = 5'b01001;
+localparam BR_BEQ   = 5'b01010;
+localparam BR_BNE   = 5'b01011;
+localparam BR_BLT   = 5'b01100;
+localparam BR_BGE   = 5'b01101;
+localparam BR_BLTU  = 5'b01110;
+localparam BR_BGEU  = 5'b01111;
+localparam ALU_JALR = 5'b10000;
 
 localparam OP1_RS1  = 4'b0000;
 
@@ -238,7 +239,7 @@ wire inst_is_bge    = (funct3 == INST_BGE_FUNCT3 && opcode == INST_BGE_OPCODE);
 wire inst_is_bltu   = (funct3 == INST_BLTU_FUNCT3 && opcode == INST_BLTU_OPCODE);
 wire inst_is_bgeu   = (funct3 == INST_BGEU_FUNCT3 && opcode == INST_BGEU_OPCODE);
 
-wire [3:0] exe_fun;// ALUの計算の種類
+wire [4:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
 wire [3:0] op2_sel;// ALUで計算するデータの2項目
 wire [0:0] mem_wen;// メモリに書き込むか否か
