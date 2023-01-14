@@ -336,6 +336,7 @@ assign memory_wdata     = rs2_data;
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
     wb_sel == WB_MEM ? memory_rdata :
+	wb_sel == WB_PC  ? reg_pc_plus4 :
     alu_out
     //wb_sel == WB_ALU ? alu_out :
     //0
