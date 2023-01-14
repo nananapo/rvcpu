@@ -167,6 +167,7 @@ wire [WORD_LEN-1:0] br_target;
 // プログラムカウンタとメモリを接続
 assign memory_i_addr = reg_pc;
 
+
 // DECODE STAGE
 wire [REGISTER_COUNT_BIT-1:0] rs1_addr = memory_inst[19:15];
 wire [REGISTER_COUNT_BIT-1:0] rs2_addr = memory_inst[24:20];
@@ -282,6 +283,9 @@ wire [WORD_LEN-1:0] op2_data = (
     0
 );
 
+
+
+
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
     exe_fun == ALU_ADD  ? op1_data + op2_data :
@@ -309,10 +313,16 @@ assign br_flg = (
 
 assign br_target = reg_pc + imm_b_sext;
 
+
+
+
 // MEM STAGE
 assign memory_d_addr    = alu_out;
 assign memory_wen       = mem_wen == MEN_S;
 assign memory_wdata     = rs2_data;
+
+
+
 
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
@@ -322,8 +332,14 @@ wire [WORD_LEN-1:0] wb_data = (
     //0
 );
 
+
+
+
 // 終了判定
 assign exit = memory_i_addr == 8;
+
+
+
 
 always @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
