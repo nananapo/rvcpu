@@ -397,6 +397,13 @@ assign memory_wdata     = rs2_data;
 
 // CSR
 reg [WORD_LEN-1:0] csr_regfile [4098:0];
+initial begin
+    for (loop_initial_regfile_i = 0;
+        loop_initial_regfile_i < 4096;
+        loop_initial_regfile_i = loop_initial_regfile_i + 1)
+        csr_regfile[loop_initial_regfile_i] = 0;
+end
+
 wire [11:0] csr_addr = (
 	csr_cmd == CSR_E ? 12'h342 : 
 	imm_i
