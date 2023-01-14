@@ -405,9 +405,8 @@ wire [WORD_LEN-1:0] csr_wdata = (
 wire [WORD_LEN-1:0] wb_data = (
     wb_sel == WB_MEM ? memory_rdata :
 	wb_sel == WB_PC  ? reg_pc_plus4 :
+	wb_sel == WB_CSR ? csr_rdata :
     alu_out
-    //wb_sel == WB_ALU ? alu_out :
-    //0
 );
 
 
@@ -426,16 +425,21 @@ always @(negedge rst_n or posedge clk) begin
             regfile[loop_initial_regfile_i] <= 0;
     end else if (!exit) begin
 
-        reg_pc <= (
-			br_flg ? br_target : 
-			jmp_flg ? alu_out :
-			reg_pc_plus4
-		);
+		// CSR
+		if (csr_cmd != CSR_X) begin
+			csr_regfile[csr_addr] <= csr_wdata;
+		end
 
         // WB STAGE
         if (rf_wen == REN_S) begin
             regfile[wb_addr] <= wb_data;
         end
+
+        reg_pc <= (
+			br_flg ? br_target : 
+			jmp_flg ? alu_out :
+			reg_pc_plus4
+		);
 
         $display("reg_pc    : %d", reg_pc);
         $display("inst      : 0x%H", memory_inst);
