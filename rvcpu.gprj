@@ -11,7 +11,6 @@
         <File path="src/main.v" type="file.verilog" enable="1"/>
         <File path="src/memory.v" type="file.verilog" enable="1"/>
         <File path="src/test.v" type="file.verilog" enable="1"/>
-        <File path="src/uart_tx.v" type="file.verilog" enable="1"/>
         <File path="src/tangnano9k.cst" type="file.cst" enable="1"/>
     </FileList>
 </Project>
