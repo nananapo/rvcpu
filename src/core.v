@@ -76,6 +76,12 @@ assign memory_d_addr = alu_out;
 assign memory_wen = inst_is_sw;
 assign memory_wdata = rs2_data;
 
+// WB STAGE
+wire [WORD_LEN-1:0] wb_data = (
+    inst_is_lw ? memory_rdata :
+    alu_out
+);
+
 // 終了判定
 assign exit = memory_i_addr == 8;
 
@@ -89,8 +95,8 @@ always @(negedge rst_n or posedge clk) begin
         reg_pc <= reg_pc + 4;
 
         // WB STAGE
-        if (inst_is_lw) begin
-            regfile[wb_addr] <= memory_rdata;
+        if (inst_is_lw || inst_is_add) begin
+            regfile[wb_addr] <= wb_data;
         end
 
         $display("reg_pc    : %d", reg_pc);
@@ -100,7 +106,7 @@ always @(negedge rst_n or posedge clk) begin
         $display("wb_addr   : %d", wb_addr);
         $display("rs1_data  : 0x%H", rs1_data);
         $display("rs2_data  : 0x%H", rs2_data);
-        $display("wb_data   : 0x%H", memory_rdata);
+        $display("wb_data   : 0x%H", wb_data);
         $display("dmem.addr : %d", memory_d_addr);
         $display("dmem.wen  : %d", memory_wen);
         $display("dmem.wdata: 0x%H", memory_wdata);
