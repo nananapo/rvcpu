@@ -13,7 +13,9 @@ module Core #(
     output wire [WORD_LEN-1:0] memory_i_addr,
     input wire [WORD_LEN-1:0] memory_inst,
     output wire [WORD_LEN-1:0] memory_d_addr,
-    input wire [WORD_LEN-1:0] memory_rdata
+    input wire [WORD_LEN-1:0] memory_rdata,
+    output wire memory_wen,
+    output wire [WORD_LEN-1:0] memory_wdata
 );
 
 // registers

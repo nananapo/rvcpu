@@ -36,7 +36,9 @@ Core #(
     .memory_i_addr(reg_memory_i_addr),
     .memory_inst(reg_memory_inst),
     .memory_d_addr(reg_memory_d_addr),
-    .memory_rdata(reg_memory_rdata)
+    .memory_rdata(reg_memory_rdata),
+    .memory_wen(reg_memory_wen),
+    .memory_wdata(reg_memory_wdata)
 );
 
 
