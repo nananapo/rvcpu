@@ -140,14 +140,15 @@ localparam BR_BLTU  = 5'b01110;
 localparam BR_BGEU  = 5'b01111;
 localparam ALU_JALR = 5'b10000;
 
-localparam OP1_RS1  = 4'b0000;
-localparam OP1_PC   = 4'b0001;
+localparam OP1_X	= 4'b0000;
+localparam OP1_RS1  = 4'b0001;
+localparam OP1_PC   = 4'b0010;
 
 localparam OP2_RS2  = 4'b0000;
 localparam OP2_IMI  = 4'b0001;
 localparam OP2_IMS  = 4'b0010;
 localparam OP2_IMJ  = 4'b0011;
-
+localparam OP2_IMU  = 4'b0100;
 
 localparam MEN_X    = 1'b0;
 localparam MEN_S    = 1'b1;
@@ -281,6 +282,8 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel} = (
 	inst_is_bgeu ? {BR_BGEU , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  } :
 	inst_is_jal  ? {ALU_ADD , OP1_PC , OP2_IMJ, MEN_X, REN_S, WB_PC } :
 	inst_is_jalr ? {ALU_JALR, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_PC } :
+	inst_is_lui  ? {ALU_ADD , OP1_X  , OP2_IMU, MEN_X, REN_S, WB_ALU} :
+	inst_is_auipc? {ALU_ADD , OP1_PC , OP2_IMU, MEN_X, REN_S, WB_ALU} :
     0
 );
 
@@ -297,6 +300,7 @@ wire [WORD_LEN-1:0] op2_data = (
     op2_sel == OP2_IMI ? imm_i_sext :
     op2_sel == OP2_IMS ? imm_s_sext :
     op2_sel == OP2_IMJ ? imm_j_sext :
+    op2_sel == OP2_IMU ? imm_u_shifted :
     0
 );
 
