@@ -423,7 +423,7 @@ wire [WORD_LEN-1:0] wb_data = (
 
 
 // 終了判定
-assign exit = memory_i_addr == 8;
+assign exit = memory_i_addr == 32'h44;
 
 
 
