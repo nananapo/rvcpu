@@ -20,7 +20,19 @@ module Core #(
     parameter INST_SUB_OPCODE   = 7'b0110011,
     
     parameter INST_ADDI_FUNCT3  = 3'b000,
-    parameter INST_ADDI_OPCODE  = 7'b0010011
+    parameter INST_ADDI_OPCODE  = 7'b0010011,
+
+    parameter INST_AND_FUNCT7   = 7'b0000000,
+    parameter INST_AND_FUNCT3   = 3'b111,
+    parameter INST_AND_OPCODE   = 7'b0110011,
+
+    parameter INST_OR_FUNCT7    = 7'b0000000,
+    parameter INST_OR_FUNCT3    = 3'b110,
+    parameter INST_OR_OPCODE    = 7'b0110011,
+
+    parameter INST_XOR_FUNCT7   = 7'b0000000,
+    parameter INST_XOR_FUNCT3   = 3'b100,
+    parameter INST_XOR_OPCODE   = 7'b0110011
 ) (
     input   wire                clk,
     input   wire                rst_n,
@@ -73,6 +85,9 @@ wire inst_is_sw     = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
 wire inst_is_add    = (funct7 == INST_ADD_FUNCT7 && funct3 == INST_ADD_FUNCT3 && opcode == INST_ADD_OPCODE);
 wire inst_is_sub    = (funct7 == INST_SUB_FUNCT7 && funct3 == INST_SUB_FUNCT3 && opcode == INST_SUB_OPCODE);
 wire inst_is_addi   = (funct3 == INST_ADDI_FUNCT3 && opcode == INST_ADDI_OPCODE);
+wire inst_is_and    = (funct7 == INST_AND_FUNCT7 && funct3 == INST_AND_FUNCT3 && opcode == INST_AND_OPCODE);
+wire inst_is_or     = (funct7 == INST_OR_FUNCT7 && funct3 == INST_OR_FUNCT3 && opcode == INST_OR_OPCODE);
+wire inst_is_xor    = (funct7 == INST_XOR_FUNCT7 && funct3 == INST_XOR_FUNCT3 && opcode == INST_XOR_OPCODE);
 
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
@@ -80,6 +95,9 @@ wire [WORD_LEN-1:0] alu_out = (
     inst_is_sw  ? rs1_data + imm_s_sext :
     inst_is_add ? rs1_data + rs2_data :
     inst_is_sub ? rs1_data - rs2_data :
+    inst_is_and ? rs1_data & rs2_data : 
+    inst_is_or ? rs1_data | rs2_data : 
+    inst_is_xor ? rs1_data ^ rs2_data : 
     0
 );
 
@@ -106,7 +124,8 @@ always @(negedge rst_n or posedge clk) begin
         reg_pc <= reg_pc + 4;
 
         // WB STAGE
-        if (inst_is_lw || inst_is_add || inst_is_sub || inst_is_addi) begin
+        if (inst_is_lw || inst_is_add || inst_is_sub || inst_is_addi
+            || inst_is_and || inst_is_or || inst_is_xor) begin
             regfile[wb_addr] <= wb_data;
         end
 
