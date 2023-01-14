@@ -105,7 +105,11 @@ module Core #(
 	parameter INST_JAL_OPCODE	= 7'b1101111,
 
 	parameter INST_JALR_FUNCT3	= 3'b000,
-	parameter INST_JALR_OPCODE	= 7'b1100111
+	parameter INST_JALR_OPCODE	= 7'b1100111,
+
+	parameter INST_LUI_OPCODE	= 7'b0110111,
+
+	parameter INST_AUIPC_OPCODE	= 7'b0010111
 ) (
     input   wire                clk,
     input   wire                rst_n,
@@ -237,6 +241,8 @@ wire inst_is_bltu   = (funct3 == INST_BLTU_FUNCT3 && opcode == INST_BLTU_OPCODE)
 wire inst_is_bgeu   = (funct3 == INST_BGEU_FUNCT3 && opcode == INST_BGEU_OPCODE);
 wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
 wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
+wire inst_is_lui    = (opcode == INST_LUI_OPCODE);
+wire inst_is_auipc  = (opcode == INST_AUIPC_OPCODE);
 
 wire [4:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
