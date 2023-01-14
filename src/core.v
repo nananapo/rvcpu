@@ -7,26 +7,30 @@ module Core #(
 
     parameter INST_LW_FUNCT3    = 3'b010,
     parameter INST_LW_OPCODE    = 7'b0000011,
+
     parameter INST_SW_FUNCT3    = 3'b010,
     parameter INST_SW_OPCODE    = 7'b0100011,
+    
     parameter INST_ADD_FUNCT7   = 7'b0000000,
     parameter INST_ADD_FUNCT3   = 3'b000,
     parameter INST_ADD_OPCODE   = 7'b0110011,
+    
     parameter INST_SUB_FUNCT7   = 7'b0100000,
     parameter INST_SUB_FUNCT3   = 3'b000,
     parameter INST_SUB_OPCODE   = 7'b0110011,
+    
     parameter INST_ADDI_FUNCT3  = 3'b000,
     parameter INST_ADDI_OPCODE  = 7'b0010011
 ) (
-    input wire clk,
-    input wire rst_n,
-    output wire exit,
-    output wire [WORD_LEN-1:0] memory_i_addr,
-    input wire [WORD_LEN-1:0] memory_inst,
-    output wire [WORD_LEN-1:0] memory_d_addr,
-    input wire [WORD_LEN-1:0] memory_rdata,
-    output wire memory_wen,
-    output wire [WORD_LEN-1:0] memory_wdata
+    input   wire                clk,
+    input   wire                rst_n,
+    output  wire                exit,
+    output  wire [WORD_LEN-1:0] memory_i_addr,
+    input   wire [WORD_LEN-1:0] memory_inst,
+    output  wire [WORD_LEN-1:0] memory_d_addr,
+    input   wire [WORD_LEN-1:0] memory_rdata,
+    output  wire                memory_wen,
+    output  wire [WORD_LEN-1:0] memory_wdata
 );
 
 // registers
@@ -80,9 +84,9 @@ wire [WORD_LEN-1:0] alu_out = (
 );
 
 // MEM STAGE
-assign memory_d_addr = alu_out;
-assign memory_wen = inst_is_sw;
-assign memory_wdata = rs2_data;
+assign memory_d_addr    = alu_out;
+assign memory_wen       = inst_is_sw;
+assign memory_wdata     = rs2_data;
 
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
