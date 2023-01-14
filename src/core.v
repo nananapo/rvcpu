@@ -35,14 +35,14 @@ module Core #(
     parameter INST_XOR_FUNCT3   = 3'b100,
     parameter INST_XOR_OPCODE   = 7'b0110011,
 
-    parameter INST_ANDI_FUNCT3   = 3'b111,
-    parameter INST_ANDI_OPCODE   = 7'b0010011,
+    parameter INST_ANDI_FUNCT3  = 3'b111,
+    parameter INST_ANDI_OPCODE  = 7'b0010011,
 
-    parameter INST_ORI_FUNCT3    = 3'b110,
-    parameter INST_ORI_OPCODE    = 7'b0010011,
+    parameter INST_ORI_FUNCT3   = 3'b110,
+    parameter INST_ORI_OPCODE   = 7'b0010011,
 
-    parameter INST_XORI_FUNCT3   = 3'b100,
-    parameter INST_XORI_OPCODE   = 7'b0010011,
+    parameter INST_XORI_FUNCT3  = 3'b100,
+    parameter INST_XORI_OPCODE  = 7'b0010011,
 
     parameter INST_SLL_FUNCT7   = 7'b0000000,
     parameter INST_SLL_FUNCT3   = 3'b001,
@@ -68,9 +68,9 @@ module Core #(
     parameter INST_SRAI_FUNCT3  = 3'b101,
     parameter INST_SRAI_OPCODE  = 7'b0010011,
 
-    parameter INST_SLT_FUNCT7  = 7'b0000000,
-    parameter INST_SLT_FUNCT3  = 3'b010,
-    parameter INST_SLT_OPCODE  = 7'b0110011,
+    parameter INST_SLT_FUNCT7   = 7'b0000000,
+    parameter INST_SLT_FUNCT3   = 3'b010,
+    parameter INST_SLT_OPCODE   = 7'b0110011,
 
     parameter INST_SLTU_FUNCT7  = 7'b0000000,
     parameter INST_SLTU_FUNCT3  = 3'b011,
@@ -79,8 +79,8 @@ module Core #(
     parameter INST_SLTI_FUNCT3  = 3'b010,
     parameter INST_SLTI_OPCODE  = 7'b0010011,
 
-    parameter INST_SLTIU_FUNCT3  = 3'b011,
-    parameter INST_SLTIU_OPCODE  = 7'b0010011
+    parameter INST_SLTIU_FUNCT3 = 3'b011,
+    parameter INST_SLTIU_OPCODE = 7'b0010011,
 
 	parameter INST_BEQ_FUNCT3   = 3'b000,
     parameter INST_BEQ_OPCODE   = 7'b1100011,
