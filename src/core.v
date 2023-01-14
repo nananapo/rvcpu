@@ -6,6 +6,7 @@ module Core #(
     parameter IMM_S_BITWISE     = 12,
     parameter IMM_B_BITWISE     = 11,
     parameter IMM_J_BITWISE     = 20,
+    parameter IMM_U_BITWISE     = 20,
 
     parameter INST_LW_FUNCT3    = 3'b010,
     parameter INST_LW_OPCODE    = 7'b0000011,
@@ -200,6 +201,8 @@ wire [WORD_LEN-1:0] imm_b_sext = {{WORD_LEN-IMM_B_BITWISE-1{imm_b[IMM_B_BITWISE-
 wire [IMM_J_BITWISE-1:0] imm_j = {memory_inst[20], memory_inst[10:1], memory_inst[11], memory_inst[19:12]};
 wire [WORD_LEN-1:0] imm_j_sext = {{WORD_LEN-IMM_J_BITWISE-1{imm_j[IMM_J_BITWISE-1]}}, imm_j, 1'b0};
 
+wire [IMM_U_BITWISE-1:0] imm_u    = memory_inst[31:12];
+wire [WORD_LEN-1:0] imm_u_shifted = {imm_u, 12'b0};
 
 wire [2:0] funct3 = memory_inst[14:12];
 wire [7:0] funct7 = memory_inst[31:25];
