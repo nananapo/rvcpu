@@ -69,8 +69,8 @@ wire inst_is_sub    = (funct7 == INST_SUB_FUNCT7 && funct3 == INST_SUB_FUNCT3 &&
 
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
-    inst_is_lw  ? rs1_addr + imm_i_sext : 
-    inst_is_sw  ? rs1_addr + imm_s_sext :
+    inst_is_lw  ? rs1_data + imm_i_sext : 
+    inst_is_sw  ? rs1_data + imm_s_sext :
     inst_is_add ? rs1_data + rs2_data :
     inst_is_sub ? rs1_data - rs2_data :
     0
