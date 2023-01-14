@@ -11,7 +11,7 @@ module Memory #(
 reg [7:0] mem [MEMORY_SIZE-1:0];
 
 initial begin
-    $readmemh("../test/bin/lw.hex", mem);
+    $readmemh("../test/bin/sw.hex", mem);
 end
 
 assign inst = {mem[i_addr + 3], mem[i_addr + 2], mem[i_addr + 1], mem[i_addr]};
