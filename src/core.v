@@ -56,10 +56,12 @@ wire [WORD_LEN-1:0] imm_s_sext = {{WORD_LEN-IMM_S_BITWISE{imm_s[IMM_S_BITWISE-1]
 
 // instructions
 wire [2:0] funct3 = memory_inst[14:12];
+wire [7:0] funct7 = memory_inst[31:25];
 wire [6:0] opcode = memory_inst[6:0];
 
-wire inst_is_lw = (funct3 == INST_LW_FUNCT3 && opcode == INST_LW_OPCODE);
-wire inst_is_sw = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
+wire inst_is_lw     = (funct3 == INST_LW_FUNCT3 && opcode == INST_LW_OPCODE);
+wire inst_is_sw     = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
+wire inst_is_add    = (funct7 == INST_ADD_FUNCT7 && funct3 == INST_ADD_FUNCT3 && opcode == INST_ADD_OPCODE);
 
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
