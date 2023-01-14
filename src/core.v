@@ -121,6 +121,12 @@ localparam ALU_SRL  = 4'b0110;
 localparam ALU_SRA  = 4'b0111;
 localparam ALU_SLT  = 4'b1000;
 localparam ALU_SLTU = 4'b1001;
+localparam BR_BEQ   = 4'b1010;
+localparam BR_BNE   = 4'b1011;
+localparam BR_BLT   = 4'b1100;
+localparam BR_BGE   = 4'b1101;
+localparam BR_BLTU  = 4'b1110;
+localparam BR_BGEU  = 4'b1111;
 
 localparam OP1_RS1  = 4'b0000;
 
