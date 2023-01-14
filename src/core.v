@@ -386,6 +386,17 @@ assign memory_d_addr    = alu_out;
 assign memory_wen       = mem_wen == MEN_S;
 assign memory_wdata     = rs2_data;
 
+// CSR
+reg [WORD_LEN-1:0] csr_regfile [4098:0];
+wire [11:0] csr_addr = imm_i;
+
+wire [WORD_LEN-1:0] csr_rdata = csr_regfile[csr_addr];
+wire [WORD_LEN-1:0] csr_wdata = (
+	csr_cmd == CSR_W ? op1_data :
+	csr_cmd == CSR_S ? csr_rdata | op1_data :
+	csr_cmd == CSR_C ? csr_rdata & ~op1_data :
+	0
+);
 
 
 
