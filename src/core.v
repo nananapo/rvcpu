@@ -96,6 +96,8 @@ always @(negedge rst_n or posedge clk) begin
         $display("rs2_data  : 0x%H", rs2_data);
         $display("wb_data   : 0x%H", memory_rdata);
         $display("dmem.addr : %d", memory_d_addr);
+        $display("dmem.wen  : %d", memory_wen);
+        $display("dmem.wdata: 0x%H", memory_wdata);
 
         $display("--------");
     end
