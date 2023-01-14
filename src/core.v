@@ -218,6 +218,12 @@ wire inst_is_slt    = (funct7 == INST_SLT_FUNCT7 && funct3 == INST_SLT_FUNCT3 &&
 wire inst_is_sltu   = (funct7 == INST_SLTU_FUNCT7 && funct3 == INST_SLTU_FUNCT3 && opcode == INST_SLTU_OPCODE);
 wire inst_is_slti   = (funct3 == INST_SLTI_FUNCT3 && opcode == INST_SLTI_OPCODE);
 wire inst_is_sltiu  = (funct3 == INST_SLTIU_FUNCT3 && opcode == INST_SLTIU_OPCODE);
+wire inst_is_beq    = (funct3 == INST_BEQ_FUNCT3 && opcode == INST_BEQ_OPCODE);
+wire inst_is_bne    = (funct3 == INST_BNE_FUNCT3 && opcode == INST_BNE_OPCODE);
+wire inst_is_blt    = (funct3 == INST_BLT_FUNCT3 && opcode == INST_BLT_OPCODE);
+wire inst_is_bge    = (funct3 == INST_BGE_FUNCT3 && opcode == INST_BGE_OPCODE);
+wire inst_is_bltu   = (funct3 == INST_BLTU_FUNCT3 && opcode == INST_BLTU_OPCODE);
+wire inst_is_bgeu   = (funct3 == INST_BGEU_FUNCT3 && opcode == INST_BGEU_OPCODE);
 
 wire [3:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
@@ -248,6 +254,12 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel} = (
 	inst_is_sltu ? {ALU_SLTU, OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU} :
 	inst_is_slti ? {ALU_SLT , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
 	inst_is_sltiu? {ALU_SLTU, OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU} :
+	inst_is_beq  ? {BR_BEQ  , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  } :
+	inst_is_bne  ? {BR_BNE  , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  } :
+	inst_is_blt  ? {BR_BLT  , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  } :
+	inst_is_bge  ? {BR_BGE  , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  } :
+	inst_is_bltu ? {BR_BLTU , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  } :
+	inst_is_bgeu ? {BR_BGEU , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  } :
     0
 );
 
