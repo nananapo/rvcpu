@@ -5,17 +5,6 @@ module main #(
     input  wire       clk,
 
     output reg [5:0] led    // 6 LEDS pin
-
-/*
-    output wire       hdmi_clk_p,
-    output wire       hdmi_clk_n,
-    output wire [2:0] hdmi_data_p,
-    output wire [2:0] hdmi_data_n,
-*/
-/*
-    input wire btn1,         // right button
-    output wire uart_tx      // uart transmission
-*/
 );
 
 wire [WORD_LEN-1:0] reg_memory_i_addr;
