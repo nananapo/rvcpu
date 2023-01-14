@@ -89,6 +89,18 @@ wire [2:0] funct3 = memory_inst[14:12];
 wire [7:0] funct7 = memory_inst[31:25];
 wire [6:0] opcode = memory_inst[6:0];
 
+/*
+// I形式の判定
+function [0:0] isITypeInst;
+  input [2:0] funct3_expected;
+  input [6:0] opcode_expected;
+begin
+    isITypeInst = (funct3_expected == funct3 && opcode_expected == opcode);
+end
+endfunction
+wire inst_is_lw     = isITypeInst(INST_LW_FUNCT3, INST_LW_OPCODE);
+*/
+
 wire inst_is_lw     = (funct3 == INST_LW_FUNCT3 && opcode == INST_LW_OPCODE);
 wire inst_is_sw     = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
 wire inst_is_add    = (funct7 == INST_ADD_FUNCT7 && funct3 == INST_ADD_FUNCT3 && opcode == INST_ADD_OPCODE);
