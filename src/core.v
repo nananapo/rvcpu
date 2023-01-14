@@ -140,7 +140,8 @@ module Core #(
     output  wire [WORD_LEN-1:0] memory_d_addr,
     input   wire [WORD_LEN-1:0] memory_rdata,
     output  wire                memory_wen,
-    output  wire [WORD_LEN-1:0] memory_wdata
+    output  wire [WORD_LEN-1:0] memory_wdata,
+	output	wire [WORD_LEN-1:0] gp
 );
 
 localparam ALU_ADD  = 5'b00000;
@@ -205,6 +206,7 @@ initial begin
         regfile[loop_initial_regfile_i] = 0;
 end
 reg  [WORD_LEN-1:0] reg_pc = 0;					// プログラムカウンタ
+assign gp = regfile[3];
 
 
 // IF STAGE
@@ -464,6 +466,9 @@ always @(negedge rst_n or posedge clk) begin
         $display("dmem.addr : %d", memory_d_addr);
         $display("dmem.wen  : %d", memory_wen);
         $display("dmem.wdata: 0x%H", memory_wdata);
+		$display("imm_i     : 0x%H", imm_i_sext);
+		$display("imm_j     : 0x%H", imm_j_sext);
+        $display("gp        : %d", gp);
 
         $display("--------");
     end
