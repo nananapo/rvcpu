@@ -167,13 +167,16 @@ initial begin
         loop_initial_regfile_i = loop_initial_regfile_i + 1)
         regfile[loop_initial_regfile_i] = 0;
 end
+reg  [WORD_LEN-1:0] reg_pc = 0;					// プログラムカウンタ
 
-reg  [WORD_LEN-1:0]  reg_pc = 0;
-wire [WORD_LEN-1:0] reg_pc_plus4 = reg_pc + 4;
-wire [0:0]          br_flg;
-wire [WORD_LEN-1:0] br_target;
 
-// プログラムカウンタとメモリを接続
+// IF STAGE
+wire [WORD_LEN-1:0] reg_pc_plus4 = reg_pc + 4;	// pc + 4
+wire [0:0]          br_flg;						// 分岐のフラグ
+wire [WORD_LEN-1:0] br_target;					// 分岐先
+wire [0:0]			jmp_flg;					// ジャンプのフラグ
+
+// プログラムカウンタとメモリの命令アドレスを接続
 assign memory_i_addr = reg_pc;
 
 
