@@ -136,10 +136,13 @@ localparam BR_BGEU  = 5'b01111;
 localparam ALU_JALR = 5'b10000;
 
 localparam OP1_RS1  = 4'b0000;
+localparam OP1_PC   = 4'b0001;
 
 localparam OP2_RS2  = 4'b0000;
 localparam OP2_IMI  = 4'b0001;
 localparam OP2_IMS  = 4'b0010;
+localparam OP2_IMJ  = 4'b0011;
+
 
 localparam MEN_X    = 1'b0;
 localparam MEN_S    = 1'b1;
@@ -150,7 +153,7 @@ localparam REN_S    = 1'b1;
 localparam WB_X     = 4'b0000;
 localparam WB_ALU   = 4'b0000;
 localparam WB_MEM   = 4'b0001;
-
+localparam WB_PC	= 4'b0010;
 
 
 
