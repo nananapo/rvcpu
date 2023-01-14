@@ -207,9 +207,7 @@ always @(negedge rst_n or posedge clk) begin
         reg_pc <= reg_pc + 4;
 
         // WB STAGE
-        if (inst_is_lw || inst_is_add || inst_is_sub || inst_is_addi
-            || inst_is_and || inst_is_or || inst_is_xor
-            || inst_is_andi || inst_is_ori || inst_is_ori) begin
+        if (rf_wen == REN_S) begin
             regfile[wb_addr] <= wb_data;
         end
 
