@@ -103,15 +103,15 @@ wire inst_is_xori   = (funct3 == INST_XORI_FUNCT3 && opcode == INST_XORI_OPCODE)
 
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
-    (inst_is_lw || inst_is_addi)  ? rs1_data + imm_i_sext : 
-    inst_is_sw  ? rs1_data + imm_s_sext :
-    inst_is_add ? rs1_data + rs2_data :
-    inst_is_sub ? rs1_data - rs2_data :
-    inst_is_and ? rs1_data & rs2_data :
-    inst_is_or ? rs1_data | rs2_data :
-    inst_is_xor ? rs1_data ^ rs2_data :
+    (inst_is_lw || inst_is_addi) ? rs1_data + imm_i_sext : 
+    inst_is_sw   ? rs1_data + imm_s_sext :
+    inst_is_add  ? rs1_data + rs2_data :
+    inst_is_sub  ? rs1_data - rs2_data :
+    inst_is_and  ? rs1_data & rs2_data :
+    inst_is_or   ? rs1_data | rs2_data :
+    inst_is_xor  ? rs1_data ^ rs2_data :
     inst_is_andi ? rs1_data & imm_i_sext :
-    inst_is_ori ? rs1_data | imm_i_sext :
+    inst_is_ori  ? rs1_data | imm_i_sext :
     inst_is_xori ? rs1_data ^ imm_i_sext :
     0
 );
