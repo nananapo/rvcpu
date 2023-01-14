@@ -3,6 +3,7 @@ module Core #(
     parameter REGISTER_COUNT = 32,
     parameter REGISTER_COUNT_BIT = 5,
     parameter IMM_I_BITWISE = 12,
+    parameter IMM_S_BITWISE = 12,
 
     parameter INST_LW_FUNCT3 = 3'b010,
     parameter INST_LW_OPCODE = 7'b0000011,
@@ -46,6 +47,9 @@ wire [WORD_LEN-1:0] rs2_data = (rs2_addr == 0) ? 0 : regfile[rs2_addr];
 
 wire [IMM_I_BITWISE-1:0] imm_i = memory_inst[31:20];
 wire [WORD_LEN-1:0] imm_i_sext = {{WORD_LEN-IMM_I_BITWISE{imm_i[IMM_I_BITWISE-1]}}, imm_i};
+
+wire [IMM_S_BITWISE-1:0] imm_s = {memory_inst[31:25], memory_inst[11:7]};
+wire [WORD_LEN-1:0] imm_s_sext = {{WORD_LEN-IMM_S_BITWISE{imm_s[IMM_S_BITWISE-1]}}, imm_s};
 
 // instructions
 wire [2:0] funct3 = memory_inst[14:12];
