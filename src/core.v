@@ -236,7 +236,7 @@ wire [WORD_LEN-1:0] imm_s_sext = {{WORD_LEN-IMM_S_BITWISE{imm_s[IMM_S_BITWISE-1]
 wire [IMM_B_BITWISE-1:0] imm_b = {memory_inst[31], memory_inst[7], memory_inst[30:25], memory_inst[11:8]};
 wire [WORD_LEN-1:0] imm_b_sext = {{WORD_LEN-IMM_B_BITWISE-1{imm_b[IMM_B_BITWISE-1]}}, imm_b, 1'b0};
 
-wire [IMM_J_BITWISE-1:0] imm_j = {memory_inst[20], memory_inst[10:1], memory_inst[11], memory_inst[19:12]};
+wire [IMM_J_BITWISE-1:0] imm_j = {memory_inst[31], memory_inst[19:12], memory_inst[20], memory_inst[30:21]};
 wire [WORD_LEN-1:0] imm_j_sext = {{WORD_LEN-IMM_J_BITWISE-1{imm_j[IMM_J_BITWISE-1]}}, imm_j, 1'b0};
 
 wire [IMM_U_BITWISE-1:0] imm_u    = memory_inst[31:12];
@@ -455,7 +455,7 @@ always @(negedge rst_n or posedge clk) begin
 			reg_pc_plus4
 		);
 
-        $display("reg_pc    : %d", reg_pc);
+        $display("reg_pc    : 0x%H", reg_pc);
         $display("inst      : 0x%H", memory_inst);
         $display("rs1_addr  : %d", rs1_addr);
         $display("rs2_addr  : %d", rs2_addr);
