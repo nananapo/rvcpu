@@ -327,7 +327,7 @@ always @(negedge rst_n or posedge clk) begin
         for (loop_initial_regfile_i = 0; loop_initial_regfile_i < REGISTER_COUNT; loop_initial_regfile_i = loop_initial_regfile_i + 1)
             regfile[loop_initial_regfile_i] <= 0;
     end else if (!exit) begin
-        reg_pc <= reg_pc + 4;
+        reg_pc <= br_flg ? br_target : reg_pc_plus4;
 
         // WB STAGE
         if (rf_wen == REN_S) begin
