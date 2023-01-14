@@ -128,7 +128,9 @@ module Core #(
     parameter INST_CSRRC_OPCODE  = 7'b1110011,
 
 	parameter INST_CSRRCI_FUNCT3  = 3'b111,
-    parameter INST_CSRRCI_OPCODE  = 7'b1110011
+    parameter INST_CSRRCI_OPCODE  = 7'b1110011,
+
+	parameter INST_ECALL          = 32'b00000000000000000000000001110011
 ) (
     input   wire                clk,
     input   wire                rst_n,
@@ -159,6 +161,7 @@ localparam BR_BLTU  = 5'b01110;
 localparam BR_BGEU  = 5'b01111;
 localparam ALU_JALR = 5'b10000;
 localparam ALU_COPY1= 5'b10001; // op1をそのまま
+localparam ALU_X    = 5'b10010; // 何もしない
 
 localparam OP1_X	= 4'b0000;
 localparam OP1_RS1  = 4'b0001;
@@ -189,6 +192,7 @@ localparam CSR_X    = 3'b000;
 localparam CSR_W    = 3'b001;
 localparam CSR_S    = 3'b010;
 localparam CSR_C    = 3'b011;
+localparam CSR_E    = 3'b100;
 
 // registers
 reg [WORD_LEN-1:0] regfile [REGISTER_COUNT-1:0];
@@ -280,6 +284,7 @@ wire inst_is_csrrs  = (funct3 == INST_CSRRS_FUNCT3 && opcode == INST_CSRRS_OPCOD
 wire inst_is_csrrsi = (funct3 == INST_CSRRSI_FUNCT3 && opcode == INST_CSRRSI_OPCODE);
 wire inst_is_csrrc  = (funct3 == INST_CSRRC_FUNCT3 && opcode == INST_CSRRC_OPCODE);
 wire inst_is_csrrci = (funct3 == INST_CSRRCI_FUNCT3 && opcode == INST_CSRRCI_OPCODE);
+wire inst_is_ecall  = memory_inst == INST_ECALL;
 
 wire [4:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
@@ -327,6 +332,7 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = (
 	inst_is_csrrsi? {ALU_COPY1, OP1_IMZ, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_S} :
 	inst_is_csrrc ? {ALU_COPY1, OP1_RS1, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_C} :
 	inst_is_csrrci? {ALU_COPY1, OP1_IMZ, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_C} :
+	inst_is_ecall ? {ALU_X    , OP1_X  , OP2_X  , MEN_X, REN_X, WB_X  , CSR_E} :
     0
 );
 
@@ -389,13 +395,17 @@ assign memory_wdata     = rs2_data;
 
 // CSR
 reg [WORD_LEN-1:0] csr_regfile [4098:0];
-wire [11:0] csr_addr = imm_i;
+wire [11:0] csr_addr = (
+	csr_cmd == CSR_E ? 12'h342 : 
+	imm_i
+);
 
 wire [WORD_LEN-1:0] csr_rdata = csr_regfile[csr_addr];
 wire [WORD_LEN-1:0] csr_wdata = (
 	csr_cmd == CSR_W ? op1_data :
 	csr_cmd == CSR_S ? csr_rdata | op1_data :
 	csr_cmd == CSR_C ? csr_rdata & ~op1_data :
+	csr_cmd == CSR_E ? 11 : // 11はマシンモードからのecallであることを示す
 	0
 );
 
@@ -438,6 +448,8 @@ always @(negedge rst_n or posedge clk) begin
         reg_pc <= (
 			br_flg ? br_target : 
 			jmp_flg ? alu_out :
+			// 0x305にtrap_vectorアドレスがある
+			inst_is_ecall ? csr_regfile[12'h305] :
 			reg_pc_plus4
 		);
 
