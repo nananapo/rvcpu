@@ -11,7 +11,10 @@ module Core #(
     parameter INST_SW_OPCODE    = 7'b0100011,
     parameter INST_ADD_FUNCT7   = 7'b0000000,
     parameter INST_ADD_FUNCT3   = 3'b000,
-    parameter INST_ADD_OPCODE   = 7'b0110011
+    parameter INST_ADD_OPCODE   = 7'b0110011,
+    parameter INST_SUB_FUNCT7   = 7'b0100000,
+    parameter INST_SUB_FUNCT3   = 3'b000,
+    parameter INST_SUB_OPCODE   = 7'b0110011
 ) (
     input wire clk,
     input wire rst_n,
@@ -62,12 +65,14 @@ wire [6:0] opcode = memory_inst[6:0];
 wire inst_is_lw     = (funct3 == INST_LW_FUNCT3 && opcode == INST_LW_OPCODE);
 wire inst_is_sw     = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
 wire inst_is_add    = (funct7 == INST_ADD_FUNCT7 && funct3 == INST_ADD_FUNCT3 && opcode == INST_ADD_OPCODE);
+wire inst_is_sub    = (funct7 == INST_SUB_FUNCT7 && funct3 == INST_SUB_FUNCT3 && opcode == INST_SUB_OPCODE);
 
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
     inst_is_lw  ? rs1_addr + imm_i_sext : 
     inst_is_sw  ? rs1_addr + imm_s_sext :
     inst_is_add ? rs1_data + rs2_data :
+    inst_is_sub ? rs1_data - rs2_data :
     0
 );
 
@@ -95,7 +100,7 @@ always @(negedge rst_n or posedge clk) begin
         reg_pc <= reg_pc + 4;
 
         // WB STAGE
-        if (inst_is_lw || inst_is_add) begin
+        if (inst_is_lw || inst_is_add || inst_is_sub) begin
             regfile[wb_addr] <= wb_data;
         end
 
