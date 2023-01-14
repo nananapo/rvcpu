@@ -99,7 +99,12 @@ module Core #(
     parameter INST_BLTU_OPCODE  = 7'b1100011,
 
 	parameter INST_BGEU_FUNCT3  = 3'b111,
-    parameter INST_BGEU_OPCODE  = 7'b1100011
+    parameter INST_BGEU_OPCODE  = 7'b1100011,
+
+	parameter INST_JAL_OPCODE	= 7'b1101111,
+
+	parameter INST_JALR_FUNCT3	= 3'b000,
+	parameter INST_JALR_OPCODE	= 7'b1100111
 ) (
     input   wire                clk,
     input   wire                rst_n,
