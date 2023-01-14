@@ -1,14 +1,17 @@
 module Core #(
-    parameter WORD_LEN = 32,
-    parameter REGISTER_COUNT = 32,
-    parameter REGISTER_COUNT_BIT = 5,
-    parameter IMM_I_BITWISE = 12,
-    parameter IMM_S_BITWISE = 12,
+    parameter WORD_LEN          = 32,
+    parameter REGISTER_COUNT    = 32,
+    parameter REGISTER_COUNT_BIT= 5,
+    parameter IMM_I_BITWISE     = 12,
+    parameter IMM_S_BITWISE     = 12,
 
-    parameter INST_LW_FUNCT3 = 3'b010,
-    parameter INST_LW_OPCODE = 7'b0000011,
-    parameter INST_SW_FUNCT3 = 3'b010,
-    parameter INST_SW_OPCODE = 7'b0100011
+    parameter INST_LW_FUNCT3    = 3'b010,
+    parameter INST_LW_OPCODE    = 7'b0000011,
+    parameter INST_SW_FUNCT3    = 3'b010,
+    parameter INST_SW_OPCODE    = 7'b0100011,
+    parameter INST_ADD_FUNCT7   = 7'b0000000,
+    parameter INST_ADD_FUNCT3   = 3'b000,
+    parameter INST_ADD_OPCODE   = 7'b0110011
 ) (
     input wire clk,
     input wire rst_n,
