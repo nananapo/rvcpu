@@ -82,6 +82,23 @@ module Core #(
     parameter INST_SLTIU_FUNCT3  = 3'b011,
     parameter INST_SLTIU_OPCODE  = 7'b0010011
 
+	parameter INST_BEQ_FUNCT3   = 3'b000,
+    parameter INST_BEQ_OPCODE   = 7'b1100011,
+
+	parameter INST_BNE_FUNCT3   = 3'b001,
+    parameter INST_BNE_OPCODE   = 7'b1100011,
+
+	parameter INST_BLT_FUNCT3   = 3'b100,
+    parameter INST_BLT_OPCODE   = 7'b1100011,
+
+	parameter INST_BGE_FUNCT3   = 3'b101,
+    parameter INST_BGE_OPCODE   = 7'b1100011,
+
+	parameter INST_BLTU_FUNCT3  = 3'b110,
+    parameter INST_BLTU_OPCODE  = 7'b1100011,
+
+	parameter INST_BGEU_FUNCT3  = 3'b111,
+    parameter INST_BGEU_OPCODE  = 7'b1100011
 ) (
     input   wire                clk,
     input   wire                rst_n,
