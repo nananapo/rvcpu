@@ -67,6 +67,8 @@ wire [WORD_LEN-1:0] alu_out = (
 
 // MEM STAGE
 assign memory_d_addr = alu_out;
+assign memory_wen = inst_is_sw;
+assign memory_wdata = rs2_data;
 
 // 終了判定
 assign exit = memory_i_addr == 8;
