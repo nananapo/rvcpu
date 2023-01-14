@@ -11,6 +11,8 @@ wire [WORD_LEN-1:0] reg_memory_i_addr;
 wire [WORD_LEN-1:0] reg_memory_inst;
 wire [WORD_LEN-1:0] reg_memory_d_addr;
 wire [WORD_LEN-1:0] reg_memory_rdata;
+wire reg_memory_wen;
+wire [WORD_LEN-1:0] reg_memory_wdata;
 
 wire exit;
 
@@ -20,7 +22,9 @@ Memory #(
     .i_addr(reg_memory_i_addr),
     .inst(reg_memory_inst),
     .d_addr(reg_memory_d_addr),
-    .rdata(reg_memory_rdata)
+    .rdata(reg_memory_rdata),
+    .wen(reg_memory_wen),
+    .wdata(reg_memory_wdata)
 );
 
 Core #(
