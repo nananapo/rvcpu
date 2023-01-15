@@ -4,7 +4,6 @@ module main #(
     input  wire       rst_n,
     input  wire       clk,
 
-    output reg	[5:0] led,			// 6 LEDS pin
 	output wire [WORD_LEN-1:0] gp,	// テスト用
 	output wire exit 				// テスト用
 );
@@ -41,10 +40,5 @@ Core #(
     .memory_wdata(reg_memory_wdata),
 	.gp(gp)
 );
-
-
-always @(posedge clk) begin
-    led[0] <= exit;
-end
 
 endmodule
