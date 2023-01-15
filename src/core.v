@@ -319,7 +319,41 @@ always @(negedge rst_n or posedge clk) begin
     $display("dmem.wdata: 0x%H", memory_wdata);
     $display("imm_i     : 0x%H", imm_i_sext);
 	$display("imm_j     : 0x%H", imm_j_sext);
+	$display("imm_u     : 0x%H", imm_u_shifted);
     $display("gp        : %d", gp);
+
+    $display("1  : 0x%H", regfile[1]);
+    $display("2  : 0x%H", regfile[2]);
+    $display("3  : 0x%H", regfile[3]);
+    $display("4  : 0x%H", regfile[4]);
+    $display("5  : 0x%H", regfile[5]);
+    $display("6  : 0x%H", regfile[6]);
+    $display("7  : 0x%H", regfile[7]);
+    $display("8  : 0x%H", regfile[8]);
+    $display("9  : 0x%H", regfile[9]);
+    $display("10 : 0x%H", regfile[10]);
+    $display("11 : 0x%H", regfile[11]);
+    $display("12 : 0x%H", regfile[12]);
+    $display("13 : 0x%H", regfile[13]);
+    $display("14 : 0x%H", regfile[14]);
+    $display("15 : 0x%H", regfile[15]);
+    $display("16 : 0x%H", regfile[16]);
+    $display("17 : 0x%H", regfile[17]);
+    $display("18 : 0x%H", regfile[18]);
+    $display("19 : 0x%H", regfile[19]);
+    $display("20 : 0x%H", regfile[20]);
+    $display("21 : 0x%H", regfile[21]);
+    $display("22 : 0x%H", regfile[22]);
+    $display("23 : 0x%H", regfile[23]);
+    $display("24 : 0x%H", regfile[24]);
+    $display("25 : 0x%H", regfile[25]);
+    $display("26 : 0x%H", regfile[26]);
+    $display("27 : 0x%H", regfile[27]);
+    $display("28 : 0x%H", regfile[28]);
+    $display("29 : 0x%H", regfile[29]);
+    $display("30 : 0x%H", regfile[30]);
+    $display("31 : 0x%H", regfile[31]);
+
     $display("--------");
 
 end
