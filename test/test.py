@@ -37,6 +37,8 @@ while True:
         print(e.message)
         break
 
+results = sorted(results)
+
 with open("results/result.txt", "w") as f:
     f.write("STATUS : " + str(sum(resultstatus)) + " / " + str(len(resultstatus)) + "\n")
     f.write("\n".join(results))
