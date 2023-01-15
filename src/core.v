@@ -271,7 +271,7 @@ wire [WORD_LEN-1:0] wb_data = (
 assign exit = memory_i_addr == 32'h44;
 
 
-reg firstclk = 0;
+reg inst_clk = 0;
 reg csr_clock = 0;
 
 always @(negedge rst_n or posedge clk) begin
@@ -279,13 +279,35 @@ always @(negedge rst_n or posedge clk) begin
         reg_pc <= 0;
         for (loop_initial_regfile_i = 0; loop_initial_regfile_i < REGISTER_COUNT; loop_initial_regfile_i = loop_initial_regfile_i + 1)
             regfile[loop_initial_regfile_i] <= 0;
-    end else if (!firstclk) begin
-        firstclk <= 1;
+    end else if (!inst_clk) begin
+        inst_clk <= 1;
+
+        $display("WAIT CLOCK");
+        $display("reg_pc    : 0x%H", reg_pc);
+        $display("inst      : 0x%H", memory_inst);
+        $display("rs1_addr  : %d", rs1_addr);
+        $display("rs2_addr  : %d", rs2_addr);
+        $display("wb_addr   : %d", wb_addr);
+        $display("rs1_data  : 0x%H", rs1_data);
+        $display("rs2_data  : 0x%H", rs2_data);
+        $display("wb_data   : 0x%H", wb_data);
+        $display("dmem.addr : %d", memory_d_addr);
+        $display("dmem.wen  : %d", memory_wen);
+        $display("dmem.wdata: 0x%H", memory_wdata);
+		$display("imm_i     : 0x%H", imm_i_sext);
+		$display("imm_j     : 0x%H", imm_j_sext);
+        $display("gp        : %d", gp);
+
+        $display("--------");
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;
 		csr_wen <= csr_cmd != CSR_X;
+        $display("CSR WAIT CLOCK");
+        $display("--------");
     end else if (!exit) begin
+        inst_clk <= 0;
 		csr_clock <= 0;
+        csr_wen <= 0;
 
         // WB STAGE
         if (rf_wen == REN_S) begin
