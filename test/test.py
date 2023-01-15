@@ -9,6 +9,7 @@ with open(MEMORY_V_FILENAME, "r") as f:
 from os import system
 
 results = []
+resultstatus = []
 def test(filename):
     # replace
     memory_v_test = memory_backup.replace(REPLACE_WORD, filename)
@@ -22,8 +23,10 @@ def test(filename):
         result = "".join(f.readlines())
         if "Test passed" in result:
             results.append("PASS : "+ filename)
+            resultstatus.append(True)
         else:
             results.append("FAIL : "+ filename)
+            resultstatus.append(False)
 
 while True:
     try:
@@ -35,6 +38,7 @@ while True:
         break
 
 with open("results/result.txt", "w") as f:
+    f.write("STATUS : " + str(sum(resultstatus)) + " / " + str(len(resultstatus)) + "\n")
     f.write("\n".join(results))
 
 # rollback
