@@ -24,13 +24,16 @@ module test();
 			$display("Test failed : gp(%d) is not 1", gp);
     	$finish;
 	end else begin
-		if (testclk == 100000) begin
+		if (testclk >= 100000) begin
 			$display("Test failed : Max clock exceeded");
 			$finish;
 		end else
 			testclk <= testclk + 1;
 	end
   end
+
+  initial
+	#10001 $finish;
 
   initial begin
     $dumpfile("debug.vcd");
