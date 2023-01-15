@@ -226,7 +226,7 @@ wire [WORD_LEN-1:0] alu_out = (
     exe_fun == ALU_XOR   ? op1_data ^ op2_data :
 	exe_fun == ALU_SLL   ? op1_data << op2_data[4:0] :
 	exe_fun == ALU_SRL   ? op1_data >> op2_data[4:0] :
-	exe_fun == ALU_SRA   ? op1_data >>> op2_data[4:0] :
+	exe_fun == ALU_SRA   ? $signed($signed(op1_data) >>> op2_data[4:0]):
 	exe_fun == ALU_SLT   ? ($signed(op1_data) < $signed(op2_data)) :
 	exe_fun == ALU_SLTU  ? op1_data < op2_data :
 	exe_fun == ALU_JALR  ? (op1_data + op2_data) & (~1) :
