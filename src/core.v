@@ -277,8 +277,9 @@ reg csr_clock = 0;
 always @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
         reg_pc <= 0;
-        for (loop_initial_regfile_i = 0; loop_initial_regfile_i < REGISTER_COUNT; loop_initial_regfile_i = loop_initial_regfile_i + 1)
-            regfile[loop_initial_regfile_i] <= 0;
+        inst_clk <= 0;
+        csr_clock <= 0;
+        $display("RESET");
     end else if (!inst_clk) begin
         inst_clk <= 1;
         $display("WAIT CLOCK");
