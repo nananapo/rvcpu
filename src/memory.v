@@ -16,7 +16,7 @@ reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 initial begin
     // add 1,0,0
     //inst = 32'b00000000000000000000000010110011;
-    $readmemh("../test/bin/sw.hex", mem);
+    $readmemh("../test/bin/rv32ui-p-add.hex.aligned", mem);
 end
 
 wire [13:0] i_addr_mod = (i_addr % MEMORY_SIZE) >> 2;
