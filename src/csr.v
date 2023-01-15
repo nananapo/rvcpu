@@ -14,11 +14,8 @@ module Csr #(
 
 reg [WORD_LEN-1:0] mem [REG_SIZE-1:0];
 
-
-integer loop_i;
 initial begin
-    for (loop_i = 0; loop_i < 4096; loop_i = loop_i + 1)
-        mem[loop_i] = 0;
+    $readmemh("../test/bin/csr.hex", mem);
 end
 
 
