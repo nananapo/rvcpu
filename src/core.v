@@ -7,8 +7,7 @@ module Core #(
     parameter IMM_B_BITWISE     = 12,
     parameter IMM_J_BITWISE     = 20,
     parameter IMM_U_BITWISE     = 20,
-    parameter IMM_Z_BITWISE     = 5,
-    parameter CSR_REG_SIZE      = 4096
+    parameter IMM_Z_BITWISE     = 5
 ) (
     input   wire                clk,
     input   wire                rst_n,
@@ -189,6 +188,35 @@ wire [WORD_LEN-1:0] op2_data = (
 
 
 
+// CSR
+wire [11:0] csr_addr = (
+	csr_cmd == CSR_E ? 12'h342 : 
+	imm_i
+);
+
+reg csr_wen = 0;
+wire [WORD_LEN-1:0] csr_rdata;
+wire [WORD_LEN-1:0] trap_vector_addr;
+wire [WORD_LEN-1:0] csr_wdata = (
+	csr_cmd == CSR_W ? op1_data :
+	csr_cmd == CSR_S ? csr_rdata | op1_data :
+	csr_cmd == CSR_C ? csr_rdata & ~op1_data :
+	csr_cmd == CSR_E ? 11 : // 11はマシンモードからのecallであることを示す
+	0
+);
+
+Csr csr (
+	.clk(clk),
+	.addr(csr_addr),
+	.rdata(csr_rdata),
+	.wen(csr_wen),
+	.wdata(csr_wdata),
+	.trap_vector(trap_vector_addr)
+);
+
+
+
+
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
     exe_fun == ALU_ADD   ? op1_data + op2_data :
@@ -226,40 +254,13 @@ assign memory_d_addr    = alu_out;
 assign memory_wen       = mem_wen == MEN_S;
 assign memory_wdata     = rs2_data;
 
-/*
-// CSR
-reg [WORD_LEN-1:0] csr_regfile [4096-1:0];
-/*
-initial begin
-    for (loop_initial_regfile_i = 0;
-        loop_initial_regfile_i < 4096;
-        loop_initial_regfile_i = loop_initial_regfile_i + 1)
-        csr_regfile[loop_initial_regfile_i] = 0;
-end
-*/
-
-/*
-wire [11:0] csr_addr = (
-	csr_cmd == CSR_E ? 12'h342 : 
-	imm_i
-);
-
-reg [WORD_LEN-1:0] csr_rdata;
-wire [WORD_LEN-1:0] csr_wdata = (
-	csr_cmd == CSR_W ? op1_data :
-	csr_cmd == CSR_S ? csr_rdata | op1_data :
-	csr_cmd == CSR_C ? csr_rdata & ~op1_data :
-	csr_cmd == CSR_E ? 11 : // 11はマシンモードからのecallであることを示す
-	0
-);
-*/
 
 
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
     wb_sel == WB_MEM ? memory_rdata :
 	wb_sel == WB_PC  ? reg_pc_plus4 :
-	//wb_sel == WB_CSR ? csr_rdata :
+	wb_sel == WB_CSR ? csr_rdata :
     alu_out
 );
 
@@ -271,6 +272,7 @@ assign exit = memory_i_addr == 32'h44;
 
 
 reg firstclk = 0;
+reg csr_clock = 0;
 
 always @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
@@ -279,27 +281,23 @@ always @(negedge rst_n or posedge clk) begin
             regfile[loop_initial_regfile_i] <= 0;
     end else if (!firstclk) begin
         firstclk <= 1;
+	end else if (!csr_clock && csr_cmd != CSR_X) begin
+		csr_clock <= 1;
+		csr_wen <= csr_cmd != CSR_X;
     end else if (!exit) begin
+		csr_clock <= 0;
 
         // WB STAGE
         if (rf_wen == REN_S) begin
             regfile[wb_addr] <= wb_data;
         end
 
-        reg_pc <= (
+	    reg_pc <= (
 			br_flg ? br_target : 
 			jmp_flg ? alu_out :
-			// 0x305にtrap_vectorアドレスがある
-			//inst_is_ecall ? csr_regfile[12'h305] :
+			inst_is_ecall ? trap_vector_addr :
 			reg_pc_plus4
 		);
-
-		/* CSR
-        csr_rdata <= csr_regfile[csr_addr % 4096];
-		if (csr_cmd != CSR_X) begin
-			csr_regfile[csr_addr] <= csr_wdata;
-		end
-        */
 
         $display("reg_pc    : 0x%H", reg_pc);
         $display("inst      : 0x%H", memory_inst);
