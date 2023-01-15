@@ -281,29 +281,11 @@ always @(negedge rst_n or posedge clk) begin
             regfile[loop_initial_regfile_i] <= 0;
     end else if (!inst_clk) begin
         inst_clk <= 1;
-
         $display("WAIT CLOCK");
-        $display("reg_pc    : 0x%H", reg_pc);
-        $display("inst      : 0x%H", memory_inst);
-        $display("rs1_addr  : %d", rs1_addr);
-        $display("rs2_addr  : %d", rs2_addr);
-        $display("wb_addr   : %d", wb_addr);
-        $display("rs1_data  : 0x%H", rs1_data);
-        $display("rs2_data  : 0x%H", rs2_data);
-        $display("wb_data   : 0x%H", wb_data);
-        $display("dmem.addr : %d", memory_d_addr);
-        $display("dmem.wen  : %d", memory_wen);
-        $display("dmem.wdata: 0x%H", memory_wdata);
-		$display("imm_i     : 0x%H", imm_i_sext);
-		$display("imm_j     : 0x%H", imm_j_sext);
-        $display("gp        : %d", gp);
-
-        $display("--------");
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;
 		csr_wen <= csr_cmd != CSR_X;
         $display("CSR WAIT CLOCK");
-        $display("--------");
     end else if (!exit) begin
         inst_clk <= 0;
 		csr_clock <= 0;
@@ -320,24 +302,23 @@ always @(negedge rst_n or posedge clk) begin
 			inst_is_ecall ? trap_vector_addr :
 			reg_pc_plus4
 		);
-
-        $display("reg_pc    : 0x%H", reg_pc);
-        $display("inst      : 0x%H", memory_inst);
-        $display("rs1_addr  : %d", rs1_addr);
-        $display("rs2_addr  : %d", rs2_addr);
-        $display("wb_addr   : %d", wb_addr);
-        $display("rs1_data  : 0x%H", rs1_data);
-        $display("rs2_data  : 0x%H", rs2_data);
-        $display("wb_data   : 0x%H", wb_data);
-        $display("dmem.addr : %d", memory_d_addr);
-        $display("dmem.wen  : %d", memory_wen);
-        $display("dmem.wdata: 0x%H", memory_wdata);
-		$display("imm_i     : 0x%H", imm_i_sext);
-		$display("imm_j     : 0x%H", imm_j_sext);
-        $display("gp        : %d", gp);
-
-        $display("--------");
     end
+
+    $display("reg_pc    : 0x%H", reg_pc);
+    $display("inst      : 0x%H", memory_inst);
+    $display("rs1_addr  : %d", rs1_addr);
+    $display("rs2_addr  : %d", rs2_addr);
+    $display("wb_addr   : %d", wb_addr);
+    $display("rs1_data  : 0x%H", rs1_data);
+    $display("rs2_data  : 0x%H", rs2_data);
+    $display("wb_data   : 0x%H", wb_data);
+    $display("dmem.addr : %d", memory_d_addr);
+    $display("dmem.wen  : %d", memory_wen);
+    $display("dmem.wdata: 0x%H", memory_wdata);
+    $display("imm_i     : 0x%H", imm_i_sext);
+	$display("imm_j     : 0x%H", imm_j_sext);
+    $display("gp        : %d", gp);
+    $display("--------");
 
 end
 
