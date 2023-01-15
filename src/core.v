@@ -288,6 +288,7 @@ always @(negedge rst_n or posedge clk) begin
         $display("WAIT CLOCK");
     end else if (wb_sel == WB_MEM && !mem_clock) begin
         mem_clock <= 1;
+        $display("LW WAIT CLOCK");
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;
 		csr_wen <= csr_cmd != CSR_X;
