@@ -45,7 +45,7 @@ Core #(
 
 always @(posedge clk) begin
 	led[0] <= exit;
-	led[5:1] <= gp[4:0];
+	led[5:1] <= ~{gp[0], gp[1], gp[2], gp[3], gp[4]};
 end
 
 endmodule
