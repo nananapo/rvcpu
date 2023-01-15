@@ -440,13 +440,15 @@ wire [WORD_LEN-1:0] wb_data = (
 assign exit = memory_i_addr == 32'h44;
 
 
-
+reg firstclk = 0;
 
 always @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
         reg_pc <= 0;
         for (loop_initial_regfile_i = 0; loop_initial_regfile_i < REGISTER_COUNT; loop_initial_regfile_i = loop_initial_regfile_i + 1)
             regfile[loop_initial_regfile_i] <= 0;
+    end else if (!firstclk) begin
+        firstclk <= 1;
     end else if (!exit) begin
 
         // WB STAGE
