@@ -279,6 +279,7 @@ always @(negedge rst_n or posedge clk) begin
         reg_pc <= 0;
         inst_clk <= 0;
         csr_clock <= 0;
+        regfile[3] <= 0; // gp
         $display("RESET");
     end else if (!inst_clk) begin
         inst_clk <= 1;
