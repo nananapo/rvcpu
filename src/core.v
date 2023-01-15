@@ -4,7 +4,7 @@ module Core #(
     parameter REGISTER_COUNT_BIT= 5,
     parameter IMM_I_BITWISE     = 12,
     parameter IMM_S_BITWISE     = 12,
-    parameter IMM_B_BITWISE     = 11,
+    parameter IMM_B_BITWISE     = 12,
     parameter IMM_J_BITWISE     = 20,
     parameter IMM_U_BITWISE     = 20,
     parameter IMM_Z_BITWISE     = 5,
