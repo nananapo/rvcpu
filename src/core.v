@@ -249,7 +249,6 @@ wire [2:0] funct3 = memory_inst[14:12];
 wire [7:0] funct7 = memory_inst[31:25];
 wire [6:0] opcode = memory_inst[6:0];
 
-/*
 wire inst_is_lw     = (funct3 == INST_LW_FUNCT3 && opcode == INST_LW_OPCODE);
 wire inst_is_sw     = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
 wire inst_is_add    = (funct7 == INST_ADD_FUNCT7 && funct3 == INST_ADD_FUNCT3 && opcode == INST_ADD_OPCODE);
@@ -288,12 +287,6 @@ wire inst_is_csrrsi = (funct3 == INST_CSRRSI_FUNCT3 && opcode == INST_CSRRSI_OPC
 wire inst_is_csrrc  = (funct3 == INST_CSRRC_FUNCT3 && opcode == INST_CSRRC_OPCODE);
 wire inst_is_csrrci = (funct3 == INST_CSRRCI_FUNCT3 && opcode == INST_CSRRCI_OPCODE);
 wire inst_is_ecall  = memory_inst == INST_ECALL;
-*/
-
-// これだけ必要
-wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
-wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
-wire inst_is_ecall  = memory_inst == INST_ECALL;
 
 wire [4:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
@@ -303,118 +296,8 @@ wire [0:0] rf_wen; // レジスタに書き込むか否か
 wire [3:0] wb_sel; // ライトバック先
 wire [2:0] csr_cmd;// CSR
 
-function [5 + 4 + 4 + 1 + 1 + 4 + 3 - 1:0] csignals;
-begin
-    case (opcode) 
-        INST_LW_OPCODE: 
-			csignals = {ALU_ADD  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_MEM, CSR_X};
-		INST_SW_OPCODE:
-    		csignals = {ALU_ADD  , OP1_RS1, OP2_IMS, MEN_S, REN_X, WB_X  , CSR_X};
-		INST_ADD_OPCODE:
-			case (funct3)
-				INST_ADD_FUNCT3:
-					case(funct7)
-						INST_ADD_FUNCT7:
-    						csignals = {ALU_ADD  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-						INST_SUB_FUNCT7:
-    						csignals = {ALU_ADD  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-						default: //INST_ADDI_FUNCT3
-   							csignals = {ALU_SUB  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-					endcase
-				INST_AND_FUNCT3:
-    				csignals = {ALU_AND  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_OR_FUNCT3:
-    				csignals = {ALU_OR   , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_XOR_FUNCT3:
-    				csignals = {ALU_XOR  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SLL_FUNCT3:
-					csignals = {ALU_SLL  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SRL_FUNCT3:
-					csignals = funct7 == INST_SRL_FUNCT7 ?
-								{ALU_SRL  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X} :
-								{ALU_SRA  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SLT_FUNCT3:
-					csignals = {ALU_SLT  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SLTU_FUNCT3:
-					csignals = {ALU_SLTU , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X};
-				default:
-					csignals = 0;
-			endcase
-		INST_ANDI_OPCODE:
-			case (funct3)
-				INST_ANDI_FUNCT3:
-    				csignals = {ALU_AND  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_ORI_FUNCT3:
-   		 			csignals = {ALU_OR   , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_XORI_FUNCT3:
-    				csignals = {ALU_XOR  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SLLI_FUNCT3:
-					csignals = {ALU_SLL  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SRLI_FUNCT3:
-				 	csignals = funct7 == INST_SRLI_FUNCT7 ?
-								{ALU_SRL  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X} :
-								{ALU_SRA  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SLTI_FUNCT3:
-					csignals = {ALU_SLT  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-				INST_SLTIU_FUNCT3:
-					csignals = {ALU_SLTU , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_ALU, CSR_X};
-				default:
-					csignals = 0;
-			endcase
-		INST_BEQ_OPCODE:
-			case (funct3)
-				INST_BEQ_FUNCT3:
-					csignals = {BR_BEQ   , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  , CSR_X};
-				INST_BNE_FUNCT3:
-					csignals = {BR_BNE   , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  , CSR_X};
-				INST_BLT_FUNCT3:
-					csignals = {BR_BLT   , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  , CSR_X};
-				INST_BGE_FUNCT3:
-					csignals = {BR_BGE   , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  , CSR_X};
-				INST_BLTU_FUNCT3:
-					csignals = {BR_BLTU  , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  , CSR_X};
-				INST_BGEU_FUNCT3:
-					csignals = {BR_BGEU  , OP1_RS1, OP2_RS2, MEN_X, REN_X, WB_X  , CSR_X};
-				default:
-					csignals = 0;
-			endcase
-		INST_JAL_OPCODE:
-			csignals = {ALU_ADD  , OP1_PC , OP2_IMJ, MEN_X, REN_S, WB_PC , CSR_X};
-		INST_JALR_OPCODE:
-			csignals = {ALU_JALR , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_PC , CSR_X};
-		INST_LUI_OPCODE:
-			csignals = {ALU_ADD  , OP1_X  , OP2_IMU, MEN_X, REN_S, WB_ALU, CSR_X};
-		INST_AUIPC_OPCODE:
-			csignals = {ALU_ADD  , OP1_PC , OP2_IMU, MEN_X, REN_S, WB_ALU, CSR_X};
-		INST_CSRRW_OPCODE:
-			case (funct3)
-				INST_CSRRW_FUNCT3:
-					csignals = {ALU_COPY1, OP1_RS1, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_W};
-				INST_CSRRWI_FUNCT3:
-					csignals = {ALU_COPY1, OP1_IMZ, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_W};
-				INST_CSRRS_FUNCT3:
-					csignals = {ALU_COPY1, OP1_RS1, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_S};
-				INST_CSRRSI_FUNCT3:
-					csignals = {ALU_COPY1, OP1_IMZ, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_S};
-				INST_CSRRC_FUNCT3:
-					csignals = {ALU_COPY1, OP1_RS1, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_C};
-				INST_CSRRCI_FUNCT3:
-					csignals = {ALU_COPY1, OP1_IMZ, OP2_X  , MEN_X, REN_S, WB_CSR, CSR_C};
-				default:
-					csignals = 0;
-			endcase
-        default:
-			csignals = (memory_inst == INST_ECALL) ? 
-						{ALU_X    , OP1_X  , OP2_X  , MEN_X, REN_X, WB_X  , CSR_E}:
-						0;
-    endcase
-end
-endfunction
 
-//wire [5 + 4 + 4 + 1 + 1 + 4 + 3 - 1:0] pipipi = csignals();
-
-assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = csignals();
-/*(
+assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = (
     inst_is_lw    ? {ALU_ADD  , OP1_RS1, OP2_IMI, MEN_X, REN_S, WB_MEM, CSR_X} :
     inst_is_sw    ? {ALU_ADD  , OP1_RS1, OP2_IMS, MEN_S, REN_X, WB_X  , CSR_X} :
     inst_is_add   ? {ALU_ADD  , OP1_RS1, OP2_RS2, MEN_X, REN_S, WB_ALU, CSR_X} :
@@ -455,7 +338,6 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = csignals(
 	inst_is_ecall ? {ALU_X    , OP1_X  , OP2_X  , MEN_X, REN_X, WB_X  , CSR_E} :
     0
 );
-*/
 
 assign jmp_flg = inst_is_jal || inst_is_jalr;
 
