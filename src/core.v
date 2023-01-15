@@ -395,21 +395,25 @@ assign memory_d_addr    = alu_out;
 assign memory_wen       = mem_wen == MEN_S;
 assign memory_wdata     = rs2_data;
 
+/*
 // CSR
-reg [WORD_LEN-1:0] csr_regfile [4098:0];
+reg [WORD_LEN-1:0] csr_regfile [4096-1:0];
+/*
 initial begin
     for (loop_initial_regfile_i = 0;
         loop_initial_regfile_i < 4096;
         loop_initial_regfile_i = loop_initial_regfile_i + 1)
         csr_regfile[loop_initial_regfile_i] = 0;
 end
+*/
 
+/*
 wire [11:0] csr_addr = (
 	csr_cmd == CSR_E ? 12'h342 : 
 	imm_i
 );
 
-wire [WORD_LEN-1:0] csr_rdata = csr_regfile[csr_addr];
+reg [WORD_LEN-1:0] csr_rdata;
 wire [WORD_LEN-1:0] csr_wdata = (
 	csr_cmd == CSR_W ? op1_data :
 	csr_cmd == CSR_S ? csr_rdata | op1_data :
@@ -417,14 +421,14 @@ wire [WORD_LEN-1:0] csr_wdata = (
 	csr_cmd == CSR_E ? 11 : // 11はマシンモードからのecallであることを示す
 	0
 );
-
+*/
 
 
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
     wb_sel == WB_MEM ? memory_rdata :
 	wb_sel == WB_PC  ? reg_pc_plus4 :
-	wb_sel == WB_CSR ? csr_rdata :
+	//wb_sel == WB_CSR ? csr_rdata :
     alu_out
 );
 
@@ -444,11 +448,6 @@ always @(negedge rst_n or posedge clk) begin
             regfile[loop_initial_regfile_i] <= 0;
     end else if (!exit) begin
 
-		// CSR
-		if (csr_cmd != CSR_X) begin
-			csr_regfile[csr_addr] <= csr_wdata;
-		end
-
         // WB STAGE
         if (rf_wen == REN_S) begin
             regfile[wb_addr] <= wb_data;
@@ -458,9 +457,16 @@ always @(negedge rst_n or posedge clk) begin
 			br_flg ? br_target : 
 			jmp_flg ? alu_out :
 			// 0x305にtrap_vectorアドレスがある
-			inst_is_ecall ? csr_regfile[12'h305] :
+			//inst_is_ecall ? csr_regfile[12'h305] :
 			reg_pc_plus4
 		);
+
+		/* CSR
+        csr_rdata <= csr_regfile[csr_addr % 4096];
+		if (csr_cmd != CSR_X) begin
+			csr_regfile[csr_addr] <= csr_wdata;
+		end
+        */
 
         $display("reg_pc    : 0x%H", reg_pc);
         $display("inst      : 0x%H", memory_inst);
