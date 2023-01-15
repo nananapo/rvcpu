@@ -14,7 +14,7 @@ module Memory #(
 reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 
 initial begin
-    $readmemh("../test/bin/rv32ui-p-add.hex.aligned", mem);
+    $readmemh("MEMORY_FILE_NAME", mem);
 end
 
 wire [13:0] i_addr_mod = (i_addr % MEMORY_SIZE) >> 2;
