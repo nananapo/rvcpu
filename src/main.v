@@ -18,6 +18,7 @@ wire [WORD_LEN-1:0] reg_memory_wdata;
 Memory #(
     .WORD_LEN(WORD_LEN)
 ) memory (
+    .clk(clk),
     .i_addr(reg_memory_i_addr),
     .inst(reg_memory_inst),
     .d_addr(reg_memory_d_addr),
