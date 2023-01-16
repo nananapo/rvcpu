@@ -1,3 +1,9 @@
+localparam INST_LB_FUNCT3       = 3'b000;
+localparam INST_LB_OPCODE       = 7'b0000011;
+
+localparam INST_LH_FUNCT3       = 3'b001;
+localparam INST_LH_OPCODE       = 7'b0000011;
+
 localparam INST_LW_FUNCT3		= 3'b010;
 localparam INST_LW_OPCODE		= 7'b0000011;
 

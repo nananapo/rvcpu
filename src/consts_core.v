@@ -39,9 +39,11 @@ localparam REN_S    = 1'b1;
 
 localparam WB_X     = 4'b0000;
 localparam WB_ALU   = 4'b0000;
-localparam WB_MEM   = 4'b0001;
-localparam WB_PC	= 4'b0010;
-localparam WB_CSR   = 4'b0011;
+localparam WB_MEMB  = 4'b0001;
+localparam WB_MEMH  = 4'b0010;
+localparam WB_MEMW  = 4'b0011;
+localparam WB_PC	= 4'b0100;
+localparam WB_CSR   = 4'b0101;
 
 localparam CSR_X    = 3'b000;
 localparam CSR_W    = 3'b001;
