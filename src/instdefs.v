@@ -7,6 +7,12 @@ localparam INST_LH_OPCODE       = 7'b0000011;
 localparam INST_LW_FUNCT3		= 3'b010;
 localparam INST_LW_OPCODE		= 7'b0000011;
 
+localparam INST_SB_FUNCT3		= 3'b000;
+localparam INST_SB_OPCODE		= 7'b0100011;
+
+localparam INST_SH_FUNCT3		= 3'b001;
+localparam INST_SH_OPCODE		= 7'b0100011;
+
 localparam INST_SW_FUNCT3		= 3'b010;
 localparam INST_SW_OPCODE		= 7'b0100011;
 

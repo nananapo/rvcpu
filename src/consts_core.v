@@ -23,7 +23,7 @@ localparam OP1_RS1  = 4'b0001;
 localparam OP1_PC   = 4'b0010;
 localparam OP1_IMZ  = 4'b0011;
 
-localparam OP2_RS2  = 4'b0000;
+localparam OP2_RS2W = 4'b0000;
 localparam OP2_IMI  = 4'b0001;
 localparam OP2_IMS  = 4'b0010;
 localparam OP2_IMJ  = 4'b0011;
