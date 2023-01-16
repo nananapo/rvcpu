@@ -172,7 +172,8 @@ assign jmp_flg = inst_is_jal || inst_is_jalr;
 
 wire [WORD_LEN-1:0] op1_data = (
     op1_sel == OP1_RS1 ? rs1_data :
-	op1_sel  == OP1_PC  ? reg_pc :
+	op1_sel == OP1_PC  ? reg_pc :
+    op1_sel == OP1_IMZ ? imm_z_uext :
     0
 );
 
@@ -326,6 +327,7 @@ always @(negedge rst_n or posedge clk) begin
     $display("imm_i     : 0x%H", imm_i_sext);
 	$display("imm_j     : 0x%H", imm_j_sext);
 	$display("imm_u     : 0x%H", imm_u_shifted);
+	$display("imm_z     : 0x%H", imm_z_uext);
     $display("gp        : %d", gp);
 
     $display("1  : 0x%H", regfile[1]);
