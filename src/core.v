@@ -238,7 +238,7 @@ assign br_flg = (
 	exe_fun == BR_BEQ   ? (op1_data == op2_data) :
 	exe_fun == BR_BNE   ? !(op1_data == op2_data) :
 	exe_fun == BR_BLT   ? ($signed(op1_data) < $signed(op2_data)) :
-	exe_fun == BR_BGE   ? ($signed(op1_data) < $signed(op2_data)) :
+	exe_fun == BR_BGE   ? !($signed(op1_data) < $signed(op2_data)) :
 	exe_fun == BR_BLTU  ? (op1_data < op2_data) :
 	exe_fun == BR_BGEU  ? !(op1_data < op2_data) :
 	0
