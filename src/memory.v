@@ -100,14 +100,16 @@ end
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
 wire [13:0] d_addr_shifted = (d_addr % MEMORY_SIZE) >> 2;
 
+wire [WORD_LEN-1:0] wmask_rev = {wmask[7:0], wmask[15:8], wmask[23:16], wmask[31:24]};
+
 always @(posedge clk) begin
     inst  <= {mem[i_addr_shifted][7:0], mem[i_addr_shifted][15:8], mem[i_addr_shifted][23:16], mem[i_addr_shifted][31:24]};
     rdata <= {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]};
 
     if (wen) begin
         mem[d_addr_shifted] <= (
-            ({mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]} & ~wmask) |
-            ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask)
+            ({mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]} & ~wmask_rev) |
+            ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
             );
     end
 end
