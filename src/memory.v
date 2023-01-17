@@ -98,30 +98,11 @@ initial begin
 end
 
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
-wire [13:0] da_s = (d_addr % MEMORY_SIZE) >> 2;
-wire [13:0] da_s_p = da_s + 1;
-
-
-wire [1:0] d_addr_mod4 = d_addr % 4;
+wire [13:0] d_addr_shifted = (d_addr % MEMORY_SIZE) >> 2;
 
 always @(posedge clk) begin
-    inst <= {mem[i_addr_shifted][7:0], mem[i_addr_shifted][15:8], mem[i_addr_shifted][23:16], mem[i_addr_shifted][31:24]};
-
-/*
-    $display("daddr %h(%d) -> %h -> %h", d_addr, d_addr % 4, da_s, da_s_p);
-    $display("%h, %h", mem[da_s], mem[da_s_p]);
-    $display("0: %h", {mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24]});
-    $display("1: %h", {mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16]});
-    $display("2: %h", {mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8]});
-    $display("3: %h", {mem[da_s_p][15:8], mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0]});
-*/
-
-    case (d_addr_mod4) 
-        2'b00: rdata <= {mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24]};
-        2'b01: rdata <= {mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16]};
-        2'b10: rdata <= {mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8]};
-        2'b11: rdata <= {mem[da_s_p][15:8], mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0]};
-    endcase
+    inst  <= {mem[i_addr_shifted][7:0], mem[i_addr_shifted][15:8], mem[i_addr_shifted][23:16], mem[i_addr_shifted][31:24]};
+    rdata <= {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]};
 
     if (wen) begin
         mem[da_s] <= (
