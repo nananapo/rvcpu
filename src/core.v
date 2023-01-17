@@ -263,8 +263,9 @@ assign br_target = reg_pc + imm_b_sext;
 
 
 // MEM STAGE
+reg [WORD_LEN-1:0] memory_d_addr_offset = 0;    // アドレスのオフセット
 reg [1:0] mem_clock     = 0;                // load命令で待機するクロック数を管理するフラグ
-assign memory_d_addr    = alu_out;          // データ読み出しのアドレス
+assign memory_d_addr    = alu_out + memory_d_addr_offset;// データ読み出しのアドレス
 assign memory_wen       = mem_wen == MEN_S; // メモリを書き込むかどうかのフラグ
 assign memory_wmask     = (                 // 書き込むデータのマスク
     inst_is_sb ? 32'h000000ff:
@@ -272,6 +273,7 @@ assign memory_wmask     = (                 // 書き込むデータのマスク
     32'hffffffff
 );
 assign memory_wdata     = rs2_data;         // 書き込むデータ
+reg[WORD_LEN-1:0] memory_rdata_previous;    // 前の読み込まれたデータ
 
 // load系の命令で待機しているかどうかを示す
 wire load_wait = (
@@ -288,13 +290,44 @@ wire load_wait = (
     )
 );
 
+// 今が待ちの最後のクロックかを示す
+wire load_wait_last_clock = (
+    (wb_sel == WB_MEMB || wb_sel == WB_MEMH || wb_sel == WB_MEMW) &&
+    (
+        wb_sel == WB_MEMB ? mem_clock == 2'b00 :
+        wb_sel == WB_MEMH ? (
+            memory_d_addr % 4 == 3 ? mem_clock == 2'b01 : mem_clock == 2'b00
+        ) :
+        memory_d_addr % 4 == 0 ? mem_clock == 2'b00 : mem_clock == 2'b01
+    )
+);
 
+wire [WORD_LEN-1:0] memory_b_read = (
+    memory_d_addr % 4 == 1 ? {24'b0, memory_rdata[15:8]} :
+    memory_d_addr % 4 == 2 ? {24'b0, memory_rdata[23:16]} :
+    memory_d_addr % 4 == 3 ? {24'b0, memory_rdata[31:24]} :
+    memory_rdata
+);
+
+wire [WORD_LEN-1:0] memory_h_read = (
+    memory_d_addr % 4 == 1 ? {16'b0, memory_rdata[23:8]} :
+    memory_d_addr % 4 == 2 ? {16'b0, memory_rdata[31:16]} :
+    memory_d_addr % 4 == 3 ? {16'b0, memory_rdata[7:0], memory_rdata_previous[31:24]} :
+    memory_rdata
+);
+
+wire [WORD_LEN-1:0] memory_w_read = (
+    memory_d_addr % 4 == 1 ? {memory_rdata[7:0], memory_rdata_previous[31:8]} :
+    memory_d_addr % 4 == 2 ? {memory_rdata[15:0], memory_rdata_previous[31:16]} :
+    memory_d_addr % 4 == 3 ? {memory_rdata[23:0], memory_rdata_previous[31:24]} :
+    memory_rdata
+);
 
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
-    wb_sel == WB_MEMB ? {{24{memory_rdata[7]}}, memory_rdata[7:0]} :
-    wb_sel == WB_MEMH ? {{16{memory_rdata[15]}}, memory_rdata[15:0]} :
-    wb_sel == WB_MEMW ? memory_rdata :
+    wb_sel == WB_MEMB ? {{24{memory_b_read[7]}}, memory_b_read[7:0]} :
+    wb_sel == WB_MEMH ? {{16{memory_h_read[15]}}, memory_h_read[15:0]} :
+    wb_sel == WB_MEMW ? memory_w_read :
 	wb_sel == WB_PC   ? reg_pc_plus4 :
 	wb_sel == WB_CSR  ? csr_rdata :
     alu_out
@@ -320,8 +353,11 @@ always @(negedge rst_n or posedge clk) begin
         inst_clk <= 1;
         $display("INST WAIT CLOCK %d", inst_clk);
     end else if (load_wait) begin
-        // LOADを実行 OR 待つ
+        // 待つ
         mem_clock <= mem_clock + 1;
+        if (!load_wait_last_clock)
+            memory_d_addr_offset <= memory_d_addr_offset + 4;
+        memory_rdata_previous <= memory_rdata;
         $display("LOAD WAIT CLOCK %d", mem_clock);
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;
@@ -333,6 +369,7 @@ always @(negedge rst_n or posedge clk) begin
         mem_clock <= 0;
 		csr_clock <= 0;
         csr_wen <= 0;
+        memory_d_addr_offset <= 0;
 
         // WB STAGE
         if (rf_wen == REN_S) begin
@@ -358,6 +395,11 @@ always @(negedge rst_n or posedge clk) begin
     $display("dmem.addr : %d", memory_d_addr);
     $display("dmem.wen  : %d", memory_wen);
     $display("dmem.wdata: 0x%H", memory_wdata);
+    $display("dmem.r_raw: 0x%H", memory_rdata);
+    $display("dmem.r_prv: 0x%H", memory_rdata_previous);
+    $display("dmem.r_b  : 0x%H", memory_b_read);
+    $display("dmem.r_h  : 0x%H", memory_h_read);
+    $display("dmem.r_w  : 0x%H", memory_w_read);
     $display("imm_i     : 0x%H", imm_i_sext);
 	$display("imm_j     : 0x%H", imm_j_sext);
 	$display("imm_u     : 0x%H", imm_u_shifted);

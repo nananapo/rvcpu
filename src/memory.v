@@ -115,7 +115,7 @@ always @(posedge clk) begin
 
     $display("memory.wen    : %d", wen);
     $display("memory.d_addr : %H -> %H", d_addr, d_addr_shifted);
-    $display("memory.rdata  : %H", rdata);
+    $display("memory.rdata  : %H", {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]});
 end
 
 endmodule
