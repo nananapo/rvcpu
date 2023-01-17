@@ -12,6 +12,56 @@ module Memory #(
     input wire [WORD_LEN-1:0] wdata
 );
 
+/*
+# 2023/01/17 13:10
+
+lb命令とlh命令のテストが通らない
+メモリのエンディアンとアドレスの関係がよくわからなくなったので整理
+
+アドレス| データ(アドレス)
+--|---- ---- ---- ----
+0 |0    1    2    3
+1 |4    5    6    7
+2 |8    9    10   11
+--|---- ---- ---- ----
+riscvはリトルエンディアン
+下位bitが前に来る
+つまり, 0xcafebebe, 0xdeadbeefの場合は
+--|---- ---- ---- ----
+0 |be   be   fe   ca
+4 |ef   be   ad   de
+--|---- ---- ---- ----
+になるはず
+で、アドレス0を読むと
+be be fe caを並び替えて
+ca fe be beにする
+
+じゃあ、アドレス1を読むとどうなる?
+
+並びとしては
+be fe ca efなので、
+ef ca fe beになると思う
+じゃあ、現在の実装(796fcfa06fe5d6fa8647f437dc1e0a4428a0c21d)を見る
+
+1余りの場合、
+da_s  : be be fe ca
+da_s+1: ef be ad de
+{mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24], mem[da_s_p][7:0]}
+なので、
+fe be be deになる
+ぜんぜん違うね
+
+正しくは、
+{mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16]}
+2余りの場合は
+{mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8]}
+3余りの場合は
+{mem[da_s_p][15:8], mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0]}
+
+
+*/
+
+
 reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 
 initial begin
@@ -21,7 +71,7 @@ end
 
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
 wire [13:0] da_s = (d_addr % MEMORY_SIZE) >> 2;
-wire [13:0] da_s_plus = da_s + 1;
+wire [13:0] da_s_p = da_s + 1;
 
 
 wire [1:0] d_addr_mod4 = d_addr % 4;
@@ -29,18 +79,20 @@ wire [1:0] d_addr_mod4 = d_addr % 4;
 always @(posedge clk) begin
     inst <= {mem[i_addr_shifted][7:0], mem[i_addr_shifted][15:8], mem[i_addr_shifted][23:16], mem[i_addr_shifted][31:24]};
 
-    $display("daddr %h(%d) -> %h -> %h", d_addr, d_addr % 4, da_s, da_s_plus);
+
+    $display("daddr %h(%d) -> %h -> %h", d_addr, d_addr % 4, da_s, da_s_p);
+    $display("%h, %h", mem[da_s], mem[da_s_p]);
     $display("0: %h", {mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24]});
-    $display("1: %h", {mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24], mem[da_s_plus][7:0]});
-    $display("2: %h", {mem[da_s][23:16], mem[da_s][31:24], mem[da_s_plus][7:0], mem[da_s_plus][15:8]});
-    $display("3: %h", {mem[da_s][31:24], mem[da_s_plus][7:0], mem[da_s_plus][15:8], mem[da_s_plus][23:16]});
-    
-    //rdata <= {mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24]};
+    $display("1: %h", {mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16]});
+    $display("2: %h", {mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8]});
+    $display("3: %h", {mem[da_s_p][15:8], mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0]});
+
+
     case (d_addr_mod4) 
         2'b00: rdata <= {mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24]};
-        2'b01: rdata <= {mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24], mem[da_s_plus][7:0]};
-        2'b10: rdata <= {mem[da_s][23:16], mem[da_s][31:24], mem[da_s_plus][7:0], mem[da_s_plus][15:8]};
-        2'b11: rdata <= {mem[da_s][31:24], mem[da_s_plus][7:0], mem[da_s_plus][15:8], mem[da_s_plus][23:16]};
+        2'b01: rdata <= {mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16]};
+        2'b10: rdata <= {mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8]};
+        2'b11: rdata <= {mem[da_s_p][15:8], mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0]};
     endcase
 
     if (wen) begin
