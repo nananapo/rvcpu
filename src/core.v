@@ -166,8 +166,8 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = (
 	inst_is_bgeu  ? {BR_BGEU  , OP1_RS1, OP2_RS2W, MEN_X, REN_X, WB_X   , CSR_X} :
 	inst_is_jal   ? {ALU_ADD  , OP1_PC , OP2_IMJ , MEN_X, REN_S, WB_PC  , CSR_X} :
 	inst_is_jalr  ? {ALU_JALR , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_PC  , CSR_X} :
-	inst_is_lui   ? {ALU_ADD  , OP1_X  , OP2_IMU, MEN_X, REN_S, WB_ALU , CSR_X} :
-	inst_is_auipc ? {ALU_ADD  , OP1_PC , OP2_IMU, MEN_X, REN_S, WB_ALU , CSR_X} :
+	inst_is_lui   ? {ALU_ADD  , OP1_X  , OP2_IMU , MEN_X, REN_S, WB_ALU , CSR_X} :
+	inst_is_auipc ? {ALU_ADD  , OP1_PC , OP2_IMU , MEN_X, REN_S, WB_ALU , CSR_X} :
 	inst_is_csrrw ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X, REN_S, WB_CSR , CSR_W} :
 	inst_is_csrrwi? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X, REN_S, WB_CSR , CSR_W} :
 	inst_is_csrrs ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X, REN_S, WB_CSR , CSR_S} :
