@@ -279,19 +279,20 @@ assign memory_wmask     = (                 // 書き込むデータのマスク
 assign memory_wdata     = rs2_data;         // 書き込むデータ
 reg[WORD_LEN-1:0] memory_rdata_previous;    // 前の読み込まれたデータ
 
-wire is_mem_op_byte = wb_sel == WB_MEMB || wb_sel == WB_MEMBU;
-wire is_mem_op_half = wb_sel == WB_MEMH || wb_sel == WB_MEMHU;
-wire is_mem_op_word = wb_sel == WB_MEMW;
-wire is_mem_op = (is_mem_op_byte || is_mem_op_half || is_mem_op_word);
+// load系の命令かどうかを示す
+wire is_load_op_byte = wb_sel == WB_MEMB || wb_sel == WB_MEMBU;
+wire is_load_op_half = wb_sel == WB_MEMH || wb_sel == WB_MEMHU;
+wire is_load_op_word = wb_sel == WB_MEMW;
+wire is_load_op = (is_load_op_byte || is_load_op_half || is_load_op_word);
 
 // load系の命令で待機しているかどうかを示す
 wire load_wait = (
-    is_mem_op &&
+    is_load_op &&
     (
         // LB命令は1回で読み込める
-        is_mem_op_byte ? mem_clock != 2'b01 :
+        is_load_op_byte ? mem_clock != 2'b01 :
         // LHでaddr%4=3の時2回読み込む
-        is_mem_op_half ? (
+        is_load_op_half ? (
             memory_d_addr % 4 == 3 ? mem_clock != 2'b10 : mem_clock != 2'b01
         ) :
         // LW命令は4byteアラインされていない場合は2回読む
@@ -301,10 +302,10 @@ wire load_wait = (
 
 // 今が待ちの最後のクロックかを示す
 wire load_wait_last_clock = (
-    is_mem_op &&
+    is_load_op &&
     (
-        is_mem_op_byte ? mem_clock == 2'b00 :
-        is_mem_op_half ? (
+        is_load_op_byte ? mem_clock == 2'b00 :
+        is_load_op_half ? (
             memory_d_addr % 4 == 3 ? mem_clock == 2'b01 : mem_clock == 2'b00
         ) :
         memory_d_addr % 4 == 0 ? mem_clock == 2'b00 : mem_clock == 2'b01
@@ -364,7 +365,7 @@ always @(negedge rst_n or posedge clk) begin
         inst_clk <= 1;
         $display("INST WAIT CLOCK %d", inst_clk);
     end else if (load_wait) begin
-        // 待つ
+        // LOAD命令のために待つ
         mem_clock <= mem_clock + 1;
         if (!load_wait_last_clock)
             memory_d_addr_offset <= memory_d_addr_offset + 4;
