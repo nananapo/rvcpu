@@ -290,7 +290,23 @@ assign exit = memory_i_addr == 32'h44;
 
 reg inst_clk = 0;
 reg csr_clock = 0;
-reg mem_clock = 0;
+reg [1:0] mem_clock = 0;
+
+// load系の命令で待機しているかどうかを示す
+wire load_wait = (
+    (wb_sel == WB_MEMB || wb_sel == WB_MEMH || wb_sel == WB_MEMW) &&
+    (
+        // LB命令は1回で読み込める
+        wb_sel == WB_MEMB ? mem_clock != 2'b01 :
+        // LHでaddr%4=3の時2回読み込む
+        wb_sel == WB_MEMH ? (
+            memory_d_addr % 4 == 3 ? mem_clock != 2'b10 : mem_clock != 2'b01
+        ) :
+        // LW命令は4byteアラインされていない場合は2回読む
+        memory_d_addr % 4 == 0 ? mem_clock != 2'b01 : mem_clock != 2'b10
+    )
+);
+
 
 always @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
@@ -301,11 +317,13 @@ always @(negedge rst_n or posedge clk) begin
         regfile[3] <= 0; // gp
         $display("RESET");
     end else if (inst_clk != 1'b1) begin
+        // FETCH STAGE
         inst_clk <= 1;
         $display("INST WAIT CLOCK %d", inst_clk);
-    end else if ((wb_sel == WB_MEMB || wb_sel == WB_MEMH || wb_sel == WB_MEMW) && mem_clock != 1'b1) begin
+    end else if (load_wait) begin
+        // LOADを実行 OR 待つ
         mem_clock <= mem_clock + 1;
-        $display("LW WAIT CLOCK %d", mem_clock);
+        $display("LOAD WAIT CLOCK %d", mem_clock);
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;
 		csr_wen <= csr_cmd != CSR_X;
