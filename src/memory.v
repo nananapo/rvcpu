@@ -21,8 +21,8 @@ lb命令とlh命令のテストが通らない
 アドレス| データ(アドレス)
 --|---- ---- ---- ----
 0 |0    1    2    3
-1 |4    5    6    7
-2 |8    9    10   11
+4 |4    5    6    7
+8 |8    9    10   11
 --|---- ---- ---- ----
 riscvはリトルエンディアン
 下位bitが前に来る
@@ -59,6 +59,34 @@ fe be be deになる
 {mem[da_s_p][15:8], mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0]}
 
 
+sw命令もどうにかするか
+cafebebeをアドレス4に保存する
+0 |0    1    2    3
+4 |be   be   fe   ca
+こうなる。保存する時は、
+{wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]}
+を1に保存する。
+
+じゃあアドレス3に保存すると
+0 |0    1    2    be
+4 |be   fe   ca   7
+になってほしい
+このためには、
+mem[0] = {rdata[31:8], wdata[7:0]}
+mem[1] = {wdata[15:8], wdata[23:16], wdata[31:24], rdata_p[7:0]}
+にする必要がある。
+
+アドレス2の時は
+mem[0] = {rdata[31:14], wdata[7:0], wdata[15:8]}
+mem[1] = {wdata[23:16], wdata[31:24], rdata_p[15:0]}
+アドレス1の時は
+mem[0] = {rdata[31:24], wdata[7:0], wdata[15:8], wdata[23:16]}
+mem[1] = {wdata[31:24], rdata_p[23:0]}
+
+BSRAMの推論的に、2読み込み2保存ってできたっけ？
+* 心配
+* 命令の読み込みもあるので3読み込みになる
+* 無理かもしれないしメモリをきれいなコードにしたいので、core側で2回読むようにするか
 */
 
 
@@ -79,14 +107,14 @@ wire [1:0] d_addr_mod4 = d_addr % 4;
 always @(posedge clk) begin
     inst <= {mem[i_addr_shifted][7:0], mem[i_addr_shifted][15:8], mem[i_addr_shifted][23:16], mem[i_addr_shifted][31:24]};
 
-
+/*
     $display("daddr %h(%d) -> %h -> %h", d_addr, d_addr % 4, da_s, da_s_p);
     $display("%h, %h", mem[da_s], mem[da_s_p]);
     $display("0: %h", {mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24]});
     $display("1: %h", {mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16]});
     $display("2: %h", {mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0], mem[da_s][15:8]});
     $display("3: %h", {mem[da_s_p][15:8], mem[da_s_p][23:16], mem[da_s_p][31:24], mem[da_s][7:0]});
-
+*/
 
     case (d_addr_mod4) 
         2'b00: rdata <= {mem[da_s][7:0], mem[da_s][15:8], mem[da_s][23:16], mem[da_s][31:24]};
