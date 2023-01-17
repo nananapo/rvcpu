@@ -300,17 +300,18 @@ always @(negedge rst_n or posedge clk) begin
         csr_clock <= 0;
         regfile[3] <= 0; // gp
         $display("RESET");
-    end else if (!inst_clk) begin
+    end else if (inst_clk != 1'b1) begin
         inst_clk <= 1;
-        $display("WAIT CLOCK");
-    end else if ((wb_sel == WB_MEMB || wb_sel == WB_MEMH || wb_sel == WB_MEMW) && !mem_clock) begin
-        mem_clock <= 1;
-        $display("LW WAIT CLOCK");
+        $display("INST WAIT CLOCK %d", inst_clk);
+    end else if ((wb_sel == WB_MEMB || wb_sel == WB_MEMH || wb_sel == WB_MEMW) && mem_clock != 1'b1) begin
+        mem_clock <= mem_clock + 1;
+        $display("LW WAIT CLOCK %d", mem_clock);
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;
 		csr_wen <= csr_cmd != CSR_X;
         $display("CSR WAIT CLOCK");
     end else if (!exit) begin
+        $display("WB STAGE");
         inst_clk <= 0;
         mem_clock <= 0;
 		csr_clock <= 0;
