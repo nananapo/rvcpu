@@ -112,6 +112,10 @@ always @(posedge clk) begin
             ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
             );
     end
+
+    $display("memory.wen    : %d", wen);
+    $display("memory.d_addr : %H -> %H", d_addr, d_addr_shifted);
+    $display("memory.rdata  : %H", rdata);
 end
 
 endmodule
