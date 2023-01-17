@@ -40,6 +40,7 @@ assign gp = regfile[3];
 
 
 // IF STAGE
+reg inst_clk = 0;                               // 命令フェッチ用の待機フラグ
 wire [WORD_LEN-1:0] reg_pc_plus4 = reg_pc + 4;	// pc + 4
 wire [0:0]          br_flg;						// 分岐のフラグ
 wire [WORD_LEN-1:0] br_target;					// 分岐先
@@ -199,6 +200,8 @@ wire [WORD_LEN-1:0] op2_data = (
 
 
 // CSR
+reg csr_clock = 0;  // CSR命令の時にレジスタ読み出しを待機するためのフラグ
+
 wire [11:0] csr_addr = (
 	csr_cmd == CSR_E ? 12'h342 : 
 	imm_i
@@ -260,14 +263,30 @@ assign br_target = reg_pc + imm_b_sext;
 
 
 // MEM STAGE
-assign memory_d_addr    = alu_out;
-assign memory_wen       = mem_wen == MEN_S;
-assign memory_wmask     = (
+reg [1:0] mem_clock     = 0;                // load命令で待機するクロック数を管理するフラグ
+assign memory_d_addr    = alu_out;          // データ読み出しのアドレス
+assign memory_wen       = mem_wen == MEN_S; // メモリを書き込むかどうかのフラグ
+assign memory_wmask     = (                 // 書き込むデータのマスク
     inst_is_sb ? 32'h000000ff:
     inst_is_sh ? 32'h0000ffff:
     32'hffffffff
 );
-assign memory_wdata     = rs2_data;
+assign memory_wdata     = rs2_data;         // 書き込むデータ
+
+// load系の命令で待機しているかどうかを示す
+wire load_wait = (
+    (wb_sel == WB_MEMB || wb_sel == WB_MEMH || wb_sel == WB_MEMW) &&
+    (
+        // LB命令は1回で読み込める
+        wb_sel == WB_MEMB ? mem_clock != 2'b01 :
+        // LHでaddr%4=3の時2回読み込む
+        wb_sel == WB_MEMH ? (
+            memory_d_addr % 4 == 3 ? mem_clock != 2'b10 : mem_clock != 2'b01
+        ) :
+        // LW命令は4byteアラインされていない場合は2回読む
+        memory_d_addr % 4 == 0 ? mem_clock != 2'b01 : mem_clock != 2'b10
+    )
+);
 
 
 
@@ -286,26 +305,6 @@ wire [WORD_LEN-1:0] wb_data = (
 
 // 終了判定
 assign exit = memory_i_addr == 32'h44;
-
-
-reg inst_clk = 0;
-reg csr_clock = 0;
-reg [1:0] mem_clock = 0;
-
-// load系の命令で待機しているかどうかを示す
-wire load_wait = (
-    (wb_sel == WB_MEMB || wb_sel == WB_MEMH || wb_sel == WB_MEMW) &&
-    (
-        // LB命令は1回で読み込める
-        wb_sel == WB_MEMB ? mem_clock != 2'b01 :
-        // LHでaddr%4=3の時2回読み込む
-        wb_sel == WB_MEMH ? (
-            memory_d_addr % 4 == 3 ? mem_clock != 2'b10 : mem_clock != 2'b01
-        ) :
-        // LW命令は4byteアラインされていない場合は2回読む
-        memory_d_addr % 4 == 0 ? mem_clock != 2'b01 : mem_clock != 2'b10
-    )
-);
 
 
 always @(negedge rst_n or posedge clk) begin
