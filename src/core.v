@@ -17,7 +17,7 @@ module Core #(
     output  wire [WORD_LEN-1:0] memory_d_addr,
     input   wire [WORD_LEN-1:0] memory_rdata,
     output  wire                memory_wen,
-    output  wire [1:0]          memory_wty,
+    output  wire [WORD_LEN-1:0] memory_wmask,
     output  wire [WORD_LEN-1:0] memory_wdata,
 	output	wire [WORD_LEN-1:0] gp
 );
@@ -262,10 +262,10 @@ assign br_target = reg_pc + imm_b_sext;
 // MEM STAGE
 assign memory_d_addr    = alu_out;
 assign memory_wen       = mem_wen == MEN_S;
-assign memory_wty       = (
-    inst_is_sb ? 0:
-    inst_is_sh ? 1:
-    2
+assign memory_wmask     = (
+    inst_is_sb ? 32'h000000ff:
+    inst_is_sh ? 32'h0000ffff:
+    32'hffffffff
 );
 assign memory_wdata     = rs2_data;
 

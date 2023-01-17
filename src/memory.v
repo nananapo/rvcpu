@@ -8,7 +8,7 @@ module Memory #(
     input wire [WORD_LEN-1:0] d_addr,
     output reg [WORD_LEN-1:0] rdata,
     input wire wen,
-    input wire [1:0] wty,
+    input wire [WORD_LEN-1:0] wmask,
     input wire [WORD_LEN-1:0] wdata
 );
 
@@ -93,8 +93,8 @@ BSRAMの推論的に、2読み込み2保存ってできたっけ？
 reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 
 initial begin
-    //$readmemh("MEMORY_FILE_NAME", mem);
-    $readmemh("../test/bin/lw_b.hex", mem);
+    $readmemh("MEMORY_FILE_NAME", mem);
+    //$readmemh("../test/bin/lw_b.hex", mem);
 end
 
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
@@ -105,11 +105,10 @@ always @(posedge clk) begin
     rdata <= {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]};
 
     if (wen) begin
-        mem[da_s] <= (
-            wty == 0 ? {wdata[7:0], rdata[15:8], rdata[23:16], rdata[31:24]} : 
-            wty == 1 ? {wdata[7:0], wdata[15:8], rdata[23:16], rdata[31:24]} :
-            {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]}
-        );
+        mem[d_addr_shifted] <= (
+            ({mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]} & ~wmask) |
+            ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask)
+            );
     end
 end
 
