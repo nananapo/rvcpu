@@ -271,12 +271,6 @@ reg [WORD_LEN-1:0] memory_d_addr_offset = 0;    // アドレスのオフセッ�
 reg [1:0] mem_clock     = 0;                // load命令で待機するクロック数を管理するフラグ
 assign memory_d_addr    = alu_out + memory_d_addr_offset;// データ読み出しのアドレス
 assign memory_wen       = mem_wen == MEN_S; // メモリを書き込むかどうかのフラグ
-assign memory_wmask     = (                 // 書き込むデータのマスク
-    inst_is_sb ? 32'h000000ff:
-    inst_is_sh ? 32'h0000ffff:
-    32'hffffffff
-);
-assign memory_wdata     = rs2_data;         // 書き込むデータ
 reg[WORD_LEN-1:0] memory_rdata_previous;    // 前の読み込まれたデータ
 
 // load系の命令かどうかを示す
@@ -333,6 +327,65 @@ wire [WORD_LEN-1:0] memory_w_read = (
     memory_rdata
 );
 
+
+// store系の命令で待機しているかを示す
+wire store_wait = (
+    //inst_is_sb ? 0 :
+    inst_is_sh && memory_d_addr % 4 == 3 ? mem_clock != 2'b01 :
+    inst_is_sw && memory_d_addr % 4 != 0 ? mem_clock != 2'b01 :
+    0
+);
+
+// 書き込むデータのマスク
+assign memory_wmask = (
+    mem_clock == 0 ? (
+        inst_is_sb ? (
+            memory_d_addr % 4 == 0 ? 32'h000000ff :
+            memory_d_addr % 4 == 1 ? 32'h0000ff00 :
+            memory_d_addr % 4 == 2 ? 32'h00ff0000 :
+            32'hff000000
+        ) :
+        inst_is_sh ? (
+            memory_d_addr % 4 == 0 ? 32'h0000ffff :
+            memory_d_addr % 4 == 1 ? 32'h00ffff00 :
+            memory_d_addr % 4 == 2 ? 32'hffff0000 :
+            32'hff000000
+        ) :
+        (
+            memory_d_addr % 4 == 0 ? 32'hffffffff :
+            memory_d_addr % 4 == 1 ? 32'hffffff00 :
+            memory_d_addr % 4 == 2 ? 32'hffff0000 :
+            32'hff000000
+        )
+    ) : (
+        inst_is_sh && memory_d_addr % 4 == 3 ? 32'h000000ff :
+        inst_is_sw ? (
+            memory_d_addr % 4 == 1 ? 32'h000000ff :
+            memory_d_addr % 4 == 2 ? 32'h0000ffff :
+            memory_d_addr % 4 == 3 ? 32'h00ffffff : 0
+        ) : 0
+    ) 
+);
+
+// 書き込むデータ
+assign memory_wdata = (
+    mem_clock == 0 ? (
+        memory_d_addr % 4 == 0 ? rs2_data :
+        memory_d_addr % 4 == 1 ? {rs2_data[23:0], 8'b0} :
+        memory_d_addr % 4 == 2 ? {rs2_data[15:0], 16'b0} :
+        {rs2_data[7:0], 8'b0}
+    ) : (
+        memory_d_addr % 4 == 1 ? {24'b0, rs2_data[31:24]} :
+        memory_d_addr % 4 == 2 ? {16'b0, rs2_data[31:16]} :
+        memory_d_addr % 4 == 3 ? {8'b0, rs2_data[31:8]} :
+        0
+    )
+);
+
+
+
+
+
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
     wb_sel == WB_MEMB ? {{24{memory_b_read[7]}}, memory_b_read[7:0]} :
@@ -371,6 +424,11 @@ always @(negedge rst_n or posedge clk) begin
             memory_d_addr_offset <= memory_d_addr_offset + 4;
         memory_rdata_previous <= memory_rdata;
         $display("LOAD WAIT CLOCK %d", mem_clock);
+    end else if (store_wait) begin
+        // STORE命令のために待つ
+        mem_clock <= mem_clock + 1;
+        memory_d_addr_offset <= memory_d_addr_offset + 4;
+        $display("STORE WAIT CLOCK %d", mem_clock);
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;
 		csr_wen <= csr_cmd != CSR_X;
