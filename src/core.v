@@ -19,6 +19,7 @@ module Core #(
     output  wire                memory_wen,
     output  wire [WORD_LEN-1:0] memory_wmask,
     output  wire [WORD_LEN-1:0] memory_wdata,
+    input   wire                memory_ready,
 	output	wire [WORD_LEN-1:0] gp
 );
 
@@ -270,7 +271,6 @@ assign br_target = reg_pc + imm_b_sext;
 reg [WORD_LEN-1:0] memory_d_addr_offset = 0;    // アドレスのオフセット
 reg [1:0] mem_clock     = 0;                // load命令で待機するクロック数を管理するフラグ
 assign memory_d_addr    = alu_out + memory_d_addr_offset;// データ読み出しのアドレス
-assign memory_wen       = mem_wen == MEN_S && inst_clk != 0; // メモリを書き込むかどうかのフラグ
 reg[WORD_LEN-1:0] memory_rdata_previous;    // 前の読み込まれたデータ
 
 // load系の命令かどうかを示す
@@ -330,9 +330,11 @@ wire [WORD_LEN-1:0] memory_w_read = (
 
 // store系の命令で待機しているかを示す
 wire store_wait = (
-    //inst_is_sb ? 0 :
-    inst_is_sh && memory_d_addr % 4 == 3 ? mem_clock != 2'b01 :
-    inst_is_sw && memory_d_addr % 4 != 0 ? mem_clock != 2'b01 :
+    inst_is_sb ? mem_clock != 2'b01 :
+    inst_is_sh ? mem_clock != 2'b01 :
+    inst_is_sw ? (
+        memory_d_addr % 4 != 0 ? mem_clock != 2'b01 : mem_clock == 2'b00
+    ) :
     0
 );
 
@@ -382,6 +384,7 @@ assign memory_wdata = (
     )
 );
 
+assign memory_wen = mem_wen == MEN_S && store_wait; // メモリを書き込むかどうかのフラグ
 
 
 
@@ -426,8 +429,10 @@ always @(negedge rst_n or posedge clk) begin
         $display("LOAD WAIT CLOCK %d", mem_clock);
     end else if (store_wait) begin
         // STORE命令のために待つ
-        mem_clock <= mem_clock + 1;
-        memory_d_addr_offset <= memory_d_addr_offset + 4;
+        if (memory_ready) begin
+            mem_clock <= mem_clock + 1;
+            memory_d_addr_offset <= memory_d_addr_offset + 4;
+        end
         $display("STORE WAIT CLOCK %d", mem_clock);
 	end else if (!csr_clock && csr_cmd != CSR_X) begin
 		csr_clock <= 1;

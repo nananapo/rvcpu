@@ -16,6 +16,7 @@ wire [WORD_LEN-1:0] reg_memory_rdata;
 wire reg_memory_wen;
 wire [WORD_LEN-1:0] reg_memory_wmask;
 wire [WORD_LEN-1:0] reg_memory_wdata;
+wire reg_memory_ready;
 
 Memory #(
     .WORD_LEN(WORD_LEN)
@@ -27,7 +28,8 @@ Memory #(
     .rdata(reg_memory_rdata),
     .wen(reg_memory_wen),
     .wmask(reg_memory_wmask),
-    .wdata(reg_memory_wdata)
+    .wdata(reg_memory_wdata),
+    .data_ready(reg_memory_ready)
 );
 
 Core #(
@@ -43,6 +45,7 @@ Core #(
     .memory_wen(reg_memory_wen),
     .memory_wmask(reg_memory_wmask),
     .memory_wdata(reg_memory_wdata),
+    .memory_ready(reg_memory_ready),
 	.gp(gp)
 );
 
