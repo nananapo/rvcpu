@@ -270,7 +270,7 @@ assign br_target = reg_pc + imm_b_sext;
 reg [WORD_LEN-1:0] memory_d_addr_offset = 0;    // アドレスのオフセット
 reg [1:0] mem_clock     = 0;                // load命令で待機するクロック数を管理するフラグ
 assign memory_d_addr    = alu_out + memory_d_addr_offset;// データ読み出しのアドレス
-assign memory_wen       = mem_wen == MEN_S; // メモリを書き込むかどうかのフラグ
+assign memory_wen       = mem_wen == MEN_S && inst_clk != 0; // メモリを書き込むかどうかのフラグ
 reg[WORD_LEN-1:0] memory_rdata_previous;    // 前の読み込まれたデータ
 
 // load系の命令かどうかを示す
@@ -463,7 +463,7 @@ always @(negedge rst_n or posedge clk) begin
     $display("rs2_data  : 0x%H", rs2_data);
     $display("wb_data   : 0x%H", wb_data);
     $display("dmem.addr : %d", memory_d_addr);
-    $display("dmem.wen  : %d", memory_wen);
+    $display("dmem.wen  : %d(%d)", memory_wen, mem_wen);
     $display("dmem.wdata: 0x%H", memory_wdata);
     $display("dmem.r_raw: 0x%H", memory_rdata);
     $display("dmem.r_prv: 0x%H", memory_rdata_previous);
