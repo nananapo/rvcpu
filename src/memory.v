@@ -87,6 +87,32 @@ BSRAMの推論的に、2読み込み2保存ってできたっけ？
 * 心配
 * 命令の読み込みもあるので3読み込みになる
 * 無理かもしれないしメモリをきれいなコードにしたいので、core側で2回読むようにするか
+
+
+
+--|---- ---- ---- ----
+0 |ef   be   ef   be
+--|---- ---- ---- ----
+アドレス0に00aaを格納する
+
+データは
+be ef be ef
+これを
+be ef 00 aa
+これにする
+
+wdataのマスクは
+ff ff 00 00
+wdataは
+aa 00 00 00
+元のデータは
+ef be ef be
+
+
+マスクに問題はなさそう
+みた感じ、rmaskedがビッグエンディアンみたいになってる
+0000beef -> これは 0000efbeのはずでは？
+あ、リトルエンディアンをビッグエンディアンにしてるじゃ〜ん
 */
 
 
@@ -108,13 +134,18 @@ always @(posedge clk) begin
 
     if (wen) begin
         mem[d_addr_shifted] <= (
-            ({mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]} & ~wmask_rev) |
+            ({mem[d_addr_shifted]} & ~wmask_rev) |
             ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
             );
     end
 
     $display("memory.wen    : %d", wen);
+    $display("memory.wdata  : %H", wdata);
+    $display("memory.wmask  : %H", wmask);
+    $display("memory.rmasked: %H", {mem[d_addr_shifted]} & ~wmask_rev);
+    $display("memory.wmasked: %H", {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev);
     $display("memory.d_addr : %H -> %H", d_addr, d_addr_shifted);
+    $display("memory.rdatar : %H", rdata);
     $display("memory.rdata  : %H", {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]});
 end
 
