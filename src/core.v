@@ -306,18 +306,18 @@ wire load_wait_last_clock = (
     )
 );
 
-wire [WORD_LEN-1:0] memory_b_read = (
-    memory_d_addr % 4 == 1 ? {24'b0, memory_rdata[15:8]} :
-    memory_d_addr % 4 == 2 ? {24'b0, memory_rdata[23:16]} :
-    memory_d_addr % 4 == 3 ? {24'b0, memory_rdata[31:24]} :
-    memory_rdata
+wire [7:0] memory_b_read = (
+    memory_d_addr % 4 == 1 ? memory_rdata[15:8] :
+    memory_d_addr % 4 == 2 ? memory_rdata[23:16] :
+    memory_d_addr % 4 == 3 ? memory_rdata[31:24] :
+    memory_rdata[7:0]
 );
 
-wire [WORD_LEN-1:0] memory_h_read = (
-    memory_d_addr % 4 == 1 ? {16'b0, memory_rdata[23:8]} :
-    memory_d_addr % 4 == 2 ? {16'b0, memory_rdata[31:16]} :
-    memory_d_addr % 4 == 3 ? {16'b0, memory_rdata[7:0], memory_rdata_previous[31:24]} :
-    memory_rdata
+wire [15:0] memory_h_read = (
+    memory_d_addr % 4 == 1 ? memory_rdata[23:8] :
+    memory_d_addr % 4 == 2 ? memory_rdata[31:16] :
+    memory_d_addr % 4 == 3 ? {memory_rdata[7:0], memory_rdata_previous[31:24]} :
+    memory_rdata[15:0]
 );
 
 wire [WORD_LEN-1:0] memory_w_read = (
@@ -388,10 +388,10 @@ assign memory_wdata = (
 
 // WB STAGE
 wire [WORD_LEN-1:0] wb_data = (
-    wb_sel == WB_MEMB ? {{24{memory_b_read[7]}}, memory_b_read[7:0]} :
-    wb_sel == WB_MEMBU? {24'b0, memory_b_read[7:0]} :
-    wb_sel == WB_MEMH ? {{16{memory_h_read[15]}}, memory_h_read[15:0]} :
-    wb_sel == WB_MEMHU? {16'b0, memory_h_read[15:0]} :
+    wb_sel == WB_MEMB ? {{24{memory_b_read[7]}}, memory_b_read} :
+    wb_sel == WB_MEMBU? {24'b0, memory_b_read} :
+    wb_sel == WB_MEMH ? {{16{memory_h_read[15]}}, memory_h_read} :
+    wb_sel == WB_MEMHU? {16'b0, memory_h_read} :
     wb_sel == WB_MEMW ? memory_w_read :
 	wb_sel == WB_PC   ? reg_pc_plus4 :
 	wb_sel == WB_CSR  ? csr_rdata :
