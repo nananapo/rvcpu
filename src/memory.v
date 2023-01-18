@@ -26,10 +26,11 @@ wire [13:0] d_addr_shifted = (d_addr % MEMORY_SIZE) >> 2;
 wire [WORD_LEN-1:0] wmask_rev = {wmask[7:0], wmask[15:8], wmask[23:16], wmask[31:24]};
 
 reg writeclock = 0;
-reg [WORD_LEN-1:0] rdatp;
+
+wire is_fullmask = wmask == 32'hffffffff;
 
 assign data_ready = wen && (
-    wmask == 32'hffffffff ? 1 : writeclock == 1
+    is_fullmask ? 1 : writeclock == 1
 );
 
 always @(posedge clk) begin
@@ -37,19 +38,15 @@ always @(posedge clk) begin
     rdata <= {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]};
 
     if (wen) begin
-        if (wmask == 32'hffffffff) begin
-            mem[d_addr_shifted] = {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]};
+        if (writeclock == 1 || is_fullmask) begin
+            mem[d_addr_shifted] <= (
+                is_fullmask ? {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} :
+                ({rdata[7:0], rdata[15:8], rdata[23:16], rdata[31:24]} & ~wmask_rev) |
+                ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
+            );
+            writeclock <= 0;
         end else begin
-            if (writeclock == 0) begin
-                rdatp <= {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]};
-                writeclock <= writeclock + 1;
-            end else if (writeclock == 1) begin
-                mem[d_addr_shifted] <= (
-                    ({rdatp[7:0], rdatp[15:8], rdatp[23:16], rdatp[31:24]} & ~wmask_rev) |
-                    ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
-                );
-                writeclock <= 0;
-            end
+            writeclock <= writeclock + 1;
         end
     end else begin
         writeclock <= 0;
