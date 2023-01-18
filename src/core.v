@@ -373,7 +373,7 @@ assign memory_wdata = (
         memory_d_addr % 4 == 0 ? rs2_data :
         memory_d_addr % 4 == 1 ? {rs2_data[23:0], 8'b0} :
         memory_d_addr % 4 == 2 ? {rs2_data[15:0], 16'b0} :
-        {rs2_data[7:0], 8'b0}
+        {rs2_data[7:0], 24'b0}
     ) : (
         memory_d_addr % 4 == 1 ? {24'b0, rs2_data[31:24]} :
         memory_d_addr % 4 == 2 ? {16'b0, rs2_data[31:16]} :
