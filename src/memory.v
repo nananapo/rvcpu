@@ -2,7 +2,7 @@ module Memory #(
     parameter WORD_LEN = 32,
     parameter MEMORY_SIZE = 16384,
     parameter MEMORY_MAPPED_IO_ADDR = 10240,
-    parameter MEMORY_MAPPER_IO_SIZE = 33
+    parameter MEMORY_MAPPED_IO_SIZE = 33
 ) (
     input wire clk,
     input wire [WORD_LEN-1:0] i_addr,
@@ -14,7 +14,7 @@ module Memory #(
     input wire [WORD_LEN-1:0] wdata,
     output wire data_ready,
 
-    output reg [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPER_IO_SIZE >> 2) - 1:0]
+    output reg [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPED_IO_SIZE >> 2) - 1:0]
 );
 
 reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
@@ -22,6 +22,13 @@ reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 initial begin
     $readmemh("MEMORY_FILE_NAME", mem);
     //$readmemh("../test/bin/lw_b.hex", mem);
+    memmap_io[0] = 32'h00000006;
+    memmap_io[1] = 32'h48000000;
+    memmap_io[2] = 32'h45000000;
+    memmap_io[3] = 32'h4C000000;
+    memmap_io[4] = 32'h4C000000;
+    memmap_io[5] = 32'h4F000000;
+    memmap_io[6] = 32'h0A000000;
 end
 
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
@@ -35,7 +42,7 @@ wire is_fullmask = wmask == 32'hffffffff;
 
 wire is_memory_map_range = (
     (MEMORY_MAPPED_IO_ADDR >> 2) <= d_addr_shifted && 
-    d_addr_shifted <= ((MEMORY_MAPPED_IO_ADDR >> 2) + (MEMORY_MAPPER_IO_SIZE >> 2))
+    d_addr_shifted <= ((MEMORY_MAPPED_IO_ADDR >> 2) + (MEMORY_MAPPED_IO_SIZE >> 2))
 );
 
 wire [13:0] memmap_addr = d_addr_shifted - (MEMORY_MAPPED_IO_ADDR >> 2);
