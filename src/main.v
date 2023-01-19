@@ -18,10 +18,18 @@ wire [WORD_LEN-1:0] reg_memory_wmask;
 wire [WORD_LEN-1:0] reg_memory_wdata;
 wire reg_memory_ready;
 
+wire clk9MHz;
+
+    Gowin_rPLL your_instance_name(
+        .clkout(clk9MHz), //output clkout
+        .clkin(clk) //input clkin
+    );
+
+
 Memory #(
     .WORD_LEN(WORD_LEN)
 ) memory (
-    .clk(clk),
+    .clk(clk9MHz),
     .i_addr(reg_memory_i_addr),
     .inst(reg_memory_inst),
     .d_addr(reg_memory_d_addr),
@@ -35,7 +43,7 @@ Memory #(
 Core #(
     .WORD_LEN(WORD_LEN)
 ) core (
-    .clk(clk),
+    .clk(clk9MHz),
     .rst_n(rst_n),
     .exit(exit),
     .memory_i_addr(reg_memory_i_addr),
