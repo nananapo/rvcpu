@@ -31,6 +31,8 @@ always @(posedge clk) begin
         clk9MHzCount <= clk9MHzCount + 1;
 end
 
+localparam MEMORY_MAPPER_IO_SIZE = 32;
+reg [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPER_IO_SIZE >> 2) - 1:0];
 
 Memory #(
     .WORD_LEN(WORD_LEN)
@@ -43,7 +45,8 @@ Memory #(
     .wen(reg_memory_wen),
     .wmask(reg_memory_wmask),
     .wdata(reg_memory_wdata),
-    .data_ready(reg_memory_ready)
+    .data_ready(reg_memory_ready),
+    .memmap_io(memmap_io)
 );
 
 reg [WORD_LEN-1:0] gp;
@@ -86,9 +89,10 @@ uart_tx #() utx (
 );
 
 always @(posedge clk9MHz) begin
-    if (uart_tx_ready && btn1 == 0) begin
+    if (uart_tx_ready && memmap_io[0] != 32'b0) begin
         uart_tx_start <= 1;
-        uart_tx_data <= "K";
+        uart_tx_data <= memmap_io[1][31:24];
+        memmap_io[0] <= 32'b0;
     end else begin
         uart_tx_start <= 0;
     end
