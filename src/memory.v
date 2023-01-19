@@ -1,6 +1,8 @@
 module Memory #(
     parameter WORD_LEN = 32,
-    parameter MEMORY_SIZE = 16384
+    parameter MEMORY_SIZE = 16384,
+    parameter MEMORY_MAPPED_IO_ADDR = 10240,
+    parameter MEMORY_MAPPER_IO_SIZE = 32
 ) (
     input wire clk,
     input wire [WORD_LEN-1:0] i_addr,
@@ -10,7 +12,9 @@ module Memory #(
     input wire wen,
     input wire [WORD_LEN-1:0] wmask,
     input wire [WORD_LEN-1:0] wdata,
-    output wire data_ready
+    output wire data_ready,
+
+    output reg [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPER_IO_SIZE >> 2) - 1:0]
 );
 
 reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
@@ -29,21 +33,50 @@ reg writeclock = 0;
 
 wire is_fullmask = wmask == 32'hffffffff;
 
+wire is_memory_map_range = (
+    (MEMORY_MAPPED_IO_ADDR >> 2) <= d_addr_shifted && 
+    d_addr_shifted <= ((MEMORY_MAPPED_IO_ADDR >> 2) + (MEMORY_MAPPER_IO_SIZE >> 2))
+);
+
+wire [13:0] memmap_addr = d_addr_shifted - (MEMORY_MAPPED_IO_ADDR >> 2);
+
 assign data_ready = wen && (
     is_fullmask ? 1 : writeclock == 1
 );
 
 always @(posedge clk) begin
     inst  <= {mem[i_addr_shifted][7:0], mem[i_addr_shifted][15:8], mem[i_addr_shifted][23:16], mem[i_addr_shifted][31:24]};
-    rdata <= {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]};
+
+    if (is_memory_map_range)
+        rdata <= {  
+            memmap_io[d_addr_shifted][7:0],
+            memmap_io[d_addr_shifted][15:8], 
+            memmap_io[d_addr_shifted][23:16],
+            memmap_io[d_addr_shifted][31:24]
+        };
+    else
+        rdata <= {  
+            mem[d_addr_shifted][7:0],
+            mem[d_addr_shifted][15:8], 
+            mem[d_addr_shifted][23:16],
+            mem[d_addr_shifted][31:24]
+        };
 
     if (wen) begin
         if (writeclock == 1 || is_fullmask) begin
-            mem[d_addr_shifted] <= (
-                is_fullmask ? {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} :
-                ({rdata[7:0], rdata[15:8], rdata[23:16], rdata[31:24]} & ~wmask_rev) |
-                ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
-            );
+            if (is_memory_map_range) begin
+                memmap_io[memmap_addr]  <= (
+                    is_fullmask ? {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} :
+                    ({rdata[7:0], rdata[15:8], rdata[23:16], rdata[31:24]} & ~wmask_rev) |
+                    ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
+                );
+            end else begin
+                mem[d_addr_shifted] <= (
+                    is_fullmask ? {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} :
+                    ({rdata[7:0], rdata[15:8], rdata[23:16], rdata[31:24]} & ~wmask_rev) |
+                    ({wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]} & wmask_rev)
+                );
+            end
             writeclock <= 0;
         end else begin
             writeclock <= writeclock + 1;
@@ -61,6 +94,7 @@ always @(posedge clk) begin
     $display("memory.rdatar : %H", rdata);
     $display("memory.rdata  : %H", {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]});
     $display("memory.ready  : %H", data_ready);
+    $display("memory.ismapio: %d(addr:%H)", is_memory_map_range, memmap_addr);
 end
 
 endmodule
