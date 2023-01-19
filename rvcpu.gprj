@@ -8,6 +8,7 @@
         <File path="src/consts_core.v" type="file.verilog" enable="1"/>
         <File path="src/core.v" type="file.verilog" enable="1"/>
         <File path="src/csr.v" type="file.verilog" enable="1"/>
+        <File path="src/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
         <File path="src/instdefs.v" type="file.verilog" enable="1"/>
         <File path="src/main.v" type="file.verilog" enable="1"/>
         <File path="src/memory.v" type="file.verilog" enable="1"/>
