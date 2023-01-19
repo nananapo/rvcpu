@@ -2,7 +2,7 @@ module Memory #(
     parameter WORD_LEN = 32,
     parameter MEMORY_SIZE = 16384,
     parameter MEMORY_MAPPED_IO_ADDR = 10240,
-    parameter MEMORY_MAPPER_IO_SIZE = 32
+    parameter MEMORY_MAPPER_IO_SIZE = 33
 ) (
     input wire clk,
     input wire [WORD_LEN-1:0] i_addr,

@@ -74,7 +74,16 @@ always @(posedge clk) begin
 	led[5:1] <= ~{gp[0], gp[1], gp[2], gp[3], gp[4]};
 end
 
-
+/*
+現状の問題
+* uart_txを使う時、開始したいかどうかを管理するフラグをメモリマップドioで操作したい
+* ただし、uart_txが何クロックで動くかはメモリで管理したくない
+* uart_txのフラグを1にメモリがしたら、uart_tx側(main.v)からメモリを直接変えてやったのだが、そんなことしたら合成できない(同時に代入はできないね)
+じゃあどうするか
+FIFOか！
+FIFOなのか！
+メモリより早く動けばいけるぞ
+*/
 
 reg uart_tx_start = 0;
 reg [7:0] uart_tx_data;
@@ -88,11 +97,13 @@ uart_tx #() utx (
     .ready(uart_tx_ready)
 );
 
+reg [WORD_LEN-1:0] uart_tx_fifo_index = 0;
+
 always @(posedge clk9MHz) begin
-    if (uart_tx_ready && memmap_io[0] != 32'b0) begin
+    if (uart_tx_ready && memmap_io[0] != (uart_tx_fifo_index % 32)) begin
         uart_tx_start <= 1;
-        uart_tx_data <= memmap_io[1][31:24];
-        memmap_io[0] <= 32'b0;
+        uart_tx_data <= memmap_io[1 + (uart_tx_fifo_index % 32)][31:24];
+        uart_tx_fifo_index <= (uart_tx_fifo_index + 1) % 32;
     end else begin
         uart_tx_start <= 0;
     end
