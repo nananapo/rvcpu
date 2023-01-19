@@ -405,7 +405,7 @@ wire [WORD_LEN-1:0] wb_data = (
 
 
 // 終了判定
-assign exit = memory_i_addr == 32'h44;
+assign exit = memory_i_addr == 32'h1000;
 
 
 always @(negedge rst_n or posedge clk) begin
@@ -481,38 +481,14 @@ always @(negedge rst_n or posedge clk) begin
 	$display("imm_z     : 0x%H", imm_z_uext);
     $display("gp        : %d", gp);
 
-    $display("1  : 0x%H", regfile[1]);
-    $display("2  : 0x%H", regfile[2]);
-    $display("3  : 0x%H", regfile[3]);
-    $display("4  : 0x%H", regfile[4]);
-    $display("5  : 0x%H", regfile[5]);
-    $display("6  : 0x%H", regfile[6]);
-    $display("7  : 0x%H", regfile[7]);
-    $display("8  : 0x%H", regfile[8]);
-    $display("9  : 0x%H", regfile[9]);
-    $display("10 : 0x%H", regfile[10]);
-    $display("11 : 0x%H", regfile[11]);
-    $display("12 : 0x%H", regfile[12]);
-    $display("13 : 0x%H", regfile[13]);
-    $display("14 : 0x%H", regfile[14]);
-    $display("15 : 0x%H", regfile[15]);
-    $display("16 : 0x%H", regfile[16]);
-    $display("17 : 0x%H", regfile[17]);
-    $display("18 : 0x%H", regfile[18]);
-    $display("19 : 0x%H", regfile[19]);
-    $display("20 : 0x%H", regfile[20]);
-    $display("21 : 0x%H", regfile[21]);
-    $display("22 : 0x%H", regfile[22]);
-    $display("23 : 0x%H", regfile[23]);
-    $display("24 : 0x%H", regfile[24]);
-    $display("25 : 0x%H", regfile[25]);
-    $display("26 : 0x%H", regfile[26]);
-    $display("27 : 0x%H", regfile[27]);
-    $display("28 : 0x%H", regfile[28]);
-    $display("29 : 0x%H", regfile[29]);
-    $display("30 : 0x%H", regfile[30]);
-    $display("31 : 0x%H", regfile[31]);
-
+    $display("1: 0x%H   9: 0x%H  17: 0x%H  25: 0x%H", regfile[1], regfile[9] , regfile[17], regfile[25]);
+    $display("2: 0x%H  10: 0x%H  18: 0x%H  26: 0x%H", regfile[2], regfile[10], regfile[18], regfile[26]);
+    $display("3: 0x%H  11: 0x%H  19: 0x%H  27: 0x%H", regfile[3], regfile[11], regfile[19], regfile[27]);
+    $display("4: 0x%H  12: 0x%H  20: 0x%H  28: 0x%H", regfile[4], regfile[12], regfile[20], regfile[28]);
+    $display("5: 0x%H  13: 0x%H  21: 0x%H  29: 0x%H", regfile[5], regfile[13], regfile[21], regfile[29]);
+    $display("6: 0x%H  14: 0x%H  22: 0x%H  30: 0x%H", regfile[6], regfile[14], regfile[22], regfile[30]);
+    $display("7: 0x%H  15: 0x%H  23: 0x%H  31: 0x%H", regfile[7], regfile[15], regfile[23], regfile[31]);
+    $display("8: 0x%H  16: 0x%H  24: 0x%H  ",         regfile[8], regfile[16], regfile[24]);
     $display("--------");
 
 end
