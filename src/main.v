@@ -21,12 +21,15 @@ wire [WORD_LEN-1:0] reg_memory_wmask;
 wire [WORD_LEN-1:0] reg_memory_wdata;
 wire reg_memory_ready;
 
-wire clk9MHz;
+reg [1:0] clk9MHzCount = 0;
+wire clk9MHz = clk9MHzCount == 0;
 
-    Gowin_rPLL your_instance_name(
-        .clkout(clk9MHz), //output clkout
-        .clkin(clk) //input clkin
-    );
+always @(posedge clk) begin
+    if (clk9MHzCount == 2'b10)
+        clk9MHzCount <= 0;
+    else
+        clk9MHzCount <= clk9MHzCount + 1;
+end
 
 
 Memory #(
