@@ -100,7 +100,7 @@ uart_tx #() utx (
 reg [WORD_LEN-1:0] uart_tx_fifo_index = 0;
 
 always @(posedge clk9MHz) begin
-    if (uart_tx_start == 0 && uart_tx_ready && memmap_io[0] != (uart_tx_fifo_index % 32)) begin
+    if (uart_tx_start == 0 && uart_tx_ready && (memmap_io[0] % 32) != (uart_tx_fifo_index % 32)) begin
         uart_tx_start <= 1;
         uart_tx_data <= memmap_io[1 + (uart_tx_fifo_index % 32)][31:24];
         uart_tx_fifo_index <= (uart_tx_fifo_index + 1) % 32;
