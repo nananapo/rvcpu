@@ -56,10 +56,10 @@ always @(posedge clk) begin
 
     if (is_memory_map_range)
         rdata <= {  
-            memmap_io[d_addr_shifted][7:0],
-            memmap_io[d_addr_shifted][15:8], 
-            memmap_io[d_addr_shifted][23:16],
-            memmap_io[d_addr_shifted][31:24]
+            memmap_io[memmap_addr][7:0],
+            memmap_io[memmap_addr][15:8], 
+            memmap_io[memmap_addr][23:16],
+            memmap_io[memmap_addr][31:24]
         };
     else
         rdata <= {  
