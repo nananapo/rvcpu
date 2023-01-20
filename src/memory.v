@@ -20,8 +20,8 @@ module Memory #(
 reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 
 initial begin
-    $readmemh("MEMORY_FILE_NAME", mem);
-    //$readmemh("../test/bin/lw_b.hex", mem);
+    //$readmemh("MEMORY_FILE_NAME", mem);
+    $readmemh("../test/c/test.bin.aligned", mem);
     memmap_io[0] = 32'h00000006;
     memmap_io[1] = 32'h48000000;
     memmap_io[2] = 32'h45000000;
