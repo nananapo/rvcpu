@@ -1,7 +1,17 @@
+char *str = "Hello World!";
+int strsize = 12;
+
 int main(void)
 {
-	int *mapptr = 10240;
-	int tail_p = (*mapptr + 1) % 32;
-	volatile mapptr[tail_p + 1] = 'K';
-	volatile  mapptr[0] = tail_p;
+	int *tailptr = (void *)10240;
+	int *dataptr = (void *)10241;
+
+	for (int i = 0; i < strsize; i++)
+	{
+		int dindex = (*tailptr + i) % 32;
+		dataptr[dindex] = str[i];
+	}
+	*tailptr = (*tailptr + strsize) % 32;
+
+	while (1);
 }
