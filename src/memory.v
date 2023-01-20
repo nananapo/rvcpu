@@ -23,12 +23,6 @@ initial begin
     //$readmemh("MEMORY_FILE_NAME", mem);
     $readmemh("../test/c/test.bin.aligned", mem);
     memmap_io[0] = 32'h00000000;
-    memmap_io[1] = 32'h48000000;
-    memmap_io[2] = 32'h45000000;
-    memmap_io[3] = 32'h4C000000;
-    memmap_io[4] = 32'h4C000000;
-    memmap_io[5] = 32'h4F000000;
-    memmap_io[6] = 32'h0A000000;
 end
 
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
@@ -45,7 +39,7 @@ wire is_memory_map_range = (
     d_addr_shifted <= ((MEMORY_MAPPED_IO_ADDR >> 2) + (MEMORY_MAPPED_IO_SIZE >> 2))
 );
 
-wire [13:0] memmap_addr = d_addr_shifted - (MEMORY_MAPPED_IO_ADDR >> 2);
+wire [13:0] memmap_addr = (d_addr_shifted - (MEMORY_MAPPED_IO_ADDR >> 2)) % (MEMORY_MAPPED_IO_SIZE >> 2);
 
 assign data_ready = wen && (
     is_fullmask ? 1 : writeclock == 1
