@@ -1,30 +1,29 @@
-char *str = (void *)10000;
-#define STRSIZE 12;
+#define STRSIZE 12
+#define STRPTR  ((char*)(10000))
+#define TAILPTR ((int *)(10240))
+#define DATAPTR ((int *)(10241))
 
 int main(void)
 {
-	str[0] = "H";
-	str[1] = "e";
-	str[2] = "l";
-	str[3] = "l";
-	str[4] = "o";
-	str[5] = " ";
-	str[6] = "W";
-	str[7] = "o";
-	str[8] = "r";
-	str[9] = "l";
-	str[10]= "d";
-	str[11]= "!";
-
-	int *tailptr = (void *)10240;
-	int *dataptr = (void *)10241;
+	STRPTR[0] = 'H';
+	STRPTR[1] = 'e';
+	STRPTR[2] = 'l';
+	STRPTR[3] = 'l';
+	STRPTR[4] = 'o';
+	STRPTR[5] = ' ';
+	STRPTR[6] = 'W';
+	STRPTR[7] = 'o';
+	STRPTR[8] = 'r';
+	STRPTR[9] = 'l';
+	STRPTR[10]= 'd';
+	STRPTR[11]= '!';
 
 	for (int i = 0; i < STRSIZE; i++)
 	{
-		int dindex = (*tailptr + i) % 32;
-		dataptr[dindex] = str[i];
+		int dindex = (*TAILPTR + i) % 32;
+		DATAPTR[dindex] = STRPTR[i];
 	}
-	*tailptr = (*tailptr + STRSIZE) % 32;
+	*TAILPTR = (*TAILPTR + STRSIZE) % 32;
 
 	while (1);
 }
