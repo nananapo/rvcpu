@@ -31,8 +31,8 @@ always @(posedge clk) begin
         clk9MHzCount <= clk9MHzCount + 1;
 end
 
-localparam MEMORY_MAPPED_IO_SIZE = 32;
-reg [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPED_IO_SIZE >> 2) - 1:0];
+localparam MEMORY_MAPPED_IO_SIZE = 132;
+wire [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPED_IO_SIZE >> 2) - 1:0];
 
 Memory #(
     .WORD_LEN(WORD_LEN)
@@ -74,17 +74,6 @@ always @(posedge clk) begin
 	led[5:1] <= ~{gp[0], gp[1], gp[2], gp[3], gp[4]};
 end
 
-/*
-現状の問題
-* uart_txを使う時、開始したいかどうかを管理するフラグをメモリマップドioで操作したい
-* ただし、uart_txが何クロックで動くかはメモリで管理したくない
-* uart_txのフラグを1にメモリがしたら、uart_tx側(main.v)からメモリを直接変えてやったのだが、そんなことしたら合成できない(同時に代入はできないね)
-じゃあどうするか
-FIFOか！
-FIFOなのか！
-メモリより早く動けばいけるぞ
-*/
-
 reg uart_tx_start = 0;
 reg [7:0] uart_tx_data;
 wire uart_tx_ready;
@@ -97,13 +86,22 @@ uart_tx #() utx (
     .ready(uart_tx_ready)
 );
 
+localparam FIFO_SIZE = 32;
+
 reg [WORD_LEN-1:0] uart_tx_fifo_index = 0;
 
 always @(posedge clk9MHz) begin
-    if (uart_tx_start == 0 && uart_tx_ready && (memmap_io[0] % 32) != (uart_tx_fifo_index % 32)) begin
+	$display("uart_tx.start : %d", uart_tx_start);
+	$display("uart_tx.ready : %d", uart_tx_ready);
+	$display("uart_tx.data  : %c(%H, %H)", uart_tx_data, uart_tx_data, memmap_io[1 + (uart_tx_fifo_index % FIFO_SIZE)]);
+	$display("uart_tx.tail  : %H", memmap_io[0][31:24]);
+	$display("uart_tx.tail  : %d", memmap_io[0][31:24] % FIFO_SIZE);
+	$display("uart_tx.fifo  : %d", uart_tx_fifo_index % FIFO_SIZE);
+
+    if (uart_tx_start == 0 && uart_tx_ready && (memmap_io[0][31:24] % FIFO_SIZE) != (uart_tx_fifo_index % FIFO_SIZE)) begin
         uart_tx_start <= 1;
-        uart_tx_data <= memmap_io[1 + (uart_tx_fifo_index % 32)][31:24];
-        uart_tx_fifo_index <= (uart_tx_fifo_index + 1) % 32;
+        uart_tx_data <= memmap_io[1 + (uart_tx_fifo_index % FIFO_SIZE)][31:24];
+        uart_tx_fifo_index <= (uart_tx_fifo_index + 1) % FIFO_SIZE;
     end else begin
         uart_tx_start <= 0;
     end

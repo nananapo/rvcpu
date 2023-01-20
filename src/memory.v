@@ -2,7 +2,7 @@ module Memory #(
     parameter WORD_LEN = 32,
     parameter MEMORY_SIZE = 16384,
     parameter MEMORY_MAPPED_IO_ADDR = 10240,
-    parameter MEMORY_MAPPED_IO_SIZE = 33
+    parameter MEMORY_MAPPED_IO_SIZE = 132
 ) (
     input wire clk,
     input wire [WORD_LEN-1:0] i_addr,
@@ -22,13 +22,7 @@ reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 initial begin
     //$readmemh("MEMORY_FILE_NAME", mem);
     $readmemh("../test/c/test.bin.aligned", mem);
-    memmap_io[0] = 32'h00000006;
-    memmap_io[1] = 32'h48000000;
-    memmap_io[2] = 32'h45000000;
-    memmap_io[3] = 32'h4C000000;
-    memmap_io[4] = 32'h4C000000;
-    memmap_io[5] = 32'h4F000000;
-    memmap_io[6] = 32'h0A000000;
+    memmap_io[0] = 32'h00000000;
 end
 
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
@@ -45,7 +39,7 @@ wire is_memory_map_range = (
     d_addr_shifted <= ((MEMORY_MAPPED_IO_ADDR >> 2) + (MEMORY_MAPPED_IO_SIZE >> 2))
 );
 
-wire [13:0] memmap_addr = d_addr_shifted - (MEMORY_MAPPED_IO_ADDR >> 2);
+wire [13:0] memmap_addr = (d_addr_shifted - (MEMORY_MAPPED_IO_ADDR >> 2)) % (MEMORY_MAPPED_IO_SIZE >> 2);
 
 assign data_ready = wen && (
     is_fullmask ? 1 : writeclock == 1
@@ -56,10 +50,10 @@ always @(posedge clk) begin
 
     if (is_memory_map_range)
         rdata <= {  
-            memmap_io[d_addr_shifted][7:0],
-            memmap_io[d_addr_shifted][15:8], 
-            memmap_io[d_addr_shifted][23:16],
-            memmap_io[d_addr_shifted][31:24]
+            memmap_io[memmap_addr][7:0],
+            memmap_io[memmap_addr][15:8], 
+            memmap_io[memmap_addr][23:16],
+            memmap_io[memmap_addr][31:24]
         };
     else
         rdata <= {  
@@ -101,7 +95,7 @@ always @(posedge clk) begin
     $display("memory.rdatar : %H", rdata);
     $display("memory.rdata  : %H", {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]});
     $display("memory.ready  : %H", data_ready);
-    $display("memory.ismapio: %d(addr:%H)", is_memory_map_range, memmap_addr);
+    $display("memory.ismapio: %d,%d(addr:%H)", is_memory_map_range, wen, memmap_addr);
 end
 
 endmodule

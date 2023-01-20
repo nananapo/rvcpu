@@ -39,6 +39,7 @@ always @(posedge clk) begin
                 txState <= TX_STATE_START_BIT;
                 txCounter <= 0;
                 dataCopy <= data;
+                $display("UART_TX : %d", data);
             end
         end
         TX_STATE_START_BIT: begin

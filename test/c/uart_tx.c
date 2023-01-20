@@ -1,17 +1,35 @@
-char *str = "Hello World!";
-int strsize = 12;
+#define STRSIZE 13
+#define STRPTR  ((volatile int *)(10000))
+#define TAILPTR ((volatile int *)(10240))
+#define DATAPTR ((volatile int *)(10244))
 
 int main(void)
 {
-	int *tailptr = (void *)10240;
-	int *dataptr = (void *)10241;
+start:
+	STRPTR[0] = 'H';
+	STRPTR[1] = 'e';
+	STRPTR[2] = 'l';
+	STRPTR[3] = 'l';
+	STRPTR[4] = 'o';
+	STRPTR[5] = ' ';
+	STRPTR[6] = 'W';
+	STRPTR[7] = 'o';
+	STRPTR[8] = 'r';
+	STRPTR[9] = 'l';
+	STRPTR[10]= 'd';
+	STRPTR[11]= '!';
+	STRPTR[12]= '\n';
 
-	for (int i = 0; i < strsize; i++)
+	int tail = *TAILPTR;
+
+	for (int i = 0; i < STRSIZE; i++)
 	{
-		int dindex = (*tailptr + i) % 32;
-		dataptr[dindex] = str[i];
+		int dindex = (tail + i) % 32;
+		DATAPTR[dindex] = STRPTR[i];
 	}
-	*tailptr = (*tailptr + strsize) % 32;
+	*TAILPTR = (tail + STRSIZE) % 32;
 
-	while (1);
+	int count = 0;
+	while (count++ < 1000000);
+goto start;
 }

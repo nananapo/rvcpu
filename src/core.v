@@ -31,7 +31,10 @@ reg [WORD_LEN-1:0] regfile [REGISTER_COUNT-1:0];
 // initialize regfile
 integer loop_initial_regfile_i;
 initial begin
-    for (loop_initial_regfile_i = 0;
+	regfile[0] = 0;
+	regfile[1] = 0;
+	regfile[2] = 1000;
+    for (loop_initial_regfile_i = 3;
         loop_initial_regfile_i < REGISTER_COUNT;
         loop_initial_regfile_i = loop_initial_regfile_i + 1)
         regfile[loop_initial_regfile_i] = 0;
