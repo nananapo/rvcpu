@@ -31,8 +31,8 @@ always @(posedge clk) begin
         clk9MHzCount <= clk9MHzCount + 1;
 end
 
-localparam MEMORY_MAPPED_IO_SIZE = 32;
-reg [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPED_IO_SIZE >> 2) - 1:0];
+localparam MEMORY_MAPPED_IO_SIZE = 132;
+wire [WORD_LEN-1:0] memmap_io [(MEMORY_MAPPED_IO_SIZE >> 2) - 1:0];
 
 Memory #(
     .WORD_LEN(WORD_LEN)
@@ -86,20 +86,22 @@ uart_tx #() utx (
     .ready(uart_tx_ready)
 );
 
+localparam FIFO_SIZE = 32;
+
 reg [WORD_LEN-1:0] uart_tx_fifo_index = 0;
 
 always @(posedge clk9MHz) begin
 	$display("uart_tx.start : %d", uart_tx_start);
 	$display("uart_tx.ready : %d", uart_tx_ready);
-	$display("uart_tx.data  : 0x%H", uart_tx_data);
+	$display("uart_tx.data  : %c(%H, %H)", uart_tx_data, uart_tx_data, memmap_io[1 + (uart_tx_fifo_index % FIFO_SIZE)]);
 	$display("uart_tx.tail  : %H", memmap_io[0][31:24]);
-	$display("uart_tx.tail  : %d", memmap_io[0][31:24] % 32);
-	$display("uart_tx.fifo  : %d", uart_tx_fifo_index % 32);
+	$display("uart_tx.tail  : %d", memmap_io[0][31:24] % FIFO_SIZE);
+	$display("uart_tx.fifo  : %d", uart_tx_fifo_index % FIFO_SIZE);
 
-    if (uart_tx_start == 0 && uart_tx_ready && (memmap_io[0][31:24] % 32) != (uart_tx_fifo_index % 32)) begin
+    if (uart_tx_start == 0 && uart_tx_ready && (memmap_io[0][31:24] % FIFO_SIZE) != (uart_tx_fifo_index % FIFO_SIZE)) begin
         uart_tx_start <= 1;
-        uart_tx_data <= memmap_io[1 + (uart_tx_fifo_index % 32)][31:24];
-        uart_tx_fifo_index <= (uart_tx_fifo_index + 1) % 32;
+        uart_tx_data <= memmap_io[1 + (uart_tx_fifo_index % FIFO_SIZE)][31:24];
+        uart_tx_fifo_index <= (uart_tx_fifo_index + 1) % FIFO_SIZE;
     end else begin
         uart_tx_start <= 0;
     end

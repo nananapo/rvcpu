@@ -2,7 +2,7 @@ module Memory #(
     parameter WORD_LEN = 32,
     parameter MEMORY_SIZE = 16384,
     parameter MEMORY_MAPPED_IO_ADDR = 10240,
-    parameter MEMORY_MAPPED_IO_SIZE = 33
+    parameter MEMORY_MAPPED_IO_SIZE = 132
 ) (
     input wire clk,
     input wire [WORD_LEN-1:0] i_addr,
@@ -95,7 +95,7 @@ always @(posedge clk) begin
     $display("memory.rdatar : %H", rdata);
     $display("memory.rdata  : %H", {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]});
     $display("memory.ready  : %H", data_ready);
-    $display("memory.ismapio: %d(addr:%H)", is_memory_map_range, memmap_addr);
+    $display("memory.ismapio: %d,%d(addr:%H)", is_memory_map_range, wen, memmap_addr);
 end
 
 endmodule
