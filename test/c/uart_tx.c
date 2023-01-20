@@ -1,5 +1,5 @@
 #define STRSIZE 12
-#define STRPTR  ((char*)(10000))
+#define STRPTR  ((int *)(10000))
 #define TAILPTR ((int *)(10240))
 #define DATAPTR ((int *)(10241))
 
