@@ -417,6 +417,7 @@ always @(negedge rst_n or posedge clk) begin
         inst_clk <= 0;
         mem_clock <= 0;
         csr_clock <= 0;
+        regfile[2] = 1000; // sp
         regfile[3] <= 0; // gp
         $display("RESET");
     end else if (inst_clk != 1'b1) begin
