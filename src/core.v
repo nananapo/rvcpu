@@ -12,6 +12,7 @@ module Core #(
     input   wire                clk,
     input   wire                rst_n,
     output  wire                exit,
+
     output  wire [WORD_LEN-1:0] memory_i_addr,
     input   wire [WORD_LEN-1:0] memory_inst,
     output  wire [WORD_LEN-1:0] memory_d_addr,
@@ -20,6 +21,7 @@ module Core #(
     output  wire [WORD_LEN-1:0] memory_wmask,
     output  wire [WORD_LEN-1:0] memory_wdata,
     input   wire                memory_ready,
+
 	output	wire [WORD_LEN-1:0] gp
 );
 
@@ -29,15 +31,13 @@ module Core #(
 // registers
 reg [WORD_LEN-1:0] regfile [REGISTER_COUNT-1:0];
 // initialize regfile
-integer loop_initial_regfile_i;
+integer loop_i;
 initial begin
 	regfile[0] = 0;
 	regfile[1] = 0;
 	regfile[2] = 1000;
-    for (loop_initial_regfile_i = 3;
-        loop_initial_regfile_i < REGISTER_COUNT;
-        loop_initial_regfile_i = loop_initial_regfile_i + 1)
-        regfile[loop_initial_regfile_i] = 0;
+    for (loop_i = 3; loop_i < REGISTER_COUNT; loop_i = loop_i + 1)
+        regfile[loop_i] = 0;
 end
 reg  [WORD_LEN-1:0] reg_pc = 0;					// プログラムカウンタ
 assign gp = regfile[3];
