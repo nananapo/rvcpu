@@ -43,102 +43,124 @@ reg  [WORD_LEN-1:0] reg_pc = 0;					// プログラムカウンタ
 assign gp = regfile[3];
 
 
-// IF STAGE
-reg inst_clk = 0;                               // 命令フェッチ用の待機フラグ
-wire [WORD_LEN-1:0] reg_pc_plus4 = reg_pc + 4;	// pc + 4
-wire [0:0]          br_flg;						// 分岐のフラグ
-wire [WORD_LEN-1:0] br_target;					// 分岐先
-wire [0:0]			jmp_flg;					// ジャンプのフラグ
-
-// プログラムカウンタとメモリの命令アドレスを接続
-assign memory_i_addr = reg_pc;
 
 
+// ***************************************
+// Instruction Fetch IF STAGE
+// ***************************************
+
+reg [WORD_LEN-1:0]	id_reg_pc;
+reg [WORD_LEN-1:0]	id_reg_inst;
+
+assign memory_i_addr = id_reg_pc;
+
+wire 				exe_br_flg;		// 分岐のフラグ
+wire [WORD_LEN-1:0] exe_br_target;	// 分岐先
+wire 				exe_jmp_flg;	// ジャンプのフラグ
+wire				exe_alu_out;	// 計算結果				
+
+
+
+
+
+
+
+// ***************************************
 // DECODE STAGE
-wire [REGISTER_COUNT_BIT-1:0] rs1_addr = memory_inst[19:15];
-wire [REGISTER_COUNT_BIT-1:0] rs2_addr = memory_inst[24:20];
-wire [REGISTER_COUNT_BIT-1:0] wb_addr  = memory_inst[11:7];
+// ***************************************
 
-wire [WORD_LEN-1:0] rs1_data = (rs1_addr == 0) ? 0 : regfile[rs1_addr];
-wire [WORD_LEN-1:0] rs2_data = (rs2_addr == 0) ? 0 : regfile[rs2_addr];
+wire [REGISTER_COUNT_BIT-1:0] id_rs1_addr	= id_reg_inst[19:15];
+wire [REGISTER_COUNT_BIT-1:0] id_rs2_addr	= id_reg_inst[24:20];
+wire [REGISTER_COUNT_BIT-1:0] id_wb_addr	= id_reg_inst[11:7];
 
-wire [IMM_I_BITWISE-1:0] imm_i = memory_inst[31:20];
-wire [WORD_LEN-1:0] imm_i_sext = {{WORD_LEN-IMM_I_BITWISE{imm_i[IMM_I_BITWISE-1]}}, imm_i};
+wire [WORD_LEN-1:0]		id_rs1_data			= (id_rs1_addr == 0) ? 0 : regfile[id_rs1_addr];
+wire [WORD_LEN-1:0]		id_rs2_data			= (id_rs2_addr == 0) ? 0 : regfile[id_rs2_addr];	
 
-wire [IMM_S_BITWISE-1:0] imm_s = {memory_inst[31:25], memory_inst[11:7]};
-wire [WORD_LEN-1:0] imm_s_sext = {{WORD_LEN-IMM_S_BITWISE{imm_s[IMM_S_BITWISE-1]}}, imm_s};
+wire [IMM_I_BITWISE-1:0]id_imm_i			= id_reg_inst[31:20];	
+wire [WORD_LEN-1:0]		id_imm_i_sext		= {{WORD_LEN-IMM_I_BITWISE{id_reg_inst[31]}}, id_reg_inst[31:20]};
+wire [IMM_S_BITWISE-1:0]id_imm_s			= {id_reg_inst[31:25], id_reg_inst[11:7]};
+wire [WORD_LEN-1:0]		id_imm_s_sext		= {{WORD_LEN-IMM_S_BITWISE{id_reg_inst[31]}}, {id_reg_inst[31:25], id_reg_inst[11:7]};
+wire [IMM_B_BITWISE-1:0]id_imm_b			= {id_reg_inst[31], id_reg_inst[7], id_reg_inst[30:25], id_reg_inst[11:8]};
+wire [WORD_LEN-1:0]		id_imm_b_sext		= {{WORD_LEN-IMM_B_BITWISE-1{id_reg_inst[31]}}, {id_reg_inst[31], id_reg_inst[7], id_reg_inst[30:25], id_reg_inst[11:8]}, 1'b0};
+wire [IMM_J_BITWISE-1:0]id_imm_j			= {id_reg_inst[31], id_reg_inst[19:12], id_reg_inst[20], id_reg_inst[30:21]};
+wire [WORD_LEN-1:0]		id_imm_j_sext		= {{WORD_LEN-IMM_J_BITWISE-1{id_reg_inst[31]}}, {id_reg_inst[31], id_reg_inst[19:12], id_reg_inst[20], id_reg_inst[30:21]}, 1'b0};
+wire [IMM_U_BITWISE-1:0]id_imm_u			= id_reg_inst[31:12];
+wire [WORD_LEN-1:0]		id_imm_u_shifted	= {id_reg_inst[31:12], 12'b0};
+wire [IMM_Z_BITWISE-1:0]id_imm_z			= id_reg_inst[19:15];
+wire [WORD_LEN-1:0]		id_imm_z_uext		= {27'd0, id_reg_inst[19:15]};
 
-wire [IMM_B_BITWISE-1:0] imm_b = {memory_inst[31], memory_inst[7], memory_inst[30:25], memory_inst[11:8]};
-wire [WORD_LEN-1:0] imm_b_sext = {{WORD_LEN-IMM_B_BITWISE-1{imm_b[IMM_B_BITWISE-1]}}, imm_b, 1'b0};
+wire [2:0] id_funct3 = id_reg_inst[14:12];
+wire [7:0] id_funct7 = id_reg_inst[31:25];
+wire [6:0] id_opcode = id_reg_inst[6:0]	;
 
-wire [IMM_J_BITWISE-1:0] imm_j = {memory_inst[31], memory_inst[19:12], memory_inst[20], memory_inst[30:21]};
-wire [WORD_LEN-1:0] imm_j_sext = {{WORD_LEN-IMM_J_BITWISE-1{imm_j[IMM_J_BITWISE-1]}}, imm_j, 1'b0};
 
-wire [IMM_U_BITWISE-1:0] imm_u    = memory_inst[31:12];
-wire [WORD_LEN-1:0] imm_u_shifted = {imm_u, 12'b0};
-
-wire [IMM_Z_BITWISE-1:0] imm_z = memory_inst[19:15];
-wire [WORD_LEN-1:0] imm_z_uext = {27'd0, imm_z};
-
-wire [2:0] funct3 = memory_inst[14:12];
-wire [7:0] funct7 = memory_inst[31:25];
-wire [6:0] opcode = memory_inst[6:0];
-
-wire inst_is_lb     = (funct3 == INST_LB_FUNCT3 && opcode == INST_LB_OPCODE);
-wire inst_is_lbu    = (funct3 == INST_LBU_FUNCT3 && opcode == INST_LBU_OPCODE);
-wire inst_is_lh     = (funct3 == INST_LH_FUNCT3 && opcode == INST_LH_OPCODE);
-wire inst_is_lhu    = (funct3 == INST_LHU_FUNCT3 && opcode == INST_LHU_OPCODE);
-wire inst_is_lw     = (funct3 == INST_LW_FUNCT3 && opcode == INST_LW_OPCODE);
-wire inst_is_sb     = (funct3 == INST_SB_FUNCT3 && opcode == INST_SB_OPCODE);
-wire inst_is_sh     = (funct3 == INST_SH_FUNCT3 && opcode == INST_SH_OPCODE);
-wire inst_is_sw     = (funct3 == INST_SW_FUNCT3 && opcode == INST_SW_OPCODE);
-wire inst_is_add    = (funct7 == INST_ADD_FUNCT7 && funct3 == INST_ADD_FUNCT3 && opcode == INST_ADD_OPCODE);
-wire inst_is_sub    = (funct7 == INST_SUB_FUNCT7 && funct3 == INST_SUB_FUNCT3 && opcode == INST_SUB_OPCODE);
-wire inst_is_addi   = (funct3 == INST_ADDI_FUNCT3 && opcode == INST_ADDI_OPCODE);
-wire inst_is_and    = (funct7 == INST_AND_FUNCT7 && funct3 == INST_AND_FUNCT3 && opcode == INST_AND_OPCODE);
-wire inst_is_or     = (funct7 == INST_OR_FUNCT7 && funct3 == INST_OR_FUNCT3 && opcode == INST_OR_OPCODE);
-wire inst_is_xor    = (funct7 == INST_XOR_FUNCT7 && funct3 == INST_XOR_FUNCT3 && opcode == INST_XOR_OPCODE);
-wire inst_is_andi   = (funct3 == INST_ANDI_FUNCT3 && opcode == INST_ANDI_OPCODE);
-wire inst_is_ori    = (funct3 == INST_ORI_FUNCT3 && opcode == INST_ORI_OPCODE);
-wire inst_is_xori   = (funct3 == INST_XORI_FUNCT3 && opcode == INST_XORI_OPCODE);
-wire inst_is_sll    = (funct7 == INST_SLL_FUNCT7 && funct3 == INST_SLL_FUNCT3 && opcode == INST_SLL_OPCODE);
-wire inst_is_srl    = (funct7 == INST_SRL_FUNCT7 && funct3 == INST_SRL_FUNCT3 && opcode == INST_SRL_OPCODE);
-wire inst_is_sra    = (funct7 == INST_SRA_FUNCT7 && funct3 == INST_SRA_FUNCT3 && opcode == INST_SRA_OPCODE);
-wire inst_is_slli   = (funct7 == INST_SLLI_FUNCT7 && funct3 == INST_SLLI_FUNCT3 && opcode == INST_SLLI_OPCODE);
-wire inst_is_srli   = (funct7 == INST_SRLI_FUNCT7 && funct3 == INST_SRLI_FUNCT3 && opcode == INST_SRLI_OPCODE);
-wire inst_is_srai   = (funct7 == INST_SRAI_FUNCT7 && funct3 == INST_SRAI_FUNCT3 && opcode == INST_SRAI_OPCODE);
-wire inst_is_slt    = (funct7 == INST_SLT_FUNCT7 && funct3 == INST_SLT_FUNCT3 && opcode == INST_SLT_OPCODE);
-wire inst_is_sltu   = (funct7 == INST_SLTU_FUNCT7 && funct3 == INST_SLTU_FUNCT3 && opcode == INST_SLTU_OPCODE);
-wire inst_is_slti   = (funct3 == INST_SLTI_FUNCT3 && opcode == INST_SLTI_OPCODE);
-wire inst_is_sltiu  = (funct3 == INST_SLTIU_FUNCT3 && opcode == INST_SLTIU_OPCODE);
-wire inst_is_beq    = (funct3 == INST_BEQ_FUNCT3 && opcode == INST_BEQ_OPCODE);
-wire inst_is_bne    = (funct3 == INST_BNE_FUNCT3 && opcode == INST_BNE_OPCODE);
-wire inst_is_blt    = (funct3 == INST_BLT_FUNCT3 && opcode == INST_BLT_OPCODE);
-wire inst_is_bge    = (funct3 == INST_BGE_FUNCT3 && opcode == INST_BGE_OPCODE);
-wire inst_is_bltu   = (funct3 == INST_BLTU_FUNCT3 && opcode == INST_BLTU_OPCODE);
-wire inst_is_bgeu   = (funct3 == INST_BGEU_FUNCT3 && opcode == INST_BGEU_OPCODE);
-wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
-wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
-wire inst_is_lui    = (opcode == INST_LUI_OPCODE);
-wire inst_is_auipc  = (opcode == INST_AUIPC_OPCODE);
-wire inst_is_csrrw  = (funct3 == INST_CSRRW_FUNCT3 && opcode == INST_CSRRW_OPCODE);
-wire inst_is_csrrwi = (funct3 == INST_CSRRWI_FUNCT3 && opcode == INST_CSRRWI_OPCODE);
-wire inst_is_csrrs  = (funct3 == INST_CSRRS_FUNCT3 && opcode == INST_CSRRS_OPCODE);
-wire inst_is_csrrsi = (funct3 == INST_CSRRSI_FUNCT3 && opcode == INST_CSRRSI_OPCODE);
-wire inst_is_csrrc  = (funct3 == INST_CSRRC_FUNCT3 && opcode == INST_CSRRC_OPCODE);
-wire inst_is_csrrci = (funct3 == INST_CSRRCI_FUNCT3 && opcode == INST_CSRRCI_OPCODE);
+wire inst_is_lb     = (id_funct3 == INST_LB_FUNCT3		&& id_opcode == INST_LB_OPCODE		);
+wire inst_is_lbu    = (id_funct3 == INST_LBU_FUNCT3		&& id_opcode == INST_LBU_OPCODE		);
+wire inst_is_lh     = (id_funct3 == INST_LH_FUNCT3		&& id_opcode == INST_LH_OPCODE		);
+wire inst_is_lhu    = (id_funct3 == INST_LHU_FUNCT3		&& id_opcode == INST_LHU_OPCODE		);
+wire inst_is_lw     = (id_funct3 == INST_LW_FUNCT3		&& id_opcode == INST_LW_OPCODE		);
+wire inst_is_sb     = (id_funct3 == INST_SB_FUNCT3		&& id_opcode == INST_SB_OPCODE		);
+wire inst_is_sh     = (id_funct3 == INST_SH_FUNCT3		&& id_opcode == INST_SH_OPCODE		);
+wire inst_is_sw     = (id_funct3 == INST_SW_FUNCT3		&& id_opcode == INST_SW_OPCODE		);
+wire inst_is_add    = (id_funct7 == INST_ADD_FUNCT7		&& id_funct3 == INST_ADD_FUNCT3		&& id_opcode == INST_ADD_OPCODE	);
+wire inst_is_sub    = (id_funct7 == INST_SUB_FUNCT7		&& id_funct3 == INST_SUB_FUNCT3		&& id_opcode == INST_SUB_OPCODE	);
+wire inst_is_addi   = (id_funct3 == INST_ADDI_FUNCT3	&& id_opcode == INST_ADDI_OPCODE	);
+wire inst_is_and    = (id_funct7 == INST_AND_FUNCT7		&& id_funct3 == INST_AND_FUNCT3		&& id_opcode == INST_AND_OPCODE	);
+wire inst_is_or     = (id_funct7 == INST_OR_FUNCT7		&& id_funct3 == INST_OR_FUNCT3		&& id_opcode == INST_OR_OPCODE	);
+wire inst_is_xor    = (id_funct7 == INST_XOR_FUNCT7		&& id_funct3 == INST_XOR_FUNCT3		&& id_opcode == INST_XOR_OPCODE	);
+wire inst_is_andi   = (id_funct3 == INST_ANDI_FUNCT3	&& id_opcode == INST_ANDI_OPCODE	);
+wire inst_is_ori    = (id_funct3 == INST_ORI_FUNCT3		&& id_opcode == INST_ORI_OPCODE		);
+wire inst_is_xori   = (id_funct3 == INST_XORI_FUNCT3	&& id_opcode == INST_XORI_OPCODE	);
+wire inst_is_sll    = (id_funct7 == INST_SLL_FUNCT7		&& id_funct3 == INST_SLL_FUNCT3		&& id_opcode == INST_SLL_OPCODE	);
+wire inst_is_srl    = (id_funct7 == INST_SRL_FUNCT7 	&& id_funct3 == INST_SRL_FUNCT3		&& id_opcode == INST_SRL_OPCODE	);
+wire inst_is_sra    = (id_funct7 == INST_SRA_FUNCT7		&& id_funct3 == INST_SRA_FUNCT3		&& id_opcode == INST_SRA_OPCODE	);
+wire inst_is_slli   = (id_funct7 == INST_SLLI_FUNCT7	&& id_funct3 == INST_SLLI_FUNCT3	&& id_opcode == INST_SLLI_OPCODE);
+wire inst_is_srli   = (id_funct7 == INST_SRLI_FUNCT7	&& id_funct3 == INST_SRLI_FUNCT3	&& id_opcode == INST_SRLI_OPCODE);
+wire inst_is_srai   = (id_funct7 == INST_SRAI_FUNCT7	&& id_funct3 == INST_SRAI_FUNCT3	&& id_opcode == INST_SRAI_OPCODE);
+wire inst_is_slt    = (id_funct7 == INST_SLT_FUNCT7		&& id_funct3 == INST_SLT_FUNCT3		&& id_opcode == INST_SLT_OPCODE	);
+wire inst_is_sltu   = (id_funct7 == INST_SLTU_FUNCT7	&& id_funct3 == INST_SLTU_FUNCT3	&& id_opcode == INST_SLTU_OPCODE);
+wire inst_is_slti   = (id_funct3 == INST_SLTI_FUNCT3	&& id_opcode == INST_SLTI_OPCODE	);
+wire inst_is_sltiu  = (id_funct3 == INST_SLTIU_FUNCT3	&& id_opcode == INST_SLTIU_OPCODE	);
+wire inst_is_beq    = (id_funct3 == INST_BEQ_FUNCT3		&& id_opcode == INST_BEQ_OPCODE		);
+wire inst_is_bne    = (id_funct3 == INST_BNE_FUNCT3		&& id_opcode == INST_BNE_OPCODE		);
+wire inst_is_blt    = (id_funct3 == INST_BLT_FUNCT3		&& id_opcode == INST_BLT_OPCODE		);
+wire inst_is_bge    = (id_funct3 == INST_BGE_FUNCT3		&& id_opcode == INST_BGE_OPCODE		);
+wire inst_is_bltu   = (id_funct3 == INST_BLTU_FUNCT3	&& id_opcode == INST_BLTU_OPCODE	);
+wire inst_is_bgeu   = (id_funct3 == INST_BGEU_FUNCT3	&& id_opcode == INST_BGEU_OPCODE	);
+wire inst_is_jal    = (id_opcode == INST_JAL_OPCODE		);
+wire inst_is_jalr   = (id_funct3 == INST_JALR_FUNCT3	&& id_opcode == INST_JALR_OPCODE	);
+wire inst_is_lui    = (id_opcode == INST_LUI_OPCODE		);
+wire inst_is_auipc  = (id_opcode == INST_AUIPC_OPCODE	);
+wire inst_is_csrrw  = (id_funct3 == INST_CSRRW_FUNCT3	&& id_opcode == INST_CSRRW_OPCODE	);
+wire inst_is_csrrwi = (id_funct3 == INST_CSRRWI_FUNCT3	&& id_opcode == INST_CSRRWI_OPCODE	);
+wire inst_is_csrrs  = (id_funct3 == INST_CSRRS_FUNCT3	&& id_opcode == INST_CSRRS_OPCODE	);
+wire inst_is_csrrsi = (id_funct3 == INST_CSRRSI_FUNCT3	&& id_opcode == INST_CSRRSI_OPCODE	);
+wire inst_is_csrrc  = (id_funct3 == INST_CSRRC_FUNCT3	&& id_opcode == INST_CSRRC_OPCODE	);
+wire inst_is_csrrci = (id_funct3 == INST_CSRRCI_FUNCT3	&& id_opcode == INST_CSRRCI_OPCODE	);
 wire inst_is_ecall  = memory_inst == INST_ECALL;
 
-wire [4:0] exe_fun;// ALUの計算の種類
-wire [3:0] op1_sel;// ALUで計算するデータの1項目
-wire [3:0] op2_sel;// ALUで計算するデータの2項目
-wire [0:0] mem_wen;// メモリに書き込むか否か
-wire [0:0] rf_wen; // レジスタに書き込むか否か
-wire [3:0] wb_sel; // ライトバック先
-wire [2:0] csr_cmd;// CSR
+wire [4:0] id_csignals_exe_fun;// ALUの計算の種類
+wire [3:0] id_csignals_op1_sel;// ALUで計算するデータの1項目
+wire [3:0] id_csignals_op2_sel;// ALUで計算するデータの2項目
+wire [0:0] id_csignals_mem_wen;// メモリに書き込むか否か
+wire [0:0] id_csignals_rf_wen; // レジスタに書き込むか否か
+wire [3:0] id_csignals_wb_sel; // ライトバック先
+wire [2:0] id_csignals_csr_cmd;// CSR
 
+wire [11:0]	id_csr_addr = (
+	id_csignals_csr_cmd == CSR_E ? 12'h342 : 
+	id_imm_i
+);
 
-assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = (
+assign {
+	id_csignals_exe_fun,
+	id_csignals_op1_sel,
+	id_csignals_op2_sel,
+	id_csignals_mem_wen,
+	id_csignals_rf_wen,
+	id_csignals_wb_sel,
+	id_csignals_csr_cmd
+} = (
     inst_is_lb    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMB , CSR_X} :
     inst_is_lbu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMBU, CSR_X} :
     inst_is_lh    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMH , CSR_X} :
@@ -186,42 +208,77 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = (
     0
 );
 
+reg	[WORD_LEN-1:0]	exe_reg_pc;
+reg [WORD_LEN-1:0]	exe_op1_data;
+reg [WORD_LEN-1:0]	exe_op2_data;
+reg [WORD_LEN-1:0]	exe_rs2_data;
+reg	[WORD_LEN-1:0]	exe_wb_addr;
+reg					exe_rf_wen;
+reg [4:0]			exe_exe_fun;
+reg [3:0]			exe_wb_sel;
+reg	[WORD_LEN-1:0]	exe_imm_i_sext;
+reg	[WORD_LEN-1:0]	exe_imm_s_sext;
+reg	[WORD_LEN-1:0]	exe_imm_b_sext;
+reg	[WORD_LEN-1:0]	exe_imm_u_shifted;
+reg	[WORD_LEN-1:0]	exe_imm_z_uext;
+reg [WORD_LEN-1:0]	exe_csr_addr;
+reg [2:0]			exe_csr_cmd;
+reg					exe_mem_wen;
+
+always @(posedge clk) begin
+	exe_reg_pc 		<= id_reg_pc;
+
+	exe_op1_data <= (
+		id_csignals_op1_sel == OP1_RS1 ? id_rs1_data :
+		id_csignals_op1_sel == OP1_PC  ? id_reg_pc :
+		id_csignals_op1_sel == OP1_IMZ ? id_imm_z_uext :
+		0
+	);
+
+	exe_op2_data <= (
+		id_csignals_op2_sel == OP2_RS2W ? id_rs2_data :
+		id_csignals_op2_sel == OP2_IMI  ? id_imm_i_sext :
+		id_csignals_op2_sel == OP2_IMS  ? id_imm_s_sext :
+		id_csignals_op2_sel == OP2_IMJ  ? id_imm_j_sext :
+		id_csignals_op2_sel == OP2_IMU  ? id_imm_u_shifted :
+		0
+	);
+
+	exe_rs2_data		<= id_rs2_data;
+	exe_wb_addr			<= id_wb_addr;
+	exe_rf_wen			<= id_csignals_rf_wen;
+	exe_exe_fun			<= id_csignals_exe_fun;
+	exe_wb_sel			<= id_csignals_wb_sel;
+	exe_imm_i_sext		<= id_imm_i_sext;
+	exe_imm_s_sext		<= id_imm_s_sext;
+	exe_imm_b_sext		<= id_imm_b_sext;
+	exe_imm_u_shifted	<= id_imm_u_shifted;
+	exe_imm_z_uext		<= id_imm_z_uext;
+	exe_csr_addr		<= id_csr_addr;
+	exe_csr_cmd			<= id_csignals_csr_cmd;
+end
+
 assign jmp_flg = inst_is_jal || inst_is_jalr;
 
-wire [WORD_LEN-1:0] op1_data = (
-    op1_sel == OP1_RS1 ? rs1_data :
-	op1_sel == OP1_PC  ? reg_pc :
-    op1_sel == OP1_IMZ ? imm_z_uext :
-    0
-);
-
-wire [WORD_LEN-1:0] op2_data = (
-    op2_sel == OP2_RS2W ? rs2_data :
-    op2_sel == OP2_IMI  ? imm_i_sext :
-    op2_sel == OP2_IMS  ? imm_s_sext :
-    op2_sel == OP2_IMJ  ? imm_j_sext :
-    op2_sel == OP2_IMU  ? imm_u_shifted :
-    0
-);
 
 
+
+// ***************************************
+// EXE STAGE
+// ***************************************
 
 
 // CSR
 reg csr_clock = 0;  // CSR命令の時にレジスタ読み出しを待機するためのフラグ
 
-wire [11:0] csr_addr = (
-	csr_cmd == CSR_E ? 12'h342 : 
-	imm_i
-);
 
 reg csr_wen = 0;
 wire [WORD_LEN-1:0] csr_rdata;
 wire [WORD_LEN-1:0] trap_vector_addr;
 wire [WORD_LEN-1:0] csr_wdata = (
-	csr_cmd == CSR_W ? op1_data :
-	csr_cmd == CSR_S ? csr_rdata | op1_data :
-	csr_cmd == CSR_C ? csr_rdata & ~op1_data :
+	csr_cmd == CSR_W ? exe_op1_data :
+	csr_cmd == CSR_S ? csr_rdata | exe_op1_data :
+	csr_cmd == CSR_C ? csr_rdata & ~exe_op1_data :
 	csr_cmd == CSR_E ? 11 : // 11はマシンモードからのecallであることを示す
 	0
 );
@@ -240,32 +297,32 @@ Csr csr (
 
 // EX STAGE
 wire [WORD_LEN-1:0] alu_out = (
-    exe_fun == ALU_ADD   ? op1_data + op2_data :
-    exe_fun == ALU_SUB   ? op1_data - op2_data :
-    exe_fun == ALU_AND   ? op1_data & op2_data :
-    exe_fun == ALU_OR    ? op1_data | op2_data :
-    exe_fun == ALU_XOR   ? op1_data ^ op2_data :
-	exe_fun == ALU_SLL   ? op1_data << op2_data[4:0] :
-	exe_fun == ALU_SRL   ? op1_data >> op2_data[4:0] :
-	exe_fun == ALU_SRA   ? $signed($signed(op1_data) >>> op2_data[4:0]):
-	exe_fun == ALU_SLT   ? ($signed(op1_data) < $signed(op2_data)) :
-	exe_fun == ALU_SLTU  ? op1_data < op2_data :
-	exe_fun == ALU_JALR  ? (op1_data + op2_data) & (~1) :
-	exe_fun == ALU_COPY1 ? op1_data :
+    exe_fun == ALU_ADD   ? exe_op1_data + exe_op2_data :
+    exe_fun == ALU_SUB   ? exe_op1_data - exe_op2_data :
+    exe_fun == ALU_AND   ? exe_op1_data & exe_op2_data :
+    exe_fun == ALU_OR    ? exe_op1_data | exe_op2_data :
+    exe_fun == ALU_XOR   ? exe_op1_data ^ exe_op2_data :
+	exe_fun == ALU_SLL   ? exe_op1_data << exe_op2_data[4:0] :
+	exe_fun == ALU_SRL   ? exe_op1_data >> exe_op2_data[4:0] :
+	exe_fun == ALU_SRA   ? $signed($signed(exe_op1_data) >>> exe_op2_data[4:0]):
+	exe_fun == ALU_SLT   ? ($signed(exe_op1_data) < $signed(exe_op2_data)) :
+	exe_fun == ALU_SLTU  ? exe_op1_data < exe_op2_data :
+	exe_fun == ALU_JALR  ? (exe_op1_data + exe_op2_data) & (~1) :
+	exe_fun == ALU_COPY1 ? exe_op1_data :
     0
 );
 
-assign br_flg = (
-	exe_fun == BR_BEQ   ? (op1_data == op2_data) :
-	exe_fun == BR_BNE   ? !(op1_data == op2_data) :
-	exe_fun == BR_BLT   ? ($signed(op1_data) < $signed(op2_data)) :
-	exe_fun == BR_BGE   ? !($signed(op1_data) < $signed(op2_data)) :
-	exe_fun == BR_BLTU  ? (op1_data < op2_data) :
-	exe_fun == BR_BGEU  ? !(op1_data < op2_data) :
+assign exe_br_flg = (
+	exe_fun == BR_BEQ   ? (exe_op1_data == exe_op2_data) :
+	exe_fun == BR_BNE   ? !(exe_op1_data == exe_op2_data) :
+	exe_fun == BR_BLT   ? ($signed(exe_op1_data) < $signed(exe_op2_data)) :
+	exe_fun == BR_BGE   ? !($signed(exe_op1_data) < $signed(exe_op2_data)) :
+	exe_fun == BR_BLTU  ? (exe_op1_data < exe_op2_data) :
+	exe_fun == BR_BGEU  ? !(exe_op1_data < exe_op2_data) :
 	0
 );
 
-assign br_target = reg_pc + imm_b_sext;
+assign exe_br_target = exe_reg_pc + exe_imm_b_sext;
 
 
 
