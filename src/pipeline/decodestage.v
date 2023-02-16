@@ -16,12 +16,13 @@ module DecodeStage
     output reg [31:0] imm_z_uext,
 
     // csignals
-    output reg [4:0]  exe_fun,   // ALUの計算の種類
+    output reg [4:0]  exe_fun,  // ALUの計算の種類
     output reg [31:0] op1_data, // ALU
     output reg [31:0] op2_data, // ALU
-    output reg [0:0]  mem_wen,   // メモリに書き込むか否か
-    output reg [0:0]  rf_wen,    // レジスタに書き込むか否か
-    output reg [3:0]  wb_sel,    // ライトバック先
+    output reg [0:0]  mem_wen,  // メモリに書き込むか否か
+    output reg [0:0]  rf_wen,   // レジスタに書き込むか否か
+    output reg [3:0]  wb_sel,   // ライトバック先
+	output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
     output reg [2:0]  csr_cmd,  // CSR
     output reg 	      jmp_flg   // ジャンプ命令かのフラグ
 );
@@ -149,9 +150,9 @@ assign {wire_exe_fun, wire_op1_sel, wire_op2_sel, wire_mem_wen, wire_rf_wen, wir
     0
 );
 
-wire [4:0] rs1_addr = inst[19:15];
-wire [4:0] rs2_addr = inst[24:20];
-wire [4:0] wb_addr  = inst[11:7];
+wire [4:0] wire_rs1_addr = inst[19:15];
+wire [4:0] wire_rs2_addr = inst[24:20];
+wire [4:0] wire_wb_addr  = inst[11:7];
 
 always @(posedge clk) begin
     imm_i_sext      <= wire_imm_i_sext;
@@ -162,14 +163,14 @@ always @(posedge clk) begin
     imm_z_uext      <= wire_imm_z_uext;
 
     op1_data <= (
-        wire_op1_sel == OP1_RS1 ? (rs1_addr == 0) ? 0 : regfile[rs1_addr] :
+        wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
         wire_op1_sel == OP1_PC  ? reg_pc :
         wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
         0
     );
 
     op2_data <= (
-        wire_op2_sel == OP2_RS2W ? (rs2_addr == 0) ? 0 : regfile[rs2_addr] :
+        wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
         wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
         wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :
         wire_op2_sel == OP2_IMJ  ? wire_imm_j_sext :
@@ -183,7 +184,17 @@ always @(posedge clk) begin
     mem_wen <= wire_mem_wen;
     rf_wen  <= wire_rf_wen;
     wb_sel  <= wire_wb_sel;
+	wb_addr <= wire_wb_addr;
     csr_cmd <= wire_csr_cmd;
+	
+	$display("DECODE STAGE-------------");
+    $display("reg_pc    : 0x%H", reg_pc);
+    $display("inst      : 0x%H", inst);
+    $display("rs1_addr  : %d", wire_rs1_addr);
+    $display("rs2_addr  : %d", wire_rs2_addr);
+    $display("wb_addr   : %d", wire_wb_addr);
+    $display("rs1_data  : 0x%H", op1_data);
+    $display("rs2_data  : 0x%H", op2_data);
 end
 
 endmodule
