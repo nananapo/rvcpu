@@ -129,6 +129,8 @@ wire inst_is_csrrc  = (funct3 == INST_CSRRC_FUNCT3 && opcode == INST_CSRRC_OPCOD
 wire inst_is_csrrci = (funct3 == INST_CSRRCI_FUNCT3 && opcode == INST_CSRRCI_OPCODE);
 wire inst_is_ecall  = memory_inst == INST_ECALL;
 
+wire inst_is_libc_isalpha   = (funct7 == INST_LIBC_ISALPHA_FUNCT7 && funct3 == INST_LIBC_ISALPHA_FUNCT3 && opcode == INST_LIBC_ISALPHA_OPCODE);
+
 wire [4:0] exe_fun;// ALUの計算の種類
 wire [3:0] op1_sel;// ALUで計算するデータの1項目
 wire [3:0] op2_sel;// ALUで計算するデータの2項目
@@ -183,6 +185,9 @@ assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = (
 	inst_is_csrrc ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_C} :
 	inst_is_csrrci? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_C} :
 	inst_is_ecall ? {ALU_X    , OP1_X  , OP2_X   , MEN_X, REN_X, WB_X    , CSR_E} :
+
+    // custom
+    inst_is_libc_isalpha    ? {ALU_ISALPHA, OP1_RS1, OP2_X, MEN_X, REN_S, WB_ALU, CSR_X} :
     0
 );
 
@@ -252,6 +257,9 @@ wire [WORD_LEN-1:0] alu_out = (
 	exe_fun == ALU_SLTU  ? op1_data < op2_data :
 	exe_fun == ALU_JALR  ? (op1_data + op2_data) & (~1) :
 	exe_fun == ALU_COPY1 ? op1_data :
+
+    // custom
+    exe_fun == ALU_ISALPHA ? (65 <= op1_data <= 90 || 97 <= op1_data <= 122) :
     0
 );
 

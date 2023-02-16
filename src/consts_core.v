@@ -18,6 +18,8 @@ localparam ALU_JALR = 5'b10000;
 localparam ALU_COPY1= 5'b10001; // op1をそのまま
 localparam ALU_X    = 5'b10010; // 何もしない
 
+localparam ALU_ISALPHA = 5'b11000; // isalpha
+
 localparam OP1_X	= 4'b0000;
 localparam OP1_RS1  = 4'b0001;
 localparam OP1_PC   = 4'b0010;
