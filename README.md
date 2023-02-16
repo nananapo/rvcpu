@@ -6,3 +6,10 @@
 追加でlb, lh, lbu, lhu, sb, sh命令を実装した
 
 TangNano9Kで動くことを確認済み
+
+
+## libc
+
+```
+isalpha rd, rs
+```
