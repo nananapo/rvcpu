@@ -44,7 +44,6 @@ always @(posedge clk) begin
     $display("id.reg_pc  : 0x%H", id_reg_pc);
     $display("mem.inst  : 0x%H", memory_inst);
     $display("id.inst   : 0x%H", id_inst);
-	$display("-------------");
 end
 
 
@@ -60,7 +59,7 @@ reg [31:0] id_imm_j_sext;
 reg [31:0] id_imm_u_shifted;
 reg [31:0] id_imm_z_uext;
 
-reg [4:0]  id_exe_fun;
+reg [4:0]  id_exe_fun; // TODO bitwise
 reg [31:0] id_op1_data;
 reg [31:0] id_op2_data;
 reg [0:0]  id_mem_wen;
@@ -94,6 +93,35 @@ DecodeStage #() decodestage
 	.wb_addr(id_wb_addr),
 	.csr_cmd(id_csr_cmd),
 	.jmp_flg(id_jmp_flg)
+);
+
+//**************************
+// Execute Stage
+//**************************
+wire [4:0]  exe_exe_fun 	= id_exe_fun;
+wire [31:0] exe_op1_data 	= id_op1_data;
+wire [31:0] exe_op2_data 	= id_op2_data;
+wire [31:0] exe_reg_pc 		= id_reg_pc;
+wire [31:0] exe_imm_b_sext 	= id_imm_b_sext;
+
+reg [31:0] exe_alu_out;
+reg        exe_br_flg;
+reg [31:0] exe_br_target;
+
+
+ExecuteStage #() executestage
+(
+    .clk(clk),
+
+	.exe_fun(exe_exe_fun),
+	.op1_data(exe_op1_data),
+	.op2_data(exe_op2_data),
+	.reg_pc(exe_reg_pc),
+	.imm_b_sext(exe_imm_b_sext),
+
+	.alu_out(exe_alu_out),
+	.br_flg(exe_br_flg),
+	.br_target(exe_br_target)
 );
 
 endmodule
