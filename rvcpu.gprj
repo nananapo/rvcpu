@@ -14,7 +14,6 @@
         <File path="src/pipeline/core.v" type="file.verilog" enable="1"/>
         <File path="src/pipeline/decodestage.v" type="file.verilog" enable="1"/>
         <File path="src/pipeline/executestage.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/fetchstage.v" type="file.verilog" enable="1"/>
         <File path="src/pipeline/memorystage.v" type="file.verilog" enable="1"/>
         <File path="src/pipeline/writebackstage.v" type="file.verilog" enable="1"/>
         <File path="src/test.v" type="file.verilog" enable="1"/>

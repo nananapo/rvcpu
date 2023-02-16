@@ -21,8 +21,9 @@ reg [WORD_LEN-1:0] mem [(MEMORY_SIZE >> 2) - 1:0];
 
 initial begin
     //$readmemh("MEMORY_FILE_NAME", mem);
-    $readmemh("../test/c/test.bin.aligned", mem);
-    memmap_io[0] = 32'h00000000;
+    //$readmemh("../test/c/test.bin.aligned", mem);
+    $readmemh("../../test/bin/lw.hex", mem);
+	memmap_io[0] = 32'h00000000;
 end
 
 wire [13:0] i_addr_shifted = (i_addr % MEMORY_SIZE) >> 2;
@@ -86,6 +87,7 @@ always @(posedge clk) begin
         writeclock <= 0;
     end
 
+/*
     $display("memory.wen    : %d", wen);
     $display("memory.wdata  : %H", wdata);
     $display("memory.wmask  : %H", wmask);
@@ -96,6 +98,7 @@ always @(posedge clk) begin
     $display("memory.rdata  : %H", {mem[d_addr_shifted][7:0], mem[d_addr_shifted][15:8], mem[d_addr_shifted][23:16], mem[d_addr_shifted][31:24]});
     $display("memory.ready  : %H", data_ready);
     $display("memory.ismapio: %d,%d(addr:%H)", is_memory_map_range, wen, memmap_addr);
+*/
 end
 
 endmodule
