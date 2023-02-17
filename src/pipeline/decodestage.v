@@ -8,6 +8,7 @@ module DecodeStage
 	input  reg [31:0] regfile[31:0],
 
     // 即値
+	output reg [31:0] output_reg_pc,
     output reg [31:0] imm_i_sext,
     output reg [31:0] imm_s_sext,
     output reg [31:0] imm_b_sext,
@@ -180,6 +181,7 @@ always @(posedge clk) begin
 
     jmp_flg <= inst_is_jal || inst_is_jalr;
 
+	output_reg_pc <= reg_pc;
     exe_fun <= wire_exe_fun;
     mem_wen <= wire_mem_wen;
     rf_wen  <= wire_rf_wen;
@@ -193,8 +195,20 @@ always @(posedge clk) begin
     $display("rs1_addr  : %d", wire_rs1_addr);
     $display("rs2_addr  : %d", wire_rs2_addr);
     $display("wb_addr   : %d", wire_wb_addr);
-    $display("rs1_data  : 0x%H", op1_data);
-    $display("rs2_data  : 0x%H", op2_data);
+	$display("op1_data  : %H", (
+        wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
+        wire_op1_sel == OP1_PC  ? reg_pc :
+        wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
+        0
+    ));
+	$display("op2_data  : %H", (
+        wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
+        wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
+        wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :
+        wire_op2_sel == OP2_IMJ  ? wire_imm_j_sext :
+        wire_op2_sel == OP2_IMU  ? wire_imm_u_shifted :
+        0
+    ));
 end
 
 endmodule

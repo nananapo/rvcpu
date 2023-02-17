@@ -69,6 +69,13 @@ reg [4:0]  id_wb_addr;
 reg [2:0]  id_csr_cmd;
 reg 	   id_jmp_flg;
 
+// decode -> reg
+reg [31:0]	exe_reg_pc;
+wire [4:0]  exe_exe_fun		= id_exe_fun;
+wire [31:0] exe_op1_data	= id_op1_data;
+wire [31:0] exe_op2_data	= id_op2_data;
+wire [31:0] exe_imm_b_sext	= id_imm_b_sext;
+
 DecodeStage #() decodestage
 (
     .clk(clk),
@@ -84,6 +91,7 @@ DecodeStage #() decodestage
 	.imm_u_shifted(id_imm_u_shifted),
 	.imm_z_uext(id_imm_z_uext),
 
+	.output_reg_pc(exe_reg_pc),
 	.exe_fun(id_exe_fun),
 	.op1_data(id_op1_data),
 	.op2_data(id_op2_data),
@@ -98,11 +106,6 @@ DecodeStage #() decodestage
 //**************************
 // Execute Stage
 //**************************
-wire [4:0]  exe_exe_fun 	= id_exe_fun;
-wire [31:0] exe_op1_data 	= id_op1_data;
-wire [31:0] exe_op2_data 	= id_op2_data;
-wire [31:0] exe_reg_pc 		= id_reg_pc;
-wire [31:0] exe_imm_b_sext 	= id_imm_b_sext;
 
 reg [31:0] exe_alu_out;
 reg        exe_br_flg;
