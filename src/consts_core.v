@@ -31,8 +31,10 @@ localparam OP2_IMU  = 4'b0100;
 localparam OP2_IMZ  = 4'b0101;
 localparam OP2_X    = 4'b0110;
 
-localparam MEN_X    = 1'b0;
-localparam MEN_S    = 1'b1;
+localparam MEN_X    = 5'b00000;
+localparam MEN_SB   = 5'b00001;
+localparam MEN_SH   = 5'b00010;
+localparam MEN_SW   = 5'b00011;
 
 localparam REN_X    = 1'b0;
 localparam REN_S    = 1'b1;

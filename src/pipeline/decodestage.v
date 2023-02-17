@@ -20,7 +20,7 @@ module DecodeStage
     output reg [4:0]  exe_fun,  // ALUの計算の種類
     output reg [31:0] op1_data, // ALU
     output reg [31:0] op2_data, // ALU
-    output reg [0:0]  mem_wen,  // メモリに書き込むか否か
+    output reg [4:0]  mem_wen,  // メモリに書き込むか否か
     output reg [0:0]  rf_wen,   // レジスタに書き込むか否か
     output reg [3:0]  wb_sel,   // ライトバック先
 	output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
@@ -98,56 +98,56 @@ wire inst_is_ecall  = inst == INST_ECALL;
 wire [4:0] wire_exe_fun;
 wire [3:0] wire_op1_sel;
 wire [3:0] wire_op2_sel;
-wire [0:0] wire_mem_wen;
+wire [4:0] wire_mem_wen;
 wire [0:0] wire_rf_wen;
 wire [3:0] wire_wb_sel;
 wire [2:0] wire_csr_cmd;
 
 assign {wire_exe_fun, wire_op1_sel, wire_op2_sel, wire_mem_wen, wire_rf_wen, wire_wb_sel, wire_csr_cmd} = (
-    inst_is_lb    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMB , CSR_X} :
-    inst_is_lbu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMBU, CSR_X} :
-    inst_is_lh    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMH , CSR_X} :
-    inst_is_lhu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMHU, CSR_X} :
-    inst_is_lw    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_MEMW , CSR_X} :
-    inst_is_sb    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_S, REN_X, WB_X    , CSR_X} :
-    inst_is_sh    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_S, REN_X, WB_X    , CSR_X} :
-    inst_is_sw    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_S, REN_X, WB_X    , CSR_X} :
-    inst_is_add   ? {ALU_ADD  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_addi  ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_sub   ? {ALU_SUB  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_and   ? {ALU_AND  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_or    ? {ALU_OR   , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_xor   ? {ALU_XOR  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_andi  ? {ALU_AND  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_ori   ? {ALU_OR   , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-    inst_is_xori  ? {ALU_XOR  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_sll   ? {ALU_SLL  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_srl   ? {ALU_SRL  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_sra   ? {ALU_SRA  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_slli  ? {ALU_SLL  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_srli  ? {ALU_SRL  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_srai  ? {ALU_SRA  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_slt   ? {ALU_SLT  , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_sltu  ? {ALU_SLTU , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_slti  ? {ALU_SLT  , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_sltiu ? {ALU_SLTU , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_beq   ? {BR_BEQ   , OP1_RS1, OP2_RS2W, MEN_X, REN_X, WB_X    , CSR_X} :
-	inst_is_bne   ? {BR_BNE   , OP1_RS1, OP2_RS2W, MEN_X, REN_X, WB_X    , CSR_X} :
-	inst_is_blt   ? {BR_BLT   , OP1_RS1, OP2_RS2W, MEN_X, REN_X, WB_X    , CSR_X} :
-	inst_is_bge   ? {BR_BGE   , OP1_RS1, OP2_RS2W, MEN_X, REN_X, WB_X    , CSR_X} :
-	inst_is_bltu  ? {BR_BLTU  , OP1_RS1, OP2_RS2W, MEN_X, REN_X, WB_X    , CSR_X} :
-	inst_is_bgeu  ? {BR_BGEU  , OP1_RS1, OP2_RS2W, MEN_X, REN_X, WB_X    , CSR_X} :
-	inst_is_jal   ? {ALU_ADD  , OP1_PC , OP2_IMJ , MEN_X, REN_S, WB_PC   , CSR_X} :
-	inst_is_jalr  ? {ALU_JALR , OP1_RS1, OP2_IMI , MEN_X, REN_S, WB_PC   , CSR_X} :
-	inst_is_lui   ? {ALU_ADD  , OP1_X  , OP2_IMU , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_auipc ? {ALU_ADD  , OP1_PC , OP2_IMU , MEN_X, REN_S, WB_ALU  , CSR_X} :
-	inst_is_csrrw ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_W} :
-	inst_is_csrrwi? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_W} :
-	inst_is_csrrs ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_S} :
-	inst_is_csrrsi? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_S} :
-	inst_is_csrrc ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_C} :
-	inst_is_csrrci? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X, REN_S, WB_CSR  , CSR_C} :
-	inst_is_ecall ? {ALU_X    , OP1_X  , OP2_X   , MEN_X, REN_X, WB_X    , CSR_E} :
+    inst_is_lb    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMB , CSR_X} :
+    inst_is_lbu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMBU, CSR_X} :
+    inst_is_lh    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMH , CSR_X} :
+    inst_is_lhu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMHU, CSR_X} :
+    inst_is_lw    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMW , CSR_X} :
+    inst_is_sb    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_SB, REN_X, WB_X    , CSR_X} :
+    inst_is_sh    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_SH, REN_X, WB_X    , CSR_X} :
+    inst_is_sw    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_SW, REN_X, WB_X    , CSR_X} :
+    inst_is_add   ? {ALU_ADD  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_addi  ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_sub   ? {ALU_SUB  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_and   ? {ALU_AND  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_or    ? {ALU_OR   , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_xor   ? {ALU_XOR  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_andi  ? {ALU_AND  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_ori   ? {ALU_OR   , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+    inst_is_xori  ? {ALU_XOR  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_sll   ? {ALU_SLL  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_srl   ? {ALU_SRL  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_sra   ? {ALU_SRA  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_slli  ? {ALU_SLL  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_srli  ? {ALU_SRL  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_srai  ? {ALU_SRA  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_slt   ? {ALU_SLT  , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_sltu  ? {ALU_SLTU , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_slti  ? {ALU_SLT  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_sltiu ? {ALU_SLTU , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_beq   ? {BR_BEQ   , OP1_RS1, OP2_RS2W, MEN_X , REN_X, WB_X    , CSR_X} :
+	inst_is_bne   ? {BR_BNE   , OP1_RS1, OP2_RS2W, MEN_X , REN_X, WB_X    , CSR_X} :
+	inst_is_blt   ? {BR_BLT   , OP1_RS1, OP2_RS2W, MEN_X , REN_X, WB_X    , CSR_X} :
+	inst_is_bge   ? {BR_BGE   , OP1_RS1, OP2_RS2W, MEN_X , REN_X, WB_X    , CSR_X} :
+	inst_is_bltu  ? {BR_BLTU  , OP1_RS1, OP2_RS2W, MEN_X , REN_X, WB_X    , CSR_X} :
+	inst_is_bgeu  ? {BR_BGEU  , OP1_RS1, OP2_RS2W, MEN_X , REN_X, WB_X    , CSR_X} :
+	inst_is_jal   ? {ALU_ADD  , OP1_PC , OP2_IMJ , MEN_X , REN_S, WB_PC   , CSR_X} :
+	inst_is_jalr  ? {ALU_JALR , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_PC   , CSR_X} :
+	inst_is_lui   ? {ALU_ADD  , OP1_X  , OP2_IMU , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_auipc ? {ALU_ADD  , OP1_PC , OP2_IMU , MEN_X , REN_S, WB_ALU  , CSR_X} :
+	inst_is_csrrw ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_W} :
+	inst_is_csrrwi? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_W} :
+	inst_is_csrrs ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_S} :
+	inst_is_csrrsi? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_S} :
+	inst_is_csrrc ? {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_C} :
+	inst_is_csrrci? {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_C} :
+	inst_is_ecall ? {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_E} :
     0
 );
 

@@ -70,7 +70,7 @@ reg [31:0] id_imm_z_uext;
 reg [4:0]  id_exe_fun; // TODO bitwise
 reg [31:0] id_op1_data;
 reg [31:0] id_op2_data;
-reg [0:0]  id_mem_wen;
+reg [4:0]  id_mem_wen;
 reg [0:0]  id_rf_wen;
 reg [3:0]  id_wb_sel;
 reg [4:0]  id_wb_addr;
