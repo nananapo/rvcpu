@@ -1,15 +1,16 @@
 module Memory (
     input wire clk,
-    input wire [WORD_LEN-1:0] i_addr,
-    output reg [WORD_LEN-1:0] inst,
 
-    input  wire [4:0]  memory_cmd,
-	output wire        memory_cmd_ready,
-    input  wire [31:0] memory_d_addr,
-    output wire [31:0] memory_rdata,
-	output wire        memory_rdata_valid, 
-    input  wire [31:0] memory_wmask,
-    input  wire [31:0] memory_wdata
+    input wire [31:0] i_addr,
+    output reg [31:0] inst,
+
+    input  wire [4:0]  cmd,
+	output wire        cmd_ready,
+    input  wire [31:0] d_addr,
+    output wire [31:0] rdata,
+	output wire        rdata_valid, 
+    input  wire [31:0] wmask,
+    input  wire [31:0] wdata
 );
 
 reg [31:0] mem [(16384 >> 2) - 1:0];
