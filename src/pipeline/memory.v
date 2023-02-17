@@ -8,7 +8,6 @@ module Memory (
 	output wire        cmd_ready,
     input  wire [31:0] d_addr,
     output wire [31:0] rdata,
-	output wire        rdata_valid, 
     input  wire [31:0] wmask,
     input  wire [31:0] wdata
 );

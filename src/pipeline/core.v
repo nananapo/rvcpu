@@ -8,7 +8,6 @@ module CorePipeline(
 	input  wire        memory_cmd_ready,
     output wire [31:0] memory_d_addr,
     input  wire [31:0] memory_rdata,
-	input  wire        memory_rdata_valid, 
     output wire [31:0] memory_wmask,
     output wire [31:0] memory_wdata
 );
@@ -167,7 +166,6 @@ MemoryStage #() memorystage
 
 	.memory_d_addr(memory_d_addr),
 	.memory_rdata(memory_rdata),
-	.memory_rdata_valid(memory_rdata_valid),
 
 	.memory_wmask(memory_wmask),
 	.memory_wdata(memory_wdata)
