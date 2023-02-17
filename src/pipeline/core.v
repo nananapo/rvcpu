@@ -60,29 +60,25 @@ end
 // Decode Stage
 //**************************
 
-reg [31:0] id_imm_i_sext;
-reg [31:0] id_imm_s_sext;
-reg [31:0] id_imm_b_sext;
-reg [31:0] id_imm_j_sext;
-reg [31:0] id_imm_u_shifted;
-reg [31:0] id_imm_z_uext;
+// decode -> exe 用のレジスタ
+reg [31:0] exe_imm_i_sext;
+reg [31:0] exe_imm_s_sext;
+reg [31:0] exe_imm_b_sext;
+reg [31:0] exe_imm_j_sext;
+reg [31:0] exe_imm_u_shifted;
+reg [31:0] exe_imm_z_uext;
 
-reg [4:0]  id_exe_fun; // TODO bitwise
-reg [31:0] id_op1_data;
-reg [31:0] id_op2_data;
-reg [4:0]  id_mem_wen;
-reg [0:0]  id_rf_wen;
-reg [3:0]  id_wb_sel;
-reg [4:0]  id_wb_addr;
-reg [2:0]  id_csr_cmd;
-reg 	   id_jmp_flg;
-
-// decode -> reg
-reg [31:0]	exe_reg_pc;
-wire [4:0]  exe_exe_fun		= id_exe_fun;
-wire [31:0] exe_op1_data	= id_op1_data;
-wire [31:0] exe_op2_data	= id_op2_data;
-wire [31:0] exe_imm_b_sext	= id_imm_b_sext;
+reg [31:0] exe_reg_pc;
+reg [4:0]  exe_exe_fun; // TODO bitwise
+reg [31:0] exe_op1_data;
+reg [31:0] exe_op2_data;
+reg [31:0] exe_rs2_data;
+reg [4:0]  exe_mem_wen;
+reg [0:0]  exe_rf_wen;
+reg [3:0]  exe_wb_sel;
+reg [4:0]  exe_wb_addr;
+reg [2:0]  exe_csr_cmd;
+reg 	   exe_jmp_flg;
 
 DecodeStage #() decodestage
 (
@@ -92,47 +88,84 @@ DecodeStage #() decodestage
 
 	.regfile(regfile),
 
-	.imm_i_sext(id_imm_i_sext),
-	.imm_s_sext(id_imm_s_sext),
-	.imm_b_sext(id_imm_b_sext),
-	.imm_j_sext(id_imm_j_sext),
-	.imm_u_shifted(id_imm_u_shifted),
-	.imm_z_uext(id_imm_z_uext),
+	.imm_i_sext(exe_imm_i_sext),
+	.imm_s_sext(exe_imm_s_sext),
+	.imm_b_sext(exe_imm_b_sext),
+	.imm_j_sext(exe_imm_j_sext),
+	.imm_u_shifted(exe_imm_u_shifted),
+	.imm_z_uext(exe_imm_z_uext),
 
 	.output_reg_pc(exe_reg_pc),
-	.exe_fun(id_exe_fun),
-	.op1_data(id_op1_data),
-	.op2_data(id_op2_data),
-	.mem_wen(id_mem_wen),
-	.rf_wen(id_rf_wen),
-	.wb_sel(id_wb_sel),
-	.wb_addr(id_wb_addr),
-	.csr_cmd(id_csr_cmd),
-	.jmp_flg(id_jmp_flg)
+	.exe_fun(exe_exe_fun),
+	.op1_data(exe_op1_data),
+	.op2_data(exe_op2_data),
+	.rs2_data(exe_rs2_data),
+	.mem_wen(exe_mem_wen),
+	.rf_wen(exe_rf_wen),
+	.wb_sel(exe_wb_sel),
+	.wb_addr(exe_wb_addr),
+	.csr_cmd(exe_csr_cmd),
+	.jmp_flg(exe_jmp_flg)
 );
+
 
 //**************************
 // Execute Stage
 //**************************
 
-reg [31:0] exe_alu_out;
-reg        exe_br_flg;
-reg [31:0] exe_br_target;
+reg [31:0] mem_alu_out;
+reg        mem_br_flg;
+reg [31:0] mem_br_target;
 
+reg [31:0] mem_reg_pc;
+reg [4:0]  mem_mem_wen;
+reg [3:0]  mem_wb_sel;
+reg [31:0] mem_rs2_data;
 
 ExecuteStage #() executestage
 (
     .clk(clk),
 
+	.imm_b_sext(exe_imm_b_sext),
+
+	.reg_pc(exe_reg_pc),
 	.exe_fun(exe_exe_fun),
 	.op1_data(exe_op1_data),
 	.op2_data(exe_op2_data),
-	.reg_pc(exe_reg_pc),
-	.imm_b_sext(exe_imm_b_sext),
+	.rs2_data(exe_rs2_data),
+	.mem_wen(exe_mem_wen),
+	.wb_sel(exe_wb_sel),
 
-	.alu_out(exe_alu_out),
-	.br_flg(exe_br_flg),
-	.br_target(exe_br_target)
+	.alu_out(mem_alu_out),
+	.br_flg(mem_br_flg),
+	.br_target(mem_br_target),
+
+	.output_reg_pc(mem_reg_pc),
+	.output_mem_wen(mem_mem_wen),
+	.output_wb_sel(mem_wb_sel),
+	.output_rs2_data(mem_rs2_data)
+);
+
+
+//**************************
+// Memory Stage
+//**************************
+MemoryStage #() memorystage
+(
+	.clk(clk),
+
+	.rs2_data(mem_rs2_data),
+	.wb_sel(mem_wb_sel),
+	.mem_wen(mem_mem_wen),
+
+	.alu_out(mem_alu_out),
+
+	.memory_d_addr(memory_d_addr),
+	.memory_rdata(memory_rdata),
+	.memory_wen(memory_wen),
+	.memory_wmask(memory_wmask),
+	.memory_wdata(memory_wdata),
+	.memory_ready(memory_ready)
 );
 
 reg [31:0] clk_count = 0;
