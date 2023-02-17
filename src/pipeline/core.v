@@ -14,6 +14,14 @@ module CorePipeline(
 // レジスタ
 reg [31:0] regfile [31:0];
 
+integer loop_i;
+initial begin
+	regfile[0] = 0;
+	regfile[1] = 0;
+	regfile[2] = 1000;
+    for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
+        regfile[loop_i] = 0;
+end
 
 // fetch stage
 reg [31:0] if_reg_pc = 0;
