@@ -1,8 +1,10 @@
 module MemoryStage(
 	input wire clk,
 
+	input [31:0] rs2_data,
 	input [3:0]  wb_sel,
 	input [4:0]  mem_wen,
+
 	input [31:0] alu_out,
 	
     output  wire [31:0] memory_d_addr,
