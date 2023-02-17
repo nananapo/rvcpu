@@ -135,4 +135,12 @@ ExecuteStage #() executestage
 	.br_target(exe_br_target)
 );
 
+reg [31:0] clk_count = 0;
+
+always @(negedge clk) begin
+	clk_count <= clk_count + 1;
+	$display("");
+	$display("CLK %d", clk_count - 1);
+end
+
 endmodule
