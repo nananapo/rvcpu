@@ -38,12 +38,12 @@ wire [19:0] wire_imm_u = inst[31:12];
 wire [4:0]  wire_imm_z = inst[19:15];
 
 
-wire wire_imm_i_sext    = {{20{wire_imm_i[11]}}, wire_imm_i};
-wire wire_imm_s_sext    = {{20{wire_imm_s[11]}}, wire_imm_s};
-wire wire_imm_b_sext    = {{19{wire_imm_b[11]}}, wire_imm_b, 1'b0};
-wire wire_imm_j_sext    = {{11{wire_imm_j[19]}}, wire_imm_j, 1'b0};
-wire wire_imm_u_shifted = {wire_imm_u, 12'b0};
-wire wire_imm_z_uext    = {27'd0, wire_imm_z};
+wire [31:0] wire_imm_i_sext    = {{20{wire_imm_i[11]}}, wire_imm_i};
+wire [31:0] wire_imm_s_sext    = {{20{wire_imm_s[11]}}, wire_imm_s};
+wire [31:0] wire_imm_b_sext    = {{19{wire_imm_b[11]}}, wire_imm_b, 1'b0};
+wire [31:0] wire_imm_j_sext    = {{11{wire_imm_j[19]}}, wire_imm_j, 1'b0};
+wire [31:0] wire_imm_u_shifted = {wire_imm_u, 12'b0};
+wire [31:0] wire_imm_z_uext    = {27'd0, wire_imm_z};
 
 wire [2:0] funct3 = inst[14:12];
 wire [7:0] funct7 = inst[31:25];
