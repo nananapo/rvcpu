@@ -18,10 +18,10 @@ module MemoryStage(
 `include "../consts_core.v"
 
 // MEM STAGE
-reg [WORD_LEN-1:0] memory_d_addr_offset = 0;    // アドレスのオフセット
+reg [31:0] memory_d_addr_offset = 0;    // アドレスのオフセット
 reg [1:0] mem_clock     = 0;                // load命令で待機するクロック数を管理するフラグ
 assign memory_d_addr    = alu_out + memory_d_addr_offset;// データ読み出しのアドレス
-reg[WORD_LEN-1:0] memory_rdata_previous;    // 前の読み込まれたデータ
+reg [31:0] memory_rdata_previous;    // 前の読み込まれたデータ
 
 // load系の命令かどうかを示す
 wire is_load_op_byte = wb_sel == WB_MEMB || wb_sel == WB_MEMBU;
@@ -70,7 +70,7 @@ wire [15:0] memory_h_read = (
     memory_rdata[15:0]
 );
 
-wire [WORD_LEN-1:0] memory_w_read = (
+wire [31:0] memory_w_read = (
     memory_d_addr % 4 == 1 ? {memory_rdata[7:0], memory_rdata_previous[31:8]} :
     memory_d_addr % 4 == 2 ? {memory_rdata[15:0], memory_rdata_previous[31:16]} :
     memory_d_addr % 4 == 3 ? {memory_rdata[23:0], memory_rdata_previous[31:24]} :
