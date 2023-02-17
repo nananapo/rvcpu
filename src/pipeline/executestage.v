@@ -2,15 +2,24 @@ module ExecuteStage
 (
 	input wire clk,
 
+	input reg [31:0] imm_b_sext,
+
+	input reg [31:0] reg_pc,
 	input reg [4:0]  exe_fun,
 	input reg [31:0] op1_data,
 	input reg [31:0] op2_data,
-	input reg [31:0] reg_pc,
-	input reg [31:0] imm_b_sext,
+	input reg [31:0] rs2_data,
+	input reg [4:0]  mem_wen,
+	input reg [3:0]  wb_sel,
 
 	output reg [31:0] alu_out,
 	output reg        br_flg,
-	output reg [31:0] br_target
+	output reg [31:0] br_target,
+	
+	output reg [31:0] output_reg_pc,
+	output reg [4:0]  output_mem_wen,
+	output reg [3:0]  output_wb_sel,
+	output reg [31:0] output_rs2_data
 );
 
 `include "../consts_core.v"
@@ -44,6 +53,11 @@ always @(posedge clk) begin
 	);
 
 	br_target <= reg_pc + imm_b_sext;
+
+	output_reg_pc   <= reg_pc;
+	output_mem_wen  <= mem_wen;
+	output_wb_sel   <= wb_sel;
+	output_rs2_data <= rs2_data;
 
 	$display("EXECUTE -------------");
     $display("exe_fun   : %d", exe_fun);

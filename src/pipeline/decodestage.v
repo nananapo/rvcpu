@@ -20,6 +20,7 @@ module DecodeStage
     output reg [4:0]  exe_fun,  // ALUの計算の種類
     output reg [31:0] op1_data, // ALU
     output reg [31:0] op2_data, // ALU
+	output reg [31:0] rs2_data, // rs2で指定されたレジスタの値
     output reg [4:0]  mem_wen,  // メモリに書き込むか否か
     output reg [0:0]  rf_wen,   // レジスタに書き込むか否か
     output reg [3:0]  wb_sel,   // ライトバック先
@@ -179,6 +180,7 @@ always @(posedge clk) begin
         0
     );
 
+	rs2_data <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
     jmp_flg <= inst_is_jal || inst_is_jalr;
 
 	output_reg_pc <= reg_pc;
