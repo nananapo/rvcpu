@@ -3,12 +3,14 @@ module CorePipeline(
 
     output  wire [31:0] memory_i_addr,
     input   wire [31:0] memory_inst,
-    output  wire [31:0] memory_d_addr,
-    input   wire [31:0] memory_rdata,
-    output  wire        memory_wen,
-    output  wire [31:0] memory_wmask,
-    output  wire [31:0] memory_wdata,
-    input   wire        memory_ready
+	
+    output wire [4:0]  memory_cmd,
+	input  wire        memory_cmd_ready,
+    output wire [31:0] memory_d_addr,
+    input  wire [31:0] memory_rdata,
+	input  wire        memory_rdata_valid, 
+    output wire [31:0] memory_wmask,
+    output wire [31:0] memory_wdata
 );
 
 // レジスタ
@@ -160,12 +162,15 @@ MemoryStage #() memorystage
 
 	.alu_out(mem_alu_out),
 
+	.memory_cmd(memory_cmd),
+	.memory_cmd_ready(memory_cmd_ready),
+
 	.memory_d_addr(memory_d_addr),
 	.memory_rdata(memory_rdata),
-	.memory_wen(memory_wen),
+	.memory_rdata_valid(memory_rdata_valid),
+
 	.memory_wmask(memory_wmask),
-	.memory_wdata(memory_wdata),
-	.memory_ready(memory_ready)
+	.memory_wdata(memory_wdata)
 );
 
 reg [31:0] clk_count = 0;
