@@ -134,6 +134,6 @@ assign memory_wdata = (
     )
 );
 
-assign memory_wen = mem_wen == MEN_S && store_wait; // メモリを書き込むかどうかのフラグ
+assign memory_wen = (mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW) && store_wait; // メモリに書き込むかどうかのフラグ
 
 endmodule
