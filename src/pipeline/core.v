@@ -1,15 +1,18 @@
 module CorePipeline(
     input   wire        clk,
-
-    output  wire [31:0] memory_i_addr,
-    input   wire [31:0] memory_inst,
 	
-    output wire [4:0]  memory_cmd,
-	input  wire        memory_cmd_ready,
-    output wire [31:0] memory_d_addr,
-    input  wire [31:0] memory_rdata,
-    output wire [31:0] memory_wmask,
-    output wire [31:0] memory_wdata
+	output reg			memory_inst_start,
+	input  reg			memory_inst_ready,
+	output reg [31:0]	memory_i_addr,
+	input  reg [31:0]	memory_inst,
+	input  reg			memory_inst_valid,
+	output reg [2:0]	memory_d_cmd,
+	input  reg			memory_d_cmd_ready,
+	output reg [31:0]	memory_d_addr,
+	output reg [31:0]	memory_wdata,
+	output reg [31:0]	memory_wmask,
+	input  reg [31:0]	memory_rdata,
+	input  reg			memory_rdata_valid
 );
 
 // レジスタ

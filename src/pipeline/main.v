@@ -2,42 +2,51 @@ module main (
 	input wire clk
 );
 
-wire [31:0] memory_i_addr;
-wire [31:0] memory_inst;
+reg			mem_inst_start;
+reg			mem_inst_ready;
+reg [31:0]	mem_i_addr;
+reg [31:0]	mem_inst;
+reg			mem_inst_valid;
+reg [2:0]	mem_d_cmd;
+reg			mem_d_cmd_ready;
+reg [31:0]	mem_d_addr;
+reg [31:0]	mem_wdata;
+reg [31:0]	mem_wmask;
+reg [31:0]	mem_rdata;
+reg			mem_rdata_valid;
 
-wire [4:0]  memory_cmd;
-wire        memory_cmd_ready;
-wire [31:0] memory_d_addr;
-wire [31:0] memory_rdata;
-wire [31:0] memory_wmask;
-wire [31:0] memory_wdata;
-
-Memory #() memory (
+MemoryInterface #() memory (
     .clk(clk),
 
-    .i_addr(memory_i_addr),
-    .inst(memory_inst),
-
-    .cmd(memory_cmd),
-    .cmd_ready(memory_cmd_ready),
-    .d_addr(memory_d_addr),
-    .rdata(memory_rdata),
-    .wmask(memory_wmask),
-    .wdata(memory_wdata)
+	.inst_start(mem_inst_start),
+	.inst_ready(mem_inst_ready),
+    .i_addr(mem_i_addr),
+    .inst(mem_inst),
+    .inst_valid(mem_inst_valid),
+    .d_cmd(mem_d_cmd),
+	.d_cmd_ready(mem_d_cmd_ready),
+	.d_addr(mem_d_addr),
+    .wdata(mem_wdata),
+    .wmask(mem_wmask),
+    .rdata(mem_rdata),
+    .rdata_valid(mem_rdata_valid)
 );
 
-CorePipeline #() core (
+CorePipeline core (
     .clk(clk),
 
-    .memory_i_addr(memory_i_addr),
-    .memory_inst(memory_inst),
-
-    .memory_cmd(memory_cmd),
-	.memory_cmd_ready(memory_cmd_ready),
-	.memory_d_addr(memory_d_addr),
-	.memory_rdata(memory_rdata),
-	.memory_wmask(memory_wmask),
-	.memory_wdata(memory_wdata)
+	.memory_inst_start(mem_inst_start),
+	.memory_inst_ready(mem_inst_ready),
+    .memory_i_addr(mem_i_addr),
+    .memory_inst(mem_inst),
+    .memory_inst_valid(mem_inst_valid),
+    .memory_d_cmd(mem_d_cmd),
+	.memory_d_cmd_ready(mem_d_cmd_ready),
+	.memory_d_addr(mem_d_addr),
+    .memory_wdata(mem_wdata),
+    .memory_wmask(mem_wmask),
+    .memory_rdata(mem_rdata),
+    .memory_rdata_valid(mem_rdata_valid)
 );
 
 endmodule
