@@ -1,3 +1,3 @@
-localparam MEMORY_CMD_NOP   = 5'd0;
-localparam MEMORY_CMD_READ  = 5'd1;
-localparam MEMORT_CMD_WRITE = 5'd2;
+localparam MEMORY_CMD_NOP   = 3'd0;
+localparam MEMORY_CMD_READ  = 3'd1;
+localparam MEMORY_CMD_WRITE = 3'd2;
