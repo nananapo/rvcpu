@@ -27,36 +27,26 @@ initial begin
         regfile[loop_i] = 0;
 end
 
-// fetch stage
-reg [31:0] if_reg_pc = 0;
-assign memory_i_addr = if_reg_pc;
+//**************************
+// Fetch Stage
+//**************************
 
-// fetch -> decode stage 用のレジスタ
-reg [31:0]  id_inst;
+// fetch -> decode 用のレジスタ
 reg [31:0]  id_reg_pc;
+reg [31:0]  id_inst;
 
+FetchStage #() fetchstage (
+	.clk(clk),
 
+	.reg_pc(id_reg_pc)
+	.inst(id_inst),
 
-// 最初のクロックだけ休む用のフラグ
-reg firstClock = 0;
-
-// fetch stage
-always @(posedge clk) begin
-	if (firstClock == 0) begin
-		firstClock <= 1;
-    	if_reg_pc <= if_reg_pc + 4;
-	end else begin 
-    	id_inst <= memory_inst;
-		id_reg_pc <= if_reg_pc - 4;
-    	if_reg_pc <= if_reg_pc + 4;
-	end
-
-	$display("FETCH -------------");
-    $display("if.reg_pc  : 0x%H", if_reg_pc);
-    $display("id.reg_pc  : 0x%H", id_reg_pc);
-    $display("mem.inst  : 0x%H", memory_inst);
-    $display("id.inst   : 0x%H", id_inst);
-end
+	.memory_inst_start(memory_inst_start),
+	.memory_inst_ready(memory_inst_ready),
+	.memory_i_addr(memory_i_addr),
+	.memory_inst(memory_inst),
+	.memory_inst_valid(memory_inst_valid)
+);
 
 
 
