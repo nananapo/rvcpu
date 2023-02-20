@@ -71,6 +71,31 @@ reg [31:0]	save_wdata;
 reg [31:0]	save_wmask;
 
 wire d_cmd_is_op = d_cmd != MEMORY_CMD_NOP;
+/*
+always @(posedge clk) begin
+	$display("MEMINF -------------");
+	$display("inst_start      : %d", inst_start);
+	$display("inst_ready      : %d", inst_ready);
+	$display("i_addr          : 0x%H", i_addr);
+	$display("inst            : 0x%H", inst);
+	$display("inst_valid      : %d", inst_valid);
+	$display("d_cmd           : %d", d_cmd);
+	$display("d_cmd_ready     : %d", d_cmd_ready);
+	$display("d_addr          : 0x%H", d_addr);
+	$display("wdata           : 0x%H", wdata);
+	$display("wmask           : 0x%H", wmask);
+	$display("rdata           : 0x%H", rdata);
+	$display("rdata_valid     : %d", rdata_valid);
+	$display("status          : %d", status);
+	$display("cmd_is_inst     : %d", cmd_is_inst);
+	$display("mem_cmd_start   : %d", mem_cmd_start);
+	$display("mem_cmd_write   : %d", mem_cmd_write);
+	$display("mem_cmd_ready   : %d", mem_cmd_ready);
+	$display("mem_addr        : 0x%H", mem_addr);
+	$display("mem_rdata       : 0x%H", mem_rdata);
+	$display("mem_rdata_valid : %d", mem_rdata_valid);
+end
+*/
 
 always @(posedge clk) begin
 	if (status == STATE_WAIT_CMD) begin
