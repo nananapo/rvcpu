@@ -38,7 +38,7 @@ reg [31:0]  id_inst;
 FetchStage #() fetchstage (
 	.clk(clk),
 
-	.reg_pc(id_reg_pc)
+	.reg_pc(id_reg_pc),
 	.inst(id_inst),
 
 	.memory_inst_start(memory_inst_start),
