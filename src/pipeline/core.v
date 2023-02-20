@@ -27,6 +27,10 @@ initial begin
         regfile[loop_i] = 0;
 end
 
+initial begin
+	memory_d_cmd <= 0;
+end
+
 //**************************
 // Fetch Stage
 //**************************
@@ -41,11 +45,11 @@ FetchStage #() fetchstage (
 	.reg_pc(id_reg_pc),
 	.inst(id_inst),
 
-	.memory_inst_start(memory_inst_start),
-	.memory_inst_ready(memory_inst_ready),
-	.memory_i_addr(memory_i_addr),
-	.memory_inst(memory_inst),
-	.memory_inst_valid(memory_inst_valid)
+	.mem_start(memory_inst_start),
+	.mem_ready(memory_inst_ready),
+	.mem_addr(memory_i_addr),
+	.mem_data(memory_inst),
+	.mem_data_valid(memory_inst_valid)
 );
 
 
