@@ -18,10 +18,10 @@ module MemoryInterface (
 
 // 初期化
 initial begin
-	d_cmd_ready <= 1;
-	inst_ready <= 1;
-	inst_valid <= 0;
-	rdata_valid <= 0;
+	d_cmd_ready	<= 1;
+	inst_ready	<= 1;
+	inst_valid	<= 0;
+	rdata_valid	<= 0;
 end
 
 `include "memory_const.v"
