@@ -10,7 +10,7 @@ module Memory #(
 
 	input  wire [31:0]	addr,
 	output reg  [31:0]	rdata,
-	output reg			rdata_valid,
+	output wire			rdata_valid,
 	input  wire [31:0]	wdata,
 	input  wire [31:0]	wmask
 );
@@ -45,6 +45,9 @@ wire [31:0] addr_shift = addr_bup >> 2;
 
 assign cmd_ready = state == STATE_WAIT;
 
+reg rdata_valid_reg = 0;
+assign rdata_valid = rdata_valid_reg && cmd_start == 0;
+
 // アドレスが4byte alignedでは無い場合用
 reg [3:0]	clock_cnt;
 reg [31:0]	data_save;
@@ -57,7 +60,7 @@ always @(posedge clk) begin
 		wdata_bup	<= wdata;
 		wmask_bup	<= wmask;
 		clock_cnt	<= 0;
-		rdata_valid	<= 0;
+		rdata_valid_reg	<= 0;
 	end else if (state == STATE_READ) begin
 		if (addr_bup % 4 == 0) begin
 			rdata <= {
@@ -66,7 +69,7 @@ always @(posedge clk) begin
 				mem[addr_shift][23:16],
 				mem[addr_shift][31:24]
 			};
-			rdata_valid <= 1;
+			rdata_valid_reg <= 1;
 			state <= STATE_WAIT;
 		end else begin
 			if (clock_cnt == 0) begin
@@ -90,7 +93,7 @@ always @(posedge clk) begin
 						data_save[31:24]
 					}
 				};
-				rdata_valid <= 1;
+				rdata_valid_reg <= 1;
 				state <= STATE_WAIT;	
 			end
 		end
@@ -103,7 +106,7 @@ always @(posedge clk) begin
 					wdata[23:16],
 					wdata[31:24]
 				};
-				rdata_valid <= 1;
+				rdata_valid_reg <= 1;
 				state <= STATE_WAIT;
 			end else begin
 				if (clock_cnt == 0) begin
@@ -114,7 +117,7 @@ always @(posedge clk) begin
 						({ wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24] } & wmask_le) |
 						(data_save & wmask_rev_le)
 					};
-					rdata_valid <= 1;
+					rdata_valid_reg <= 1;
 					state <= STATE_WAIT;
 				end
 			end
