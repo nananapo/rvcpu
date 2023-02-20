@@ -53,10 +53,12 @@ FetchStage #() fetchstage (
 );
 
 
+/*
 
-//**************************
+
+// **************************
 // Decode Stage
-//**************************
+// **************************
 
 // decode -> exe 用のレジスタ
 reg [31:0] exe_imm_i_sext;
@@ -107,9 +109,9 @@ DecodeStage #() decodestage
 );
 
 
-//**************************
+// **************************
 // Execute Stage
-//**************************
+// **************************
 
 reg [31:0] mem_alu_out;
 reg        mem_br_flg;
@@ -145,9 +147,9 @@ ExecuteStage #() executestage
 );
 
 
-//**************************
+// **************************
 // Memory Stage
-//**************************
+// **************************
 MemoryStage #() memorystage
 (
 	.clk(clk),
@@ -167,6 +169,7 @@ MemoryStage #() memorystage
 	.memory_wmask(memory_wmask),
 	.memory_wdata(memory_wdata)
 );
+*/
 
 reg [31:0] clk_count = 0;
 
