@@ -1,5 +1,5 @@
 module test();
-  reg clk = 0;
+  reg clk = 1;
 
   main #() m(
     .clk(clk)
