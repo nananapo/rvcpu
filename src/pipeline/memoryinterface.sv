@@ -117,10 +117,6 @@ always @(posedge clk) begin
 		if (inst_start && d_cmd_is_op) begin
 			// 命令を選ぶ
 			cmd_is_inst	<= 1;
-			inst_valid	<= 0; // 読めなくする
-			if (d_cmd == MEMORY_CMD_READ) begin
-				rdata_valid <= 0; // 読めなくする
-			end
 		// 命令だけ
 		end else if (inst_start) begin
 			cmd_is_inst	<= 1;
@@ -162,6 +158,8 @@ always @(posedge clk) begin
 		end
 	end else if (status == STATE_END) begin
 		mem_cmd_start <= 0;
+		inst_valid	<= 0;
+		rdata_valid <= 0;
 		// 処理していたのが命令かつd_cmdがNOPでなければ処理
 		if (cmd_is_inst && save_d_cmd != MEMORY_CMD_NOP) begin
 			cmd_is_inst <= 0;
