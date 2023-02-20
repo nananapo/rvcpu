@@ -1,7 +1,7 @@
 module FetchStage(
 	input  wire			clk,
 
-	output reg			reg_pc,
+	output reg [31:0]	reg_pc,
 	output reg [31:0]	inst,
 
 	output reg			memory_inst_start,
