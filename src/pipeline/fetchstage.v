@@ -4,33 +4,50 @@ module FetchStage(
 	output reg [31:0]	reg_pc,
 	output reg [31:0]	inst,
 
-	output reg			memory_inst_start,
-	input  reg			memory_inst_ready,
-	output reg [31:0]	memory_i_addr,
-	input  reg [31:0]	memory_inst,
-	input  reg			memory_inst_valid
+	output reg			mem_start,
+	input  reg			mem_ready,
+	output reg [31:0]	mem_addr,
+	input  reg [31:0]	mem_data,
+	input  reg			mem_data_valid,
+
+	input  reg			stall_flg
 );
 
 initial begin
-	reg_pc <= 0;
-	memory_inst_start <= 0;
+	reg_pc		<= 0;
+	mem_start	<= 0;
 end
 
+localparam STATE_START		= 4'd0;
+localparam STATE_WAIT_FETCH	= 4'd1;
+
+reg [3:0] status = STATE_START;
 
 always @(posedge clk) begin
-	if (firstClock == 0) begin
-		firstClock <= 1;
-    	reg_pc <= reg_pc + 4;
-	end else begin 
-    	id_inst <= memory_inst;
-    	reg_pc <= reg_pc + 4;
+	if (status == STATE_START) begin
+		if (mem_ready) begin
+			mem_start	<= 1;
+			mem_addr	<= reg_pc;
+			status		<= STATE_WAIT_FETCH;
+		end
+	end if (status == STATE_WAIT_FETCH) begin
+		mem_start	<= 0;
+		if (mem_data_valid) begin
+			inst	<= mem_data;
+			status	<= STATE_START;
+			reg_pc	<= reg_pc + 4;
+		end
 	end
+end
 
+always @(posedge clk) begin
 	$display("FETCH -------------");
-    $display("if.reg_pc  : 0x%H", reg_pc);
-    $display("id.reg_pc  : 0x%H", id_reg_pc);
-    $display("mem.inst  : 0x%H", memory_inst);
-    $display("id.inst   : 0x%H", id_inst);
+	$display("reg_pc    : 0x%H", reg_pc);
+	$display("inst      : 0x%H", inst);
+	$display("status    : %d", status);
+	$display("mem.start : %d", mem_start);
+	$display("mem.ready : %d", mem_ready);
+	$display("mem.valid : %d", mem_data_valid);
 end
 
 endmodule
