@@ -2,10 +2,10 @@ module MemoryInterface (
 	input wire clk,
  
 	input  wire			inst_start,
-	output reg			inst_ready,
+	output wire			inst_ready,
     input  wire [31:0]	i_addr,
     output reg  [31:0]	inst,
-    output reg			inst_valid,
+    output wire			inst_valid,
 
     input  wire [2:0]	d_cmd,
 	output reg			d_cmd_ready,
@@ -13,18 +13,20 @@ module MemoryInterface (
     input  wire [31:0]	wdata,
     input  wire [31:0]	wmask,
     output reg  [31:0]	rdata,
-    output reg			rdata_valid
+    output wire			rdata_valid
 );
 
-// 初期化
-initial begin
-	d_cmd_ready	<= 1;
-	inst_ready	<= 1;
-	inst_valid	<= 0;
-	rdata_valid	<= 0;
-end
-
 `include "memory_const.v"
+
+reg inst_valid_reg  = 0;
+reg inst_ready_reg  = 1;
+reg rdata_valid_reg = 0;
+reg d_cmd_ready_reg = 1;
+
+assign inst_valid	= inst_valid_reg  && inst_start == 0;
+assign inst_ready	= inst_ready_reg  && inst_start == 0;
+assign rdata_valid	= rdata_valid_reg && d_cmd == MEMORY_CMD_NOP;
+assign d_cmd_ready	= d_cmd_ready_reg && d_cmd == MEMORY_CMD_NOP;
 
 // メモリ
 reg			mem_cmd_start = 0;
@@ -107,8 +109,8 @@ always @(posedge clk) begin
 			save_wdata	<= wdata;
 			save_wmask	<= wmask;
 			// コマンドを受け付けなくする
-			inst_ready	<= 0;
-			d_cmd_ready	<= 0;
+			inst_ready_reg	<= 0;
+			d_cmd_ready_reg	<= 0;
 			// 記述を楽に済ますのを優先して、一旦待つ
 			status		<= STATE_WAIT_MEMORY_READY;
 		end
@@ -116,13 +118,17 @@ always @(posedge clk) begin
 		// 両方のコマンドが来た時
 		if (inst_start && d_cmd_is_op) begin
 			// 命令を選ぶ
-			cmd_is_inst	<= 1;
+			cmd_is_inst		<= 1;
+			inst_valid_reg	<= 0;
+			rdata_valid_reg	<= 0;
 		// 命令だけ
 		end else if (inst_start) begin
-			cmd_is_inst	<= 1;
+			cmd_is_inst		<= 1;
+			inst_valid_reg	<= 0;
 		// データだけ
 		end else if (d_cmd_is_op) begin
-			cmd_is_inst	<= 0;
+			cmd_is_inst		<= 0;
+			rdata_valid_reg	<= 0;
 		end
 	end else if (status == STATE_WAIT_MEMORY_READY) begin
 		if (mem_cmd_ready) begin
@@ -149,25 +155,23 @@ always @(posedge clk) begin
 		if (mem_rdata_valid) begin
 			if (cmd_is_inst) begin
 				inst		<= mem_rdata;
-				inst_valid	<= 1;
+				inst_valid_reg	<= 1;
 			end else begin
-				rdata		<= mem_rdata;
-				rdata_valid	<= 1;
+				rdata			<= mem_rdata;
+				rdata_valid_reg	<= 1;
 			end
 			status <= STATE_END;
 		end
 	end else if (status == STATE_END) begin
 		mem_cmd_start <= 0;
-		inst_valid	<= 0;
-		rdata_valid <= 0;
 		// 処理していたのが命令かつd_cmdがNOPでなければ処理
 		if (cmd_is_inst && save_d_cmd != MEMORY_CMD_NOP) begin
 			cmd_is_inst <= 0;
 			status <= STATE_WAIT_MEMORY_READY;
 		end else begin
 			// コマンドを受け付ける
-			inst_ready	<= 1;
-			d_cmd_ready	<= 1;
+			inst_ready_reg	<= 1;
+			d_cmd_ready_reg	<= 1;
 			status <= STATE_WAIT_CMD;
 		end
 	end
