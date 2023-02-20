@@ -168,6 +168,8 @@ always @(posedge clk) begin
 			status <= STATE_WAIT_MEMORY_READY;
 		end else begin
 			// コマンドを受け付ける
+			inst_ready	<= 1;
+			d_cmd_ready	<= 1;
 			status <= STATE_WAIT_CMD;
 		end
 	end
