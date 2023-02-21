@@ -105,11 +105,11 @@ wire [3:0] wire_wb_sel;
 wire [2:0] wire_csr_cmd;
 
 assign {wire_exe_fun, wire_op1_sel, wire_op2_sel, wire_mem_wen, wire_rf_wen, wire_wb_sel, wire_csr_cmd} = (
-    inst_is_lb    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMB , CSR_X} :
-    inst_is_lbu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMBU, CSR_X} :
-    inst_is_lh    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMH , CSR_X} :
-    inst_is_lhu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMHU, CSR_X} :
-    inst_is_lw    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_X , REN_S, WB_MEMW , CSR_X} :
+    inst_is_lb    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LB, REN_S, WB_MEMB , CSR_X} :
+    inst_is_lbu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LBU,REN_S, WB_MEMBU, CSR_X} :
+    inst_is_lh    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LH, REN_S, WB_MEMH , CSR_X} :
+    inst_is_lhu   ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LHU,REN_S, WB_MEMHU, CSR_X} :
+    inst_is_lw    ? {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LW, REN_S, WB_MEMW , CSR_X} :
     inst_is_sb    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_SB, REN_X, WB_X    , CSR_X} :
     inst_is_sh    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_SH, REN_X, WB_X    , CSR_X} :
     inst_is_sw    ? {ALU_ADD  , OP1_RS1, OP2_IMS , MEN_SW, REN_X, WB_X    , CSR_X} :
