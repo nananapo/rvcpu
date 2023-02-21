@@ -190,7 +190,9 @@ always @(posedge clk) begin
     wb_sel  <= wire_wb_sel;
 	wb_addr <= wire_wb_addr;
     csr_cmd <= wire_csr_cmd;
-	
+end
+
+always @(posedge clk) begin
 	$display("DECODE STAGE-------------");
     $display("reg_pc    : 0x%H", reg_pc);
     $display("inst      : 0x%H", inst);
