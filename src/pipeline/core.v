@@ -38,22 +38,23 @@ end
 // fetch -> decode 用のレジスタ
 reg [31:0]  id_reg_pc;
 reg [31:0]  id_inst;
+reg			fetch_stall_flg = 0;
 
 FetchStage #() fetchstage (
 	.clk(clk),
 
-	.reg_pc(id_reg_pc),
-	.inst(id_inst),
+	.id_reg_pc(id_reg_pc),
+	.id_inst(id_inst),
 
 	.mem_start(memory_inst_start),
 	.mem_ready(memory_inst_ready),
 	.mem_addr(memory_i_addr),
 	.mem_data(memory_inst),
-	.mem_data_valid(memory_inst_valid)
+	.mem_data_valid(memory_inst_valid),
+
+	.stall_flg(fetch_stall_flg)
 );
 
-
-/*
 
 
 // **************************
@@ -145,6 +146,9 @@ ExecuteStage #() executestage
 	.output_wb_sel(mem_wb_sel),
 	.output_rs2_data(mem_rs2_data)
 );
+
+/*
+
 
 
 // **************************

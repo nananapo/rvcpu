@@ -1,8 +1,8 @@
 module FetchStage(
 	input  wire			clk,
 
-	output reg [31:0]	reg_pc,
-	output reg [31:0]	inst,
+	output reg [31:0]	id_reg_pc,
+	output reg [31:0]	id_inst,
 
 	output reg			mem_start,
 	input  reg			mem_ready,
@@ -12,6 +12,8 @@ module FetchStage(
 
 	input  reg			stall_flg
 );
+
+reg [31:0] reg_pc = 0;
 
 initial begin
 	reg_pc		<= 0;
@@ -33,9 +35,13 @@ always @(posedge clk) begin
 	end if (status == STATE_WAIT_FETCH) begin
 		mem_start	<= 0;
 		if (mem_data_valid) begin
-			inst	<= mem_data;
+			id_inst	<= mem_data;
 			status	<= STATE_START;
-			reg_pc	<= reg_pc + 4;
+			$display("Fetched");
+			if (!stall_flg) begin
+				id_reg_pc <= reg_pc;
+				reg_pc	<= reg_pc + 4;
+			end
 		end
 	end
 end
@@ -43,11 +49,13 @@ end
 always @(posedge clk) begin
 	$display("FETCH -------------");
 	$display("reg_pc    : 0x%H", reg_pc);
-	$display("inst      : 0x%H", inst);
+	$display("id_reg_pc : 0x%H", id_reg_pc);
+	$display("id_inst   : 0x%H", id_inst);
 	$display("status    : %d", status);
 	$display("mem.start : %d", mem_start);
 	$display("mem.ready : %d", mem_ready);
 	$display("mem.valid : %d", mem_data_valid);
+	$display("stall_flg : %d", stall_flg);
 end
 
 endmodule
