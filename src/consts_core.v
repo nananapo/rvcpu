@@ -35,6 +35,11 @@ localparam MEN_X    = 5'b00000;
 localparam MEN_SB   = 5'b00001;
 localparam MEN_SH   = 5'b00010;
 localparam MEN_SW   = 5'b00011;
+localparam MEN_LB   = 5'b00100;
+localparam MEN_LBU  = 5'b00101;
+localparam MEN_LH   = 5'b00110;
+localparam MEN_LHU  = 5'b00111;
+localparam MEN_LW   = 5'b01000;
 
 localparam REN_X    = 1'b0;
 localparam REN_S    = 1'b1;
