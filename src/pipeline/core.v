@@ -35,10 +35,10 @@ end
 // Fetch Stage
 //**************************
 
-// fetch -> decode 用のレジスタ
-reg [31:0]  id_reg_pc;
-reg [31:0]  id_inst;
-reg			fetch_stall_flg = 0;
+// fetch -> decode 用のwire
+wire [31:0]  id_reg_pc;
+wire [31:0]  id_inst;
+wire			fetch_stall_flg = 0;
 
 FetchStage #() fetchstage (
 	.clk(clk),
@@ -61,25 +61,25 @@ FetchStage #() fetchstage (
 // Decode Stage
 // **************************
 
-// decode -> exe 用のレジスタ
-reg [31:0] exe_imm_i_sext;
-reg [31:0] exe_imm_s_sext;
-reg [31:0] exe_imm_b_sext;
-reg [31:0] exe_imm_j_sext;
-reg [31:0] exe_imm_u_shifted;
-reg [31:0] exe_imm_z_uext;
+// decode -> exe 用のwire
+wire [31:0] exe_imm_i_sext;
+wire [31:0] exe_imm_s_sext;
+wire [31:0] exe_imm_b_sext;
+wire [31:0] exe_imm_j_sext;
+wire [31:0] exe_imm_u_shifted;
+wire [31:0] exe_imm_z_uext;
 
-reg [31:0] exe_reg_pc;
-reg [4:0]  exe_exe_fun; // TODO bitwise
-reg [31:0] exe_op1_data;
-reg [31:0] exe_op2_data;
-reg [31:0] exe_rs2_data;
-reg [4:0]  exe_mem_wen;
-reg [0:0]  exe_rf_wen;
-reg [3:0]  exe_wb_sel;
-reg [4:0]  exe_wb_addr;
-reg [2:0]  exe_csr_cmd;
-reg 	   exe_jmp_flg;
+wire [31:0] exe_reg_pc;
+wire [4:0]  exe_exe_fun; // TODO bitwise
+wire [31:0] exe_op1_data;
+wire [31:0] exe_op2_data;
+wire [31:0] exe_rs2_data;
+wire [4:0]  exe_mem_wen;
+wire [0:0]  exe_rf_wen;
+wire [3:0]  exe_wb_sel;
+wire [4:0]  exe_wb_addr;
+wire [2:0]  exe_csr_cmd;
+wire 	   exe_jmp_flg;
 
 DecodeStage #() decodestage
 (
@@ -114,14 +114,14 @@ DecodeStage #() decodestage
 // Execute Stage
 // **************************
 
-reg [31:0] mem_alu_out;
-reg        mem_br_flg;
-reg [31:0] mem_br_target;
+wire [31:0] mem_alu_out;
+wire        mem_br_flg;
+wire [31:0] mem_br_target;
 
-reg [31:0] mem_reg_pc;
-reg [4:0]  mem_mem_wen;
-reg [3:0]  mem_wb_sel;
-reg [31:0] mem_rs2_data;
+wire [31:0] mem_reg_pc;
+wire [4:0]  mem_mem_wen;
+wire [3:0]  mem_wb_sel;
+wire [31:0] mem_rs2_data;
 
 ExecuteStage #() executestage
 (
