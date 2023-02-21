@@ -27,10 +27,6 @@ initial begin
         regfile[loop_i] = 0;
 end
 
-initial begin
-	memory_d_cmd <= 0;
-end
-
 //**************************
 // Fetch Stage
 //**************************
@@ -147,33 +143,40 @@ ExecuteStage #() executestage
 	.output_rs2_data(mem_rs2_data)
 );
 
-/*
-
-
-
 // **************************
 // Memory Stage
 // **************************
+
+wire [31:0]		wb_read_data;
+wire [31:0]		wb_reg_pc;
+wire [31:0]		wb_alu_out;
+wire [3:0]		wb_wb_sel;
+wire			wb_next_flg;
+
 MemoryStage #() memorystage
 (
 	.clk(clk),
 
-	.rs2_data(mem_rs2_data),
-	.wb_sel(mem_wb_sel),
-	.mem_wen(mem_mem_wen),
+	.reg_pc(mem_reg_pc),
+    .rs2_data(mem_rs2_data),
+    .alu_out(mem_alu_out),
+    .mem_wen(mem_mem_wen),
+    .wb_sel(mem_wb_sel),
 
-	.alu_out(mem_alu_out),
+	.output_read_data(wb_read_data),
+	.output_reg_pc(wb_reg_pc),
+	.output_alu_out(wb_alu_out),
+	.output_wb_sel(wb_wb_sel),
+	.next_flg(wb_next_flg),
 
-	.memory_cmd(memory_cmd),
-	.memory_cmd_ready(memory_cmd_ready),
-
-	.memory_d_addr(memory_d_addr),
-	.memory_rdata(memory_rdata),
-
-	.memory_wmask(memory_wmask),
-	.memory_wdata(memory_wdata)
+	.mem_d_cmd(memory_d_cmd),
+	.mem_d_cmd_ready(memory_d_cmd_ready),
+	.mem_d_addr(memory_d_addr),
+	.mem_wdata(memory_wdata),
+	.mem_wmask(memory_wmask),
+	.mem_rdata(memory_rdata),
+	.mem_rdata_valid(memory_rdata_valid)
 );
-*/
 
 reg [31:0] clk_count = 0;
 
