@@ -1,10 +1,9 @@
 module DecodeStage
 (
     input  wire	      clk,
-    input  reg [31:0] inst,
 
-	// レジスタ
-	input  reg [31:0] reg_pc,
+    input  reg [31:0] input_inst,
+	input  reg [31:0] input_reg_pc,
 	input  reg [31:0] regfile[31:0],
 
     // 即値
@@ -26,11 +25,19 @@ module DecodeStage
     output reg [3:0]  wb_sel,   // ライトバック先
 	output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
     output reg [2:0]  csr_cmd,  // CSR
-    output reg 	      jmp_flg   // ジャンプ命令かのフラグ
+    output reg 	      jmp_flg , // ジャンプ命令かのフラグ
+
+	input  wire       stall_flg
 );
 
 `include "../consts_core.v"
 `include "../instdefs.v"
+
+reg  [31:0] save_inst	= 0;
+reg  [31:0] save_reg_pc	= 0;
+
+wire [31:0] inst	= stall_flg ? save_inst : input_inst;
+wire [31:0] reg_pc	= stall_flg ? save_reg_pc : input_reg_pc; 
 
 wire [11:0] wire_imm_i = inst[31:20];
 wire [11:0] wire_imm_s = {inst[31:25], inst[11:7]};
@@ -189,7 +196,11 @@ always @(posedge clk) begin
     rf_wen  <= wire_rf_wen;
     wb_sel  <= wire_wb_sel;
 	wb_addr <= wire_wb_addr;
-    csr_cmd <= wire_csr_cmd;
+    csr_cmd	<= wire_csr_cmd;
+
+	// save
+	save_inst	<= inst;
+	save_reg_pc	<= reg_pc;
 end
 
 always @(posedge clk) begin
