@@ -20,7 +20,7 @@ module MemoryStage(
 	output reg [31:0]	mem_wdata,
 	output reg [31:0]	mem_wmask,
 	input  reg [31:0]	mem_rdata,
-	input  reg			mem_rdata_valid,
+	input  reg			mem_rdata_valid
 );
 
 `include "../consts_core.v"
