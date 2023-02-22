@@ -82,9 +82,9 @@ wire 	   exe_jmp_flg;
 DecodeStage #() decodestage
 (
     .clk(clk),
-    .inst(id_inst),
-	.reg_pc(id_reg_pc),
 
+    .input_inst(id_inst),
+	.input_reg_pc(id_reg_pc),
 	.regfile(regfile),
 
 	.imm_i_sext(exe_imm_i_sext),
@@ -104,7 +104,9 @@ DecodeStage #() decodestage
 	.wb_sel(exe_wb_sel),
 	.wb_addr(exe_wb_addr),
 	.csr_cmd(exe_csr_cmd),
-	.jmp_flg(exe_jmp_flg)
+	.jmp_flg(exe_jmp_flg),
+
+	.stall_flg(memory_stage_is_stall)
 );
 
 
@@ -125,15 +127,14 @@ ExecuteStage #() executestage
 (
     .clk(clk),
 
-	.imm_b_sext(exe_imm_b_sext),
-
-	.reg_pc(exe_reg_pc),
-	.exe_fun(exe_exe_fun),
-	.op1_data(exe_op1_data),
-	.op2_data(exe_op2_data),
-	.rs2_data(exe_rs2_data),
-	.mem_wen(exe_mem_wen),
-	.wb_sel(exe_wb_sel),
+	.input_reg_pc(exe_reg_pc),
+	.input_exe_fun(exe_exe_fun),
+	.input_op1_data(exe_op1_data),
+	.input_op2_data(exe_op2_data),
+	.input_rs2_data(exe_rs2_data),
+	.input_mem_wen(exe_mem_wen),
+	.input_wb_sel(exe_wb_sel),
+	.input_imm_b_sext(exe_imm_b_sext),
 
 	.alu_out(mem_alu_out),
 	.br_flg(mem_br_flg),
@@ -142,7 +143,9 @@ ExecuteStage #() executestage
 	.output_reg_pc(mem_reg_pc),
 	.output_mem_wen(mem_mem_wen),
 	.output_wb_sel(mem_wb_sel),
-	.output_rs2_data(mem_rs2_data)
+	.output_rs2_data(mem_rs2_data),
+
+	.stall_flg(memory_stage_is_stall)
 );
 
 // **************************
@@ -170,6 +173,7 @@ MemoryStage #() memorystage
 	.output_alu_out(wb_alu_out),
 	.output_wb_sel(wb_wb_sel),
 	.next_flg(wb_next_flg),
+	.output_is_stall(memory_stage_is_stall),
 
 	.mem_d_cmd(memory_d_cmd),
 	.mem_d_cmd_ready(memory_d_cmd_ready),
