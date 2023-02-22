@@ -27,6 +27,9 @@ initial begin
         regfile[loop_i] = 0;
 end
 
+
+wire memory_stage_is_stall;
+
 //**************************
 // Fetch Stage
 //**************************
@@ -34,7 +37,6 @@ end
 // fetch -> decode 用のwire
 wire [31:0]  id_reg_pc;
 wire [31:0]  id_inst;
-wire			fetch_stall_flg = 0;
 
 FetchStage #() fetchstage (
 	.clk(clk),
@@ -48,7 +50,7 @@ FetchStage #() fetchstage (
 	.mem_data(memory_inst),
 	.mem_data_valid(memory_inst_valid),
 
-	.stall_flg(fetch_stall_flg)
+	.stall_flg(memory_stage_is_stall)
 );
 
 

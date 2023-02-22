@@ -22,18 +22,21 @@ reg [31:0] reg_pc = 0;
 reg [31:0] output_reg_pc_reg;
 reg [31:0] output_id_inst_reg;
 
-localparam INST_NOP = 32'h00000033;
+localparam REGPC_NOP	= 32'hffffffff;
+localparam INST_NOP		= 32'h00000033;
 
 assign id_reg_pc = (
-	stall_flg ? 0 : 
-	mem_data_valid ? output_reg_pc_reg : 
-	0
+	stall_flg ? REGPC_NOP : 
+	mem_data_valid ? reg_pc :
+	status == STATE_WAIT_FETCH ? REGPC_NOP :
+	output_reg_pc_reg
 );
 
 assign id_inst = (
 	stall_flg ? INST_NOP :
-	mem_data_valid ? output_id_inst_reg :
-	INST_NOP
+	mem_data_valid ? mem_data :
+	status == STATE_WAIT_FETCH ? INST_NOP :
+	output_id_inst_reg
 );
 
 localparam STATE_START		= 4'd0;
@@ -43,7 +46,7 @@ reg [3:0] status = STATE_START;
 
 always @(posedge clk) begin
 	if (status == STATE_START) begin
-		if (mem_ready) begin
+		if (mem_ready && !stall_flg) begin
 			mem_start	<= 1;
 			mem_addr	<= reg_pc;
 			status		<= STATE_WAIT_FETCH;
@@ -51,13 +54,11 @@ always @(posedge clk) begin
 	end if (status == STATE_WAIT_FETCH) begin
 		mem_start	<= 0;
 		if (mem_data_valid) begin
-			status	<= STATE_START;
 			$display("Fetched");
-			if (!stall_flg) begin
-				output_id_inst_reg	<= mem_data;
-				output_reg_pc_reg	<= reg_pc;
-				reg_pc				<= reg_pc + 4;
-			end
+			status				<= STATE_START;
+			output_id_inst_reg	<= mem_data;
+			output_reg_pc_reg	<= reg_pc;
+			reg_pc				<= reg_pc + 4;
 		end
 	end
 end
