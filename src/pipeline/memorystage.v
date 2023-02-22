@@ -12,6 +12,7 @@ module MemoryStage(
 	output reg [31:0]	output_alu_out,
 	output reg [3:0]	output_wb_sel,
 	output wire			next_flg,
+	output reg			output_is_stall,
 
 	output reg [2:0]	mem_d_cmd,
 	input  reg			mem_d_cmd_ready,
@@ -43,6 +44,8 @@ wire is_store = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen
 
 assign next_flg =	(state == STATE_WAIT && mem_wen == MEN_X) ||
 					(state == STATE_END);
+
+assign output_is_stall = !next_flg;
 
 always @(posedge clk) begin
 	if (state == STATE_WAIT) begin
