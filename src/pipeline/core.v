@@ -27,8 +27,12 @@ initial begin
         regfile[loop_i] = 0;
 end
 
+// 何クロック目かのカウント
+reg [31:0] clk_count = 0;
 
-wire memory_stage_is_stall;
+// メモリステージのストールフラグ
+wire wait_memory_stage;
+wire memory_stage_is_stall = clk_count >= 5 ? wait_memory_stage : 0;
 
 //**************************
 // Fetch Stage
@@ -173,7 +177,7 @@ MemoryStage #() memorystage
 	.output_alu_out(wb_alu_out),
 	.output_wb_sel(wb_wb_sel),
 	.next_flg(wb_next_flg),
-	.output_is_stall(memory_stage_is_stall),
+	.output_is_stall(wait_memory_stage),
 
 	.mem_d_cmd(memory_d_cmd),
 	.mem_d_cmd_ready(memory_d_cmd_ready),
@@ -183,8 +187,6 @@ MemoryStage #() memorystage
 	.mem_rdata(memory_rdata),
 	.mem_rdata_valid(memory_rdata_valid)
 );
-
-reg [31:0] clk_count = 0;
 
 always @(negedge clk) begin
 	clk_count <= clk_count + 1;
