@@ -210,6 +210,36 @@ CSRStage #() csrstage
 );
 
 
+// **************************
+// WriteBack Stage
+// **************************
+wire [31:0]	reg_pc;
+wire [3:0]	wb_sel;
+wire [31:0]	csr_rdata;
+wire [31:0]	memory_read;
+wire [4:0]	wb_addr;
+wire 		rf_wen;
+wire [31:0]	br_target;
+wire [31:0]	alu_out;
+wire		inst_is_ecall;
+wire [31:0]	trap_vector_addr;
+
+module WriteBackStage(
+	.clk(clk),
+
+	.reg_pc(reg_pc),
+	.wb_sel(wb_sel),
+	.csr_rdata(csr_rdata),
+	.memory_read(memory_read),
+	.wb_addr(wb_addr),
+	.rf_wen(rf_wen),
+	.br_target(br_target),
+	.alu_out(alu_out),
+	.inst_is_ecall(inst_is_ecall),
+	.trap_vector_addr(trap_vector_addr),
+
+	.regfile(regfile)
+);
 
 always @(negedge clk) begin
 	clk_count <= clk_count + 1;
