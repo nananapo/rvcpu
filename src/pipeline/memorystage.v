@@ -26,6 +26,10 @@ module MemoryStage(
 `include "../consts_core.v"
 `include "memory_const.v"
 
+initial begin
+	mem_cmd = MEMORY_CMD_NOP;
+end
+
 localparam STATE_WAIT				= 0;
 localparam STATE_WAIT_READY			= 1;
 localparam STATE_WAIT_READ_VALID	= 2;
