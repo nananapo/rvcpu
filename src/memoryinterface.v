@@ -40,7 +40,7 @@ reg [31:0]	mem_wmask;
 
 Memory #(
 	.MEMORY_SIZE(4096),
-	.MEMORY_FILE("../../test/bin/sample.hex")
+	.MEMORY_FILE("../test/bin/sample.hex")
 ) memory(
 	.clk(clk),
 
