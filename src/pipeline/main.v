@@ -1,5 +1,9 @@
-module main (
-	input wire clk
+module mainPipeline (
+    input  wire       clk,
+    input  wire       rst_n,
+	output reg [5:0]  led,
+    output wire       uart_tx,
+    input  wire       btn1 
 );
 
 reg			mem_inst_start;

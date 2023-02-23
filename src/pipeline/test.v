@@ -1,7 +1,7 @@
-module test();
+module testPipeline();
   reg clk = 1;
 
-  main #() m(
+  mainPipeline #() m(
     .clk(clk)
   );
 
