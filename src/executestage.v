@@ -23,7 +23,7 @@ module ExecuteStage
 	input  wire       stall_flg
 );
 
-`include "../consts_core.v"
+`include "consts_core.v"
 
 reg [31:0] save_reg_pc = 0;	
 reg [4:0]  save_exe_fun = 0;	

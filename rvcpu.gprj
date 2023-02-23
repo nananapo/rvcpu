@@ -7,18 +7,18 @@
     <FileList>
         <File path="src/consts_core.v" type="file.verilog" enable="1"/>
         <File path="src/instdefs.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/core.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/csrstage.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/decodestage.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/executestage.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/fetchstage.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/main.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/memory.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/memory_const.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/memoryinterface.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/memorystage.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/test.v" type="file.verilog" enable="1"/>
-        <File path="src/pipeline/writebackstage.v" type="file.verilog" enable="1"/>
+        <File path="src/core.v" type="file.verilog" enable="1"/>
+        <File path="src/csrstage.v" type="file.verilog" enable="1"/>
+        <File path="src/decodestage.v" type="file.verilog" enable="1"/>
+        <File path="src/executestage.v" type="file.verilog" enable="1"/>
+        <File path="src/fetchstage.v" type="file.verilog" enable="1"/>
+        <File path="src/main.v" type="file.verilog" enable="1"/>
+        <File path="src/memory.v" type="file.verilog" enable="1"/>
+        <File path="src/memory_const.v" type="file.verilog" enable="1"/>
+        <File path="src/memoryinterface.v" type="file.verilog" enable="1"/>
+        <File path="src/memorystage.v" type="file.verilog" enable="1"/>
+        <File path="src/test.v" type="file.verilog" enable="1"/>
+        <File path="src/writebackstage.v" type="file.verilog" enable="1"/>
         <File path="src/tangnano9k.cst" type="file.cst" enable="1"/>
         <File path="src/rvcpu.sdc" type="file.sdc" enable="1"/>
     </FileList>

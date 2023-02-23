@@ -23,7 +23,7 @@ module MemoryStage(
 	input  reg			mem_rdata_valid
 );
 
-`include "../consts_core.v"
+`include "consts_core.v"
 `include "memory_const.v"
 
 initial begin
