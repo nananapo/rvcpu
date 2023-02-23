@@ -197,7 +197,8 @@ MemoryStage #() memorystage
 // **************************
 // CSR Stage
 // **************************
-wire [31:0]	trap_vector;
+wire [31:0]	wb_csr_rdata;
+wire [31:0]	wb_trap_vector;
 
 CSRStage #() csrstage
 (
@@ -206,37 +207,37 @@ CSRStage #() csrstage
 	.csr_cmd(csr_csr_cmd),
 	.op1_data(csr_op1_data),
 	.imm_i(csr_imm_i),
-	.trap_vector(trap_vector)
+
+	.output_csr_rdata(wb_csr_rdata),
+	.trap_vector(wb_trap_vector)
 );
 
 
 // **************************
 // WriteBack Stage
 // **************************
-wire [31:0]	reg_pc;
-wire [3:0]	wb_sel;
-wire [31:0]	csr_rdata;
-wire [31:0]	memory_read;
 wire [4:0]	wb_addr;
 wire 		rf_wen;
 wire [31:0]	br_target;
-wire [31:0]	alu_out;
 wire		inst_is_ecall;
-wire [31:0]	trap_vector_addr;
 
 module WriteBackStage(
 	.clk(clk),
 
-	.reg_pc(reg_pc),
-	.wb_sel(wb_sel),
-	.csr_rdata(csr_rdata),
-	.memory_read(memory_read),
+	.reg_pc(wb_reg_pc),
+	.wb_sel(wb_wb_sel),
+	.csr_rdata(wb_csr_rdata),
+	.memory_rdata(wb_read_data),
+
 	.wb_addr(wb_addr),
 	.rf_wen(rf_wen),
 	.br_target(br_target),
-	.alu_out(alu_out),
+
+	.alu_out(wb_alu_out),
+	
 	.inst_is_ecall(inst_is_ecall),
-	.trap_vector_addr(trap_vector_addr),
+	
+	.trap_vector(wb_trap_vector),
 
 	.regfile(regfile)
 );
