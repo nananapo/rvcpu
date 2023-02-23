@@ -19,6 +19,15 @@ module WriteBackStage(
 
 `include "include/core.v"
 
+integer loop_i;
+initial begin
+	regfile[0] = 0;
+	regfile[1] = 0;
+	regfile[2] = 1000;
+    for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
+        regfile[loop_i] = 0;
+end
+
 // WB STAGE
 wire [31:0] wb_data = (
 	wb_sel == WB_MEMB ? {{24{memory_read[7]}}, memory_read} :
