@@ -75,7 +75,7 @@ always @(posedge clk) begin
 			output_inst_reg		<= mem_data;
 			output_reg_pc_reg	<= reg_pc;
 			status				<= STATE_START;
-			//reg_pc				<= reg_pc + 4;
+			reg_pc				<= reg_pc + 4;
 
 			if (!stall_flg) begin
 				is_submitted <= 1;
