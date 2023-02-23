@@ -126,6 +126,7 @@ wire [3:0]  mem_wb_sel;
 wire [31:0] mem_rs2_data;
 wire [31:0] csr_op1_data;
 wire [2:0]	csr_csr_cmd;
+wire [4:0]  mem_wb_addr;
 wire [31:0]	csr_imm_i;
 
 ExecuteStage #() executestage
@@ -139,6 +140,7 @@ ExecuteStage #() executestage
 	.input_rs2_data(exe_rs2_data),
 	.input_mem_wen(exe_mem_wen),
 	.input_wb_sel(exe_wb_sel),
+	.input_wb_addr(exe_wb_addr),
 	.input_csr_cmd(exe_csr_cmd),
 	.input_imm_i_sext(exe_imm_i_sext),
 	.input_imm_b_sext(exe_imm_b_sext),
@@ -149,9 +151,10 @@ ExecuteStage #() executestage
 
 	.output_reg_pc(mem_reg_pc),
 	.output_mem_wen(mem_mem_wen),
-	.output_wb_sel(mem_wb_sel),
 	.output_rs2_data(mem_rs2_data),
 	.output_op1_data(csr_op1_data),
+	.output_wb_sel(mem_wb_sel),
+	.output_wb_addr(mem_wb_addr),
 	.output_csr_cmd(csr_csr_cmd),
 	.output_imm_i(csr_imm_i),
 
@@ -166,6 +169,7 @@ wire [31:0]		wb_read_data;
 wire [31:0]		wb_reg_pc;
 wire [31:0]		wb_alu_out;
 wire [3:0]		wb_wb_sel;
+wire [4:0]		wb_wb_addr;
 wire			wb_next_flg;
 
 MemoryStage #() memorystage
@@ -177,11 +181,13 @@ MemoryStage #() memorystage
     .alu_out(mem_alu_out),
     .mem_wen(mem_mem_wen),
     .wb_sel(mem_wb_sel),
+	.wb_addr(mem_wb_addr),
 
 	.output_read_data(wb_read_data),
 	.output_reg_pc(wb_reg_pc),
 	.output_alu_out(wb_alu_out),
 	.output_wb_sel(wb_wb_sel),
+	.output_wb_addr(wb_wb_addr);
 	.next_flg(wb_next_flg),
 	.output_is_stall(wait_memory_stage),
 
@@ -216,7 +222,6 @@ CSRStage #() csrstage
 // **************************
 // WriteBack Stage
 // **************************
-wire [4:0]	wb_addr;
 wire 		rf_wen;
 wire [31:0]	br_target;
 wire		inst_is_ecall;
@@ -228,13 +233,13 @@ module WriteBackStage(
 	.wb_sel(wb_wb_sel),
 	.csr_rdata(wb_csr_rdata),
 	.memory_rdata(wb_read_data),
+	.wb_addr(wb_wb_addr),
 
-	.wb_addr(wb_addr),
 	.rf_wen(rf_wen),
 	.br_target(br_target),
 
 	.alu_out(wb_alu_out),
-	
+
 	.inst_is_ecall(inst_is_ecall),
 	
 	.trap_vector(wb_trap_vector),

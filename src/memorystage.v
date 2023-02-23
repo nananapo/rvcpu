@@ -8,11 +8,13 @@ module MemoryStage(
     input  reg [31:0]	alu_out,
     input  reg [4:0]	mem_wen,
     input  reg [3:0]	wb_sel,
+	input  reg [4:0]	wb_addr,
 
 	output reg [31:0]	output_read_data,
 	output reg [31:0]	output_reg_pc,
 	output reg [31:0]	output_alu_out,
 	output reg [3:0]	output_wb_sel,
+	output reg [4:0]	output_wb_addr,
 	output wire			next_flg,
 	output reg			output_is_stall,
 
@@ -44,6 +46,7 @@ reg [31:0]	save_alu_out = 0;
 reg [31:0]	save_rs2_data = 0;
 reg [4:0]	save_mem_wen = 0;
 reg [3:0]	save_wb_sel = 0;
+reg [4:0]	save_wb_addr = 0;
 
 wire is_store = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 //wire is_load  = !is_store && save_mem_wen != MEN_X;
@@ -62,11 +65,13 @@ always @(posedge clk) begin
 			save_rs2_data	<= rs2_data;
 			save_mem_wen	<= mem_wen;
 			save_wb_sel		<= wb_sel;
+			save_wb_addr	<= wb_addr;
 		end else begin
 			output_read_data<= 32'hffffffff;
 			output_reg_pc	<= reg_pc;
 			output_alu_out	<= alu_out;
 			output_wb_sel	<= wb_sel;
+			output_wb_addr	<= wb_addr;
 		end
 	end else if (state == STATE_WAIT_READY) begin
 		if (mem_cmd_ready) begin
@@ -104,6 +109,7 @@ always @(posedge clk) begin
 		output_reg_pc	<= save_reg_pc;
 		output_alu_out	<= save_alu_out;
 		output_wb_sel	<= save_wb_sel;
+		output_wb_addr	<= save_wb_addr;
 	end
 end
 
