@@ -46,7 +46,7 @@ assign inst		= (status == STATE_WAIT_MEMORY_READ && mem_rdata_valid && cmd_is_in
 assign rdata	= (status == STATE_WAIT_MEMORY_READ && mem_rdata_valid && !cmd_is_inst) ? mem_rdata : rdata_save;
 
 Memory #(
-	.MEMORY_SIZE(4096),
+	.MEMORY_SIZE(16384),
 	.MEMORY_FILE("../test/bin/sample.hex")
 ) memory(
 	.clk(clk),
