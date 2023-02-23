@@ -200,6 +200,23 @@ MemoryStage #() memorystage
 	.mem_rdata_valid(memory_rdata_valid)
 );
 
+// **************************
+// CSR Stage
+// **************************
+wire [31:0]	trap_vector;
+
+CSRStage #() csrstage
+(
+	.clk(clk),
+
+	.csr_cmd(csr_csr_cmd),
+	.op1_data(csr_op1_data),
+	.imm_i(csr_imm_i),
+	.trap_vector(trap_vector)
+);
+
+
+
 always @(negedge clk) begin
 	clk_count <= clk_count + 1;
 	$display("");
