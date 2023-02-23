@@ -96,6 +96,7 @@ always @(posedge clk) begin
 			);
 		end
 	end else if (state == STATE_END) begin
+		$display("MEM.END");
 		mem_cmd			<= MEMORY_CMD_NOP;
 		state			<= STATE_WAIT;
 		output_reg_pc	<= save_reg_pc;
