@@ -1,3 +1,5 @@
+`default_nettype none
+
 module testPipeline();
   reg clk = 1;
 

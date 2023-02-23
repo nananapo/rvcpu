@@ -1,3 +1,5 @@
+`default_nettype none
+
 module CSRStage #(
 	parameter TV_ADDR = 12'h305
 )(

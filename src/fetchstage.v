@@ -1,3 +1,5 @@
+`default_nettype none
+
 module FetchStage(
 	input  wire			clk,
 

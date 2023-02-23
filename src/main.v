@@ -1,3 +1,5 @@
+`default_nettype none
+
 module mainPipeline (
     input  wire       clk,
 	output reg [5:0]  led

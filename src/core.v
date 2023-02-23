@@ -1,3 +1,5 @@
+`default_nettype none
+
 module CorePipeline(
     input   wire        clk,
 	

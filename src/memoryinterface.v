@@ -1,3 +1,5 @@
+`default_nettype none
+
 module MemoryInterface (
 	input wire clk,
  
