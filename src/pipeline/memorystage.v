@@ -33,11 +33,11 @@ localparam STATE_END				= 3;
 
 reg [3:0] state = STATE_WAIT;
 
-reg [31:0]	save_reg_pc;
-reg [31:0]	save_alu_out;
-reg [31:0]	save_rs2_data;
-reg [4:0]	save_mem_wen;
-reg [3:0]	save_wb_sel;
+reg [31:0]	save_reg_pc = 0;
+reg [31:0]	save_alu_out = 0;
+reg [31:0]	save_rs2_data = 0;
+reg [4:0]	save_mem_wen = 0;
+reg [3:0]	save_wb_sel = 0;
 
 wire is_store = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 //wire is_load  = !is_store && save_mem_wen != MEN_X;
@@ -111,6 +111,7 @@ always @(posedge clk) begin
     $display("out._alu_out  : 0x%H", output_alu_out);
     $display("out._wb_sel   : %d", output_wb_sel);
     $display("next_flg      : %d", next_flg);
+    $display("mem.stall_flg : %d", output_is_stall);
 end
 
 endmodule
