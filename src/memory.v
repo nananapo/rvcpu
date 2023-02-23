@@ -140,7 +140,7 @@ always @(posedge clk) begin
 					{24'h000000, (wdata_bup[7:0] & wmask_le[31:24])}
 				};
 				clock_cnt <= clock_cnt + 1;
-			end else begin
+			end else if (clock_cnt == 3) begin
 				mem[addr_shift + 1] <= {
 					addr_bup == 1 ?
 						(data_save & {wmask_rev_le[7:0], 24'hffffff}) | 
@@ -151,7 +151,7 @@ always @(posedge clk) begin
 					(data_save & {wmask_rev_le[24:0], 8'hff}) | 
 					{({wdata_bup[15:8], wdata_bup[23:16], wdata_bup[31:24]} & wmask_le[24:0]), 8'h00}
 				};
-				clock_cnt <= clock_cnt + 1;
+				state <= STATE_WAIT;
 			end
 		end
 	end
