@@ -12,8 +12,12 @@ module CorePipeline(
 	output reg [31:0]	memory_wdata,
 	output reg [31:0]	memory_wmask,
 	input  reg [31:0]	memory_rdata,
-	input  reg			memory_rdata_valid
+	input  reg			memory_rdata_valid,
+
+    output reg          led_2
 );
+
+assign led_2 = memory_inst_start == 0;
 
 // レジスタ
 reg [31:0] regfile [31:0];

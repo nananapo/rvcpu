@@ -1,5 +1,6 @@
 module mainPipeline (
-    input  wire       clk
+    input  wire       clk,
+	output reg [5:0]  led
 );
 
 reg			mem_inst_start;
@@ -14,6 +15,26 @@ reg [31:0]	mem_wdata;
 reg [31:0]	mem_wmask;
 reg [31:0]	mem_rdata;
 reg			mem_rdata_valid;
+
+reg [31:0] clkCount = 0;
+wire led_2;
+
+initial begin
+	led[0] <= 0;
+	led[1] <= 0;
+	led[2] <= 0;
+	led[3] <= 0;
+	led[4] <= 0;
+end
+
+always @(posedge clk) begin
+    if (clkCount > 1000000000)
+		led[0] <= 0;
+    else
+		led[0] <= 1;
+    led[1] <= led_2;
+	clkCount <= clkCount + 1;
+end
 
 MemoryInterface #() memory (
     .clk(clk),
@@ -46,7 +67,9 @@ CorePipeline core (
     .memory_wdata(mem_wdata),
     .memory_wmask(mem_wmask),
     .memory_rdata(mem_rdata),
-    .memory_rdata_valid(mem_rdata_valid)
+    .memory_rdata_valid(mem_rdata_valid),
+
+    .led_2(led_2)
 );
 
 endmodule
