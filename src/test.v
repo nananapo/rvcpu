@@ -1,9 +1,9 @@
 `default_nettype none
 
-module testPipeline();
+module test();
   reg clk = 1;
 
-  mainPipeline #() m(
+  main #() m(
     .clk(clk)
   );
 

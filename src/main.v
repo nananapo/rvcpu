@@ -1,6 +1,6 @@
 `default_nettype none
 
-module mainPipeline (
+module main (
     input  wire       clk,
 	output reg [5:0]  led
 );
@@ -55,7 +55,7 @@ MemoryInterface #() memory (
     .rdata_valid(mem_rdata_valid)
 );
 
-CorePipeline core (
+Core core (
     .clk(clk),
 
 	.memory_inst_start(mem_inst_start),

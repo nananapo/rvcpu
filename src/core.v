@@ -1,6 +1,6 @@
 `default_nettype none
 
-module CorePipeline(
+module Core(
     input   wire        clk,
 	
 	output reg			memory_inst_start,
