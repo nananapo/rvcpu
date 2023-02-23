@@ -179,9 +179,9 @@ MemoryStage #() memorystage
 	.next_flg(wb_next_flg),
 	.output_is_stall(wait_memory_stage),
 
-	.mem_d_cmd(memory_d_cmd),
-	.mem_d_cmd_ready(memory_d_cmd_ready),
-	.mem_d_addr(memory_d_addr),
+	.mem_cmd(memory_d_cmd),
+	.mem_cmd_ready(memory_d_cmd_ready),
+	.mem_addr(memory_d_addr),
 	.mem_wdata(memory_wdata),
 	.mem_wmask(memory_wmask),
 	.mem_rdata(memory_rdata),

@@ -14,9 +14,9 @@ module MemoryStage(
 	output wire			next_flg,
 	output reg			output_is_stall,
 
-	output reg [2:0]	mem_d_cmd,
-	input  reg			mem_d_cmd_ready,
-	output reg [31:0]	mem_d_addr,
+	output reg [2:0]	mem_cmd,
+	input  reg			mem_cmd_ready,
+	output reg [31:0]	mem_addr,
 	output reg [31:0]	mem_wdata,
 	output reg [31:0]	mem_wmask,
 	input  reg [31:0]	mem_rdata,
@@ -63,10 +63,10 @@ always @(posedge clk) begin
 			output_wb_sel	<= wb_sel;
 		end
 	end else if (state == STATE_WAIT_READY) begin
-		if (mem_d_cmd_ready) begin
-			mem_d_addr	<= save_alu_out;
+		if (mem_cmd_ready) begin
+			mem_addr	<= save_alu_out;
 			if (is_store) begin
-				mem_d_cmd	<= MEMORY_CMD_WRITE;
+				mem_cmd	<= MEMORY_CMD_WRITE;
 				mem_wdata	<= save_rs2_data;
 				mem_wmask	<= (
 					save_mem_wen == MEN_SB ? 32'h000000ff : 
@@ -75,7 +75,7 @@ always @(posedge clk) begin
 				);
 				state		<= STATE_END;
 			end else begin
-				mem_d_cmd	<= MEMORY_CMD_READ;
+				mem_cmd	<= MEMORY_CMD_READ;
 				state		<= STATE_WAIT_READ_VALID;
 			end
 		end
