@@ -101,6 +101,7 @@ end
 
 always @(posedge clk) begin
 	$display("MEMORY STAGE-------------");
+	$display("status        : %d", state);
     $display("reg_pc        : 0x%H", reg_pc);
     $display("rs2_data      : 0x%H", rs2_data);
     $display("alu_out       : 0x%H", alu_out);
@@ -111,7 +112,14 @@ always @(posedge clk) begin
     $display("out._alu_out  : 0x%H", output_alu_out);
     $display("out._wb_sel   : %d", output_wb_sel);
     $display("next_flg      : %d", next_flg);
-    $display("mem.stall_flg : %d", output_is_stall);
+    $display("stall_flg     : %d", output_is_stall);
+	$display("mem.cmd       : %d", mem_cmd);
+	$display("mem.cmd_ready : %d", mem_cmd_ready);
+	$display("mem.addr      : 0x%H", mem_addr);
+	$display("mem.wdata     : 0x%H", mem_wdata);
+	$display("mem.wmask     : 0x%H", mem_wmask);
+	$display("mem.rdata     : 0x%H", mem_rdata);
+	$display("mem.valid     : %d", mem_rdata_valid);
 end
 
 endmodule
