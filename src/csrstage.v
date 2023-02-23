@@ -3,14 +3,15 @@
 module CSRStage #(
 	parameter TV_ADDR = 12'h305
 )(
-	input wire clk,
+	input  wire			clk,
 	
 	// input
 	input  wire [2:0]	csr_cmd,
-	input  wire [31:0]  op1_data,
+	input  wire [31:0]	op1_data,
 	input  wire [31:0]	imm_i,
 
 	// output
+	output reg  [31:0]	output_csr_rdata,
 	output wire [31:0]	trap_vector
 );
 
@@ -35,7 +36,8 @@ wire [31:0] wdata = (
 
 always @(posedge clk) begin
 	if (csr_cmd != CSR_X) begin
-		mem[addr] <= {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]};
+		output_csr_rdata	<= rdata;
+		mem[addr]			<= {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]};
 	end
 end
 
