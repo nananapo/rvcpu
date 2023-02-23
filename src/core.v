@@ -29,6 +29,9 @@ reg [31:0] clk_count = 0;
 wire wait_memory_stage;
 wire memory_stage_is_stall = clk_count >= 5 ? wait_memory_stage : 0;
 
+// レジスタ
+wire [31:0]	regfile[31:0];
+
 //**************************
 // Fetch Stage
 //**************************
