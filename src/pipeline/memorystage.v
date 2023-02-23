@@ -84,6 +84,7 @@ always @(posedge clk) begin
 			end
 		end
 	end else if (state == STATE_WAIT_READ_VALID) begin
+		mem_cmd <= MEMORY_CMD_NOP;
 		if (mem_rdata_valid) begin
 			state			<= STATE_END;
 			output_read_data<= (
@@ -95,6 +96,7 @@ always @(posedge clk) begin
 			);
 		end
 	end else if (state == STATE_END) begin
+		mem_cmd			<= MEMORY_CMD_NOP;
 		state			<= STATE_WAIT;
 		output_reg_pc	<= save_reg_pc;
 		output_alu_out	<= save_alu_out;
