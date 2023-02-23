@@ -4,7 +4,7 @@ module MemoryInterface (
 	input  wire			inst_start,
 	output wire			inst_ready,
     input  wire [31:0]	i_addr,
-    output reg  [31:0]	inst,
+    output wire [31:0]	inst,
     output wire			inst_valid,
 
     input  wire [2:0]	d_cmd,
@@ -12,7 +12,7 @@ module MemoryInterface (
 	input  wire [31:0]	d_addr,
     input  wire [31:0]	wdata,
     input  wire [31:0]	wmask,
-    output reg  [31:0]	rdata,
+    output wire [31:0]	rdata,
     output wire			rdata_valid
 );
 
@@ -29,14 +29,21 @@ assign rdata_valid	= rdata_valid_reg && d_cmd == MEMORY_CMD_NOP;
 assign d_cmd_ready	= d_cmd_ready_reg && d_cmd == MEMORY_CMD_NOP;
 
 // メモリ
-reg			mem_cmd_start = 0;
-reg			mem_cmd_write;
+wire		mem_cmd_start;
+wire		mem_cmd_write;
 wire		mem_cmd_ready;
-reg  [31:0]	mem_addr;
+wire [31:0] mem_addr;
 wire [31:0]	mem_rdata;
 wire		mem_rdata_valid;
-reg [31:0]	mem_wdata;
-reg [31:0]	mem_wmask;
+wire [31:0]	mem_wdata;
+wire [31:0]	mem_wmask;
+
+// instとrdataを接続
+reg [31:0] inst_save	= 0;
+reg [31:0] rdata_save 	= 0;
+
+assign inst		= (status == STATE_WAIT_MEMORY_READ && mem_rdata_valid && cmd_is_inst) ? mem_rdata : inst_save;
+assign rdata	= (status == STATE_WAIT_MEMORY_READ && mem_rdata_valid && !cmd_is_inst) ? mem_rdata : rdata_save;
 
 Memory #(
 	.MEMORY_SIZE(4096),
@@ -73,6 +80,13 @@ reg [31:0]	save_wdata;
 reg [31:0]	save_wmask;
 
 wire d_cmd_is_op = d_cmd != MEMORY_CMD_NOP;
+
+assign mem_cmd_start	= status == STATE_WAIT_MEMORY_READY && mem_cmd_ready;
+assign mem_addr			= cmd_is_inst ? save_i_addr : save_d_addr;
+assign mem_cmd_write	= cmd_is_inst ? 0 : (save_d_cmd == MEMORY_CMD_WRITE);
+assign mem_wdata		= save_wdata;
+assign mem_wmask		= save_wmask;
+
 /*
 always @(posedge clk) begin
 	$display("MEMINF -------------");
@@ -132,17 +146,9 @@ always @(posedge clk) begin
 		end
 	end else if (status == STATE_WAIT_MEMORY_READY) begin
 		if (mem_cmd_ready) begin
-			mem_cmd_start <= 1;
-
 			if (cmd_is_inst) begin
-				mem_addr		<= save_i_addr;
-				mem_cmd_write	<= 0;
-				status <= STATE_WAIT_MEMORY_READ;
+				status			<= STATE_WAIT_MEMORY_READ;
 			end else begin
-				mem_addr		<= save_d_addr;
-				mem_cmd_write	<= save_d_cmd == MEMORY_CMD_WRITE;
-				mem_wdata		<= save_wdata;
-				mem_wmask		<= save_wmask;
 				if (save_d_cmd == MEMORY_CMD_READ) begin
 					status <= STATE_WAIT_MEMORY_READ;
 				end else begin
@@ -151,19 +157,17 @@ always @(posedge clk) begin
 			end
 		end
 	end else if (status == STATE_WAIT_MEMORY_READ) begin
-		mem_cmd_start <= 0;
 		if (mem_rdata_valid) begin
 			if (cmd_is_inst) begin
-				inst		<= mem_rdata;
+				inst_save		<= mem_rdata;
 				inst_valid_reg	<= 1;
 			end else begin
-				rdata			<= mem_rdata;
+				rdata_save		<= mem_rdata;
 				rdata_valid_reg	<= 1;
 			end
 			status <= STATE_END;
 		end
 	end else if (status == STATE_END) begin
-		mem_cmd_start <= 0;
 		// 処理していたのが命令かつd_cmdがNOPでなければ処理
 		if (cmd_is_inst && save_d_cmd != MEMORY_CMD_NOP) begin
 			cmd_is_inst <= 0;
