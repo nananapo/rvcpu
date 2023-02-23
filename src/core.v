@@ -28,6 +28,8 @@ module Core #(
 `include "consts_core.v"
 `include "instdefs.v"
 
+localparam MEN_S = 1;
+
 // registers
 reg [WORD_LEN-1:0] regfile [REGISTER_COUNT-1:0];
 // initialize regfile

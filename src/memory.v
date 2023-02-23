@@ -1,4 +1,4 @@
-module Memory #(
+module MemoryOld #(
     parameter WORD_LEN = 32,
     parameter MEMORY_SIZE = 16384,
     parameter MEMORY_MAPPED_IO_ADDR = 10240,
