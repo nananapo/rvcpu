@@ -30,8 +30,8 @@ module DecodeStage
 	input  wire       stall_flg
 );
 
-`include "consts_core.v"
-`include "instdefs.v"
+`include "include/core.v"
+`include "include/inst.v"
 
 reg  [31:0] save_inst	= 0;
 reg  [31:0] save_reg_pc	= 0;

@@ -23,8 +23,8 @@ module MemoryStage(
 	input  reg			mem_rdata_valid
 );
 
-`include "consts_core.v"
-`include "memory_const.v"
+`include "include/core.v"
+`include "include/memoryinterface.v"
 
 initial begin
 	mem_cmd = MEMORY_CMD_NOP;

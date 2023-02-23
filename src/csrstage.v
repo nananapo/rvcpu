@@ -12,7 +12,7 @@ module CSRStage #(
 	output wire [31:0]	trap_vector
 );
 
-`include "consts_core.v"
+`include "include/core.v"
 
 reg [31:0] mem [4095:0];
 

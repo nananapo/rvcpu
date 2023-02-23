@@ -16,7 +16,7 @@ module MemoryInterface (
     output wire			rdata_valid
 );
 
-`include "memory_const.v"
+`include "include/memoryinterface.v"
 
 reg inst_valid_reg  = 0;
 reg inst_ready_reg  = 1;

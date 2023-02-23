@@ -15,7 +15,7 @@ module WriteBackStage(
 	output reg [31:0]	regfile[31:0]
 );
 
-`include "consts_core.v"
+`include "include/core.v"
 
 // WB STAGE
 wire [31:0] wb_data = (
