@@ -10,6 +10,7 @@ module ExecuteStage
 	input reg [31:0] input_op2_data,
 	input reg [31:0] input_rs2_data,
 	input reg [4:0]  input_mem_wen,
+	input reg        input_rf_wen,
 	input reg [3:0]  input_wb_sel,
 	input reg [4:0]  input_wb_addr,
 	input reg [2:0]  input_csr_cmd,
@@ -22,6 +23,7 @@ module ExecuteStage
 	
 	output reg [31:0] output_reg_pc,
 	output reg [4:0]  output_mem_wen,
+	output reg        output_rf_wen,
 	output reg [31:0] output_rs2_data,
 	output reg [31:0] output_op1_data,
 	output reg [3:0]  output_wb_sel,
@@ -40,6 +42,7 @@ reg [31:0] save_op1_data = 0;
 reg [31:0] save_op2_data = 0;
 reg [31:0] save_rs2_data = 0;
 reg [4:0]  save_mem_wen = 0;	
+reg        save_rf_wen = 0;
 reg [3:0]  save_wb_sel = 0;	
 reg [4:0]  save_wb_addr = 0;	
 reg [2:0]  save_csr_cmd = 0;	
@@ -52,6 +55,7 @@ wire [31:0] op1_data	= stall_flg ? save_op1_data : input_op1_data;
 wire [31:0] op2_data	= stall_flg ? save_op2_data : input_op2_data;
 wire [31:0] rs2_data	= stall_flg ? save_rs2_data : input_rs2_data;
 wire [4:0]  mem_wen		= stall_flg ? save_mem_wen : input_mem_wen;
+wire 		rf_wen		= stall_flg ? save_rf_wen : input_rf_wen;
 wire [3:0]  wb_sel		= stall_flg ? save_wb_sel : input_wb_sel;
 wire [4:0]  wb_addr		= stall_flg ? save_wb_addr : input_wb_addr;
 wire [3:0]  csr_cmd		= stall_flg ? save_csr_cmd : input_csr_cmd;
@@ -90,6 +94,7 @@ always @(posedge clk) begin
 
 	output_reg_pc   <= reg_pc;
 	output_mem_wen  <= mem_wen;
+	output_rf_wen	<= rf_wen;
 	output_rs2_data <= rs2_data;
 	output_op1_data <= op1_data;
 	output_wb_sel   <= wb_sel;
@@ -104,6 +109,7 @@ always @(posedge clk) begin
 	save_op2_data	<= op2_data;
 	save_rs2_data	<= rs2_data;
 	save_mem_wen	<= mem_wen;
+	save_rf_wen		<= rf_wen;
 	save_wb_sel		<= wb_sel;
 	save_wb_addr	<= wb_addr;
 	save_csr_cmd	<= csr_cmd;

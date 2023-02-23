@@ -7,6 +7,7 @@ module MemoryStage(
     input  reg [31:0]	rs2_data,
     input  reg [31:0]	alu_out,
     input  reg [4:0]	mem_wen,
+	input  reg 			rf_wen,
     input  reg [3:0]	wb_sel,
 	input  reg [4:0]	wb_addr,
 
@@ -45,6 +46,7 @@ reg [31:0]	save_reg_pc = 0;
 reg [31:0]	save_alu_out = 0;
 reg [31:0]	save_rs2_data = 0;
 reg [4:0]	save_mem_wen = 0;
+reg 		save_rf_wen = 0;
 reg [3:0]	save_wb_sel = 0;
 reg [4:0]	save_wb_addr = 0;
 
@@ -64,12 +66,14 @@ always @(posedge clk) begin
 			save_alu_out	<= alu_out;
 			save_rs2_data	<= rs2_data;
 			save_mem_wen	<= mem_wen;
+			save_rf_wen		<= rf_wen;
 			save_wb_sel		<= wb_sel;
 			save_wb_addr	<= wb_addr;
 		end else begin
 			output_read_data<= 32'hffffffff;
 			output_reg_pc	<= reg_pc;
 			output_alu_out	<= alu_out;
+			output_rf_wen	<= rf_wen;
 			output_wb_sel	<= wb_sel;
 			output_wb_addr	<= wb_addr;
 		end
@@ -108,6 +112,7 @@ always @(posedge clk) begin
 		state			<= STATE_WAIT;
 		output_reg_pc	<= save_reg_pc;
 		output_alu_out	<= save_alu_out;
+		output_rf_wen	<= save_rf_wen;
 		output_wb_sel	<= save_wb_sel;
 		output_wb_addr	<= save_wb_addr;
 	end

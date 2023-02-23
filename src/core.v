@@ -75,7 +75,7 @@ wire [31:0] exe_op1_data;
 wire [31:0] exe_op2_data;
 wire [31:0] exe_rs2_data;
 wire [4:0]  exe_mem_wen;
-wire [0:0]  exe_rf_wen;
+wire        exe_rf_wen;
 wire [3:0]  exe_wb_sel;
 wire [4:0]  exe_wb_addr;
 wire [2:0]  exe_csr_cmd;
@@ -122,6 +122,7 @@ wire [31:0] mem_br_target;
 
 wire [31:0] mem_reg_pc;
 wire [4:0]  mem_mem_wen;
+wire        mem_rf_wen;
 wire [3:0]  mem_wb_sel;
 wire [31:0] mem_rs2_data;
 wire [31:0] csr_op1_data;
@@ -139,6 +140,7 @@ ExecuteStage #() executestage
 	.input_op2_data(exe_op2_data),
 	.input_rs2_data(exe_rs2_data),
 	.input_mem_wen(exe_mem_wen),
+	.input_rf_wen(exe_rf_wen),
 	.input_wb_sel(exe_wb_sel),
 	.input_wb_addr(exe_wb_addr),
 	.input_csr_cmd(exe_csr_cmd),
@@ -151,6 +153,7 @@ ExecuteStage #() executestage
 
 	.output_reg_pc(mem_reg_pc),
 	.output_mem_wen(mem_mem_wen),
+	.output_rf_wen(mem_rf_wen),
 	.output_rs2_data(mem_rs2_data),
 	.output_op1_data(csr_op1_data),
 	.output_wb_sel(mem_wb_sel),
@@ -165,12 +168,13 @@ ExecuteStage #() executestage
 // Memory Stage
 // **************************
 
-wire [31:0]		wb_read_data;
-wire [31:0]		wb_reg_pc;
-wire [31:0]		wb_alu_out;
-wire [3:0]		wb_wb_sel;
-wire [4:0]		wb_wb_addr;
-wire			wb_next_flg;
+wire		wb_rf_wen;
+wire [31:0]	wb_read_data;
+wire [31:0]	wb_reg_pc;
+wire [31:0]	wb_alu_out;
+wire [3:0]	wb_wb_sel;
+wire [4:0]	wb_wb_addr;
+wire		wb_next_flg;
 
 MemoryStage #() memorystage
 (
@@ -180,9 +184,11 @@ MemoryStage #() memorystage
     .rs2_data(mem_rs2_data),
     .alu_out(mem_alu_out),
     .mem_wen(mem_mem_wen),
+	.rf_wen(mem_rf_wen),
     .wb_sel(mem_wb_sel),
 	.wb_addr(mem_wb_addr),
 
+	.output_rf_wen(wb_rf_wen),
 	.output_read_data(wb_read_data),
 	.output_reg_pc(wb_reg_pc),
 	.output_alu_out(wb_alu_out),
@@ -222,7 +228,6 @@ CSRStage #() csrstage
 // **************************
 // WriteBack Stage
 // **************************
-wire 		rf_wen;
 wire [31:0]	br_target;
 wire		inst_is_ecall;
 
@@ -234,8 +239,8 @@ module WriteBackStage(
 	.csr_rdata(wb_csr_rdata),
 	.memory_rdata(wb_read_data),
 	.wb_addr(wb_wb_addr),
-
-	.rf_wen(rf_wen),
+	.rf_wen(wb_rf_wen),
+	
 	.br_target(br_target),
 
 	.alu_out(wb_alu_out),
