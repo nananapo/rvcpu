@@ -9,6 +9,6 @@ module testPipeline();
     #1 clk = ~clk;
 
   initial
-	#100001 $finish;
+	#10001 $finish;
 
 endmodule
