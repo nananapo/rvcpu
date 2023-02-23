@@ -1,3 +1,5 @@
+`default_nettype none
+
 module FetchStage(
 	input  wire			clk,
 
@@ -70,10 +72,10 @@ always @(posedge clk) begin
 		mem_start	<= 0;
 		if (mem_data_valid) begin
 			$display("Fetched");
-			output_inst_reg	<= mem_data;
+			output_inst_reg		<= mem_data;
 			output_reg_pc_reg	<= reg_pc;
-			status	<= STATE_START;
-			reg_pc	<= reg_pc + 4;
+			status				<= STATE_START;
+			//reg_pc				<= reg_pc + 4;
 
 			if (!stall_flg) begin
 				is_submitted <= 1;
