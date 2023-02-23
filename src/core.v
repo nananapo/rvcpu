@@ -85,7 +85,7 @@ wire [0:0]  exe_rf_wen;
 wire [3:0]  exe_wb_sel;
 wire [4:0]  exe_wb_addr;
 wire [2:0]  exe_csr_cmd;
-wire 	   exe_jmp_flg;
+wire 	    exe_jmp_flg;
 
 DecodeStage #() decodestage
 (
@@ -130,6 +130,9 @@ wire [31:0] mem_reg_pc;
 wire [4:0]  mem_mem_wen;
 wire [3:0]  mem_wb_sel;
 wire [31:0] mem_rs2_data;
+wire [31:0] csr_op1_data;
+wire [2:0]	csr_csr_cmd;
+wire [31:0]	csr_imm_i;
 
 ExecuteStage #() executestage
 (
@@ -142,6 +145,8 @@ ExecuteStage #() executestage
 	.input_rs2_data(exe_rs2_data),
 	.input_mem_wen(exe_mem_wen),
 	.input_wb_sel(exe_wb_sel),
+	.input_csr_cmd(exe_csr_cmd),
+	.input_imm_i_sext(exe_imm_i_sext),
 	.input_imm_b_sext(exe_imm_b_sext),
 
 	.alu_out(mem_alu_out),
@@ -152,6 +157,9 @@ ExecuteStage #() executestage
 	.output_mem_wen(mem_mem_wen),
 	.output_wb_sel(mem_wb_sel),
 	.output_rs2_data(mem_rs2_data),
+	.output_op1_data(csr_op1_data),
+	.output_csr_cmd(csr_csr_cmd),
+	.output_imm_i(csr_imm_i),
 
 	.stall_flg(memory_stage_is_stall)
 );
