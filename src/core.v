@@ -247,7 +247,7 @@ CSRStage #() csrstage
 // **************************
 // WriteBack Stage
 // **************************
-module WriteBackStage(
+WriteBackStage #() wbstage(
 	.clk(clk),
 
 	.reg_pc(wb_reg_pc),
