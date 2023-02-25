@@ -12,6 +12,7 @@ module ExecuteStage
 	input reg [3:0]  input_wb_sel,
 	input reg [4:0]  input_wb_addr,
 	input reg [2:0]  input_csr_cmd,
+	input reg        input_jmp_flg,
 	input reg [31:0] input_imm_i_sext,
 	input reg [31:0] input_imm_b_sext,
 	input reg        input_inst_is_ecall,
@@ -28,6 +29,7 @@ module ExecuteStage
 	output reg [3:0]  output_wb_sel,
 	output reg [4:0]  output_wb_addr,
 	output reg [2:0]  output_csr_cmd,
+	output reg        output_jmp_flg,
 	output reg [31:0] output_imm_i,
 	output reg        output_inst_is_ecall,
 	
@@ -45,7 +47,8 @@ reg [4:0]  save_mem_wen			= 0;
 reg        save_rf_wen			= 0;
 reg [3:0]  save_wb_sel			= 0;	
 reg [4:0]  save_wb_addr			= 0;	
-reg [2:0]  save_csr_cmd			= 0;	
+reg [2:0]  save_csr_cmd			= 0;
+reg        save_jmp_flg			= 0;	
 reg [31:0] save_imm_i_sext		= 0;
 reg [31:0] save_imm_b_sext		= 0;
 reg        save_inst_is_ecall	= 0;
@@ -60,6 +63,7 @@ wire 		rf_wen			= stall_flg ? save_rf_wen : input_rf_wen;
 wire [3:0]  wb_sel			= stall_flg ? save_wb_sel : input_wb_sel;
 wire [4:0]  wb_addr			= stall_flg ? save_wb_addr : input_wb_addr;
 wire [3:0]  csr_cmd			= stall_flg ? save_csr_cmd : input_csr_cmd;
+wire 		jmp_flg			= stall_flg ? save_jmp_flg : input_jmp_flg;
 wire [31:0] imm_i_sext		= stall_flg ? save_imm_i_sext : input_imm_i_sext;
 wire [31:0] imm_b_sext		= stall_flg ? save_imm_b_sext : input_imm_b_sext;
 wire		inst_is_ecall	= stall_flg ? save_inst_is_ecall : input_inst_is_ecall;
@@ -102,6 +106,7 @@ always @(posedge clk) begin
 	output_wb_sel   	<= wb_sel;
 	output_wb_addr		<= wb_addr;
 	output_csr_cmd  	<= csr_cmd;
+	output_jmp_flg		<= jmp_flg;
 	output_imm_i    	<= imm_i_sext;
 	output_inst_is_ecall<= inst_is_ecall;
 
@@ -116,6 +121,7 @@ always @(posedge clk) begin
 	save_wb_sel			<= wb_sel;
 	save_wb_addr		<= wb_addr;
 	save_csr_cmd		<= csr_cmd;
+	save_jmp_flg		<= jmp_flg;
 	save_imm_i_sext		<= imm_i_sext;
 	save_imm_b_sext		<= imm_b_sext;
 	save_inst_is_ecall	<= inst_is_ecall;

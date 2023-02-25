@@ -6,6 +6,7 @@ module WriteBackStage(
 	input  wire [31:0]	csr_rdata,
 	input  wire [31:0]	memory_rdata,
 	input  wire [4:0]	wb_addr,
+	input  wire			jmp_flg,
 	input  wire 		rf_wen,
 	input  wire			br_flg,
 	input  wire [31:0]	br_target,
