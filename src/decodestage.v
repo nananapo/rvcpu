@@ -27,7 +27,8 @@ module DecodeStage
     output reg [3:0]  wb_sel,   // ライトバック先
 	output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
     output reg [2:0]  csr_cmd,  // CSR
-    output reg 	      jmp_flg , // ジャンプ命令かのフラグ
+    output reg 	      jmp_flg,  // ジャンプ命令かのフラグ
+	output reg        output_inst_is_ecall, // ecallかどうか
 
 	input  wire       stall_flg
 );
@@ -189,8 +190,9 @@ always @(posedge clk) begin
         0
     );
 
-	rs2_data <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
-    jmp_flg <= inst_is_jal || inst_is_jalr;
+	rs2_data				<= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
+    jmp_flg					<= inst_is_jal || inst_is_jalr;
+	output_inst_is_ecall	<= inst_is_ecall;
 
 	output_reg_pc <= reg_pc;
     exe_fun <= wire_exe_fun;

@@ -16,6 +16,7 @@ module ExecuteStage
 	input reg [2:0]  input_csr_cmd,
 	input reg [31:0] input_imm_i_sext,
 	input reg [31:0] input_imm_b_sext,
+	input reg        input_inst_is_ecall,
 
 	output reg [31:0] alu_out,
 	output reg        br_flg,
@@ -30,37 +31,40 @@ module ExecuteStage
 	output reg [4:0]  output_wb_addr,
 	output reg [2:0]  output_csr_cmd,
 	output reg [31:0] output_imm_i,
+	output reg        output_inst_is_ecall,
 	
 	input  wire       stall_flg
 );
 
 `include "include/core.v"
 
-reg [31:0] save_reg_pc = 0;	
-reg [4:0]  save_exe_fun = 0;	
-reg [31:0] save_op1_data = 0;
-reg [31:0] save_op2_data = 0;
-reg [31:0] save_rs2_data = 0;
-reg [4:0]  save_mem_wen = 0;	
-reg        save_rf_wen = 0;
-reg [3:0]  save_wb_sel = 0;	
-reg [4:0]  save_wb_addr = 0;	
-reg [2:0]  save_csr_cmd = 0;	
-reg [31:0] save_imm_i_sext = 0;
-reg [31:0] save_imm_b_sext = 0;
+reg [31:0] save_reg_pc			= 0;	
+reg [4:0]  save_exe_fun			= 0;	
+reg [31:0] save_op1_data		= 0;
+reg [31:0] save_op2_data		= 0;
+reg [31:0] save_rs2_data		= 0;
+reg [4:0]  save_mem_wen			= 0;	
+reg        save_rf_wen			= 0;
+reg [3:0]  save_wb_sel			= 0;	
+reg [4:0]  save_wb_addr			= 0;	
+reg [2:0]  save_csr_cmd			= 0;	
+reg [31:0] save_imm_i_sext		= 0;
+reg [31:0] save_imm_b_sext		= 0;
+reg        save_inst_is_ecall	= 0;
 
-wire [31:0] reg_pc		= stall_flg ? save_reg_pc : input_reg_pc;
-wire [4:0]  exe_fun		= stall_flg ? save_exe_fun : input_exe_fun;
-wire [31:0] op1_data	= stall_flg ? save_op1_data : input_op1_data;
-wire [31:0] op2_data	= stall_flg ? save_op2_data : input_op2_data;
-wire [31:0] rs2_data	= stall_flg ? save_rs2_data : input_rs2_data;
-wire [4:0]  mem_wen		= stall_flg ? save_mem_wen : input_mem_wen;
-wire 		rf_wen		= stall_flg ? save_rf_wen : input_rf_wen;
-wire [3:0]  wb_sel		= stall_flg ? save_wb_sel : input_wb_sel;
-wire [4:0]  wb_addr		= stall_flg ? save_wb_addr : input_wb_addr;
-wire [3:0]  csr_cmd		= stall_flg ? save_csr_cmd : input_csr_cmd;
-wire [31:0] imm_i_sext	= stall_flg ? save_imm_i_sext : input_imm_i_sext;
-wire [31:0] imm_b_sext	= stall_flg ? save_imm_b_sext : input_imm_b_sext;
+wire [31:0] reg_pc			= stall_flg ? save_reg_pc : input_reg_pc;
+wire [4:0]  exe_fun			= stall_flg ? save_exe_fun : input_exe_fun;
+wire [31:0] op1_data		= stall_flg ? save_op1_data : input_op1_data;
+wire [31:0] op2_data		= stall_flg ? save_op2_data : input_op2_data;
+wire [31:0] rs2_data		= stall_flg ? save_rs2_data : input_rs2_data;
+wire [4:0]  mem_wen			= stall_flg ? save_mem_wen : input_mem_wen;
+wire 		rf_wen			= stall_flg ? save_rf_wen : input_rf_wen;
+wire [3:0]  wb_sel			= stall_flg ? save_wb_sel : input_wb_sel;
+wire [4:0]  wb_addr			= stall_flg ? save_wb_addr : input_wb_addr;
+wire [3:0]  csr_cmd			= stall_flg ? save_csr_cmd : input_csr_cmd;
+wire [31:0] imm_i_sext		= stall_flg ? save_imm_i_sext : input_imm_i_sext;
+wire [31:0] imm_b_sext		= stall_flg ? save_imm_b_sext : input_imm_b_sext;
+wire		inst_is_ecall	= stall_flg ? save_inst_is_ecall : input_inst_is_ecall;
 
 always @(posedge clk) begin
 	// EX STAGE
@@ -92,29 +96,31 @@ always @(posedge clk) begin
 
 	br_target <= reg_pc + imm_b_sext;
 
-	output_reg_pc   <= reg_pc;
-	output_mem_wen  <= mem_wen;
-	output_rf_wen	<= rf_wen;
-	output_rs2_data <= rs2_data;
-	output_op1_data <= op1_data;
-	output_wb_sel   <= wb_sel;
-	output_wb_addr	<= wb_addr;
-	output_csr_cmd  <= csr_cmd;
-	output_imm_i    <= imm_i_sext;
+	output_reg_pc   	<= reg_pc;
+	output_mem_wen  	<= mem_wen;
+	output_rf_wen		<= rf_wen;
+	output_rs2_data 	<= rs2_data;
+	output_op1_data 	<= op1_data;
+	output_wb_sel   	<= wb_sel;
+	output_wb_addr		<= wb_addr;
+	output_csr_cmd  	<= csr_cmd;
+	output_imm_i    	<= imm_i_sext;
+	output_inst_is_ecall<= inst_is_ecall;
 
 	// save
-	save_reg_pc		<= reg_pc;	
-	save_exe_fun	<= exe_fun;	
-	save_op1_data	<= op1_data;
-	save_op2_data	<= op2_data;
-	save_rs2_data	<= rs2_data;
-	save_mem_wen	<= mem_wen;
-	save_rf_wen		<= rf_wen;
-	save_wb_sel		<= wb_sel;
-	save_wb_addr	<= wb_addr;
-	save_csr_cmd	<= csr_cmd;
-	save_imm_i_sext	<= imm_i_sext;
-	save_imm_b_sext	<= imm_b_sext;
+	save_reg_pc			<= reg_pc;	
+	save_exe_fun		<= exe_fun;	
+	save_op1_data		<= op1_data;
+	save_op2_data		<= op2_data;
+	save_rs2_data		<= rs2_data;
+	save_mem_wen		<= mem_wen;
+	save_rf_wen			<= rf_wen;
+	save_wb_sel			<= wb_sel;
+	save_wb_addr		<= wb_addr;
+	save_csr_cmd		<= csr_cmd;
+	save_imm_i_sext		<= imm_i_sext;
+	save_imm_b_sext		<= imm_b_sext;
+	save_inst_is_ecall	<= inst_is_ecall;
 end
 
 always @(posedge clk) begin
