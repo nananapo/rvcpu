@@ -85,13 +85,15 @@ always @(posedge clk) begin
 			save_inst_is_ecall	<= inst_is_ecall;
 		end else begin
 			output_read_data<= 32'hffffffff;
-			output_reg_pc	<= reg_pc;
-			output_alu_out	<= alu_out;
-			output_br_flg	<= br_flg;
-			output_br_target<= br_target;
-			output_rf_wen	<= rf_wen;
-			output_wb_sel	<= wb_sel;
-			output_wb_addr	<= wb_addr;
+			output_reg_pc		<= reg_pc;
+			output_alu_out		<= alu_out;
+			output_br_flg		<= br_flg;
+			output_br_target	<= br_target;
+			output_rf_wen		<= rf_wen;
+			output_wb_sel		<= wb_sel;
+			output_wb_addr		<= wb_addr;
+			output_jmp_flg		<= jmp_flg;
+			output_inst_is_ecall<= inst_is_ecall;
 		end
 	end else if (state == STATE_WAIT_READY) begin
 		if (mem_cmd_ready) begin
