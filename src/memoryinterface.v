@@ -150,6 +150,34 @@ assign rdata_valid  = (
     ) : 0
 );
 
+assign inst         = (
+    status == STATE_WAIT_CMD ? (
+        inst_start ? 32'hffffffff : save_i_rdata
+    ) :
+    status == STATE_WAIT_MEMORY_READY ? (
+        cmd_is_inst ? 32'hffffffff : save_i_rdata
+    ) :
+    status == STATE_WAIT_MEMORY_READ ? (
+        cmd_is_inst ? (
+            mem_rdata_valid ? mem_rdata : 32'hffffffff
+        ) : save_i_rdata
+    ) : 32'hffffffff
+);
+
+assign rdata        = (
+    status == STATE_WAIT_CMD ? (
+        d_cmd != MEMORY_CMD_NOP ? 32'hffffffff : save_d_rdata
+    ) :
+    status == STATE_WAIT_MEMORY_READY ? (
+        save_d_cmd != MEMORY_CMD_NOP ? 32'hffffffff : save_d_rdata
+    ) :
+    status == STATE_WAIT_MEMORY_READ ? (
+        save_d_cmd != MEMORY_CMD_NOP ? (
+            (!cmd_is_inst && mem_rdata_valid) ? mem_rdata : 32'hffffffff
+        ) : save_d_rdata
+    ) : 32'hffffffff
+);
+
 always @(posedge clk) begin
     if (status == STATE_WAIT_CMD) begin
 		save_i_addr	<= i_addr;
