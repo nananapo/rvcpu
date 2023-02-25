@@ -6,6 +6,8 @@ module MemoryStage(
 	input  reg [31:0]	reg_pc,
     input  reg [31:0]	rs2_data,
     input  reg [31:0]	alu_out,
+    input  reg 			br_flg,
+    input  reg [31:0]	br_target,
     input  reg [4:0]	mem_wen,
 	input  reg 			rf_wen,
     input  reg [3:0]	wb_sel,
@@ -14,6 +16,8 @@ module MemoryStage(
 	output reg [31:0]	output_read_data,
 	output reg [31:0]	output_reg_pc,
 	output reg [31:0]	output_alu_out,
+	output reg 			output_br_flg,
+	output reg [31:0]	output_br_target,
 	output reg [3:0]	output_wb_sel,
 	output reg [4:0]	output_wb_addr,
 	output wire			next_flg,
@@ -44,6 +48,8 @@ reg [3:0] state = STATE_WAIT;
 
 reg [31:0]	save_reg_pc = 0;
 reg [31:0]	save_alu_out = 0;
+reg 		save_br_flg = 0;
+reg [31:0]	save_br_target = 0;
 reg [31:0]	save_rs2_data = 0;
 reg [4:0]	save_mem_wen = 0;
 reg 		save_rf_wen = 0;
@@ -64,6 +70,8 @@ always @(posedge clk) begin
 			state			<= STATE_WAIT_READY;
 			save_reg_pc		<= reg_pc;
 			save_alu_out	<= alu_out;
+			save_br_flg		<= br_flg;
+			save_br_target	<= br_target;
 			save_rs2_data	<= rs2_data;
 			save_mem_wen	<= mem_wen;
 			save_rf_wen		<= rf_wen;
@@ -73,6 +81,8 @@ always @(posedge clk) begin
 			output_read_data<= 32'hffffffff;
 			output_reg_pc	<= reg_pc;
 			output_alu_out	<= alu_out;
+			output_br_flg	<= br_flg;
+			output_br_target<= br_target;
 			output_rf_wen	<= rf_wen;
 			output_wb_sel	<= wb_sel;
 			output_wb_addr	<= wb_addr;
@@ -112,6 +122,8 @@ always @(posedge clk) begin
 		state			<= STATE_WAIT;
 		output_reg_pc	<= save_reg_pc;
 		output_alu_out	<= save_alu_out;
+		output_br_flg	<= save_br_flg;
+		output_br_target<= save_br_target;
 		output_rf_wen	<= save_rf_wen;
 		output_wb_sel	<= save_wb_sel;
 		output_wb_addr	<= save_wb_addr;

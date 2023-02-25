@@ -9,6 +9,7 @@ module WriteBackStage(
 	input  wire [31:0]	memory_rdata,
 	input  wire [4:0]	wb_addr,
 	input  wire 		rf_wen,
+	input  wire			br_flg,
 	input  wire [31:0]	br_target,
 	input  wire [31:0]	alu_out,
 	input  wire			inst_is_ecall,
