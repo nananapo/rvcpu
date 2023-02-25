@@ -21,7 +21,7 @@ reg [31:0] mem [4095:0];
 assign trap_vector = {mem[TV_ADDR][7:0], mem[TV_ADDR][15:8], mem[TV_ADDR][23:16], mem[TV_ADDR][31:24]};
 
 // ecallなら0x342を読む
-wire [11:0] addr	= csr_cmd == CSR_E ? 12'h342 : imm_i;
+wire [11:0] addr	= csr_cmd == CSR_E ? 12'h342 : imm_i % 4096;
 wire [31:0] rdata	= {mem[addr][7:0], mem[addr][15:8], mem[addr][23:16], mem[addr][31:24]};
 
 wire [31:0] wdata = (
