@@ -14,6 +14,7 @@ module WriteBackStage(
 	input  wire			inst_is_ecall,
 	input  wire [31:0]	trap_vector,
 
+	output wire			output_reg_pc,
 	output reg [31:0]	regfile[31:0]
 );
 
@@ -28,6 +29,8 @@ initial begin
         regfile[loop_i] = 0;
 end
 
+wire [31:0] reg_pc_plus4 = reg_pc + 4; 
+
 // WB STAGE
 wire [31:0] wb_data = (
 	wb_sel == WB_MEMB ? {{24{memory_rdata[7]}}, memory_rdata} :
@@ -40,16 +43,17 @@ wire [31:0] wb_data = (
 	alu_out
 );
 
+assign output_reg_pc = (
+	br_flg ? br_target : 
+	jmp_flg ? alu_out :
+	inst_is_ecall ? trap_vector :
+	reg_pc_plus4
+);
+
 always @(posedge clk) begin
 	if (rf_wen == REN_S) begin
 	    regfile[wb_addr] <= wb_data;
 	end	
-	reg_pc <= (
-		br_flg ? br_target : 
-		jmp_flg ? alu_out :
-		inst_is_ecall ? trap_vector :
-		reg_pc_plus4
-	);
 end
 
 endmodule
