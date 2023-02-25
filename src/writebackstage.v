@@ -56,4 +56,21 @@ always @(posedge clk) begin
 	end	
 end
 
+always @(posedge clk) begin
+	$display("WB STAGE--------------");
+	$display("reg_pc         : 0x%H", reg_pc);
+	$display("output_reg_pc  : 0x%H", output_reg_pc);
+	$display("wb_sel         : %d", wb_sel);
+	$display("csr_rdata      : 0x%H", csr_rdata);
+	$display("memory_rdata   : 0x%H", memory_rdata);
+	$display("wb_addr        : %d", wb_addr);
+	$display("jmp_flg        : %d", jmp_flg);
+	$display("rf_wen         : %d", rf_wen);
+	$display("br_flg         : %d", br_flg);
+	$display("br_target      : 0x%H", br_target);
+	$display("alu_out        : 0x%H", alu_out);
+	$display("inst_is_ecall  : %d", inst_is_ecall);
+	$display("trap_vector    : 0x%H", trap_vector);
+end
+
 endmodule
