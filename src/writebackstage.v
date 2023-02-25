@@ -1,5 +1,3 @@
-`default_nettype none
-
 module WriteBackStage(
 	input  wire 		clk,
 

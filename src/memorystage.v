@@ -1,5 +1,3 @@
-`default_nettype none
-
 module MemoryStage(
     input  wire			clk,
 

@@ -1,5 +1,3 @@
-`default_nettype none
-
 module Memory #(
 	parameter MEMORY_SIZE = 2048,
 	parameter MEMORY_FILE = ""
