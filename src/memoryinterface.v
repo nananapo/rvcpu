@@ -225,6 +225,7 @@ always @(posedge clk) begin
             if (cmd_is_inst) begin
                 save_i_rdata <= mem_rdata;
                 if (save_d_cmd != MEMORY_CMD_NOP) begin
+                    cmd_is_inst <= 0;
                     if (mem_cmd_ready) begin
                         if (save_d_cmd == MEMORY_CMD_READ)
                             // inst -> d_cmd
