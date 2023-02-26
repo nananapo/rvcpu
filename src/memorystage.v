@@ -38,7 +38,16 @@ module MemoryStage(
 `include "include/memoryinterface.v"
 
 initial begin
-	mem_cmd = MEMORY_CMD_NOP;
+    output_read_data        <= 0;
+    output_reg_pc           <= 0;
+    output_alu_out          <= 0;
+    output_br_flg           <= 0;
+    output_br_target        <= 0;
+    output_rf_wen           <= 0;
+    output_wb_sel           <= 0;
+    output_wb_addr          <= 0;
+    output_jmp_flg          <= 0;
+    output_inst_is_ecall    <= 0;
 end
 
 localparam STATE_WAIT				= 0;

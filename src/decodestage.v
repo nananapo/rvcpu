@@ -34,6 +34,20 @@ module DecodeStage
 `include "include/core.v"
 `include "include/inst.v"
 
+initial begin
+    exe_fun                 <= 0;
+    op1_data                <= 0;
+    op2_data                <= 0;
+    rs2_data                <= 0;
+    mem_wen                 <= 0;
+    rf_wen                  <= 0;
+    wb_sel                  <= 0;
+    wb_addr                 <= 0;
+    csr_cmd                 <= 0;
+    jmp_flg                 <= 0;
+    output_inst_is_ecall    <= 0;
+end
+
 reg  [31:0] save_inst	= 0;
 reg  [31:0] save_reg_pc	= 0;
 
@@ -192,13 +206,13 @@ always @(posedge clk) begin
     jmp_flg					<= inst_is_jal || inst_is_jalr;
 	output_inst_is_ecall	<= inst_is_ecall;
 
-	output_reg_pc <= reg_pc;
-    exe_fun <= wire_exe_fun;
-    mem_wen <= wire_mem_wen;
-    rf_wen  <= wire_rf_wen;
-    wb_sel  <= wire_wb_sel;
-	wb_addr <= wire_wb_addr;
-    csr_cmd	<= wire_csr_cmd;
+	output_reg_pc   <= reg_pc;
+    exe_fun         <= wire_exe_fun;
+    mem_wen         <= wire_mem_wen;
+    rf_wen          <= wire_rf_wen;
+    wb_sel          <= wire_wb_sel;
+	wb_addr         <= wire_wb_addr;
+    csr_cmd	        <= wire_csr_cmd;
 
 	// save
 	save_inst	<= inst;

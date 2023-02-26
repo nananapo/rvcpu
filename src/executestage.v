@@ -38,6 +38,23 @@ module ExecuteStage
 
 `include "include/core.v"
 
+initial begin
+	alu_out                 <= 0;
+	br_flg                  <= 0;
+	br_target               <= 0;
+	output_reg_pc           <= 0;
+	output_mem_wen          <= 0;
+	output_rf_wen           <= 0;
+	output_rs2_data         <= 0;
+	output_op1_data         <= 0;
+	output_wb_sel           <= 0;
+	output_wb_addr          <= 0;
+	output_csr_cmd          <= 0;
+	output_jmp_flg          <= 0;
+	output_imm_i            <= 0;
+	output_inst_is_ecall    <= 0;
+end
+
 reg [31:0] save_reg_pc			= 0;	
 reg [4:0]  save_exe_fun			= 0;	
 reg [31:0] save_op1_data		= 0;

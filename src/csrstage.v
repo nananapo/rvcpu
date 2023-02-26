@@ -15,6 +15,10 @@ module CSRStage #(
 
 `include "include/core.v"
 
+initial begin
+    output_csr_rdata <= 0;
+end
+
 reg [31:0] mem [4095:0];
 
 // trap先
