@@ -13,16 +13,16 @@ module MemoryStage(
 	input  reg			jmp_flg,
 	input  reg			inst_is_ecall,
 
-	output reg [31:0]	output_read_data,
-	output reg [31:0]	output_reg_pc,
-	output reg [31:0]	output_alu_out,
-	output reg 			output_br_flg,
-	output reg [31:0]	output_br_target,
-	output reg 			output_rf_wen,
-	output reg [3:0]	output_wb_sel,
-	output reg [4:0]	output_wb_addr,
-	output reg			output_jmp_flg,
-	output reg			output_inst_is_ecall,
+	output wire [31:0]	output_read_data,
+	output wire [31:0]	output_reg_pc,
+	output wire [31:0]	output_alu_out,
+	output wire 		output_br_flg,
+	output wire [31:0]	output_br_target,
+	output wire 		output_rf_wen,
+	output wire [3:0]	output_wb_sel,
+	output wire [4:0]	output_wb_addr,
+	output wire			output_jmp_flg,
+	output wire			output_inst_is_ecall,
 	output wire			output_is_stall,
 
 	output wire [2:0]	mem_cmd,
@@ -37,24 +37,11 @@ module MemoryStage(
 `include "include/core.v"
 `include "include/memoryinterface.v"
 
-initial begin
-    output_read_data        <= 0;
-    output_reg_pc           <= 0;
-    output_alu_out          <= 0;
-    output_br_flg           <= 0;
-    output_br_target        <= 0;
-    output_rf_wen           <= 0;
-    output_wb_sel           <= 0;
-    output_wb_addr          <= 0;
-    output_jmp_flg          <= 0;
-    output_inst_is_ecall    <= 0;
-end
-
 localparam STATE_WAIT				= 0;
 localparam STATE_WAIT_READY			= 1;
 localparam STATE_WAIT_READ_VALID	= 2;
 
-reg [1:0] state = STATE_WAIT;
+reg [1:0]   state = STATE_WAIT;
 
 reg [31:0]	save_reg_pc			= 0;
 reg [31:0]	save_alu_out		= 0;
@@ -68,10 +55,10 @@ reg [4:0]	save_wb_addr		= 0;
 reg			save_jmp_flg		= 0;
 reg			save_inst_is_ecall	= 0;
 
-wire is_store_save = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
 wire is_store = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
 wire is_load  = !is_store && mem_wen != MEN_X;
+wire is_store_save = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
 wire next_flg =	(
     state == STATE_WAIT ? mem_wen == MEN_X :
@@ -82,6 +69,9 @@ wire next_flg =	(
 
 assign output_is_stall = !next_flg;
 
+// ***************
+// MEMORY WIRE
+// ***************
 assign mem_cmd = (
     state == STATE_WAIT ? (
         is_store ? MEMORY_CMD_WRITE : 
@@ -122,36 +112,128 @@ assign mem_wmask = (
     32'hffffffff
 );
 
+// ***************
+// OUTPUT
+// ***************
+
+/* 参考
+assign output_reg_pc = (
+    state == STATE_WAIT ? (
+        (!is_store && !is_load) ? reg_pc :
+        mem_cmd_ready ? (
+            is_store ? reg_pc : 32'hffffffff
+        ) : 32'hffffffff
+    ) :
+    state == STATE_WAIT_READY ? (
+        is_store_save ? save_reg_pc : 32'hffffffff
+    ) :
+    state == STATE_WAIT_READ_VALID ? (
+        mem_rdata_valid ? save_reg_pc : 32'hffffffff
+    ) : 32'hffffffff
+);
+*/
+
+assign output_read_data = (
+    state == STATE_WAIT ? 32'hffffffff :
+    state == STATE_WAIT_READ_VALID ? (
+        mem_rdata_valid ? (
+				save_mem_wen == MEN_LB ? {24'b0, mem_rdata[7:0]} :
+				save_mem_wen == MEN_LBU? {{24{mem_rdata[7]}}, mem_rdata[7:0]} :
+				save_mem_wen == MEN_LH ? {{16{mem_rdata[15]}}, mem_rdata[15:0]} :
+				save_mem_wen == MEN_LHU? {16'b0, mem_rdata[15:0]} :
+				mem_rdata
+        ) : 32'hffffffff
+    ) : 32'hffffffff
+);
+
+wire output_is_current = (
+    state == STATE_WAIT ? (
+        (!is_store && !is_load) ? 1 :
+        mem_cmd_ready ? is_store : 0
+    ) : 0
+);
+
+wire output_is_save = (
+    state == STATE_WAIT ? 0 :
+    state == STATE_WAIT_READY ? is_store_save :
+    state == STATE_WAIT_READ_VALID ? mem_rdata_valid : 
+    0
+);
+
+assign output_reg_pc = (
+    output_is_current ? reg_pc :
+    output_is_save ? save_reg_pc :
+    32'hffffffff
+);
+
+assign output_alu_out  = (
+    output_is_current ? alu_out :
+    output_is_save ? save_alu_out :
+    32'hffffffff
+);
+
+assign output_br_flg = (
+    output_is_current ? br_flg :
+    output_is_save ? save_br_flg :
+    0
+);
+
+assign output_br_target = (
+    output_is_current ? br_target :
+    output_is_save ? save_br_target :
+    32'hffffffff
+);
+
+assign output_rf_wen = (
+    output_is_current ? rf_wen :
+    output_is_save ? save_rf_wen :
+    REN_X
+);
+
+assign output_wb_sel = (
+    output_is_current ? wb_sel :
+    output_is_save ? save_wb_sel :
+    WB_X
+);
+
+assign output_wb_addr = (
+    output_is_current ? wb_addr :
+    output_is_save ? save_wb_addr :
+    32'hffffffff
+);
+
+assign output_jmp_flg = (
+    output_is_current ? jmp_flg :
+    output_is_save ? save_jmp_flg :
+    0
+);
+
+assign output_inst_is_ecall = (
+    output_is_current ? inst_is_ecall :
+    output_is_save ? save_inst_is_ecall :
+    0
+);
+
 always @(posedge clk) begin
 	if (state == STATE_WAIT) begin
-        if (is_store || is_load) begin
-			save_reg_pc			<= reg_pc;
-			save_alu_out		<= alu_out;
-			save_br_flg			<= br_flg;
-			save_br_target		<= br_target;
-			save_rs2_data		<= rs2_data;
-			save_mem_wen		<= mem_wen;
-			save_rf_wen			<= rf_wen;
-			save_wb_sel			<= wb_sel;
-			save_wb_addr		<= wb_addr;
-			save_jmp_flg		<= jmp_flg;
-			save_inst_is_ecall	<= inst_is_ecall;
-        end
+
+		save_reg_pc			<= reg_pc;
+		save_alu_out		<= alu_out;
+		save_br_flg			<= br_flg;
+		save_br_target		<= br_target;
+		save_rs2_data		<= rs2_data;
+		save_mem_wen		<= mem_wen;
+		save_rf_wen			<= rf_wen;
+		save_wb_sel			<= wb_sel;
+		save_wb_addr		<= wb_addr;
+		save_jmp_flg		<= jmp_flg;
+		save_inst_is_ecall	<= inst_is_ecall;
+
         if (is_store) begin
-            if (mem_cmd_ready) begin
-    			output_read_data    <= 32'hffffffff;
-    			output_reg_pc		<= reg_pc;
-    			output_alu_out		<= alu_out;
-    			output_br_flg		<= br_flg;
-    			output_br_target	<= br_target;
-    			output_rf_wen		<= rf_wen;
-    			output_wb_sel		<= wb_sel;
-    			output_wb_addr		<= wb_addr;
-    			output_jmp_flg		<= jmp_flg;
-    			output_inst_is_ecall<= inst_is_ecall;
-            end else begin
+            if (mem_cmd_ready)
+                state <= STATE_WAIT;
+            else
                 state <= STATE_WAIT_READY;
-            end
         end else if (is_load) begin
             if (mem_cmd_ready)
                 state <= STATE_WAIT_READ_VALID;
@@ -161,40 +243,13 @@ always @(posedge clk) begin
 	end else if (state == STATE_WAIT_READY) begin
 		if (mem_cmd_ready) begin
             if (is_store_save) 
-			    state   <= STATE_WAIT_READ_VALID;
-            else begin
-        		state				<= STATE_WAIT;
-        		output_reg_pc		<= save_reg_pc;
-        		output_alu_out		<= save_alu_out;
-        		output_br_flg		<= save_br_flg;
-        		output_br_target	<= save_br_target;
-        		output_rf_wen		<= save_rf_wen;
-        		output_wb_sel		<= save_wb_sel;
-        		output_wb_addr		<= save_wb_addr;
-        		output_jmp_flg		<= save_jmp_flg;
-        		output_inst_is_ecall<= save_inst_is_ecall;
-            end
+			    state <= STATE_WAIT_READ_VALID;
+            else
+        		state <= STATE_WAIT;
 		end
 	end else if (state == STATE_WAIT_READ_VALID) begin
-		if (mem_rdata_valid) begin
-			state   <= STATE_WAIT;
-			output_read_data    <= (
-				save_mem_wen == MEN_LB ? {24'b0, mem_rdata[7:0]} :
-				save_mem_wen == MEN_LBU? {{24{mem_rdata[7]}}, mem_rdata[7:0]} :
-				save_mem_wen == MEN_LH ? {{16{mem_rdata[15]}}, mem_rdata[15:0]} :
-				save_mem_wen == MEN_LHU? {16'b0, mem_rdata[15:0]} :
-				mem_rdata
-			);
-        	output_reg_pc		<= save_reg_pc;
-        	output_alu_out		<= save_alu_out;
-        	output_br_flg		<= save_br_flg;
-        	output_br_target	<= save_br_target;
-        	output_rf_wen		<= save_rf_wen;
-        	output_wb_sel		<= save_wb_sel;
-        	output_wb_addr		<= save_wb_addr;
-        	output_jmp_flg		<= save_jmp_flg;
-        	output_inst_is_ecall<= save_inst_is_ecall;
-		end
+		if (mem_rdata_valid)
+			state <= STATE_WAIT;
 	end
 end
 
