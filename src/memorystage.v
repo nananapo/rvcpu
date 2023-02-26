@@ -23,14 +23,14 @@ module MemoryStage(
 	output reg [4:0]	output_wb_addr,
 	output reg			output_jmp_flg,
 	output reg			output_inst_is_ecall,
-	output reg			output_is_stall,
+	output wire			output_is_stall,
 
-	output reg [2:0]	mem_cmd,
+	output wire [2:0]	mem_cmd,
 	input  reg			mem_cmd_ready,
-	output reg [31:0]	mem_addr,
-	output reg [31:0]	mem_wdata,
-	output reg [31:0]	mem_wmask,
-	input  reg [31:0]	mem_rdata,
+	output wire [31:0]	mem_addr,
+	output wire [31:0]	mem_wdata,
+	output wire [31:0]	mem_wmask,
+	input  reg  [31:0]	mem_rdata,
 	input  reg			mem_rdata_valid
 );
 
@@ -53,9 +53,8 @@ end
 localparam STATE_WAIT				= 0;
 localparam STATE_WAIT_READY			= 1;
 localparam STATE_WAIT_READ_VALID	= 2;
-localparam STATE_END				= 3;
 
-reg [3:0] state = STATE_WAIT;
+reg [1:0] state = STATE_WAIT;
 
 reg [31:0]	save_reg_pc			= 0;
 reg [31:0]	save_alu_out		= 0;
@@ -69,18 +68,63 @@ reg [4:0]	save_wb_addr		= 0;
 reg			save_jmp_flg		= 0;
 reg			save_inst_is_ecall	= 0;
 
-wire is_store = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
-//wire is_load  = !is_store && save_mem_wen != MEN_X;
+wire is_store_save = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
-wire next_flg =	(state == STATE_WAIT && mem_wen == MEN_X) ||
-					(state == STATE_END);
+wire is_store = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
+wire is_load  = !is_store && mem_wen != MEN_X;
+
+wire next_flg =	(
+    state == STATE_WAIT ? mem_wen == MEN_X :
+    state == STATE_WAIT_READY ? is_store_save : 
+    state == STATE_WAIT_READ_VALID ? mem_rdata_valid :
+    1
+);
 
 assign output_is_stall = !next_flg;
 
+assign mem_cmd = (
+    state == STATE_WAIT ? (
+        is_store ? MEMORY_CMD_WRITE : 
+        is_load  ? MEMORY_CMD_READ : 
+        MEMORY_CMD_NOP
+    ) : 
+    state == STATE_WAIT_READY ? (
+        mem_cmd_ready ? (
+            is_store_save ? MEMORY_CMD_WRITE : MEMORY_CMD_READ
+        ) : MEMORY_CMD_NOP
+    ) : 
+    MEMORY_CMD_NOP
+);
+
+assign mem_addr = (
+    state == STATE_WAIT ? alu_out :
+    state == STATE_WAIT_READY ? save_alu_out :
+    32'hffffffff
+);
+
+assign mem_wdata = (
+    state == STATE_WAIT ? rs2_data : 
+    state == STATE_WAIT_READY ? save_rs2_data : 
+    32'hffffffff
+);
+
+assign mem_wmask = (
+    state == STATE_WAIT ? (
+        mem_wen == MEN_SB ? 32'h000000ff :
+        mem_wen == MEN_SH ? 32'h0000ffff :
+        32'hffffffff
+    ) : 
+    state == STATE_WAIT_READY ? (
+        save_mem_wen == MEN_SB ? 32'h000000ff :
+        save_mem_wen == MEN_SH ? 32'h0000ffff :
+        32'hffffffff
+    ) : 
+    32'hffffffff
+);
+
 always @(posedge clk) begin
 	if (state == STATE_WAIT) begin
-		if (mem_wen != MEN_X) begin
-			state				<= STATE_WAIT_READY;
+        if (is_store || is_load) begin
 			save_reg_pc			<= reg_pc;
 			save_alu_out		<= alu_out;
 			save_br_flg			<= br_flg;
@@ -92,60 +136,65 @@ always @(posedge clk) begin
 			save_wb_addr		<= wb_addr;
 			save_jmp_flg		<= jmp_flg;
 			save_inst_is_ecall	<= inst_is_ecall;
-		end else begin
-			output_read_data<= 32'hffffffff;
-			output_reg_pc		<= reg_pc;
-			output_alu_out		<= alu_out;
-			output_br_flg		<= br_flg;
-			output_br_target	<= br_target;
-			output_rf_wen		<= rf_wen;
-			output_wb_sel		<= wb_sel;
-			output_wb_addr		<= wb_addr;
-			output_jmp_flg		<= jmp_flg;
-			output_inst_is_ecall<= inst_is_ecall;
-		end
+        end
+        if (is_store) begin
+            if (mem_cmd_ready) begin
+    			output_read_data    <= 32'hffffffff;
+    			output_reg_pc		<= reg_pc;
+    			output_alu_out		<= alu_out;
+    			output_br_flg		<= br_flg;
+    			output_br_target	<= br_target;
+    			output_rf_wen		<= rf_wen;
+    			output_wb_sel		<= wb_sel;
+    			output_wb_addr		<= wb_addr;
+    			output_jmp_flg		<= jmp_flg;
+    			output_inst_is_ecall<= inst_is_ecall;
+            end else begin
+                state <= STATE_WAIT_READY;
+            end
+        end else if (is_load) begin
+            if (mem_cmd_ready)
+                state <= STATE_WAIT_READ_VALID;
+            else
+                state <= STATE_WAIT_READY;
+        end
 	end else if (state == STATE_WAIT_READY) begin
 		if (mem_cmd_ready) begin
-			mem_addr	<= save_alu_out;
-			if (is_store) begin
-				mem_cmd	<= MEMORY_CMD_WRITE;
-				mem_wdata	<= save_rs2_data;
-				mem_wmask	<= (
-					save_mem_wen == MEN_SB ? 32'h000000ff : 
-					save_mem_wen == MEN_SH ? 32'h0000ffff : 
-					32'hffffffff
-				);
-				state		<= STATE_END;
-			end else begin
-				mem_cmd	<= MEMORY_CMD_READ;
-				state		<= STATE_WAIT_READ_VALID;
-			end
+            if (is_store_save) 
+			    state   <= STATE_WAIT_READ_VALID;
+            else begin
+        		state				<= STATE_WAIT;
+        		output_reg_pc		<= save_reg_pc;
+        		output_alu_out		<= save_alu_out;
+        		output_br_flg		<= save_br_flg;
+        		output_br_target	<= save_br_target;
+        		output_rf_wen		<= save_rf_wen;
+        		output_wb_sel		<= save_wb_sel;
+        		output_wb_addr		<= save_wb_addr;
+        		output_jmp_flg		<= save_jmp_flg;
+        		output_inst_is_ecall<= save_inst_is_ecall;
+            end
 		end
 	end else if (state == STATE_WAIT_READ_VALID) begin
-		mem_cmd <= MEMORY_CMD_NOP;
 		if (mem_rdata_valid) begin
-			state			<= STATE_END;
-			output_read_data<= (
+			state   <= STATE_WAIT;
+			output_read_data    <= (
 				save_mem_wen == MEN_LB ? {24'b0, mem_rdata[7:0]} :
 				save_mem_wen == MEN_LBU? {{24{mem_rdata[7]}}, mem_rdata[7:0]} :
 				save_mem_wen == MEN_LH ? {{16{mem_rdata[15]}}, mem_rdata[15:0]} :
 				save_mem_wen == MEN_LHU? {16'b0, mem_rdata[15:0]} :
 				mem_rdata
 			);
+        	output_reg_pc		<= save_reg_pc;
+        	output_alu_out		<= save_alu_out;
+        	output_br_flg		<= save_br_flg;
+        	output_br_target	<= save_br_target;
+        	output_rf_wen		<= save_rf_wen;
+        	output_wb_sel		<= save_wb_sel;
+        	output_wb_addr		<= save_wb_addr;
+        	output_jmp_flg		<= save_jmp_flg;
+        	output_inst_is_ecall<= save_inst_is_ecall;
 		end
-	end else if (state == STATE_END) begin
-		$display("MEM.END");
-		mem_cmd				<= MEMORY_CMD_NOP;
-		state				<= STATE_WAIT;
-		output_reg_pc		<= save_reg_pc;
-		output_alu_out		<= save_alu_out;
-		output_br_flg		<= save_br_flg;
-		output_br_target	<= save_br_target;
-		output_rf_wen		<= save_rf_wen;
-		output_wb_sel		<= save_wb_sel;
-		output_wb_addr		<= save_wb_addr;
-		output_jmp_flg		<= save_jmp_flg;
-		output_inst_is_ecall<= save_inst_is_ecall;
 	end
 end
 
@@ -158,6 +207,9 @@ always @(posedge clk) begin
     $display("alu_out       : 0x%H", alu_out);
     $display("mem_wen       : %d", mem_wen);
     $display("wb_sel        : %d", wb_sel);
+    $display("is_load       : %d", is_load);
+    $display("is_store      : %d", is_store);
+    $display("is_store.save : %d", is_store_save);
     $display("out.read_data : 0x%H", output_read_data);
     $display("out._reg_pc   : 0x%H", output_reg_pc);
     $display("out._alu_out  : 0x%H", output_alu_out);
