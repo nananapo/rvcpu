@@ -197,13 +197,13 @@ always @(posedge clk) begin
     $display("rs1_addr  : %d", wire_rs1_addr);
     $display("rs2_addr  : %d", wire_rs2_addr);
     $display("wb_addr   : %d", wire_wb_addr);
-	$display("op1_data  : %H", (
+	$display("op1_data  : 0x%H", (
         wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
         wire_op1_sel == OP1_PC  ? reg_pc :
         wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
         0
     ));
-	$display("op2_data  : %H", (
+	$display("op2_data  : 0x%H", (
         wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
         wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
         wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :
@@ -211,6 +211,13 @@ always @(posedge clk) begin
         wire_op2_sel == OP2_IMU  ? wire_imm_u_shifted :
         0
     ));
+    $display("w.exe_fun : %d", wire_exe_fun);
+    $display("w.op1_sel : %d", wire_op1_sel);
+    $display("w.op2_sel : %d", wire_op2_sel);
+    $display("w.mem_wen : %d", wire_mem_wen);
+    $display("w.rf_wen  : %d", wire_rf_wen);
+    $display("w.wb_sel  : %d", wire_wb_sel);
+    $display("w.csr_cmd : %d", wire_csr_cmd);
 end
 
 endmodule
