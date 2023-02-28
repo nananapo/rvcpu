@@ -51,7 +51,7 @@ FetchStage #() fetchstage (
 
     .wb_reg_pc(wb_to_fetch_reg_pc),
     .wb_branch_hazard(wbstage_branch_hazard),
-    
+
 	.id_reg_pc(id_reg_pc),
 	.id_inst(id_inst),
 
@@ -207,17 +207,17 @@ MemoryStage #() memorystage
 
     .wb_branch_hazard(wbstage_branch_hazard),
 
-	.reg_pc(mem_reg_pc),
-    .rs2_data(mem_rs2_data),
-    .alu_out(mem_alu_out),
-	.br_flg(mem_br_flg),
-	.br_target(mem_br_target),
-    .mem_wen(mem_mem_wen),
-	.rf_wen(mem_rf_wen),
-    .wb_sel(mem_wb_sel),
-	.wb_addr(mem_wb_addr),
-	.jmp_flg(mem_jmp_flg),
-	.inst_is_ecall(mem_inst_is_ecall),
+	.input_reg_pc(mem_reg_pc),
+    .input_rs2_data(mem_rs2_data),
+    .input_alu_out(mem_alu_out),
+	.input_br_flg(mem_br_flg),
+	.input_br_target(mem_br_target),
+    .input_mem_wen(mem_mem_wen),
+	.input_rf_wen(mem_rf_wen),
+    .input_wb_sel(mem_wb_sel),
+	.input_wb_addr(mem_wb_addr),
+	.input_jmp_flg(mem_jmp_flg),
+	.input_inst_is_ecall(mem_inst_is_ecall),
 
 	.output_rf_wen(wb_rf_wen),
 	.output_read_data(wb_read_data),
@@ -253,9 +253,9 @@ CSRStage #() csrstage
 
     .wb_branch_hazard(wbstage_branch_hazard),
 
-	.csr_cmd(csr_csr_cmd),
-	.op1_data(csr_op1_data),
-	.imm_i(csr_imm_i),
+	.input_csr_cmd(csr_csr_cmd),
+	.input_op1_data(csr_op1_data),
+	.input_imm_i(csr_imm_i),
 
 	.csr_rdata(wb_csr_rdata),
 	.trap_vector(wb_trap_vector)
