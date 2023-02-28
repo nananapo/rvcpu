@@ -86,53 +86,6 @@ wire inst_is_ecall  = inst == INST_ECALL;
 wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
 wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
 
-/*  
-inst_is_lb    
-inst_is_lbu   
-inst_is_lh    
-inst_is_lhu   
-inst_is_lw    
-inst_is_sb    
-inst_is_sh    
-inst_is_sw    
-inst_is_add   
-inst_is_addi  
-inst_is_sub   
-inst_is_and   
-inst_is_or    
-inst_is_xor   
-inst_is_andi  
-inst_is_ori   
-inst_is_xori  
-inst_is_sll   
-inst_is_srl   
-inst_is_sra   
-inst_is_slli  
-inst_is_srli  
-inst_is_srai  
-inst_is_slt   
-inst_is_sltu  
-inst_is_slti  
-inst_is_sltiu 
-inst_is_beq   
-inst_is_bne   
-inst_is_blt   
-inst_is_bge   
-inst_is_bltu  
-inst_is_bgeu  
-inst_is_jal   
-inst_is_jalr  
-inst_is_lui   
-inst_is_auipc 
-inst_is_csrrw 
-inst_is_csrrwi
-inst_is_csrrs 
-inst_is_csrrsi
-inst_is_csrrc 
-inst_is_csrrci
-inst_is_ecall 
-*/
-
 function [5 + 4 + 4 + 5 + 1 + 4 + 3 - 1:0] decode(inst);
     casex (inst)
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_LB_FUNCT3    , 5'bxxxxx, INST_LB_OPCODE      } : decode = {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LB, REN_S, WB_MEMB , CSR_X};
