@@ -1,5 +1,5 @@
-localparam REGPC_NOP	= 32'hffffffff;
-localparam INST_NOP		= 32'h00000033;
+localparam REGPC_NOP    = 32'hffffffff;
+localparam INST_NOP     = 32'h00000033;
 
 localparam ALU_ADD  = 5'b00000;
 localparam ALU_SUB  = 5'b00001;
@@ -21,7 +21,7 @@ localparam ALU_JALR = 5'b10000;
 localparam ALU_COPY1= 5'b10001; // op1をそのまま
 localparam ALU_X    = 5'b10010; // 何もしない
 
-localparam OP1_X	= 4'b0000;
+localparam OP1_X    = 4'b0000;
 localparam OP1_RS1  = 4'b0001;
 localparam OP1_PC   = 4'b0010;
 localparam OP1_IMZ  = 4'b0011;
@@ -54,7 +54,7 @@ localparam WB_MEMH  = 4'b0010;
 localparam WB_MEMW  = 4'b0011;
 localparam WB_MEMBU = 4'b0100;
 localparam WB_MEMHU = 4'b0101;
-localparam WB_PC	= 4'b0110;
+localparam WB_PC    = 4'b0110;
 localparam WB_CSR   = 4'b0111;
 
 localparam CSR_X    = 3'b000;

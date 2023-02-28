@@ -1,19 +1,19 @@
 module FetchStage(
-	input  wire			clk,
+    input  wire         clk,
 
     input  wire [31:0]  wb_reg_pc,
     input  wire         wb_branch_hazard,
 
-	output reg [31:0]	id_reg_pc,
-	output reg [31:0]	id_inst,
+    output reg [31:0]   id_reg_pc,
+    output reg [31:0]   id_inst,
 
-	output wire         mem_start,
-	input  reg			mem_ready,
-	output wire [31:0]  mem_addr,
-	input  reg  [31:0]	mem_data,
-	input  reg			mem_data_valid,
+    output wire         mem_start,
+    input  reg          mem_ready,
+    output wire [31:0]  mem_addr,
+    input  reg  [31:0]  mem_data,
+    input  reg          mem_data_valid,
 
-	input  reg			stall_flg
+    input  reg          stall_flg
 );
 
 `include "include/core.v"
@@ -126,17 +126,17 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-	$display("FETCH -------------");
-	$display("status    : %d", state);
-	$display("fetched   : %d", is_fetched);
-	$display("reg_pc    : 0x%H", inner_reg_pc);
-	$display("id.reg_pc : 0x%H", id_reg_pc);
-	$display("id.inst   : 0x%H", id_inst);
-	$display("mem.start : %d", mem_start);
-	$display("mem.ready : %d", mem_ready);
-	$display("mem.data  : 0x%H", mem_data);
-	$display("mem.valid : %d", mem_data_valid);
-	$display("stall_flg : %d", stall_flg);
+    $display("FETCH -------------");
+    $display("status    : %d", state);
+    $display("fetched   : %d", is_fetched);
+    $display("reg_pc    : 0x%H", inner_reg_pc);
+    $display("id.reg_pc : 0x%H", id_reg_pc);
+    $display("id.inst   : 0x%H", id_inst);
+    $display("mem.start : %d", mem_start);
+    $display("mem.ready : %d", mem_ready);
+    $display("mem.data  : 0x%H", mem_data);
+    $display("mem.valid : %d", mem_data_valid);
+    $display("stall_flg : %d", stall_flg);
 end
 
 endmodule

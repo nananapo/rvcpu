@@ -1,15 +1,15 @@
 module DecodeStage
 (
-    input  wire	      clk,
+    input  wire       clk,
 
     input  wire       wb_branch_hazard,
 
     input  reg [31:0] input_inst,
-	input  reg [31:0] input_reg_pc,
-	input  reg [31:0] regfile[31:0],
+    input  reg [31:0] input_reg_pc,
+    input  reg [31:0] regfile[31:0],
 
     // 即値
-	output reg [31:0] output_reg_pc,
+    output reg [31:0] output_reg_pc,
     output reg [31:0] imm_i_sext,
     output reg [31:0] imm_s_sext,
     output reg [31:0] imm_b_sext,
@@ -21,16 +21,16 @@ module DecodeStage
     output reg [4:0]  exe_fun,  // ALUの計算の種類
     output reg [31:0] op1_data, // ALU
     output reg [31:0] op2_data, // ALU
-	output reg [31:0] rs2_data, // rs2で指定されたレジスタの値
+    output reg [31:0] rs2_data, // rs2で指定されたレジスタの値
     output reg [4:0]  mem_wen,  // メモリに書き込むか否か
     output reg [0:0]  rf_wen,   // レジスタに書き込むか否か
     output reg [3:0]  wb_sel,   // ライトバック先
-	output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
+    output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
     output reg [2:0]  csr_cmd,  // CSR
-    output reg 	      jmp_flg,  // ジャンプ命令かのフラグ
-	output reg        output_inst_is_ecall, // ecallかどうか
+    output reg        jmp_flg,  // ジャンプ命令かのフラグ
+    output reg        output_inst_is_ecall, // ecallかどうか
 
-	input  wire       stall_flg
+    input  wire       stall_flg
 );
 
 `include "include/core.v"
@@ -50,15 +50,15 @@ initial begin
     output_inst_is_ecall    <= 0;
 end
 
-reg  [31:0] save_inst	= INST_NOP;
-reg  [31:0] save_reg_pc	= REGPC_NOP;
+reg  [31:0] save_inst   = INST_NOP;
+reg  [31:0] save_reg_pc = REGPC_NOP;
 
-wire [31:0] inst	= (
+wire [31:0] inst = (
     wb_branch_hazard ? INST_NOP :
     stall_flg ? save_inst : input_inst
 );
 
-wire [31:0] reg_pc	= (
+wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
     stall_flg ? save_reg_pc : input_reg_pc
 ); 
@@ -173,37 +173,37 @@ always @(posedge clk) begin
         0
     );
 
-	rs2_data				<= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
-    jmp_flg					<= inst_is_jal || inst_is_jalr;
-	output_inst_is_ecall	<= inst_is_ecall;
+    rs2_data                <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
+    jmp_flg                 <= inst_is_jal || inst_is_jalr;
+    output_inst_is_ecall    <= inst_is_ecall;
 
-	output_reg_pc   <= reg_pc;
+    output_reg_pc   <= reg_pc;
     exe_fun         <= wire_exe_fun;
     mem_wen         <= wire_mem_wen;
     rf_wen          <= wire_rf_wen;
     wb_sel          <= wire_wb_sel;
-	wb_addr         <= wire_wb_addr;
-    csr_cmd	        <= wire_csr_cmd;
+    wb_addr         <= wire_wb_addr;
+    csr_cmd         <= wire_csr_cmd;
 
-	// save
-	save_inst	<= wb_branch_hazard ? INST_NOP  : inst;
-	save_reg_pc	<= wb_branch_hazard ? REGPC_NOP : reg_pc;
+    // save
+    save_inst   <= wb_branch_hazard ? INST_NOP  : inst;
+    save_reg_pc <= wb_branch_hazard ? REGPC_NOP : reg_pc;
 end
 
 always @(posedge clk) begin
-	$display("DECODE STAGE-------------");
+    $display("DECODE STAGE-------------");
     $display("reg_pc    : 0x%H", reg_pc);
     $display("inst      : 0x%H", inst);
     $display("rs1_addr  : %d", wire_rs1_addr);
     $display("rs2_addr  : %d", wire_rs2_addr);
     $display("wb_addr   : %d", wire_wb_addr);
-	$display("op1_data  : 0x%H", (
+    $display("op1_data  : 0x%H", (
         wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
         wire_op1_sel == OP1_PC  ? reg_pc :
         wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
         0
     ));
-	$display("op2_data  : 0x%H", (
+    $display("op2_data  : 0x%H", (
         wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
         wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
         wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :

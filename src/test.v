@@ -11,6 +11,6 @@ module test();
     #1 clk = ~clk;
 
   initial
-	#10001 $finish;
+    #10001 $finish;
 
 endmodule

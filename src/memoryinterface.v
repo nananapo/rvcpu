@@ -1,71 +1,71 @@
 module MemoryInterface (
-	input wire clk,
+    input wire clk,
  
-	input  wire			inst_start,
-	output wire			inst_ready,
-    input  wire [31:0]	i_addr,
-    output wire [31:0]	inst,
-    output wire			inst_valid,
+    input  wire         inst_start,
+    output wire         inst_ready,
+    input  wire [31:0]  i_addr,
+    output wire [31:0]  inst,
+    output wire         inst_valid,
 
-    input  wire     	d_cmd_write,
+    input  wire         d_cmd_write,
     input  wire         d_cmd_start,
-	output reg			d_cmd_ready,
-	input  wire [31:0]	d_addr,
-    input  wire [31:0]	wdata,
-    input  wire [31:0]	wmask,
-    output wire [31:0]	rdata,
-    output wire			rdata_valid
+    output reg          d_cmd_ready,
+    input  wire [31:0]  d_addr,
+    input  wire [31:0]  wdata,
+    input  wire [31:0]  wmask,
+    output wire [31:0]  rdata,
+    output wire         rdata_valid
 );
 
 `include "include/memoryinterface.v"
 
 // メモリ
-wire		mem_cmd_start;
-wire		mem_cmd_write;
-wire		mem_cmd_ready;
+wire        mem_cmd_start;
+wire        mem_cmd_write;
+wire        mem_cmd_ready;
 wire [31:0] mem_addr;
-wire [31:0]	mem_rdata;
-wire		mem_rdata_valid;
-wire [31:0]	mem_wdata;
-wire [31:0]	mem_wmask;
+wire [31:0] mem_rdata;
+wire        mem_rdata_valid;
+wire [31:0] mem_wdata;
+wire [31:0] mem_wmask;
 
 Memory #(
-	.MEMORY_SIZE(16384 / 2),
-	.MEMORY_FILE("../test/bin/sample.hex")
+    .MEMORY_SIZE(16384 / 2),
+    .MEMORY_FILE("../test/bin/sample.hex")
 ) memory(
-	.clk(clk),
+    .clk(clk),
 
-	.cmd_start(mem_cmd_start),
-	.cmd_write(mem_cmd_write),
-	.cmd_ready(mem_cmd_ready),
-	.addr(mem_addr),
-	.rdata(mem_rdata),
-	.rdata_valid(mem_rdata_valid),
-	.wdata(mem_wdata),
-	.wmask(mem_wmask)
+    .cmd_start(mem_cmd_start),
+    .cmd_write(mem_cmd_write),
+    .cmd_ready(mem_cmd_ready),
+    .addr(mem_addr),
+    .rdata(mem_rdata),
+    .rdata_valid(mem_rdata_valid),
+    .wdata(mem_wdata),
+    .wmask(mem_wmask)
 );
 
-localparam STATE_WAIT_CMD			= 2'd0;
-localparam STATE_WAIT_MEMORY_READY	= 2'd1;
-localparam STATE_WAIT_MEMORY_READ	= 2'd2;
+localparam STATE_WAIT_CMD           = 2'd0;
+localparam STATE_WAIT_MEMORY_READY  = 2'd1;
+localparam STATE_WAIT_MEMORY_READ   = 2'd2;
 
-reg [1:0]	status		= STATE_WAIT_CMD;
+reg [1:0] status = STATE_WAIT_CMD;
 
 
 // 保存用
-reg 		cmd_is_inst	= 0;
-reg [31:0]	save_i_addr;
+reg         cmd_is_inst = 0;
+reg [31:0]  save_i_addr;
 reg         save_d_cmd_start;
 reg         save_d_cmd_write;
-reg [31:0]	save_d_addr;
-reg [31:0]	save_wdata;
-reg [31:0]	save_wmask;
+reg [31:0]  save_d_addr;
+reg [31:0]  save_wdata;
+reg [31:0]  save_wmask;
 
 reg [31:0]  save_d_rdata = 32'hffffffff;
 reg [31:0]  save_i_rdata = 32'hffffffff;
 
 wire d_cmd_now_is_write = d_cmd_write && d_cmd_start;
-wire d_cmd_save_is_write = save_d_cmd_write && save_d_cmd_start;
+wire d_cmd_save_is_write= save_d_cmd_write && save_d_cmd_start;
 
 assign mem_cmd_start = (
     status == STATE_WAIT_CMD ? (
@@ -185,12 +185,12 @@ assign rdata        = (
 
 always @(posedge clk) begin
     if (status == STATE_WAIT_CMD) begin
-		save_i_addr         <= i_addr;
-		save_d_cmd_start    <= d_cmd_start;
-		save_d_cmd_write    <= d_cmd_write;
-		save_d_addr         <= d_addr;
-		save_wdata          <= wdata;
-		save_wmask          <= wmask;
+        save_i_addr         <= i_addr;
+        save_d_cmd_start    <= d_cmd_start;
+        save_d_cmd_write    <= d_cmd_write;
+        save_d_addr         <= d_addr;
+        save_wdata          <= wdata;
+        save_wmask          <= wmask;
 
         if (inst_start) begin
             cmd_is_inst <= 1;
@@ -241,28 +241,28 @@ end
 
 /*
 always @(posedge clk) begin
-	$display("MEMINF -------------");
-	$display("inst_start      : %d", inst_start);
-	$display("inst_ready      : %d", inst_ready);
-	$display("i_addr          : 0x%H", i_addr);
-	$display("inst            : 0x%H", inst);
-	$display("inst_valid      : %d", inst_valid);
-	$display("d_cmd_start     : %d", d_cmd_start);
-	$display("d_cmd_write     : %d", d_cmd_write);
-	$display("d_cmd_ready     : %d", d_cmd_ready);
-	$display("d_addr          : 0x%H", d_addr);
-	$display("wdata           : 0x%H", wdata);
-	$display("wmask           : 0x%H", wmask);
-	$display("rdata           : 0x%H", rdata);
-	$display("rdata_valid     : %d", rdata_valid);
-	$display("status          : %d", status);
-	$display("cmd_is_inst     : %d", cmd_is_inst);
-	$display("mem_cmd_start   : %d", mem_cmd_start);
-	$display("mem_cmd_write   : %d", mem_cmd_write);
-	$display("mem_cmd_ready   : %d", mem_cmd_ready);
-	$display("mem_addr        : 0x%H", mem_addr);
-	$display("mem_rdata       : 0x%H", mem_rdata);
-	$display("mem_rdata_valid : %d", mem_rdata_valid);
+    $display("MEMINF -------------");
+    $display("inst_start      : %d", inst_start);
+    $display("inst_ready      : %d", inst_ready);
+    $display("i_addr          : 0x%H", i_addr);
+    $display("inst            : 0x%H", inst);
+    $display("inst_valid      : %d", inst_valid);
+    $display("d_cmd_start     : %d", d_cmd_start);
+    $display("d_cmd_write     : %d", d_cmd_write);
+    $display("d_cmd_ready     : %d", d_cmd_ready);
+    $display("d_addr          : 0x%H", d_addr);
+    $display("wdata           : 0x%H", wdata);
+    $display("wmask           : 0x%H", wmask);
+    $display("rdata           : 0x%H", rdata);
+    $display("rdata_valid     : %d", rdata_valid);
+    $display("status          : %d", status);
+    $display("cmd_is_inst     : %d", cmd_is_inst);
+    $display("mem_cmd_start   : %d", mem_cmd_start);
+    $display("mem_cmd_write   : %d", mem_cmd_write);
+    $display("mem_cmd_ready   : %d", mem_cmd_ready);
+    $display("mem_addr        : 0x%H", mem_addr);
+    $display("mem_rdata       : 0x%H", mem_rdata);
+    $display("mem_rdata_valid : %d", mem_rdata_valid);
 end
 */
 
