@@ -199,7 +199,7 @@ assign output_wb_sel = (
 assign output_wb_addr = (
     output_is_current ? wb_addr :
     output_is_save ? save_wb_addr :
-    32'hffffffff
+    5'b11111
 );
 
 assign output_jmp_flg = (
