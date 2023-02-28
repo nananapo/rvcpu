@@ -239,7 +239,7 @@ CSRStage #() csrstage
 	.op1_data(csr_op1_data),
 	.imm_i(csr_imm_i),
 
-	.output_csr_rdata(wb_csr_rdata),
+	.csr_rdata(wb_csr_rdata),
 	.trap_vector(wb_trap_vector)
 );
 
