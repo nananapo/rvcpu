@@ -4,8 +4,8 @@ module FetchStage(
     input  wire [31:0]  wb_reg_pc,
     input  wire         wb_branch_hazard,
 
-	output wire [31:0]	id_reg_pc,
-	output wire [31:0]	id_inst,
+	output reg [31:0]	id_reg_pc,
+	output reg [31:0]	id_inst,
 
 	output wire         mem_start,
 	input  reg			mem_ready,
@@ -25,6 +25,11 @@ reg         state        = STATE_WAIT_READY;
 
 reg [31:0]  inner_reg_pc = 0;
 reg         is_fetched   = 0;
+
+initial begin
+    id_reg_pc   = REGPC_NOP;
+    id_inst     = INST_NOP;
+end
 
 // フェッチ済みのデータ
 reg         saved_reg_pc = REGPC_NOP;
@@ -60,7 +65,7 @@ assign mem_addr = (
     ) : REGPC_NOP
 );
 
-assign id_reg_pc = (
+wire [31:0] output_reg_pc = (
     stall_flg ? REGPC_NOP :
     wb_branch_hazard ? REGPC_NOP :
     state == STATE_WAIT_VALID ? (
@@ -69,7 +74,7 @@ assign id_reg_pc = (
     ) : REGPC_NOP
 );
 
-assign id_inst = (
+wire [31:0] output_inst = (
     stall_flg ? INST_NOP :
     wb_branch_hazard ? INST_NOP :
     state == STATE_WAIT_VALID ? (
@@ -79,6 +84,9 @@ assign id_inst = (
 );
 
 always @(posedge clk) begin
+    id_reg_pc   <= output_reg_pc;
+    id_inst     <= output_inst;
+
     if (state == STATE_WAIT_READY) begin
         if (mem_ready) begin
             state       <= STATE_WAIT_VALID;
