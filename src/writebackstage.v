@@ -14,7 +14,7 @@ module WriteBackStage(
 	input  wire			inst_is_ecall,
 	input  wire [31:0]	trap_vector,
 
-	output wire			output_reg_pc,
+	output wire [31:0]	output_reg_pc,
 	output reg [31:0]	regfile[31:0]
 );
 
@@ -33,10 +33,10 @@ wire [31:0] reg_pc_plus4 = reg_pc + 4;
 
 // WB STAGE
 wire [31:0] wb_data = (
-	wb_sel == WB_MEMB ? {{24{memory_rdata[7]}}, memory_rdata} :
-	wb_sel == WB_MEMBU? {24'b0, memory_rdata} :
-	wb_sel == WB_MEMH ? {{16{memory_rdata[15]}}, memory_rdata} :
-	wb_sel == WB_MEMHU? {16'b0, memory_rdata} :
+	wb_sel == WB_MEMB ? {{24{memory_rdata[7]}}, memory_rdata[7:0]} :
+	wb_sel == WB_MEMBU? {24'b0, memory_rdata[7:0]} :
+	wb_sel == WB_MEMH ? {{16{memory_rdata[15]}}, memory_rdata[15:0]} :
+	wb_sel == WB_MEMHU? {16'b0, memory_rdata[15:0]} :
 	wb_sel == WB_MEMW ? memory_rdata :
 	wb_sel == WB_PC   ? reg_pc_plus4 :
 	wb_sel == WB_CSR  ? csr_rdata :
