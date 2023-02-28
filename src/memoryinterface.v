@@ -7,7 +7,8 @@ module MemoryInterface (
     output wire [31:0]	inst,
     output wire			inst_valid,
 
-    input  wire [1:0]	d_cmd,
+    input  wire     	d_cmd_write,
+    input  wire         d_cmd_start,
 	output reg			d_cmd_ready,
 	input  wire [31:0]	d_addr,
     input  wire [31:0]	wdata,
@@ -54,7 +55,8 @@ reg [1:0]	status		= STATE_WAIT_CMD;
 // 保存用
 reg 		cmd_is_inst	= 0;
 reg [31:0]	save_i_addr;
-reg [1:0]	save_d_cmd;
+reg         save_d_cmd_start;
+reg         save_d_cmd_write;
 reg [31:0]	save_d_addr;
 reg [31:0]	save_wdata;
 reg [31:0]	save_wmask;
@@ -62,10 +64,13 @@ reg [31:0]	save_wmask;
 reg [31:0]  save_d_rdata = 32'hffffffff;
 reg [31:0]  save_i_rdata = 32'hffffffff;
 
+wire d_cmd_now_is_write = d_cmd_write && d_cmd_start;
+wire d_cmd_save_is_write = save_d_cmd_write && save_d_cmd_start;
+
 assign mem_cmd_start = (
     status == STATE_WAIT_CMD ? (
         mem_cmd_ready ? (
-            inst_start || d_cmd != MEMORY_CMD_NOP
+            inst_start || d_cmd_start
         ) : 0
     ) : 
     status == STATE_WAIT_MEMORY_READY ? (
@@ -73,7 +78,7 @@ assign mem_cmd_start = (
     ) :
     status == STATE_WAIT_MEMORY_READ ? (
         mem_rdata_valid ? (
-            cmd_is_inst ? (save_d_cmd != MEMORY_CMD_NOP) : 0
+            cmd_is_inst ? save_d_cmd_start : 0
         ) : 0
     ) : 0
 );
@@ -81,17 +86,17 @@ assign mem_cmd_start = (
 assign mem_cmd_write = (
     status == STATE_WAIT_CMD ? (
         mem_cmd_ready ? (
-            inst_start ? 0 : d_cmd == MEMORY_CMD_WRITE
+            inst_start ? 0 : d_cmd_now_is_write
         ) : 0
     ) : 
     status == STATE_WAIT_MEMORY_READY ? (
         mem_cmd_ready ? (
-            cmd_is_inst ? 0 : save_d_cmd == MEMORY_CMD_WRITE
+            cmd_is_inst ? 0 : d_cmd_save_is_write
         ) : 0
     ) :
     status == STATE_WAIT_MEMORY_READ ? (
         mem_rdata_valid ? (
-            cmd_is_inst ? (save_d_cmd == MEMORY_CMD_WRITE) : 0
+            cmd_is_inst ? d_cmd_save_is_write : 0
         ) : 0
     ) : 0 
 );
@@ -110,7 +115,7 @@ assign mem_addr = (
     status == STATE_WAIT_MEMORY_READ ? (
         mem_rdata_valid ? (
             cmd_is_inst ? (
-                save_d_cmd != MEMORY_CMD_NOP ? save_d_addr : 32'hffffffff
+                save_d_cmd_start ? save_d_addr : 32'hffffffff
             ) : 32'hffffffff
         ) : 32'hffffffff
     ) : 32'hffffffff
@@ -143,8 +148,8 @@ assign inst_valid   = (
     ) : 0
 );
 assign rdata_valid  = (
-    status == STATE_WAIT_CMD ? d_cmd == MEMORY_CMD_NOP : 
-    status == STATE_WAIT_MEMORY_READY ? (save_d_cmd == MEMORY_CMD_NOP) : 
+    status == STATE_WAIT_CMD ? !d_cmd_start : 
+    status == STATE_WAIT_MEMORY_READY ? !save_d_cmd_start : 
     status == STATE_WAIT_MEMORY_READ ? (
         mem_rdata_valid && !cmd_is_inst ? 1 : 0
     ) : 0
@@ -166,13 +171,13 @@ assign inst         = (
 
 assign rdata        = (
     status == STATE_WAIT_CMD ? (
-        d_cmd != MEMORY_CMD_NOP ? 32'hffffffff : save_d_rdata
+        d_cmd_start ? 32'hffffffff : save_d_rdata
     ) :
     status == STATE_WAIT_MEMORY_READY ? (
-        save_d_cmd != MEMORY_CMD_NOP ? 32'hffffffff : save_d_rdata
+        save_d_cmd_start ? 32'hffffffff : save_d_rdata
     ) :
     status == STATE_WAIT_MEMORY_READ ? (
-        save_d_cmd != MEMORY_CMD_NOP ? (
+        save_d_cmd_start ? (
             (!cmd_is_inst && mem_rdata_valid) ? mem_rdata : 32'hffffffff
         ) : save_d_rdata
     ) : 32'hffffffff
@@ -180,69 +185,55 @@ assign rdata        = (
 
 always @(posedge clk) begin
     if (status == STATE_WAIT_CMD) begin
-		save_i_addr	<= i_addr;
-		save_d_cmd	<= d_cmd;
-		save_d_addr	<= d_addr;
-		save_wdata	<= wdata;
-		save_wmask	<= wmask;
+		save_i_addr         <= i_addr;
+		save_d_cmd_start    <= d_cmd_start;
+		save_d_cmd_write    <= d_cmd_write;
+		save_d_addr         <= d_addr;
+		save_wdata          <= wdata;
+		save_wmask          <= wmask;
 
         if (inst_start) begin
             cmd_is_inst <= 1;
-            if (mem_cmd_ready) begin
-                // wait cmd -> wait read
-                status <= STATE_WAIT_MEMORY_READ;
-            end else begin
-                // wait cmd -> wait mem ready
-                status <= STATE_WAIT_MEMORY_READY;
-            end
-        end else if (d_cmd != MEMORY_CMD_NOP) begin
+            if (mem_cmd_ready)
+                status <= STATE_WAIT_MEMORY_READ;// wait cmd -> wait read
+            else
+                status <= STATE_WAIT_MEMORY_READY;// wait cmd -> wait mem ready
+        end else if (d_cmd_start) begin
             cmd_is_inst <= 0;
-            if (mem_cmd_ready) begin
-                // wait cmd -> (read? -> wait read) , (write? -> wait cmd)
-                status <= d_cmd == MEMORY_CMD_READ ? STATE_WAIT_MEMORY_READ : STATE_WAIT_CMD;
-            end else begin
-                // wait cmd -> wait ready
-                status <= STATE_WAIT_MEMORY_READY;
-            end
+            if (mem_cmd_ready)
+                status <= d_cmd_write ? STATE_WAIT_CMD : STATE_WAIT_MEMORY_READ;// wait cmd -> (read? -> wait read) , (write? -> wait cmd)
+            else
+                status <= STATE_WAIT_MEMORY_READY;// wait cmd -> wait ready
         end
     end else if (status == STATE_WAIT_MEMORY_READY) begin
         if (mem_cmd_ready) begin
-            if (cmd_is_inst) begin
-                // cmd ready -> wait read
-                status <= STATE_WAIT_MEMORY_READ;
-            end else begin
-                if (save_d_cmd == MEMORY_CMD_READ) begin
-                    // cmd ready -> wait dmem read
-                    status <= STATE_WAIT_MEMORY_READ;
-                end else begin
-                    // cmd ready -> write -> wait cmd
-                    status <= STATE_WAIT_CMD;
-                end
+            if (cmd_is_inst)
+                status <= STATE_WAIT_MEMORY_READ;// cmd ready -> wait read
+            else begin
+                if (save_d_cmd_write)
+                    status <= STATE_WAIT_CMD; // cmd ready -> write -> wait cmd
+                else
+                    status <= STATE_WAIT_MEMORY_READ;// cmd ready -> wait dmem read
             end
         end
     end else if (status == STATE_WAIT_MEMORY_READ) begin
         if (mem_rdata_valid) begin
             if (cmd_is_inst) begin
                 save_i_rdata <= mem_rdata;
-                if (save_d_cmd != MEMORY_CMD_NOP) begin
+                if (save_d_cmd_start) begin
                     cmd_is_inst <= 0;
                     if (mem_cmd_ready) begin
-                        if (save_d_cmd == MEMORY_CMD_READ)
-                            // inst -> d_cmd
-                            status <= STATE_WAIT_MEMORY_READ;
+                        if (save_d_cmd_write)
+                            status <= STATE_WAIT_CMD;// inst -> wait cmd
                         else
-                            // inst -> wait cmd
-                            status <= STATE_WAIT_CMD;
+                            status <= STATE_WAIT_MEMORY_READ;// inst -> d_cmd
                     end else 
-                        // inst -> wait ready
-                        status <= STATE_WAIT_MEMORY_READY;
-                // inst -> wait cmd
+                        status <= STATE_WAIT_MEMORY_READY;// inst -> wait ready
                 end else
-                    status <= STATE_WAIT_CMD;
+                    status <= STATE_WAIT_CMD;// inst -> wait cmd
             end else begin
                 save_d_rdata <= mem_rdata;
-                // d_cmd -> wait cmd
-                status <= STATE_WAIT_CMD;
+                status <= STATE_WAIT_CMD;// d_cmd -> wait cmd
             end
         end
     end
@@ -256,7 +247,8 @@ always @(posedge clk) begin
 	$display("i_addr          : 0x%H", i_addr);
 	$display("inst            : 0x%H", inst);
 	$display("inst_valid      : %d", inst_valid);
-	$display("d_cmd           : %d", d_cmd);
+	$display("d_cmd_start     : %d", d_cmd_start);
+	$display("d_cmd_write     : %d", d_cmd_write);
 	$display("d_cmd_ready     : %d", d_cmd_ready);
 	$display("d_addr          : 0x%H", d_addr);
 	$display("wdata           : 0x%H", wdata);

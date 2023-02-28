@@ -25,7 +25,8 @@ module MemoryStage(
 	output wire			output_inst_is_ecall,
 	output wire			output_is_stall,
 
-	output wire [1:0]	mem_cmd,
+	output wire         mem_cmd_start,
+	output wire         mem_cmd_write,
 	input  reg			mem_cmd_ready,
 	output wire [31:0]	mem_addr,
 	output wire [31:0]	mem_wdata,
@@ -72,18 +73,14 @@ assign output_is_stall = !next_flg;
 // ***************
 // MEMORY WIRE
 // ***************
-assign mem_cmd = (
-    state == STATE_WAIT ? (
-        is_store ? MEMORY_CMD_WRITE : 
-        is_load  ? MEMORY_CMD_READ : 
-        MEMORY_CMD_NOP
-    ) : 
-    state == STATE_WAIT_READY ? (
-        mem_cmd_ready ? (
-            is_store_save ? MEMORY_CMD_WRITE : MEMORY_CMD_READ
-        ) : MEMORY_CMD_NOP
-    ) : 
-    MEMORY_CMD_NOP
+assign mem_cmd_start = (
+    state == STATE_WAIT ? is_store || is_load : 
+    state == STATE_WAIT_READY ? mem_cmd_ready : 0
+);
+
+assign mem_cmd_write = (
+    state == STATE_WAIT ? is_store : 
+    state == STATE_WAIT_READY ? mem_cmd_ready && is_store_save : 0
 );
 
 assign mem_addr = (
@@ -271,7 +268,8 @@ always @(posedge clk) begin
     $display("out._wb_sel   : %d", output_wb_sel);
     $display("next_flg      : %d", next_flg);
     $display("stall_flg     : %d", output_is_stall);
-	$display("mem.cmd       : %d", mem_cmd);
+	$display("mem.cmd.s     : %d", mem_cmd_start);
+	$display("mem.cmd.w     : %d", mem_cmd_write);
 	$display("mem.cmd_ready : %d", mem_cmd_ready);
 	$display("mem.addr      : 0x%H", mem_addr);
 	$display("mem.wdata     : 0x%H", mem_wdata);
