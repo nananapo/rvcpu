@@ -79,7 +79,7 @@ wire [31:0] wire_imm_u_shifted = {wire_imm_u, 12'b0};
 wire [31:0] wire_imm_z_uext    = {27'd0, wire_imm_z};
 
 wire [2:0] funct3 = inst[14:12];
-wire [7:0] funct7 = inst[31:25];
+wire [6:0] funct7 = inst[31:25];
 wire [6:0] opcode = inst[6:0];
 
 wire inst_is_lb     = (funct3 == INST_LB_FUNCT3 && opcode == INST_LB_OPCODE);
