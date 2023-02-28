@@ -21,10 +21,10 @@ module FetchStage(
 localparam STATE_WAIT_READY = 0;
 localparam STATE_WAIT_VALID = 1;
 
-reg state = STATE_WAIT_READY;
+reg         state        = STATE_WAIT_READY;
 
 reg [31:0]  inner_reg_pc = 0;
-reg         is_fetched   = 1;
+reg         is_fetched   = 0;
 
 // フェッチ済みのデータ
 reg         saved_reg_pc = REGPC_NOP;
@@ -81,8 +81,8 @@ assign id_inst = (
 always @(posedge clk) begin
     if (state == STATE_WAIT_READY) begin
         if (mem_ready) begin
-            state           <= STATE_WAIT_READY;
-            is_fetched      <= 0;
+            state       <= STATE_WAIT_VALID;
+            is_fetched  <= 0;
         end
     end else if (state == STATE_WAIT_VALID) begin
         if (wb_branch_hazard) begin
@@ -120,6 +120,7 @@ end
 always @(posedge clk) begin
 	$display("FETCH -------------");
 	$display("status    : %d", state);
+	$display("fetched   : %d", is_fetched);
 	$display("reg_pc    : 0x%H", inner_reg_pc);
 	$display("id.reg_pc : 0x%H", id_reg_pc);
 	$display("id.inst   : 0x%H", id_inst);
