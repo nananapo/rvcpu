@@ -25,7 +25,7 @@ module MemoryStage(
 	output wire			output_inst_is_ecall,
 	output wire			output_is_stall,
 
-	output wire [2:0]	mem_cmd,
+	output wire [1:0]	mem_cmd,
 	input  reg			mem_cmd_ready,
 	output wire [31:0]	mem_addr,
 	output wire [31:0]	mem_wdata,

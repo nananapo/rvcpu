@@ -7,7 +7,7 @@ module MemoryInterface (
     output wire [31:0]	inst,
     output wire			inst_valid,
 
-    input  wire [2:0]	d_cmd,
+    input  wire [1:0]	d_cmd,
 	output reg			d_cmd_ready,
 	input  wire [31:0]	d_addr,
     input  wire [31:0]	wdata,
@@ -54,7 +54,7 @@ reg [1:0]	status		= STATE_WAIT_CMD;
 // 保存用
 reg 		cmd_is_inst	= 0;
 reg [31:0]	save_i_addr;
-reg [2:0]	save_d_cmd;
+reg [1:0]	save_d_cmd;
 reg [31:0]	save_d_addr;
 reg [31:0]	save_wdata;
 reg [31:0]	save_wmask;

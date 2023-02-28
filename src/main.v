@@ -10,7 +10,7 @@ reg			mem_inst_ready;
 reg [31:0]	mem_i_addr;
 reg [31:0]	mem_inst;
 reg			mem_inst_valid;
-reg [2:0]	mem_d_cmd;
+reg [1:0]	mem_d_cmd;
 reg			mem_d_cmd_ready;
 reg [31:0]	mem_d_addr;
 reg [31:0]	mem_wdata;

@@ -8,7 +8,7 @@ module Core(
 	output reg [31:0]	memory_i_addr,
 	input  reg [31:0]	memory_inst,
 	input  reg			memory_inst_valid,
-	output reg [2:0]	memory_d_cmd,
+	output reg [1:0]	memory_d_cmd,
 	input  reg			memory_d_cmd_ready,
 	output reg [31:0]	memory_d_addr,
 	output reg [31:0]	memory_wdata,
