@@ -32,8 +32,8 @@ initial begin
 end
 
 // フェッチ済みのデータ
-reg         saved_reg_pc = REGPC_NOP;
-reg         saved_inst   = INST_NOP;
+reg [31:0]  saved_reg_pc = REGPC_NOP;
+reg [31:0]  saved_inst   = INST_NOP;
 
 assign mem_start = (
     state == STATE_WAIT_READY ? mem_ready :
