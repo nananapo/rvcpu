@@ -2,11 +2,13 @@ module CSRStage #(
 	parameter TV_ADDR = 12'h305
 )(
 	input  wire			clk,
+
+    input  wire         wb_branch_hazard,
 	
 	// input
-	input  wire [2:0]	csr_cmd,
-	input  wire [31:0]	op1_data,
-	input  wire [31:0]	imm_i,
+	input  wire [2:0]	input_csr_cmd,
+	input  wire [31:0]	input_op1_data,
+	input  wire [31:0]	input_imm_i,
 
 	// output
 	output reg  [31:0]	csr_rdata,
@@ -20,6 +22,10 @@ initial begin
 end
 
 reg [31:0] mem [4096:0];
+
+wire csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
+wire op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
+wire imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
 
 // ecallなら0x342を読む
 wire [11:0] addr = csr_cmd == CSR_E ? 12'h342 : imm_i % 4096;

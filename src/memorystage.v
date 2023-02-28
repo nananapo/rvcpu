@@ -1,17 +1,19 @@
 module MemoryStage(
     input  wire			clk,
 
-	input  reg [31:0]	reg_pc,
-    input  reg [31:0]	rs2_data,
-    input  reg [31:0]	alu_out,
-    input  reg 			br_flg,
-    input  reg [31:0]	br_target,
-    input  reg [4:0]	mem_wen,
-	input  reg 			rf_wen,
-    input  reg [3:0]	wb_sel,
-	input  reg [4:0]	wb_addr,
-	input  reg			jmp_flg,
-	input  reg			inst_is_ecall,
+    input  wire         wb_branch_hazard,
+
+	input  reg [31:0]	input_reg_pc,
+    input  reg [31:0]	input_rs2_data,
+    input  reg [31:0]	input_alu_out,
+    input  reg 			input_br_flg,
+    input  reg [31:0]	input_br_target,
+    input  reg [4:0]	input_mem_wen,
+	input  reg 			input_rf_wen,
+    input  reg [3:0]	input_wb_sel,
+	input  reg [4:0]	input_wb_addr,
+	input  reg			input_jmp_flg,
+	input  reg			input_inst_is_ecall,
 
 	output wire [31:0]	output_read_data,
 	output wire [31:0]	output_reg_pc,
@@ -42,9 +44,21 @@ localparam STATE_WAIT				= 0;
 localparam STATE_WAIT_READY			= 1;
 localparam STATE_WAIT_READ_VALID	= 2;
 
-reg [1:0]   state = STATE_WAIT;
+reg [1:0]   state           = STATE_WAIT;
 
-reg [31:0]	save_reg_pc			= 0;
+wire [31:0]	reg_pc          = wb_branch_hazard ? REGPC_NOP      : input_reg_pc;
+wire [31:0]	rs2_data        = wb_branch_hazard ? 32'hffffffff   : input_rs2_data;
+wire [31:0]	alu_out         = wb_branch_hazard ? 32'hffffffff   : input_alu_out;
+wire 		br_flg          = wb_branch_hazard ? 0              : input_br_flg;
+wire [31:0]	br_target       = wb_branch_hazard ? 32'hffffffff   : input_br_target;
+wire [4:0]	mem_wen         = wb_branch_hazard ? MEN_X          : input_mem_wen;
+wire 		rf_wen          = wb_branch_hazard ? REN_X          : input_rf_wen;
+wire [3:0]	wb_sel          = wb_branch_hazard ? WB_X           : input_wb_sel;
+wire [4:0]	wb_addr         = wb_branch_hazard ? 0              : input_wb_addr;
+wire		jmp_flg         = wb_branch_hazard ? 0              : input_jmp_flg;
+wire		inst_is_ecall   = wb_branch_hazard ? 0              : input_inst_is_ecall;
+
+reg [31:0]	save_reg_pc			= REGPC_NOP;
 reg [31:0]	save_alu_out		= 0;
 reg 		save_br_flg			= 0;
 reg [31:0]	save_br_target		= 0;
@@ -57,9 +71,9 @@ reg			save_jmp_flg		= 0;
 reg			save_inst_is_ecall	= 0;
 
 
-wire is_store = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
-wire is_load  = !is_store && mem_wen != MEN_X;
-wire is_store_save = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
+wire is_store       = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
+wire is_load        = !is_store && mem_wen != MEN_X;
+wire is_store_save  = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
 wire next_flg =	(
     state == STATE_WAIT ? mem_wen == MEN_X :
@@ -212,7 +226,7 @@ assign output_inst_is_ecall = (
 );
 
 always @(posedge clk) begin
-	if (state == STATE_WAIT) begin
+	if (wb_branch_hazard || state == STATE_WAIT) begin
 
 		save_reg_pc			<= reg_pc;
 		save_alu_out		<= alu_out;

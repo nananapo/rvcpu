@@ -1,93 +1,119 @@
 module FetchStage(
 	input  wire			clk,
 
+    input  wire [31:0]  wb_reg_pc,
+    input  wire         wb_branch_hazard,
+
 	output wire [31:0]	id_reg_pc,
 	output wire [31:0]	id_inst,
 
-	output reg			mem_start,
+	output wire         mem_start,
 	input  reg			mem_ready,
-	output reg [31:0]	mem_addr,
-	input  reg [31:0]	mem_data,
+	output wire [31:0]  mem_addr,
+	input  reg  [31:0]	mem_data,
 	input  reg			mem_data_valid,
 
 	input  reg			stall_flg
 );
 
-initial begin
-	mem_start	<= 0;
-end
+`include "include/core.v"
 
-localparam REGPC_NOP	= 32'hffffffff;
-localparam INST_NOP		= 32'h00000033;
+localparam STATE_WAIT_READY = 0;
+localparam STATE_WAIT_VALID = 1;
 
-localparam STATE_START		= 4'd0;
-localparam STATE_WAIT_FETCH	= 4'd1;
-localparam STATE_STOP		= 4'd2;
+reg state = STATE_WAIT_READY;
 
-reg [31:0] reg_pc = 0;
-reg [31:0] output_reg_pc_reg = REGPC_NOP;
-reg [31:0] output_inst_reg = INST_NOP;
+reg [31:0]  inner_reg_pc = 0;
+reg         is_fetched   = 1;
 
-reg [3:0]  status = STATE_START;
+// フェッチ済みのデータ
+reg         saved_reg_pc = REGPC_NOP;
+reg         saved_inst   = INST_NOP;
 
-reg        is_submitted = 0; // 次のステージに命令を送ったかのフラグ
+assign mem_start = (
+    state == STATE_WAIT_READY ? mem_ready :
+    state == STATE_WAIT_VALID ? (
+        (!is_fetched && mem_data_valid) ? (
+            stall_flg ? 0 : mem_ready
+        ) :
+        is_fetched ? (
+            !stall_flg ? mem_ready : 0
+        ) : 0
+    ) : 0
+);
+
+assign mem_addr = (
+    state == STATE_WAIT_READY ? reg_pc :
+    state == STATE_WAIT_VALID ? (
+        (!is_fetched && mem_data_valid) ? (
+            stall_flg ? REGPC_NOP : reg_pc + 4
+        ) :
+        is_fetched ? (
+            !stall_flg ? reg_pc : REGPC_NOP
+        ) : REGPC_NOP
+    ) : REGPC_NOP
+);
 
 assign id_reg_pc = (
-	stall_flg ? REGPC_NOP : 
-	status == STATE_WAIT_FETCH ? (
-		mem_data_valid ? reg_pc : REGPC_NOP
-	) :
-	status == STATE_START ? (
-		is_submitted ? REGPC_NOP : output_reg_pc_reg
-	) :
-	REGPC_NOP // ここには来ないはず
+    stall_flg ? REGPC_NOP :
+    state == STATE_WAIT_VALID ? (
+        (!is_fetched && mem_data_valid) ? reg_pc :
+        is_fetched ? saved_reg_pc : REGPC_NOP
+    ) : REGPC_NOP
 );
 
 assign id_inst = (
-	stall_flg ? INST_NOP :
-	status == STATE_WAIT_FETCH ? (
-		mem_data_valid ? mem_data : INST_NOP
-	) :
-	status == STATE_START ? (
-		is_submitted ? INST_NOP : output_inst_reg
-	) :
-	INST_NOP// ここには来ないはず
+    stall_flg ? INST_NOP :
+    state == STATE_WAIT_VALID ? (
+        (!is_fetched && mem_data_valid) ? mem_data :
+        is_fetched ? saved_inst : INST_NOP
+    ) : INST_NOP
 );
 
 always @(posedge clk) begin
-	if (status == STATE_START) begin
-		if (!stall_flg) begin
-			if (mem_ready) begin
-				mem_start	<= 1;
-				mem_addr	<= reg_pc;
-				status		<= STATE_WAIT_FETCH;
-				is_submitted<= 0;
-			end else begin
-				is_submitted<= 1;
-			end
-		end
-	end if (status == STATE_WAIT_FETCH) begin
-		mem_start	<= 0;
-		if (mem_data_valid) begin
-			$display("Fetched");
-			output_inst_reg		<= mem_data;
-			output_reg_pc_reg	<= reg_pc;
-			status				<= STATE_START;
-			reg_pc				<= reg_pc + 4;
-
-			if (!stall_flg) begin
-				is_submitted <= 1;
-			end
-		end
-	end
+    if (state == STATE_WAIT_READY) begin
+        if (mem_ready) begin
+            saved_reg_pc    <= REGPC_NOP;
+            saved_inst      <= INST_NOP;
+            state           <= STATE_WAIT_READY;
+            is_fetched      <= 0;
+        end
+    end else if (state == STATE_WAIT_VALID) begin
+        if (!is_fetched && mem_data_valid) begin
+            saved_reg_pc    <= reg_pc;
+            saved_inst      <= mem_data;
+            reg_pc          <= reg_pc + 4;
+            is_fetched      <= 1;
+            $display("Fetched");
+            if (stall_flg)
+                state       <= STATE_WAIT_READY;
+            else begin
+                if (mem_ready) begin
+                    saved_reg_pc    <= REGPC_NOP;
+                    saved_inst      <= INST_NOP;
+                    is_fetched      <= 0;
+                end else
+                    state <= STATE_WAIT_READY;
+            end
+        end else if (is_fetched) begin
+            if (!stall_flg) begin
+                if (mem_ready) begin
+                    saved_reg_pc    <= REGPC_NOP;
+                    saved_inst      <= INST_NOP;
+                    is_fetched      <= 0;
+                end else
+                    state <= STATE_WAIT_READY;
+            end
+        end
+    end
 end
 
 always @(posedge clk) begin
 	$display("FETCH -------------");
-	$display("reg_pc    : 0x%H", reg_pc);
-	$display("id_reg_pc : 0x%H", id_reg_pc);
-	$display("id_inst   : 0x%H", id_inst);
 	$display("status    : %d", status);
+	$display("reg_pc    : 0x%H", reg_pc);
+	$display("id.reg_pc : 0x%H", id_reg_pc);
+	$display("id.inst   : 0x%H", id_inst);
 	$display("mem.start : %d", mem_start);
 	$display("mem.ready : %d", mem_ready);
 	$display("mem.data  : 0x%H", mem_data);

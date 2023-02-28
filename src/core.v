@@ -49,6 +49,9 @@ wire [31:0]  id_inst;
 FetchStage #() fetchstage (
 	.clk(clk),
 
+    .wb_reg_pc(wb_to_fetch_reg_pc),
+    .wb_branch_hazard(wbstage_branch_hazard),
+    
 	.id_reg_pc(id_reg_pc),
 	.id_inst(id_inst),
 
@@ -91,6 +94,8 @@ wire		exe_inst_is_ecall;
 DecodeStage #() decodestage
 (
     .clk(clk),
+
+    .wb_branch_hazard(wbstage_branch_hazard),
 
     .input_inst(id_inst),
 	.input_reg_pc(id_reg_pc),
@@ -145,6 +150,8 @@ ExecuteStage #() executestage
 (
     .clk(clk),
 
+    .wb_branch_hazard(wbstage_branch_hazard),
+
 	.input_reg_pc(exe_reg_pc),
 	.input_exe_fun(exe_exe_fun),
 	.input_op1_data(exe_op1_data),
@@ -198,6 +205,8 @@ MemoryStage #() memorystage
 (
 	.clk(clk),
 
+    .wb_branch_hazard(wbstage_branch_hazard),
+
 	.reg_pc(mem_reg_pc),
     .rs2_data(mem_rs2_data),
     .alu_out(mem_alu_out),
@@ -241,6 +250,8 @@ wire [31:0]	wb_trap_vector;
 CSRStage #() csrstage
 (
 	.clk(clk),
+
+    .wb_branch_hazard(wbstage_branch_hazard),
 
 	.csr_cmd(csr_csr_cmd),
 	.op1_data(csr_op1_data),

@@ -2,6 +2,8 @@ module ExecuteStage
 (
 	input wire clk,
 
+    input  wire      wb_branch_hazard,
+
 	input reg [31:0] input_reg_pc,
 	input reg [4:0]  input_exe_fun,
 	input reg [31:0] input_op1_data,
@@ -87,7 +89,7 @@ wire		inst_is_ecall	= stall_flg ? save_inst_is_ecall : input_inst_is_ecall;
 
 always @(posedge clk) begin
 	// EX STAGE
-	alu_out <= (
+	alu_out <= wb_branch_hazard ? 32'hffffffff : (
 	    exe_fun == ALU_ADD   ? op1_data + op2_data :
 	    exe_fun == ALU_SUB   ? op1_data - op2_data :
 	    exe_fun == ALU_AND   ? op1_data & op2_data :
@@ -103,7 +105,7 @@ always @(posedge clk) begin
 	    0
 	);
 
-	br_flg <= (
+	br_flg <= wb_branch_hazard ? 0 : (
 		exe_fun == BR_BEQ   ? (op1_data == op2_data) :
 		exe_fun == BR_BNE   ? !(op1_data == op2_data) :
 		exe_fun == BR_BLT   ? ($signed(op1_data) < $signed(op2_data)) :
@@ -113,35 +115,67 @@ always @(posedge clk) begin
 		0
 	);
 
-	br_target <= reg_pc + imm_b_sext;
+    br_target <= wb_branch_hazard ? 32'hffffffff : reg_pc + imm_b_sext;
 
-	output_reg_pc   	<= reg_pc;
-	output_mem_wen  	<= mem_wen;
-	output_rf_wen		<= rf_wen;
-	output_rs2_data 	<= rs2_data;
-	output_op1_data 	<= op1_data;
-	output_wb_sel   	<= wb_sel;
-	output_wb_addr		<= wb_addr;
-	output_csr_cmd  	<= csr_cmd;
-	output_jmp_flg		<= jmp_flg;
-	output_imm_i    	<= imm_i_sext;
-	output_inst_is_ecall<= inst_is_ecall;
+    if (wb_branch_hazard) begin
+        // output
+    	output_reg_pc   	<= REGPC_NOP;
+    	output_mem_wen  	<= MEN_X;
+    	output_rf_wen		<= REN_X;
+    	output_rs2_data 	<= 32'hffffffff;
+    	output_op1_data 	<= 32'hffffffff;
+    	output_wb_sel   	<= WB_X;
+    	output_wb_addr		<= 0;
+    	output_csr_cmd  	<= CSR_X;
+    	output_jmp_flg		<= 0;
+    	output_imm_i    	<= 32'hffffffff;
+    	output_inst_is_ecall<= 0;
 
-	// save
-	save_reg_pc			<= reg_pc;	
-	save_exe_fun		<= exe_fun;	
-	save_op1_data		<= op1_data;
-	save_op2_data		<= op2_data;
-	save_rs2_data		<= rs2_data;
-	save_mem_wen		<= mem_wen;
-	save_rf_wen			<= rf_wen;
-	save_wb_sel			<= wb_sel;
-	save_wb_addr		<= wb_addr;
-	save_csr_cmd		<= csr_cmd;
-	save_jmp_flg		<= jmp_flg;
-	save_imm_i_sext		<= imm_i_sext;
-	save_imm_b_sext		<= imm_b_sext;
-	save_inst_is_ecall	<= inst_is_ecall;
+    	// save
+    	save_reg_pc			<= 32'hffffffff;
+    	save_exe_fun		<= ALU_X;
+    	save_op1_data		<= 32'hffffffff;
+    	save_op2_data		<= 32'hffffffff;
+    	save_rs2_data		<= 32'hffffffff;
+    	save_mem_wen		<= MEN_X;
+    	save_rf_wen			<= REN_X;
+    	save_wb_sel			<= WB_X;
+    	save_wb_addr		<= 0;
+    	save_csr_cmd		<= CSR_X;
+    	save_jmp_flg		<= 0;
+    	save_imm_i_sext		<= 32'hffffffff;
+    	save_imm_b_sext		<= 32'hffffffff;
+    	save_inst_is_ecall	<= 0;
+    end else begin
+        // output
+    	output_reg_pc   	<= reg_pc;
+    	output_mem_wen  	<= mem_wen;
+    	output_rf_wen		<= rf_wen;
+    	output_rs2_data 	<= rs2_data;
+    	output_op1_data 	<= op1_data;
+    	output_wb_sel   	<= wb_sel;
+    	output_wb_addr		<= wb_addr;
+    	output_csr_cmd  	<= csr_cmd;
+    	output_jmp_flg		<= jmp_flg;
+    	output_imm_i    	<= imm_i_sext;
+    	output_inst_is_ecall<= inst_is_ecall;
+
+    	// save
+    	save_reg_pc			<= reg_pc;	
+    	save_exe_fun		<= exe_fun;	
+    	save_op1_data		<= op1_data;
+    	save_op2_data		<= op2_data;
+    	save_rs2_data		<= rs2_data;
+    	save_mem_wen		<= mem_wen;
+    	save_rf_wen			<= rf_wen;
+    	save_wb_sel			<= wb_sel;
+    	save_wb_addr		<= wb_addr;
+    	save_csr_cmd		<= csr_cmd;
+    	save_jmp_flg		<= jmp_flg;
+    	save_imm_i_sext		<= imm_i_sext;
+    	save_imm_b_sext		<= imm_b_sext;
+    	save_inst_is_ecall	<= inst_is_ecall;
+    end
 end
 
 always @(posedge clk) begin

@@ -2,6 +2,8 @@ module DecodeStage
 (
     input  wire	      clk,
 
+    input  wire       wb_branch_hazard,
+
     input  reg [31:0] input_inst,
 	input  reg [31:0] input_reg_pc,
 	input  reg [31:0] regfile[31:0],
@@ -48,11 +50,18 @@ initial begin
     output_inst_is_ecall    <= 0;
 end
 
-reg  [31:0] save_inst	= 0;
-reg  [31:0] save_reg_pc	= 0;
+reg  [31:0] save_inst	= INST_NOP;
+reg  [31:0] save_reg_pc	= REGPC_NOP;
 
-wire [31:0] inst	= stall_flg ? save_inst : input_inst;
-wire [31:0] reg_pc	= stall_flg ? save_reg_pc : input_reg_pc; 
+wire [31:0] inst	= (
+    wb_branch_hazard ? INST_NOP :
+    stall_flg ? save_inst : input_inst
+);
+
+wire [31:0] reg_pc	= (
+    wb_branch_hazard ? REGPC_NOP :
+    stall_flg ? save_reg_pc : input_reg_pc
+); 
 
 wire [11:0] wire_imm_i = inst[31:20];
 wire [11:0] wire_imm_s = {inst[31:25], inst[11:7]};
@@ -215,8 +224,8 @@ always @(posedge clk) begin
     csr_cmd	        <= wire_csr_cmd;
 
 	// save
-	save_inst	<= inst;
-	save_reg_pc	<= reg_pc;
+	save_inst	<= wb_branch_hazard ? INST_NOP  : inst;
+	save_reg_pc	<= wb_branch_hazard ? REGPC_NOP : reg_pc;
 end
 
 always @(posedge clk) begin
