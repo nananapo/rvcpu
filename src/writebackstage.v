@@ -15,6 +15,7 @@ module WriteBackStage(
 	input  wire [31:0]	trap_vector,
 
 	output wire [31:0]	output_reg_pc,
+    output wire         output_branch_hazard,
 	output reg [31:0]	regfile[31:0]
 );
 
@@ -44,11 +45,13 @@ wire [31:0] wb_data = (
 );
 
 assign output_reg_pc = (
-	br_flg ? br_target : 
-	jmp_flg ? alu_out :
-	inst_is_ecall ? trap_vector :
-	reg_pc_plus4
+    br_flg ? br_target : 
+    jmp_flg ? alu_out :
+    inst_is_ecall ? trap_vector :
+    reg_pc_plus4
 );
+
+assign output_branch_hazard = br_flg || jmp_flg || inst_is_ecall;
 
 always @(posedge clk) begin
 	if (rf_wen == REN_S) begin
@@ -71,6 +74,7 @@ always @(posedge clk) begin
 	$display("alu_out        : 0x%H", alu_out);
 	$display("inst_is_ecall  : %d", inst_is_ecall);
 	$display("trap_vector    : 0x%H", trap_vector);
+    $display("branch hazard  : %d", output_branch_hazard);
 end
 
 endmodule

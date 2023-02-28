@@ -33,6 +33,11 @@ wire memory_stage_is_stall = clk_count >= 5 ? wait_memory_stage : 0;
 // レジスタ
 wire [31:0]	regfile[31:0];
 
+// wbstageからfetchへのライトバック
+wire [31:0] wb_to_fetch_reg_pc;
+// 分岐ハザードが起きてしまいましたフラグ
+wire        wbstage_branch_hazard;
+
 //**************************
 // Fetch Stage
 //**************************
@@ -264,6 +269,9 @@ WriteBackStage #() wbstage(
 	.alu_out(wb_alu_out),
 	.inst_is_ecall(wb_inst_is_ecall),
 	.trap_vector(wb_trap_vector),
+
+    .output_reg_pc(wb_to_fetch_reg_pc),
+    .output_branch_hazard(wbstage_branch_hazard),
 
 	.regfile(regfile)
 );
