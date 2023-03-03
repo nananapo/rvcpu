@@ -21,14 +21,16 @@ initial begin
     csr_rdata = 0;
 end
 
-reg [31:0] mem [4095:0];
+localparam CSR_SIZE = 4096;
+
+reg [31:0] mem [CSR_SIZE-1:0];
 
 wire [2:0] csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
 wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
 wire [31:0]imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
 
 // ecallなら0x342を読む
-wire [11:0] addr = csr_cmd == CSR_E ? 12'h342 : imm_i % 4096;
+wire [11:0] addr = (csr_cmd == CSR_E ? 32'h342 : imm_i) % CSR_SIZE;
 
 function [31:0] wdata_fun(
     input [2:0] csr_cmd,
