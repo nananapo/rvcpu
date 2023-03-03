@@ -30,7 +30,7 @@ wire [31:0] mem_wdata;
 wire [31:0] mem_wmask;
 
 Memory #(
-    .MEMORY_SIZE(16384 / 2),
+    .MEMORY_SIZE(4096),
     .MEMORY_FILE("../test/bin/sample.hex")
 ) memory(
     .clk(clk),
