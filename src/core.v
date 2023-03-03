@@ -27,7 +27,8 @@ assign led_2 = memory_inst_start == 0;
 reg [31:0] clk_count = 0;
 
 // メモリステージのストールフラグ
-wire memory_stage_is_stall;
+wire wait_memory_stage;
+wire memory_stage_is_stall = clk_count >= 5 ? wait_memory_stage : 0;
 
 // レジスタ
 wire [31:0] regfile[31:0];
@@ -228,7 +229,7 @@ MemoryStage #() memorystage
     .output_wb_addr(wb_wb_addr),
     .output_jmp_flg(wb_jmp_flg),
     .output_inst_is_ecall(wb_inst_is_ecall),
-    .output_is_stall(memory_stage_is_stall),
+    .output_is_stall(wait_memory_stage),
 
     .mem_cmd_start(memory_d_cmd_start),
     .mem_cmd_write(memory_d_cmd_write),
