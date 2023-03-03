@@ -21,7 +21,7 @@ initial begin
     csr_rdata <= 0;
 end
 
-reg [31:0] mem [4096:0];
+reg [31:0] mem [4095:0];
 
 wire [2:0] csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
 wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
