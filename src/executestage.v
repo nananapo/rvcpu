@@ -89,34 +89,40 @@ wire        inst_is_ecall   = stall_flg ? save_inst_is_ecall : input_inst_is_eca
 
 always @(posedge clk) begin
     // EX STAGE
-    alu_out <= wb_branch_hazard ? 32'hffffffff : (
-        exe_fun == ALU_ADD   ? op1_data + op2_data :
-        exe_fun == ALU_SUB   ? op1_data - op2_data :
-        exe_fun == ALU_AND   ? op1_data & op2_data :
-        exe_fun == ALU_OR    ? op1_data | op2_data :
-        exe_fun == ALU_XOR   ? op1_data ^ op2_data :
-        exe_fun == ALU_SLL   ? op1_data << op2_data[4:0] :
-        exe_fun == ALU_SRL   ? op1_data >> op2_data[4:0] :
-        exe_fun == ALU_SRA   ? $signed($signed(op1_data) >>> op2_data[4:0]):
-        exe_fun == ALU_SLT   ? ($signed(op1_data) < $signed(op2_data)) :
-        exe_fun == ALU_SLTU  ? op1_data < op2_data :
-        exe_fun == ALU_JALR  ? (op1_data + op2_data) & (~1) :
-        exe_fun == ALU_COPY1 ? op1_data :
-        0
-    );
-
-    br_flg <= wb_branch_hazard ? 0 : (
-        exe_fun == BR_BEQ   ? (op1_data == op2_data) :
-        exe_fun == BR_BNE   ? !(op1_data == op2_data) :
-        exe_fun == BR_BLT   ? ($signed(op1_data) < $signed(op2_data)) :
-        exe_fun == BR_BGE   ? !($signed(op1_data) < $signed(op2_data)) :
-        exe_fun == BR_BLTU  ? (op1_data < op2_data) :
-        exe_fun == BR_BGEU  ? !(op1_data < op2_data) :
-        0
-    );
-
-    br_target <= wb_branch_hazard ? 32'hffffffff : reg_pc + imm_b_sext;
-
+    if (wb_branch_hazard) begin
+        alu_out     <= 32'hffffffff;
+        br_flg      <= 0; 
+        br_target   <= 32'hffffffff;
+    end else begin
+        // alu_out
+        case (exe_fun) 
+            ALU_ADD   : alu_out <= op1_data + op2_data;
+            ALU_SUB   : alu_out <= op1_data - op2_data;
+            ALU_AND   : alu_out <= op1_data & op2_data;
+            ALU_OR    : alu_out <= op1_data | op2_data;
+            ALU_XOR   : alu_out <= op1_data ^ op2_data;
+            ALU_SLL   : alu_out <= op1_data << op2_data[4:0];
+            ALU_SRL   : alu_out <= op1_data >> op2_data[4:0];
+            ALU_SRA   : alu_out <= $signed($signed(op1_data) >>> op2_data[4:0]);
+            ALU_SLT   : alu_out <= ($signed(op1_data) < $signed(op2_data));
+            ALU_SLTU  : alu_out <= op1_data < op2_data;
+            ALU_JALR  : alu_out <= (op1_data + op2_data) & (~1);
+            ALU_COPY1 : alu_out <= op1_data;
+            default   : alu_out <= 0;
+        endcase
+        // br_flg
+        case(exe_fun) 
+            BR_BEQ   : br_flg <= (op1_data == op2_data);
+            BR_BNE   : br_flg <= !(op1_data == op2_data);
+            BR_BLT   : br_flg <= ($signed(op1_data) < $signed(op2_data));
+            BR_BGE   : br_flg <= !($signed(op1_data) < $signed(op2_data));
+            BR_BLTU  : br_flg <= (op1_data < op2_data);
+            BR_BGEU  : br_flg <= !(op1_data < op2_data);
+            default  : br_flg <= 0;
+        endcase
+        br_target <= reg_pc + imm_b_sext;
+    end
+    
     if (wb_branch_hazard) begin
         // output
         output_reg_pc       <= REGPC_NOP;

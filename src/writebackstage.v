@@ -33,16 +33,26 @@ end
 wire [31:0] reg_pc_plus4 = reg_pc + 4; 
 
 // WB STAGE
-wire [31:0] wb_data = (
-    wb_sel == WB_MEMB ? {{24{memory_rdata[7]}}, memory_rdata[7:0]} :
-    wb_sel == WB_MEMBU? {24'b0, memory_rdata[7:0]} :
-    wb_sel == WB_MEMH ? {{16{memory_rdata[15]}}, memory_rdata[15:0]} :
-    wb_sel == WB_MEMHU? {16'b0, memory_rdata[15:0]} :
-    wb_sel == WB_MEMW ? memory_rdata :
-    wb_sel == WB_PC   ? reg_pc_plus4 :
-    wb_sel == WB_CSR  ? csr_rdata :
-    alu_out
+function [31:0] wb_data_func(
+    input [3:0]     wb_sel,
+    input [31:0]    memory_rdata,
+    input [31:0]    reg_pc_plus4,
+    input [31:0]    csr_rdata,
+    input [31:0]    alu_out
 );
+    case (wb_sel)
+        WB_MEMB     : wb_data_func = {{24{memory_rdata[7]}}, memory_rdata[7:0]};
+        WB_MEMBU    : wb_data_func = {24'b0, memory_rdata[7:0]};
+        WB_MEMH     : wb_data_func = {{16{memory_rdata[15]}}, memory_rdata[15:0]};
+        WB_MEMHU    : wb_data_func = {16'b0, memory_rdata[15:0]};
+        WB_MEMW     : wb_data_func = memory_rdata;
+        WB_PC       : wb_data_func = reg_pc_plus4;
+        WB_CSR      : wb_data_func = csr_rdata;
+        default     : wb_data_func = alu_out;
+    endcase
+endfunction
+
+wire [31:0] wb_data = wb_data_func(wb_sel, memory_rdata, reg_pc_plus4, csr_rdata, alu_out);
 
 assign output_reg_pc = (
     br_flg ? br_target : 
@@ -75,6 +85,7 @@ always @(posedge clk) begin
     $display("inst_is_ecall  : %d", inst_is_ecall);
     $display("trap_vector    : 0x%H", trap_vector);
     $display("branch hazard  : %d", output_branch_hazard);
+    $display("wb_data        : 0x%H", wb_data);
 end
 
 endmodule

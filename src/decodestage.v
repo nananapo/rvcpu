@@ -157,21 +157,21 @@ always @(posedge clk) begin
     imm_u_shifted   <= wire_imm_u_shifted;
     imm_z_uext      <= wire_imm_z_uext;
 
-    op1_data <= (
-        wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
-        wire_op1_sel == OP1_PC  ? reg_pc :
-        wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
-        0
-    );
+    case(wire_op1_sel) 
+        OP1_RS1 : op1_data <= (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr];
+        OP1_PC  : op1_data <= reg_pc;
+        OP1_IMZ : op1_data <= wire_imm_z_uext;
+        default : op1_data <= 0;
+    endcase
 
-    op2_data <= (
-        wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
-        wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
-        wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :
-        wire_op2_sel == OP2_IMJ  ? wire_imm_j_sext :
-        wire_op2_sel == OP2_IMU  ? wire_imm_u_shifted :
-        0
-    );
+    case(wire_op2_sel) 
+        OP2_RS2W : op2_data <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
+        OP2_IMI  : op2_data <= wire_imm_i_sext;
+        OP2_IMS  : op2_data <= wire_imm_s_sext;
+        OP2_IMJ  : op2_data <= wire_imm_j_sext;
+        OP2_IMU  : op2_data <= wire_imm_u_shifted;
+        default  : op2_data <= 0;
+    endcase
 
     rs2_data                <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
     jmp_flg                 <= inst_is_jal || inst_is_jalr;
