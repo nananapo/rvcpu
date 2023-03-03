@@ -82,7 +82,7 @@ wire [4:0]  exe_exe_fun; // TODO bitwise
 wire [31:0] exe_op1_data;
 wire [31:0] exe_op2_data;
 wire [31:0] exe_rs2_data;
-wire [4:0]  exe_mem_wen;
+wire [3:0]  exe_mem_wen;
 wire        exe_rf_wen;
 wire [3:0]  exe_wb_sel;
 wire [4:0]  exe_wb_addr;
@@ -134,7 +134,7 @@ wire [31:0] mem_br_target;
 wire        mem_inst_is_ecall;
 
 wire [31:0] mem_reg_pc;
-wire [4:0]  mem_mem_wen;
+wire [3:0]  mem_mem_wen;
 wire        mem_rf_wen;
 wire [3:0]  mem_wb_sel;
 wire [31:0] mem_rs2_data;

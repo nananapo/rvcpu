@@ -8,7 +8,7 @@ module MemoryStage(
     input  reg [31:0]    input_alu_out,
     input  reg           input_br_flg,
     input  reg [31:0]    input_br_target,
-    input  reg [4:0]     input_mem_wen,
+    input  reg [3:0]     input_mem_wen,
     input  reg           input_rf_wen,
     input  reg [3:0]     input_wb_sel,
     input  reg [4:0]     input_wb_addr,
@@ -51,7 +51,7 @@ wire [31:0] rs2_data        = wb_branch_hazard ? 32'hffffffff   : input_rs2_data
 wire [31:0] alu_out         = wb_branch_hazard ? 32'hffffffff   : input_alu_out;
 wire        br_flg          = wb_branch_hazard ? 0              : input_br_flg;
 wire [31:0] br_target       = wb_branch_hazard ? 32'hffffffff   : input_br_target;
-wire [4:0]  mem_wen         = wb_branch_hazard ? MEN_X          : input_mem_wen;
+wire [3:0]  mem_wen         = wb_branch_hazard ? MEN_X          : input_mem_wen;
 wire        rf_wen          = wb_branch_hazard ? REN_X          : input_rf_wen;
 wire [3:0]  wb_sel          = wb_branch_hazard ? WB_X           : input_wb_sel;
 wire [4:0]  wb_addr         = wb_branch_hazard ? 0              : input_wb_addr;
@@ -63,7 +63,7 @@ reg [31:0]  save_alu_out        = 0;
 reg         save_br_flg         = 0;
 reg [31:0]  save_br_target      = 0;
 reg [31:0]  save_rs2_data       = 0;
-reg [4:0]   save_mem_wen        = 0;
+reg [3:0]   save_mem_wen        = 0;
 reg         save_rf_wen         = 0;
 reg [3:0]   save_wb_sel         = 0;
 reg [4:0]   save_wb_addr        = 0;

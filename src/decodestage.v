@@ -22,7 +22,7 @@ module DecodeStage
     output reg [31:0] op1_data, // ALU
     output reg [31:0] op2_data, // ALU
     output reg [31:0] rs2_data, // rs2で指定されたレジスタの値
-    output reg [4:0]  mem_wen,  // メモリに書き込むか否か
+    output reg [3:0]  mem_wen,  // メモリに書き込むか否か
     output reg [0:0]  rf_wen,   // レジスタに書き込むか否か
     output reg [3:0]  wb_sel,   // ライトバック先
     output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
@@ -86,7 +86,7 @@ wire inst_is_ecall  = inst == INST_ECALL;
 wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
 wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
 
-function [5 + 4 + 4 + 5 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
+function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
     casex (inst)
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_LB_FUNCT3    , 5'bxxxxx, INST_LB_OPCODE      } : decode = {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LB, REN_S, WB_MEMB , CSR_X};
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_LBU_FUNCT3   , 5'bxxxxx, INST_LBU_OPCODE     } : decode = {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LBU,REN_S, WB_MEMBU, CSR_X};
@@ -139,7 +139,7 @@ endfunction
 wire [4:0] wire_exe_fun;
 wire [3:0] wire_op1_sel;
 wire [3:0] wire_op2_sel;
-wire [4:0] wire_mem_wen;
+wire [3:0] wire_mem_wen;
 wire [0:0] wire_rf_wen;
 wire [3:0] wire_wb_sel;
 wire [2:0] wire_csr_cmd;

@@ -34,15 +34,15 @@ localparam OP2_IMU  = 4'd4;
 localparam OP2_IMZ  = 4'd5;
 localparam OP2_X    = 4'd6;
 
-localparam MEN_X    = 5'd0;
-localparam MEN_SB   = 5'd1;
-localparam MEN_SH   = 5'd2;
-localparam MEN_SW   = 5'd3;
-localparam MEN_LB   = 5'd4;
-localparam MEN_LBU  = 5'd5;
-localparam MEN_LH   = 5'd6;
-localparam MEN_LHU  = 5'd7;
-localparam MEN_LW   = 5'd8;
+localparam MEN_X    = 4'd0;
+localparam MEN_SB   = 4'd1;
+localparam MEN_SH   = 4'd2;
+localparam MEN_SW   = 4'd3;
+localparam MEN_LB   = 4'd4;
+localparam MEN_LBU  = 4'd5;
+localparam MEN_LH   = 4'd6;
+localparam MEN_LHU  = 4'd7;
+localparam MEN_LW   = 4'd8;
 
 localparam REN_X    = 1'b0;
 localparam REN_S    = 1'b1;
