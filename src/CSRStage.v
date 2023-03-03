@@ -30,7 +30,8 @@ wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
 wire [31:0]imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
 
 // ecallなら0x342を読む
-wire [11:0] addr = (csr_cmd == CSR_E ? 32'h342 : imm_i) % CSR_SIZE;
+wire [31:0] addr32bit = (csr_cmd == CSR_E ? 32'h342 : imm_i) % CSR_SIZE;
+wire [11:0] addr = addr32bit[11:0];
 
 function [31:0] wdata_fun(
     input [2:0] csr_cmd,
