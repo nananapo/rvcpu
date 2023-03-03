@@ -40,6 +40,19 @@ module MemoryStage(
 `include "include/core.v"
 `include "include/memoryinterface.v"
 
+initial begin
+    output_read_data        = 32'hffffffff;
+    output_reg_pc           = 32'hffffffff;
+    output_alu_out          = 32'hffffffff;
+    output_br_flg           = 0;
+    output_br_target        = 0;
+    output_rf_wen           = 0;
+    output_wb_sel           = 0;
+    output_wb_addr          = 0;
+    output_jmp_flg          = 0;
+    output_inst_is_ecall    = 0;
+end
+
 localparam STATE_WAIT               = 0;
 localparam STATE_WAIT_READY         = 1;
 localparam STATE_WAIT_READ_VALID    = 2;

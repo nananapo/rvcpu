@@ -18,7 +18,9 @@ module CSRStage #(
 `include "include/core.v"
 
 initial begin
-    csr_rdata = 0;
+    csr_rdata   = 0;
+    trap_vector = 0;
+    mem[TV_ADDR]= 0;
 end
 
 localparam CSR_SIZE = 4096;
