@@ -30,13 +30,20 @@ wire [31:0]imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
 // ecallなら0x342を読む
 wire [11:0] addr = csr_cmd == CSR_E ? 12'h342 : imm_i % 4096;
 
-wire [31:0] wdata = (
-    csr_cmd == CSR_W ? op1_data :
-    csr_cmd == CSR_S ? csr_rdata | op1_data :
-    csr_cmd == CSR_C ? csr_rdata & ~op1_data :
-    csr_cmd == CSR_E ? 11 :
-    0
+function [31:0] wdata_fun(
+    input [2:0] csr_cmd,
+    input [31:0]op1_data,
+    input [31:0]csr_rdata
 );
+    case (csr_cmd)
+        CSR_W   : wdata_fun = op1_data;
+        CSR_S   : wdata_fun = csr_rdata | op1_data;
+        CSR_C   : wdata_fun = csr_rdata & ~op1_data;
+        CSR_E   : wdata_fun = 11;
+        default : wdata_fun = 0;
+    endcase
+endfunction
+wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, csr_rdata);
 
 reg [2:0] save_csr_cmd  = CSR_X;
 reg [11:0]save_csr_addr = 0;
