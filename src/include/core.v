@@ -47,15 +47,15 @@ localparam MEN_LW   = 5'b01000;
 localparam REN_X    = 1'b0;
 localparam REN_S    = 1'b1;
 
-localparam WB_X     = 4'b0000;
-localparam WB_ALU   = 4'b0000;
-localparam WB_MEMB  = 4'b0001;
-localparam WB_MEMH  = 4'b0010;
-localparam WB_MEMW  = 4'b0011;
-localparam WB_MEMBU = 4'b0100;
-localparam WB_MEMHU = 4'b0101;
-localparam WB_PC    = 4'b0110;
-localparam WB_CSR   = 4'b0111;
+localparam WB_X     = 4'd0;
+localparam WB_ALU   = 4'd0;
+localparam WB_MEMB  = 4'd1;
+localparam WB_MEMH  = 4'd2;
+localparam WB_MEMW  = 4'd3;
+localparam WB_MEMBU = 4'd4;
+localparam WB_MEMHU = 4'd5;
+localparam WB_PC    = 4'd6;
+localparam WB_CSR   = 4'd7;
 
 localparam CSR_X    = 3'b000;
 localparam CSR_W    = 3'b001;
