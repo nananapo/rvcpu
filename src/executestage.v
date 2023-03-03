@@ -184,6 +184,7 @@ always @(posedge clk) begin
     end
 end
 
+`ifdef DEBUG 
 always @(posedge clk) begin
     $display("EXECUTE -------------");
     $display("exe_fun   : %d", exe_fun);
@@ -192,5 +193,6 @@ always @(posedge clk) begin
     $display("reg_pc    : 0x%H", reg_pc);
     $display("imm_b_sext: 0x%H", imm_b_sext);
 end
+`endif
 
 endmodule

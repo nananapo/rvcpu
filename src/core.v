@@ -287,6 +287,7 @@ WriteBackStage #() wbstage(
     .regfile(regfile)
 );
 
+`ifdef DEBUG 
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
     $display("");
@@ -304,5 +305,6 @@ always @(posedge clk) begin
     $display("7: 0x%H  15: 0x%H  23: 0x%H  31: 0x%H", regfile[7], regfile[15], regfile[23], regfile[31]);
     $display("8: 0x%H  16: 0x%H  24: 0x%H  ",         regfile[8], regfile[16], regfile[24]);
 end
+`endif
 
 endmodule

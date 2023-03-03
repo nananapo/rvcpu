@@ -69,6 +69,7 @@ always @(posedge clk) begin
     end    
 end
 
+`ifdef DEBUG 
 always @(posedge clk) begin
     $display("WB STAGE--------------");
     $display("reg_pc         : 0x%H", reg_pc);
@@ -87,5 +88,6 @@ always @(posedge clk) begin
     $display("branch hazard  : %d", output_branch_hazard);
     $display("wb_data        : 0x%H", wb_data);
 end
+`endif
 
 endmodule
