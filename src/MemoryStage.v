@@ -15,17 +15,17 @@ module MemoryStage(
     input  reg           input_jmp_flg,
     input  reg           input_inst_is_ecall,
 
-    output wire [31:0]   output_read_data,
-    output wire [31:0]   output_reg_pc,
-    output wire [31:0]   output_alu_out,
-    output wire          output_br_flg,
-    output wire [31:0]   output_br_target,
-    output wire          output_rf_wen,
-    output wire [3:0]    output_wb_sel,
-    output wire [4:0]    output_wb_addr,
-    output wire          output_jmp_flg,
-    output wire          output_inst_is_ecall,
-    output wire          output_is_stall,
+    output reg [31:0]    output_read_data,
+    output reg [31:0]    output_reg_pc,
+    output reg [31:0]    output_alu_out,
+    output reg           output_br_flg,
+    output reg [31:0]    output_br_target,
+    output reg           output_rf_wen,
+    output reg [3:0]     output_wb_sel,
+    output reg [4:0]     output_wb_addr,
+    output reg           output_jmp_flg,
+    output reg           output_inst_is_ecall,
+    output reg           output_is_stall,
 
     output wire          mem_cmd_start,
     output wire          mem_cmd_write,
@@ -127,24 +127,7 @@ assign mem_wmask = (
 // OUTPUT
 // ***************
 
-/* 参考
-assign output_reg_pc = (
-    state == STATE_WAIT ? (
-        (!is_store && !is_load) ? reg_pc :
-        mem_cmd_ready ? (
-            is_store ? reg_pc : 32'hffffffff
-        ) : 32'hffffffff
-    ) :
-    state == STATE_WAIT_READY ? (
-        is_store_save ? save_reg_pc : 32'hffffffff
-    ) :
-    state == STATE_WAIT_READ_VALID ? (
-        mem_rdata_valid ? save_reg_pc : 32'hffffffff
-    ) : 32'hffffffff
-);
-*/
-
-assign output_read_data = (
+wire [31:0] output_read_data_wire = (
     state == STATE_WAIT ? 32'hffffffff :
     state == STATE_WAIT_READ_VALID ? (
         mem_rdata_valid ? (
@@ -171,55 +154,55 @@ wire output_is_save = (
     0
 );
 
-assign output_reg_pc = (
+wire [31:0] output_reg_pc_wire = (
     output_is_current ? reg_pc :
     output_is_save ? save_reg_pc :
     32'hffffffff
 );
 
-assign output_alu_out  = (
+wire [31:0] output_alu_out_wire  = (
     output_is_current ? alu_out :
     output_is_save ? save_alu_out :
     32'hffffffff
 );
 
-assign output_br_flg = (
+wire output_br_flg_wire = (
     output_is_current ? br_flg :
     output_is_save ? save_br_flg :
     0
 );
 
-assign output_br_target = (
+wire [31:0] output_br_target_wire = (
     output_is_current ? br_target :
     output_is_save ? save_br_target :
     32'hffffffff
 );
 
-assign output_rf_wen = (
+wire output_rf_wen_wire = (
     output_is_current ? rf_wen :
     output_is_save ? save_rf_wen :
     REN_X
 );
 
-assign output_wb_sel = (
+wire [3:0] output_wb_sel_wire = (
     output_is_current ? wb_sel :
     output_is_save ? save_wb_sel :
     WB_X
 );
 
-assign output_wb_addr = (
+wire [4:0] output_wb_addr_wire = (
     output_is_current ? wb_addr :
     output_is_save ? save_wb_addr :
     5'b11111
 );
 
-assign output_jmp_flg = (
+wire output_jmp_flg_wire = (
     output_is_current ? jmp_flg :
     output_is_save ? save_jmp_flg :
     0
 );
 
-assign output_inst_is_ecall = (
+wire output_inst_is_ecall_wire = (
     output_is_current ? inst_is_ecall :
     output_is_save ? save_inst_is_ecall :
     0
@@ -262,6 +245,17 @@ always @(posedge clk) begin
         if (mem_rdata_valid)
             state <= STATE_WAIT;
     end
+
+    output_read_data        <= output_read_data_wire;
+    output_reg_pc           <= output_reg_pc_wire;
+    output_alu_out          <= output_alu_out_wire;
+    output_br_flg           <= output_br_flg_wire;
+    output_br_target        <= output_br_target_wire;
+    output_rf_wen           <= output_rf_wen_wire;
+    output_wb_sel           <= output_wb_sel_wire;
+    output_wb_addr          <= output_wb_addr_wire;
+    output_jmp_flg          <= output_jmp_flg_wire;
+    output_inst_is_ecall    <= output_inst_is_ecall_wire;
 end
 
 `ifdef DEBUG 
