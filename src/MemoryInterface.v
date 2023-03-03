@@ -141,8 +141,8 @@ assign inst_ready   = status == STATE_WAIT_CMD;
 assign d_cmd_ready  = status == STATE_WAIT_CMD;
 
 assign inst_valid   = (
-    status == STATE_WAIT_CMD ? !inst_start : 
-    status == STATE_WAIT_MEMORY_READY ? !cmd_is_inst : 
+    status == STATE_WAIT_CMD ? 0 : 
+    status == STATE_WAIT_MEMORY_READY ? 0 : 
     status == STATE_WAIT_MEMORY_READ ? (
         mem_rdata_valid && cmd_is_inst ? 1 : 0
     ) : 0
