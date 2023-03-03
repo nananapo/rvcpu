@@ -1,3 +1,4 @@
+/* verilator lint_off CASEX */
 module DecodeStage
 (
     input  wire       clk,

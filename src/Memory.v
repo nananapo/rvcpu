@@ -1,3 +1,4 @@
+/* verilator lint_off WIDTH */
 module Memory #(
     parameter MEMORY_SIZE = 2048,
     parameter MEMORY_FILE = ""
