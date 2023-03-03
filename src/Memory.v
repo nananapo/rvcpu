@@ -22,7 +22,7 @@ initial begin
     if (MEMORY_FILE != "") begin
         $readmemh(MEMORY_FILE, mem);
     end
-    rdata <= 0;
+    rdata = 0;
 end
 
 wire [31:0] addr_shift = (addr >> 2) % MEMORY_SIZE;

@@ -23,11 +23,11 @@ reg [31:0] clkCount = 0;
 wire led_2;
 
 initial begin
-    led[0] <= 0;
-    led[1] <= 0;
-    led[2] <= 0;
-    led[3] <= 0;
-    led[4] <= 0;
+    led[0] = 0;
+    led[1] = 0;
+    led[2] = 0;
+    led[3] = 0;
+    led[4] = 0;
 end
 
 always @(posedge clk) begin
