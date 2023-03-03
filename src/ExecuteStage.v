@@ -104,8 +104,8 @@ always @(posedge clk) begin
             ALU_SLL   : alu_out <= op1_data << op2_data[4:0];
             ALU_SRL   : alu_out <= op1_data >> op2_data[4:0];
             ALU_SRA   : alu_out <= $signed($signed(op1_data) >>> op2_data[4:0]);
-            ALU_SLT   : alu_out <= ($signed(op1_data) < $signed(op2_data));
-            ALU_SLTU  : alu_out <= op1_data < op2_data;
+            ALU_SLT   : alu_out <= {31'b0, ($signed(op1_data) < $signed(op2_data))};
+            ALU_SLTU  : alu_out <= {31'b0, op1_data < op2_data};
             ALU_JALR  : alu_out <= (op1_data + op2_data) & (~1);
             ALU_COPY1 : alu_out <= op1_data;
             default   : alu_out <= 0;
