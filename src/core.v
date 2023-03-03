@@ -29,6 +29,9 @@ reg [31:0] clk_count = 0;
 // メモリステージのストールフラグ
 wire memory_stage_is_stall;
 
+// データハザードによるストールフラグ
+wire data_hazard_stall;
+
 // レジスタ
 wire [31:0] regfile[31:0];
 
@@ -60,7 +63,7 @@ FetchStage #() fetchstage (
     .mem_data(memory_inst),
     .mem_data_valid(memory_inst_valid),
 
-    .stall_flg(memory_stage_is_stall)
+    .stall_flg(memory_stage_is_stall || data_hazard_stall)
 );
 
 
@@ -120,7 +123,15 @@ DecodeStage #() decodestage
     .jmp_flg(exe_jmp_flg),
     .output_inst_is_ecall(exe_inst_is_ecall),
 
-    .stall_flg(memory_stage_is_stall)
+    .memory_stage_stall_flg(memory_stage_is_stall),
+
+    .data_hazard_stall_flg(data_hazard_stall),
+    .data_hazard_wb_rf_wen(wb_rf_wen),
+    .data_hazard_wb_wb_addr(wb_wb_addr),
+    .data_hazard_mem_rf_wen(mem_rf_wen),
+    .data_hazard_mem_wb_addr(mem_wb_addr),
+    .data_hazard_exe_rf_wen(exe_rf_wen),
+    .data_hazard_exe_wb_addr(exe_wb_addr)
 );
 
 

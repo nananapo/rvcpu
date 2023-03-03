@@ -30,7 +30,15 @@ module DecodeStage
     output reg        jmp_flg,  // ジャンプ命令かのフラグ
     output reg        output_inst_is_ecall, // ecallかどうか
 
-    input  wire       stall_flg
+    input  wire       memory_stage_stall_flg, // メモリステージでストールしているかどうか
+
+    output wire       data_hazard_stall_flg,    // データハザードでストールするかどうか
+    input  wire       data_hazard_wb_rf_wen,
+    input  wire [4:0] data_hazard_wb_wb_addr,
+    input  wire       data_hazard_mem_rf_wen,
+    input  wire [4:0] data_hazard_mem_wb_addr,
+    input  wire       data_hazard_exe_rf_wen,
+    input  wire [4:0] data_hazard_exe_wb_addr
 );
 
 `include "include/core.v"
@@ -53,14 +61,25 @@ end
 reg  [31:0] save_inst   = INST_NOP;
 reg  [31:0] save_reg_pc = REGPC_NOP;
 
+assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
+    (data_hazard_wb_rf_wen == REN_S  && wire_op1_sel == OP1_RS1  && data_hazard_wb_wb_addr == wire_rs1_addr  && wire_rs1_addr != 0) ||
+    (data_hazard_wb_rf_wen == REN_S  && wire_op2_sel == OP2_RS2W && data_hazard_wb_wb_addr == wire_rs2_addr  && wire_rs2_addr != 0) ||
+
+    (data_hazard_mem_rf_wen == REN_S && wire_op1_sel == OP1_RS1  && data_hazard_mem_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
+    (data_hazard_mem_rf_wen == REN_S && wire_op2_sel == OP2_RS2W && data_hazard_mem_wb_addr == wire_rs2_addr && wire_rs2_addr != 0) ||
+
+    (data_hazard_exe_rf_wen == REN_S && wire_op1_sel == OP1_RS1  && data_hazard_exe_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
+    (data_hazard_exe_rf_wen == REN_S && wire_op2_sel == OP2_RS2W && data_hazard_exe_wb_addr == wire_rs2_addr && wire_rs2_addr != 0)
+);
+
 wire [31:0] inst = (
     wb_branch_hazard ? INST_NOP :
-    stall_flg ? save_inst : input_inst
+    memory_stage_stall_flg ? save_inst : input_inst
 );
 
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
-    stall_flg ? save_reg_pc : input_reg_pc
+    memory_stage_stall_flg ? save_reg_pc : input_reg_pc
 ); 
 
 wire [11:0] wire_imm_i = inst[31:20];
@@ -150,40 +169,62 @@ wire [4:0] wire_rs2_addr = inst[24:20];
 wire [4:0] wire_wb_addr  = inst[11:7];
 
 always @(posedge clk) begin
-    imm_i_sext      <= wire_imm_i_sext;
-    imm_s_sext      <= wire_imm_s_sext;
-    imm_b_sext      <= wire_imm_b_sext;
-    imm_j_sext      <= wire_imm_j_sext;
-    imm_u_shifted   <= wire_imm_u_shifted;
-    imm_z_uext      <= wire_imm_z_uext;
+    if (data_hazard_stall_flg) begin
+        imm_i_sext              <= 32'hffffffff;
+        imm_s_sext              <= 32'hffffffff;
+        imm_b_sext              <= 32'hffffffff;
+        imm_j_sext              <= 32'hffffffff;
+        imm_u_shifted           <= 32'hffffffff;
+        imm_z_uext              <= 32'hffffffff;
 
-    case(wire_op1_sel) 
-        OP1_RS1 : op1_data <= (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr];
-        OP1_PC  : op1_data <= reg_pc;
-        OP1_IMZ : op1_data <= wire_imm_z_uext;
-        default : op1_data <= 0;
-    endcase
+        op1_data                <= 32'hffffffff;
+        op2_data                <= 32'hffffffff;
+        rs2_data                <= 32'hffffffff;
+        jmp_flg                 <= 0;
+        output_inst_is_ecall    <= 0;
+        output_reg_pc           <= 32'hffffffff;
+        exe_fun                 <= ALU_ADD;
+        mem_wen                 <= MEN_X;
+        rf_wen                  <= REN_X;
+        wb_sel                  <= WB_X;
+        wb_addr                 <= 0;
+        csr_cmd                 <= CSR_X;
+    end else begin
+        imm_i_sext      <= wire_imm_i_sext;
+        imm_s_sext      <= wire_imm_s_sext;
+        imm_b_sext      <= wire_imm_b_sext;
+        imm_j_sext      <= wire_imm_j_sext;
+        imm_u_shifted   <= wire_imm_u_shifted;
+        imm_z_uext      <= wire_imm_z_uext;
 
-    case(wire_op2_sel) 
-        OP2_RS2W : op2_data <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
-        OP2_IMI  : op2_data <= wire_imm_i_sext;
-        OP2_IMS  : op2_data <= wire_imm_s_sext;
-        OP2_IMJ  : op2_data <= wire_imm_j_sext;
-        OP2_IMU  : op2_data <= wire_imm_u_shifted;
-        default  : op2_data <= 0;
-    endcase
+        case(wire_op1_sel) 
+            OP1_RS1 : op1_data <= (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr];
+            OP1_PC  : op1_data <= reg_pc;
+            OP1_IMZ : op1_data <= wire_imm_z_uext;
+            default : op1_data <= 0;
+        endcase
 
-    rs2_data                <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
-    jmp_flg                 <= inst_is_jal || inst_is_jalr;
-    output_inst_is_ecall    <= inst_is_ecall;
+        case(wire_op2_sel) 
+            OP2_RS2W : op2_data <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
+            OP2_IMI  : op2_data <= wire_imm_i_sext;
+            OP2_IMS  : op2_data <= wire_imm_s_sext;
+            OP2_IMJ  : op2_data <= wire_imm_j_sext;
+            OP2_IMU  : op2_data <= wire_imm_u_shifted;
+            default  : op2_data <= 0;
+        endcase
 
-    output_reg_pc   <= reg_pc;
-    exe_fun         <= wire_exe_fun;
-    mem_wen         <= wire_mem_wen;
-    rf_wen          <= wire_rf_wen;
-    wb_sel          <= wire_wb_sel;
-    wb_addr         <= wire_wb_addr;
-    csr_cmd         <= wire_csr_cmd;
+        rs2_data                <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
+        jmp_flg                 <= inst_is_jal || inst_is_jalr;
+        output_inst_is_ecall    <= inst_is_ecall;
+
+        output_reg_pc   <= reg_pc;
+        exe_fun         <= wire_exe_fun;
+        mem_wen         <= wire_mem_wen;
+        rf_wen          <= wire_rf_wen;
+        wb_sel          <= wire_wb_sel;
+        wb_addr         <= wire_wb_addr;
+        csr_cmd         <= wire_csr_cmd;
+    end
 
     // save
     save_inst   <= wb_branch_hazard ? INST_NOP  : inst;
@@ -219,6 +260,13 @@ always @(posedge clk) begin
     $display("w.rf_wen  : %d", wire_rf_wen);
     $display("w.wb_sel  : %d", wire_wb_sel);
     $display("w.csr_cmd : %d", wire_csr_cmd);
+    $display("datahazard: %d", data_hazard_stall_flg);
+    $display("dh.wb.rf  : %d", data_hazard_wb_rf_wen);
+    $display("dh.wb.adr : %d", data_hazard_wb_wb_addr);
+    $display("dh.mem.rf : %d", data_hazard_mem_rf_wen);
+    $display("dh.mem.adr: %d", data_hazard_mem_wb_addr);
+    $display("dh.exe.rf : %d", data_hazard_exe_rf_wen);
+    $display("dh.exe.adr: %d", data_hazard_exe_wb_addr);
 end
 `endif
 
