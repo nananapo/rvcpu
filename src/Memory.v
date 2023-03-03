@@ -29,7 +29,7 @@ end
 wire [31:0] addr_shift = (addr >> 2) % MEMORY_SIZE;
 
 assign cmd_ready    = 1;
-assign rdata_valid  = !cmd_write;
+assign rdata_valid  = 1;//!cmd_write;
 
 always @(posedge clk) begin
     rdata <= {
