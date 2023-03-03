@@ -18,7 +18,7 @@ module CSRStage #(
 `include "include/core.v"
 
 initial begin
-    csr_rdata <= 0;
+    csr_rdata = 0;
 end
 
 reg [31:0] mem [4095:0];

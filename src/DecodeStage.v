@@ -45,17 +45,17 @@ module DecodeStage
 `include "include/inst.v"
 
 initial begin
-    exe_fun                 <= 0;
-    op1_data                <= 0;
-    op2_data                <= 0;
-    rs2_data                <= 0;
-    mem_wen                 <= 0;
-    rf_wen                  <= 0;
-    wb_sel                  <= 0;
-    wb_addr                 <= 0;
-    csr_cmd                 <= 0;
-    jmp_flg                 <= 0;
-    output_inst_is_ecall    <= 0;
+    exe_fun                 = 0;
+    op1_data                = 0;
+    op2_data                = 0;
+    rs2_data                = 0;
+    mem_wen                 = 0;
+    rf_wen                  = 0;
+    wb_sel                  = 0;
+    wb_addr                 = 0;
+    csr_cmd                 = 0;
+    jmp_flg                 = 0;
+    output_inst_is_ecall    = 0;
 end
 
 reg  [31:0] save_inst   = INST_NOP;
