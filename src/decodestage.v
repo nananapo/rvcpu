@@ -190,7 +190,6 @@ always @(posedge clk) begin
     save_reg_pc <= wb_branch_hazard ? REGPC_NOP : reg_pc;
 end
 
-`ifdef DEBUG 
 always @(posedge clk) begin
     $display("DECODE STAGE-------------");
     $display("reg_pc    : 0x%H", reg_pc);
@@ -220,6 +219,5 @@ always @(posedge clk) begin
     $display("w.wb_sel  : %d", wire_wb_sel);
     $display("w.csr_cmd : %d", wire_csr_cmd);
 end
-`endif
 
 endmodule

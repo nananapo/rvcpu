@@ -51,7 +51,6 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef DEBUG 
 always @(posedge clk) begin
     $display("CSR STAGE------------");
     $display("cmd          : %d", csr_cmd);
@@ -62,6 +61,5 @@ always @(posedge clk) begin
     $display("wdata        : 0x%H", wdata);
     $display("trap_vector  : 0x%H", trap_vector);
 end
-`endif
 
 endmodule

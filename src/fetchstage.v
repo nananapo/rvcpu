@@ -101,9 +101,7 @@ always @(posedge clk) begin
                 state <= STATE_WAIT_READY;
         end else begin
             if (!is_fetched && mem_data_valid) begin
-`ifdef DEBUG 
                 $display("Fetched");
-`endif
                 inner_reg_pc <= inner_reg_pc + 4;
                 if (stall_flg) begin
                     saved_reg_pc    <= inner_reg_pc;
@@ -127,7 +125,6 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef DEBUG 
 always @(posedge clk) begin
     $display("FETCH -------------");
     $display("status    : %d", state);
@@ -141,6 +138,5 @@ always @(posedge clk) begin
     $display("mem.valid : %d", mem_data_valid);
     $display("stall_flg : %d", stall_flg);
 end
-`endif
 
 endmodule

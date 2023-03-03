@@ -264,7 +264,7 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef DEBUG 
+
 always @(posedge clk) begin
     $display("MEMORY STAGE-------------");
     $display("status        : %d", state);
@@ -291,6 +291,5 @@ always @(posedge clk) begin
     $display("mem.rdata     : 0x%H", mem_rdata);
     $display("mem.valid     : %d", mem_rdata_valid);
 end
-`endif
 
 endmodule
