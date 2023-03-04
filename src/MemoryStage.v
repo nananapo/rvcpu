@@ -250,9 +250,9 @@ always @(posedge clk) begin
     end else if (state == STATE_WAIT_READY) begin
         if (mem_cmd_ready) begin
             if (is_store_save) 
-                state <= STATE_WAIT_READ_VALID;
-            else
                 state <= STATE_WAIT;
+            else
+                state <= STATE_WAIT_READ_VALID;
         end
     end else if (state == STATE_WAIT_READ_VALID) begin
         if (mem_rdata_valid)
