@@ -89,6 +89,8 @@ always @(posedge clk) begin
         id_inst     <= output_inst;
     end
     if (state == STATE_WAIT_READY) begin
+        if (wb_branch_hazard) 
+            inner_reg_pc <= wb_reg_pc;
         if (mem_ready) begin
             state       <= STATE_WAIT_VALID;
             is_fetched  <= 0;
