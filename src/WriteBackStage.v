@@ -30,7 +30,7 @@ initial begin
         regfile[loop_i] = 32'hffffffff;
 end
 
-assign exit = reg_pc == 32'h1000;
+assign exit = reg_pc == 32'h00000044;
 
 wire [31:0] reg_pc_plus4 = reg_pc + 4; 
 
