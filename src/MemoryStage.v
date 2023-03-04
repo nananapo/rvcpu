@@ -3,17 +3,17 @@ module MemoryStage(
 
     input  wire          wb_branch_hazard,
 
-    input  reg [31:0]    input_reg_pc,
-    input  reg [31:0]    input_rs2_data,
-    input  reg [31:0]    input_alu_out,
-    input  reg           input_br_flg,
-    input  reg [31:0]    input_br_target,
-    input  reg [3:0]     input_mem_wen,
-    input  reg           input_rf_wen,
-    input  reg [3:0]     input_wb_sel,
-    input  reg [4:0]     input_wb_addr,
-    input  reg           input_jmp_flg,
-    input  reg           input_inst_is_ecall,
+    input  wire[31:0]    input_reg_pc,
+    input  wire[31:0]    input_rs2_data,
+    input  wire[31:0]    input_alu_out,
+    input  wire          input_br_flg,
+    input  wire[31:0]    input_br_target,
+    input  wire[3:0]     input_mem_wen,
+    input  wire          input_rf_wen,
+    input  wire[3:0]     input_wb_sel,
+    input  wire[4:0]     input_wb_addr,
+    input  wire          input_jmp_flg,
+    input  wire          input_inst_is_ecall,
 
     output reg [31:0]    output_read_data,
     output reg [31:0]    output_reg_pc,
@@ -29,12 +29,12 @@ module MemoryStage(
 
     output wire          mem_cmd_start,
     output wire          mem_cmd_write,
-    input  reg           mem_cmd_ready,
+    input  wire          mem_cmd_ready,
     output wire [31:0]   mem_addr,
     output wire [31:0]   mem_wdata,
     output wire [31:0]   mem_wmask,
-    input  reg  [31:0]   mem_rdata,
-    input  reg           mem_rdata_valid
+    input  wire [31:0]   mem_rdata,
+    input  wire          mem_rdata_valid
 );
 
 `include "include/core.v"

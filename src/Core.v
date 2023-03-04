@@ -1,21 +1,21 @@
 `default_nettype none
 
 module Core(
-    input   wire        clk,
+    input  wire         clk,
     
     output reg          memory_inst_start,
-    input  reg          memory_inst_ready,
+    input  wire         memory_inst_ready,
     output reg [31:0]   memory_i_addr,
-    input  reg [31:0]   memory_inst,
-    input  reg          memory_inst_valid,
+    input  wire [31:0]  memory_inst,
+    input  wire         memory_inst_valid,
     output reg          memory_d_cmd_start,
     output reg          memory_d_cmd_write,
-    input  reg          memory_d_cmd_ready,
+    input  wire         memory_d_cmd_ready,
     output reg [31:0]   memory_d_addr,
     output reg [31:0]   memory_wdata,
     output reg [31:0]   memory_wmask,
-    input  reg [31:0]   memory_rdata,
-    input  reg          memory_rdata_valid,
+    input  wire [31:0]  memory_rdata,
+    input  wire         memory_rdata_valid,
 
     output reg          exit,
     output reg [31:0]   gp

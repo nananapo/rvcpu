@@ -3,9 +3,9 @@ module DecodeStage
 (
     input  wire       clk,
 
-    input  reg [31:0] input_inst,
-    input  reg [31:0] input_reg_pc,
-    input  reg [31:0] regfile[31:0],
+    input  wire[31:0] input_inst,
+    input  wire[31:0] input_reg_pc,
+    input  wire[31:0] regfile[31:0],
 
     // 即値
     output reg [31:0] output_reg_pc,

@@ -8,12 +8,12 @@ module FetchStage(
     output reg [31:0]   id_inst,
 
     output wire         mem_start,
-    input  reg          mem_ready,
+    input  wire         mem_ready,
     output wire [31:0]  mem_addr,
-    input  reg  [31:0]  mem_data,
-    input  reg          mem_data_valid,
+    input  wire [31:0]  mem_data,
+    input  wire         mem_data_valid,
 
-    input  reg          stall_flg
+    input  wire         stall_flg
 );
 
 `include "include/core.v"
