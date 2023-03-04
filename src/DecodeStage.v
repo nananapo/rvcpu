@@ -3,8 +3,6 @@ module DecodeStage
 (
     input  wire       clk,
 
-    input  wire       wb_branch_hazard,
-
     input  reg [31:0] input_inst,
     input  reg [31:0] input_reg_pc,
     input  reg [31:0] regfile[31:0],
@@ -32,6 +30,8 @@ module DecodeStage
     output reg        output_inst_is_ecall, // ecallかどうか
 
     input  wire       memory_stage_stall_flg, // メモリステージでストールしているかどうか
+
+    input  wire       wb_branch_hazard,
 
     output wire       data_hazard_stall_flg,    // データハザードでストールするかどうか
     input  wire       data_hazard_wb_rf_wen,
