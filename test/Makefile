@@ -1,4 +1,4 @@
-test: gen
+test:
 	-mkdir results
 	sh run_test.sh
 gen: clean
