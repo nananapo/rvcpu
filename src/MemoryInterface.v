@@ -33,7 +33,7 @@ Memory #(
     .MEMORY_SIZE(4096),
     //.MEMORY_FILE("../test/bin/sample.hex")
     //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-    .MEMORY_FILE("MEMORY_FILE_NAME")
+    .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
 ) memory(
     .clk(clk),
 
