@@ -17,11 +17,9 @@ module Core(
     input  reg [31:0]   memory_rdata,
     input  reg          memory_rdata_valid,
 
-    output reg          led_2
+    output reg          exit,
+    output reg [31:0]   gp
 );
-
-assign led_2 = memory_inst_start == 0;
-
 
 // 何クロック目かのカウント
 reg [31:0] clk_count = 0;
@@ -34,6 +32,8 @@ wire data_hazard_stall;
 
 // レジスタ
 wire [31:0] regfile[31:0];
+
+assign gp   = regfile[3];
 
 // wbstageからfetchへのライトバック
 wire [31:0] wb_to_fetch_reg_pc;
@@ -97,8 +97,6 @@ DecodeStage #() decodestage
 (
     .clk(clk),
 
-    .wb_branch_hazard(wbstage_branch_hazard),
-
     .input_inst(id_inst),
     .input_reg_pc(id_reg_pc),
     .regfile(regfile),
@@ -124,6 +122,8 @@ DecodeStage #() decodestage
     .output_inst_is_ecall(exe_inst_is_ecall),
 
     .memory_stage_stall_flg(memory_stage_is_stall),
+
+    .wb_branch_hazard(wbstage_branch_hazard),
 
     .data_hazard_stall_flg(data_hazard_stall),
     .data_hazard_wb_rf_wen(wb_rf_wen),
@@ -294,7 +294,9 @@ WriteBackStage #() wbstage(
     .output_reg_pc(wb_to_fetch_reg_pc),
     .output_branch_hazard(wbstage_branch_hazard),
 
-    .regfile(regfile)
+    .regfile(regfile),
+
+    .exit(exit)
 );
 
 `ifdef DEBUG 

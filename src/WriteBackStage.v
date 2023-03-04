@@ -16,7 +16,10 @@ module WriteBackStage(
 
     output wire [31:0]  output_reg_pc,
     output wire         output_branch_hazard,
-    output reg [31:0]   regfile[31:0]
+
+    output reg [31:0]   regfile[31:0],
+
+    output wire         exit
 );
 
 `include "include/core.v"
@@ -29,6 +32,8 @@ initial begin
     for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
         regfile[loop_i] = 0;
 end
+
+assign exit = reg_pc == 32'h1000;
 
 wire [31:0] reg_pc_plus4 = reg_pc + 4; 
 

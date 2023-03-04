@@ -1,8 +1,10 @@
 `default_nettype none
 
 module main (
-    input  wire       clk,
-    output reg [5:0]  led
+    input  wire         clk,
+    output reg [5:0]    led,
+    output reg          exit,
+    output reg [31:0]   gp
 );
 
 reg         mem_inst_start;
@@ -20,7 +22,6 @@ reg [31:0]  mem_rdata;
 reg         mem_rdata_valid;
 
 reg [31:0] clkCount = 0;
-wire led_2;
 
 initial begin
     led[0] = 0;
@@ -31,11 +32,6 @@ initial begin
 end
 
 always @(posedge clk) begin
-    if (clkCount > 1000000000)
-        led[0] <= 0;
-    else
-        led[0] <= 1;
-    led[1] <= led_2;
     clkCount <= clkCount + 1;
 end
 
@@ -74,7 +70,8 @@ Core core (
     .memory_rdata(mem_rdata),
     .memory_rdata_valid(mem_rdata_valid),
 
-    .led_2(led_2)
+    .gp(gp),
+    .exit(exit)
 );
 
 endmodule
