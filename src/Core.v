@@ -304,6 +304,8 @@ always @(negedge clk) begin
     clk_count <= clk_count + 1;
     $display("");
     $display("CLK %d", clk_count);
+    $display("gp   : ", gp);
+    $display("exit : ", exit);
 end
 
 always @(posedge clk) begin
