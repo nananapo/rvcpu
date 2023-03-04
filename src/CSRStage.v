@@ -27,6 +27,10 @@ localparam CSR_SIZE = 4096;
 
 reg [31:0] mem [CSR_SIZE-1:0];
 
+initial begin
+    $readmemh("../test/bin/csr.hex", mem);
+end
+
 wire [2:0] csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
 wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
 wire [31:0]imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
