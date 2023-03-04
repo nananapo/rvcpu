@@ -3,7 +3,7 @@ REPLACE_WORD = "MEMORY_FILE_NAME"
 
 # backup
 memory_backup = ""
-with open(MEMORY_V_FILENAME, "r") as f:
+with open(MEMORY_V_FILENAME, "r", encoding='utf-8') as f:
     memory_backup = "".join(f.readlines())
 
 from os import system
@@ -17,7 +17,7 @@ def test(filename):
         f.write(memory_v_test)
     # run test
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
-    system("cd ../src/ && make d > " + resultFileName)
+    system("cd ../src/ && pwd && make d > " + resultFileName)
 
     with open(resultFileName, "r") as f:
         result = "".join(f.readlines())
