@@ -84,9 +84,10 @@ wire [31:0] output_inst = (
 );
 
 always @(posedge clk) begin
-    id_reg_pc   <= output_reg_pc;
-    id_inst     <= output_inst;
-
+    if (!stall_flg) begin
+        id_reg_pc   <= output_reg_pc;
+        id_inst     <= output_inst;
+    end
     if (state == STATE_WAIT_READY) begin
         if (mem_ready) begin
             state       <= STATE_WAIT_VALID;
@@ -133,6 +134,8 @@ always @(posedge clk) begin
     $display("status    : %d", state);
     $display("fetched   : %d", is_fetched);
     $display("reg_pc    : 0x%H", inner_reg_pc);
+    $display("out.reg_pc: 0x%H", output_reg_pc);
+    $display("out.inst  : 0x%H", output_inst);
     $display("id.reg_pc : 0x%H", id_reg_pc);
     $display("id.inst   : 0x%H", id_inst);
     $display("mem.start : %d", mem_start);
