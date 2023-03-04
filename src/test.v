@@ -15,7 +15,7 @@ module test();
     #1 clk = ~clk;
 
   initial
-    #100001 $finish;
+    #20001 $finish;
 
   always @(posedge clk) begin
 	if (exit) begin
