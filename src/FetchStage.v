@@ -143,6 +143,8 @@ always @(posedge clk) begin
     $display("mem.data  : 0x%H", mem_data);
     $display("mem.valid : %d", mem_data_valid);
     $display("stall_flg : %d", stall_flg);
+    $display("branch_haz: %d", wb_branch_hazard);
+    $display("branch_adr: 0x%H", wb_reg_pc);
 end
 `endif
 
