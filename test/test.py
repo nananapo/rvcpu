@@ -1,4 +1,4 @@
-MEMORY_V_FILENAME = "../src/memory.v"
+MEMORY_V_FILENAME = "../src/MemoryInterface.v"
 REPLACE_WORD = "MEMORY_FILE_NAME"
 
 # backup
@@ -17,7 +17,7 @@ def test(filename):
         f.write(memory_v_test)
     # run test
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
-    system("cd ../src/ && make > " + resultFileName)
+    system("cd ../src/ && make d > " + resultFileName)
 
     with open(resultFileName, "r") as f:
         result = "".join(f.readlines())
