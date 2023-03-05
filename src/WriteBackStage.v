@@ -65,7 +65,11 @@ assign output_reg_pc = (
 
 assign output_branch_hazard = br_flg || jmp_flg || inst_is_ecall;
 
+reg [31:0] inst_count = 0;
+
 always @(posedge clk) begin
+    if (reg_pc != 32'hffffffff)
+        inst_count += 1;
     if (rf_wen == REN_S) begin
         regfile[wb_addr] <= wb_data;
     end    
@@ -89,6 +93,7 @@ always @(posedge clk) begin
     $display("trap_vector    : 0x%H", trap_vector);
     $display("branch hazard  : %d", output_branch_hazard);
     $display("wb_data        : 0x%H", wb_data);
+    $display("inst_count     : %d", inst_count);
 end
 `endif
 
