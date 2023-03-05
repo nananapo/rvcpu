@@ -1,18 +1,21 @@
+`default_nettype none
+
 module test();
-  reg rst_n = 1;
-  reg clk = 0;
-  wire exit;
-  wire [31:0] gp;
+  reg clk = 1;
+  reg exit;
+  reg [31:0] gp;
 
   main #() m(
-    .rst_n(rst_n),
     .clk(clk),
-	  .exit(exit),
-	  .gp(gp)
+    .exit(exit),
+    .gp(gp)
   );
 
   always
     #1 clk = ~clk;
+
+  initial
+    #20001 $finish;
 
   always @(posedge clk) begin
 	if (exit) begin
@@ -22,14 +25,6 @@ module test();
 			$display("Test failed : gp(%d) is not 1", gp);
     	$finish;
 	end 
-  end
-
-  initial
-	#100001 $finish;
-
-  initial begin
-    $dumpfile("debug.vcd");
-    $dumpvars(0,test);
   end
 
 endmodule

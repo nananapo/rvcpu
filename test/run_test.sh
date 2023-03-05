@@ -1,1 +1,1 @@
-find $PWD/riscv-tests -type file -name "*.aligned" | python3 test.py
+find $PWD/riscv-tests -type f -name "*.aligned" | python3 test.py

@@ -1,5 +1,8 @@
-debug:
-	iverilog -g2005-sv -o debug.o -s test test.v main.v memory.v core.v csr.v uart_tx.v
+d:
+	iverilog -DDEBUG -g2005-sv -o debug.o -s test test.v main.v Core.v Memory.v FetchStage.v DecodeStage.v ExecuteStage.v MemoryStage.v MemoryInterface.v CSRStage.v WriteBackStage.v
 	vvp debug.o
-clean:
-	rm debug.o debug.vcd
+
+v:
+	verilator --lint-only main.v
+
+.PHONY: d v
