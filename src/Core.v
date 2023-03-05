@@ -20,7 +20,7 @@ module Core(
     output reg          exit,
     output reg [31:0]   gp,
     
-    output wire         exited
+    input wire          exited
 );
 
 // 何クロック目かのカウント
