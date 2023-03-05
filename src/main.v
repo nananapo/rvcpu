@@ -21,22 +21,20 @@ reg [31:0]  mem_wmask;
 reg [31:0]  mem_rdata;
 reg         mem_rdata_valid;
 
-reg [31:0] clkCount = 0;
-
-initial begin
-    led[0] = 0;
-    led[1] = 0;
-    led[2] = 0;
-    led[3] = 0;
-    led[4] = 0;
-end
+reg [31:0]  clkCount    = 0;
+reg         exited      = 0;
 
 always @(posedge clk) begin
     clkCount <= clkCount + 1;
+    if (exit) begin
+        exited <= 1;
+    end
 end
 
+wire clk_gen = exited ? 0 : clk;
+
 MemoryInterface #() memory (
-    .clk(clk),
+    .clk(clk_gen),
 
     .inst_start(mem_inst_start),
     .inst_ready(mem_inst_ready),
@@ -54,7 +52,7 @@ MemoryInterface #() memory (
 );
 
 Core core (
-    .clk(clk),
+    .clk(clk_gen),
 
     .memory_inst_start(mem_inst_start),
     .memory_inst_ready(mem_inst_ready),
