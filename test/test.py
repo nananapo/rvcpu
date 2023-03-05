@@ -7,6 +7,7 @@ with open(MEMORY_V_FILENAME, "r", encoding='utf-8') as f:
     memory_backup = "".join(f.readlines())
 
 from os import system
+import os
 
 results = []
 resultstatus = []
@@ -17,7 +18,7 @@ def test(filename):
         f.write(memory_v_test)
     # run test
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
-    system("cd ../src/ && pwd && make d > " + resultFileName)
+    system("cd ../src/ && make d > " + resultFileName)
 
     with open(resultFileName, "r", encoding='utf-8') as f:
         result = "".join(f.readlines())
@@ -28,15 +29,10 @@ def test(filename):
             results.append("FAIL : "+ filename)
             resultstatus.append(False)
 
-while True:
-    try:
-        test(input())
-    except Exception as e:
-        if type(e) is EOFError:
-            break
-        print("Error occured", type(e))
-        #print(e.message)
-        break
+for fileName in os.listdir("riscv-tests/"):
+    if not fileName.endswith(".aligned"):
+        continue
+    test(fileName)
 
 results = sorted(results)
 

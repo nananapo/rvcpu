@@ -88,44 +88,51 @@ always @(posedge clk) begin
         id_reg_pc   <= output_reg_pc;
         id_inst     <= output_inst;
     end
-    if (state == STATE_WAIT_READY) begin
-        if (mem_ready) begin
-            state       <= STATE_WAIT_VALID;
-            is_fetched  <= 0;
-        end
-    end else if (state == STATE_WAIT_VALID) begin
-        if (wb_branch_hazard) begin
-            inner_reg_pc <= wb_reg_pc;
+    if (wb_branch_hazard) begin
+        inner_reg_pc <= wb_reg_pc;
+    end
+
+    case (state)
+        STATE_WAIT_READY: begin
             if (mem_ready) begin
-                is_fetched <= 0;
-            end else
-                state <= STATE_WAIT_READY;
-        end else begin
-            if (!is_fetched && mem_data_valid) begin
+                state       <= STATE_WAIT_VALID;
+                is_fetched  <= 0;
+            end
+        end
+        STATE_WAIT_VALID: begin
+            if (wb_branch_hazard) begin
+                inner_reg_pc <= wb_reg_pc;
+                if (mem_ready) begin
+                    is_fetched <= 0;
+                end else
+                    state <= STATE_WAIT_READY;
+            end else begin
+                if (!is_fetched && mem_data_valid) begin
 `ifdef DEBUG 
-                $display("Fetched");
+                    $display("Fetched");
 `endif
-                inner_reg_pc <= inner_reg_pc + 4;
-                if (stall_flg) begin
-                    saved_reg_pc    <= inner_reg_pc;
-                    saved_inst      <= mem_data;
-                    is_fetched      <= 1;
-                end else begin
-                    if (mem_ready) begin
-                        is_fetched <= 0;
-                    end else
-                        state <= STATE_WAIT_READY;
-                end
-            end else if (is_fetched) begin
-                if (!stall_flg) begin
-                    if (mem_ready) begin
-                        is_fetched <= 0;
-                    end else
-                        state <= STATE_WAIT_READY;
+                    inner_reg_pc <= inner_reg_pc + 4;
+                    if (stall_flg) begin
+                        saved_reg_pc    <= inner_reg_pc;
+                        saved_inst      <= mem_data;
+                        is_fetched      <= 1;
+                    end else begin
+                        if (mem_ready) begin
+                            is_fetched <= 0;
+                        end else
+                            state <= STATE_WAIT_READY;
+                    end
+                end else if (is_fetched) begin
+                    if (!stall_flg) begin
+                        if (mem_ready) begin
+                            is_fetched <= 0;
+                        end else
+                            state <= STATE_WAIT_READY;
+                    end
                 end
             end
         end
-    end
+    endcase
 end
 
 `ifdef DEBUG 

@@ -1,6 +1,8 @@
+PYTHON=python
+
 test:
 	-mkdir results
-	sh run_test.sh
+	$(PYTHON) test.py
 gen: clean
 	-mkdir riscv-tests
 	sh gen_tests.sh

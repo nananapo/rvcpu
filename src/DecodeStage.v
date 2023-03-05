@@ -63,14 +63,14 @@ reg  [31:0] save_inst   = INST_NOP;
 reg  [31:0] save_reg_pc = REGPC_NOP;
 
 assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
-    (data_hazard_wb_rf_wen == REN_S  && wire_op1_sel == OP1_RS1  && data_hazard_wb_wb_addr == wire_rs1_addr  && wire_rs1_addr != 0) ||
-    (data_hazard_wb_rf_wen == REN_S  && wire_op2_sel == OP2_RS2W && data_hazard_wb_wb_addr == wire_rs2_addr  && wire_rs2_addr != 0) ||
+    (data_hazard_wb_rf_wen == REN_S  /*&& wire_op1_sel == OP1_RS1 */ && data_hazard_wb_wb_addr == wire_rs1_addr  && wire_rs1_addr != 0) ||
+    (data_hazard_wb_rf_wen == REN_S  /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_wb_wb_addr == wire_rs2_addr  && wire_rs2_addr != 0) ||
 
-    (data_hazard_mem_rf_wen == REN_S && wire_op1_sel == OP1_RS1  && data_hazard_mem_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
-    (data_hazard_mem_rf_wen == REN_S && wire_op2_sel == OP2_RS2W && data_hazard_mem_wb_addr == wire_rs2_addr && wire_rs2_addr != 0) ||
+    (data_hazard_mem_rf_wen == REN_S /*&& wire_op1_sel == OP1_RS1 */ && data_hazard_mem_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
+    (data_hazard_mem_rf_wen == REN_S /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_mem_wb_addr == wire_rs2_addr && wire_rs2_addr != 0) ||
 
-    (data_hazard_exe_rf_wen == REN_S && wire_op1_sel == OP1_RS1  && data_hazard_exe_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
-    (data_hazard_exe_rf_wen == REN_S && wire_op2_sel == OP2_RS2W && data_hazard_exe_wb_addr == wire_rs2_addr && wire_rs2_addr != 0)
+    (data_hazard_exe_rf_wen == REN_S /*&& wire_op1_sel == OP1_RS1 */ && data_hazard_exe_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
+    (data_hazard_exe_rf_wen == REN_S /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_exe_wb_addr == wire_rs2_addr && wire_rs2_addr != 0)
 );
 
 wire [31:0] inst = (
