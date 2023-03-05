@@ -34,9 +34,8 @@ wire [31:0] mem_wmask;
 Memory #(
     .MEMORY_SIZE(4096),
 `ifndef DEBUG
-    .MEMORY_FILE("../test/bin/sample.hex")
-`endif
-`ifdef DEBUG
+    .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
+`else
     .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
 `endif
 ) memory(
