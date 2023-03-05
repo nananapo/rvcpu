@@ -29,12 +29,7 @@ always @(posedge clk) begin
     if (exit) begin
         exited <= 1;
     end
-    led[0] = gp[5];
-    led[1] = gp[4];
-    led[2] = gp[3];
-    led[3] = gp[2];
-    led[4] = gp[1];
-    led[5] = gp[0];
+    led[5:0] = ~gp[5:0];
 end
 
 MemoryInterface #() memory (
