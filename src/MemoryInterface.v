@@ -31,9 +31,12 @@ wire [31:0] mem_wmask;
 
 Memory #(
     .MEMORY_SIZE(4096),
-    //.MEMORY_FILE("../test/bin/sample.hex")
-    //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
+`ifndef DEBUG
+    .MEMORY_FILE("../test/bin/sample.hex")
+`endif
+`ifdef DEBUG
     .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+`endif
 ) memory(
     .clk(clk),
 
