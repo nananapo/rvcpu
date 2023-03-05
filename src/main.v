@@ -37,10 +37,8 @@ always @(posedge clk) begin
     led[5] = gp[0];
 end
 
-wire clk_gen = exited ? 0 : clk;
-
 MemoryInterface #() memory (
-    .clk(clk_gen),
+    .clk(clk),
 
     .inst_start(mem_inst_start),
     .inst_ready(mem_inst_ready),
@@ -54,11 +52,13 @@ MemoryInterface #() memory (
     .wdata(mem_wdata),
     .wmask(mem_wmask),
     .rdata(mem_rdata),
-    .rdata_valid(mem_rdata_valid)
+    .rdata_valid(mem_rdata_valid),
+
+    .exited(exited)
 );
 
 Core core (
-    .clk(clk_gen),
+    .clk(clk),
 
     .memory_inst_start(mem_inst_start),
     .memory_inst_ready(mem_inst_ready),
@@ -75,7 +75,9 @@ Core core (
     .memory_rdata_valid(mem_rdata_valid),
 
     .gp(gp),
-    .exit(exit)
+    .exit(exit),
+
+    .exited(exited)
 );
 
 endmodule

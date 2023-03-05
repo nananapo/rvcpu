@@ -18,7 +18,9 @@ module Core(
     input  wire         memory_rdata_valid,
 
     output reg          exit,
-    output reg [31:0]   gp
+    output reg [31:0]   gp,
+    
+    output wire         exited
 );
 
 // 何クロック目かのカウント

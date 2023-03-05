@@ -14,7 +14,9 @@ module MemoryInterface (
     input  wire [31:0]  wdata,
     input  wire [31:0]  wmask,
     output wire [31:0]  rdata,
-    output wire         rdata_valid
+    output wire         rdata_valid,
+
+    input  wire         exited
 );
 
 `include "include/memoryinterface.v"
@@ -189,6 +191,7 @@ assign rdata        = (
 );
 
 always @(posedge clk) begin
+    if (!exited) begin
     if (status == STATE_WAIT_CMD) begin
         save_i_addr         <= i_addr;
         save_d_cmd_start    <= d_cmd_start;
@@ -241,6 +244,7 @@ always @(posedge clk) begin
                 status <= STATE_WAIT_CMD;// d_cmd -> wait cmd
             end
         end
+    end
     end
 end
 
