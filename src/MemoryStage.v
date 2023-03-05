@@ -221,43 +221,48 @@ wire output_inst_is_ecall_wire = (
     0
 );
 
+wire [1:0] state_clk = wb_branch_hazard ? STATE_WAIT : state;
+
 always @(posedge clk) begin
-    if (wb_branch_hazard || state == STATE_WAIT) begin
+    case (state_clk)
+        STATE_WAIT: begin
+            save_reg_pc         <= reg_pc;
+            save_alu_out        <= alu_out;
+            save_br_flg         <= br_flg;
+            save_br_target      <= br_target;
+            save_rs2_data       <= rs2_data;
+            save_mem_wen        <= mem_wen;
+            save_rf_wen         <= rf_wen;
+            save_wb_sel         <= wb_sel;
+            save_wb_addr        <= wb_addr;
+            save_jmp_flg        <= jmp_flg;
+            save_inst_is_ecall  <= inst_is_ecall;
 
-        save_reg_pc         <= reg_pc;
-        save_alu_out        <= alu_out;
-        save_br_flg         <= br_flg;
-        save_br_target      <= br_target;
-        save_rs2_data       <= rs2_data;
-        save_mem_wen        <= mem_wen;
-        save_rf_wen         <= rf_wen;
-        save_wb_sel         <= wb_sel;
-        save_wb_addr        <= wb_addr;
-        save_jmp_flg        <= jmp_flg;
-        save_inst_is_ecall  <= inst_is_ecall;
-
-        if (is_store) begin
-            if (mem_cmd_ready)
-                state <= STATE_WAIT;
-            else
-                state <= STATE_WAIT_READY;
-        end else if (is_load) begin
-            if (mem_cmd_ready)
-                state <= STATE_WAIT_READ_VALID;
-            else
-                state <= STATE_WAIT_READY;
+            if (is_store) begin
+                if (mem_cmd_ready)
+                    state <= STATE_WAIT;
+                else
+                    state <= STATE_WAIT_READY;
+            end else if (is_load) begin
+                if (mem_cmd_ready)
+                    state <= STATE_WAIT_READ_VALID;
+                else
+                    state <= STATE_WAIT_READY;
+            end
         end
-    end else if (state == STATE_WAIT_READY) begin
-        if (mem_cmd_ready) begin
-            if (is_store_save) 
-                state <= STATE_WAIT;
-            else
-                state <= STATE_WAIT_READ_VALID;
+        STATE_WAIT_READY: begin
+            if (mem_cmd_ready) begin
+                if (is_store_save) 
+                    state <= STATE_WAIT;
+                else
+                    state <= STATE_WAIT_READ_VALID;
+            end
         end
-    end else if (state == STATE_WAIT_READ_VALID) begin
-        if (mem_rdata_valid)
-            state <= STATE_WAIT;
-    end
+        STATE_WAIT_READ_VALID: begin
+            if (mem_rdata_valid)
+                state <= STATE_WAIT;
+        end
+    endcase
 
     output_read_data        <= output_read_data_wire;
     output_reg_pc           <= output_reg_pc_wire;
