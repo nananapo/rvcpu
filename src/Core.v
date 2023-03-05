@@ -53,8 +53,8 @@ wire [31:0]  id_inst;
 FetchStage #() fetchstage (
     .clk(clk),
 
-    .wb_reg_pc(wb_to_fetch_reg_pc),
-    .wb_branch_hazard(wbstage_branch_hazard),
+    .wb_reg_pc(wbstage_branch_hazard ? wb_to_fetch_reg_pc : 32'h00000000),
+    .wb_branch_hazard(wbstage_branch_hazard || exited),
 
     .id_reg_pc(id_reg_pc),
     .id_inst(id_inst),
