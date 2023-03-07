@@ -68,6 +68,9 @@ always @(posedge clk) begin
         end
         RX_STATE_DEBOUNCE: begin
             rxState     <= RX_STATE_IDLE;
+            `ifdef DEBUG
+                $display("UART_RX : %d", rdata);
+            `endif
         end
     endcase
 end
