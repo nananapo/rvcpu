@@ -267,6 +267,7 @@ always @(posedge clk) begin
                 end
             end
         end
+        default: begin end
     endcase
     end
 end
