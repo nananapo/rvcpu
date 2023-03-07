@@ -2,6 +2,8 @@
 
 module main (
     input  wire         clk,
+    input  wire         uart_rx,
+    output wire         uart_tx,
     output reg [5:0]    led,
     output reg          exit,
     output reg [31:0]   gp
@@ -34,6 +36,8 @@ end
 
 MemoryInterface #() memory (
     .clk(clk),
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx),
 
     .inst_start(mem_inst_start),
     .inst_ready(mem_inst_ready),
