@@ -1,6 +1,6 @@
 import serial
 
-ser = serial.Serial(input("input port"), 115200)
+ser = serial.Serial(input("input port : "), 115200)
 
 def read1ByteInt():
     return ord(ser.read())
@@ -36,7 +36,7 @@ while True:
 
         while True:
             data = []
-            S = input("please input : ")
+            S = input("DATA : ")
             if len(S) != 8:
                 print("size is not 8")
                 continue
@@ -58,6 +58,4 @@ while True:
                 continue
             break
         sendIntArray(data)
-
-        print("Send", data)
-
+        #print("Send", data)
