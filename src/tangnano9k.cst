@@ -4,10 +4,7 @@
 //GOWIN Version: 1.9.8.07 Education
 //Part Number: GW1NR-LV9QN88PC6/I5
 //Device: GW1NR-9C
-//Created Time: Tue 10 11 23:04:58 2022
-
-IO_LOC "clk" 52;
-IO_PORT "clk" PULL_MODE=UP;
+//Created Time: Tue 03 07 12:07:20 2023
 
 IO_LOC "led[5]" 16;
 IO_PORT "led[5]" PULL_MODE=UP DRIVE=8;
@@ -21,3 +18,11 @@ IO_LOC "led[1]" 11;
 IO_PORT "led[1]" PULL_MODE=UP DRIVE=8;
 IO_LOC "led[0]" 10;
 IO_PORT "led[0]" PULL_MODE=UP DRIVE=8;
+
+IO_LOC "uart_tx" 17;
+IO_PORT "uart_tx" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+IO_LOC "uart_rx" 18;
+IO_PORT "uart_rx" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "clk" 52;
+IO_PORT "clk" PULL_MODE=UP;
