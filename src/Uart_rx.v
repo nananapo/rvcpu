@@ -1,4 +1,4 @@
-module Uart_tx
+module Uart_rx
 #(
     // ボーレートから計算 (27000000 / 115200)
     parameter DELAY_FRAMES = 234
