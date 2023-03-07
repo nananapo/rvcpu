@@ -15,7 +15,7 @@ module UARTMemory(
 );
 
 initial begin
-    cmd_ready   = 0;
+    cmd_ready   = 1;
     rdata       = 0;
     rdata_valid = 0;
 end
@@ -146,5 +146,15 @@ always @(posedge clk) begin
         end
     endcase
 end
+
+`ifdef DEBUG
+always @(posedge clk) begin
+    $display("UARTMem----------");
+    $display("state         : %d", state);
+    $display("cmd_start     : %d", cmd_start);
+    $display("cmd_write     : %d", cmd_write);
+    $display("cmd_ready     : %d", cmd_ready);
+end
+`endif
 
 endmodule
