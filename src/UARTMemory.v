@@ -66,6 +66,7 @@ always @(posedge clk) begin
                 state           <= STATE_SEND_CMD;
                 save_cmd_write  <= cmd_write;
                 save_addr       <= addr;
+                save_wdata      <= wdata;
                 cmd_ready       <= 0;
             end
         end
