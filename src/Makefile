@@ -1,5 +1,27 @@
+FILES = test.v \
+		main.v \
+		Core.v \
+		Memory.v \
+		FetchStage.v \
+		DecodeStage.v \
+		ExecuteStage.v \
+		MemoryStage.v \
+		MemoryInterface.v \
+		CSRStage.v \
+		WriteBackStage.v 
+
+UART_FILES = Uart_rx.v \
+			Uart_tx.v \
+			UARTMemory.v
+
+DEFALUT_DEFINE = -DDEBUG
+
 d:
-	iverilog -DDEBUG -g2005-sv -o debug.o -s test test.v main.v Core.v Memory.v FetchStage.v DecodeStage.v ExecuteStage.v MemoryStage.v MemoryInterface.v CSRStage.v WriteBackStage.v
+	iverilog $(DEFALUT_DEFINE) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	vvp debug.o
+
+dm:
+	iverilog $(DEFALUT_DEFINE) -DMEMORY_UART -g2005-sv -o debug.o -s test  $(FILES) $(UART_FILES)
 	vvp debug.o
 
 v:

@@ -1,5 +1,7 @@
 module MemoryInterface (
-    input wire clk,
+    input  wire clk,
+    input  wire uart_rx,
+    output wire uart_tx,
  
     input  wire         inst_start,
     output wire         inst_ready,
@@ -31,25 +33,43 @@ wire        mem_rdata_valid;
 wire [31:0] mem_wdata;
 wire [31:0] mem_wmask;
 
-Memory #(
-    .MEMORY_SIZE(4096),
-`ifndef DEBUG
-    .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-`else
-    .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
-`endif
-) memory(
-    .clk(clk),
+`ifdef MEMORY_UART
+    UARTMemory #() memory (
+        .clk(clk),
 
-    .cmd_start(mem_cmd_start),
-    .cmd_write(mem_cmd_write),
-    .cmd_ready(mem_cmd_ready),
-    .addr(mem_addr),
-    .rdata(mem_rdata),
-    .rdata_valid(mem_rdata_valid),
-    .wdata(mem_wdata),
-    .wmask(mem_wmask)
-);
+        .cmd_start(mem_cmd_start),
+        .cmd_write(mem_cmd_write),
+        .cmd_ready(mem_cmd_ready),
+        .addr(mem_addr),
+        .rdata(mem_rdata),
+        .rdata_valid(mem_rdata_valid),
+        .wdata(mem_wdata),
+        .wmask(mem_wmask),
+
+        .uart_rx(uart_rx),
+        .uart_tx(uart_tx)
+    );
+`else
+    Memory #(
+        .MEMORY_SIZE(4096),
+    `ifndef DEBUG
+        .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
+    `else
+        .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+    `endif
+    ) memory (
+        .clk(clk),
+
+        .cmd_start(mem_cmd_start),
+        .cmd_write(mem_cmd_write),
+        .cmd_ready(mem_cmd_ready),
+        .addr(mem_addr),
+        .rdata(mem_rdata),
+        .rdata_valid(mem_rdata_valid),
+        .wdata(mem_wdata),
+        .wmask(mem_wmask)
+    );
+`endif
 
 localparam STATE_WAIT_CMD           = 2'd0;
 localparam STATE_WAIT_MEMORY_READY  = 2'd1;
