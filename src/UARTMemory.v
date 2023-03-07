@@ -31,7 +31,7 @@ Uart_rx #() rxModule(
     .clk(clk),
     .uart_rx(uart_rx),
     .rdata(rx_rdata),
-    .rdata(rx_rdata_valid)
+    .rdata_valid(rx_rdata_valid)
 );
 
 Uart_tx #() txModule(
