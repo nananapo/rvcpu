@@ -50,12 +50,12 @@ wire [31:0] mem_wmask;
         .uart_tx(uart_tx)
     );
 `else
-    Memory #(
+    MemoryAccessController #(
         .MEMORY_SIZE(4096),
     `ifndef DEBUG
         .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
     `else
-        .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+        .MEMORY_FILE("../test/riscv-tests/rv32ui-p-fence_i.bin.aligned")
     `endif
     ) memory (
         .clk(clk),
