@@ -108,6 +108,7 @@ wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE)
 
 function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
     casex (inst)
+        // RV32I
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_LB_FUNCT3    , 5'bxxxxx, INST_LB_OPCODE      } : decode = {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LB, REN_S, WB_MEMB , CSR_X};
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_LBU_FUNCT3   , 5'bxxxxx, INST_LBU_OPCODE     } : decode = {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LBU,REN_S, WB_MEMBU, CSR_X};
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_LH_FUNCT3    , 5'bxxxxx, INST_LH_OPCODE      } : decode = {ALU_ADD  , OP1_RS1, OP2_IMI , MEN_LH, REN_S, WB_MEMH , CSR_X};
@@ -152,7 +153,14 @@ function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_CSRRC_FUNCT3 , 5'bxxxxx, INST_CSRRC_OPCODE   } : decode = {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_C};
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_CSRRCI_FUNCT3, 5'bxxxxx, INST_CSRRCI_OPCODE  } : decode = {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_C};
         INST_ECALL                                                                                : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_E};
-        default                                                                                   : decode = {ALU_ADD  , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_X};
+        
+        // Zifencei
+        {7'bxxxxxxx , 10'bxxxxxxxxxx, INST_ZIFENCEI_FENCEI_FUNCT3, 5'bxxxxx, INST_ZIFENCEI_FENCEI_OPCODE } :
+            decode = {ALU_X, OP1_X, OP2_X, MEN_X, REN_X, WB_X, CSR_X};
+
+        // default : nop
+        default : 
+            decode = {ALU_ADD  , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_X};
     endcase
 endfunction
 
