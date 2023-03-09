@@ -117,7 +117,7 @@ wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE)
 wire inst_is_fence_i= (funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode == INST_ZIFENCEI_FENCEI_OPCODE);
 
 // fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
-assign zifencei_stall_flg   =  inst_is_fence_i && (zifencei_exe_mem_wen || zifencei_mem_mem_wen);
+assign zifencei_stall_flg = inst_is_fence_i && (zifencei_exe_mem_wen || zifencei_mem_mem_wen);
 
 // 前のクロックでfence_iでストールしたかどうか
 reg last_clock_fence_i_stall_flg = 0;
@@ -301,6 +301,8 @@ always @(posedge clk) begin
     $display("dh.mem.adr: %d", data_hazard_mem_wb_addr);
     $display("dh.exe.rf : %d", data_hazard_exe_rf_wen);
     $display("dh.exe.adr: %d", data_hazard_exe_wb_addr);
+    $display("is fence.i: %d", inst_is_fence_i);
+    $display("fence.i st: %d", zifencei_stall_flg);
 end
 `endif
 
