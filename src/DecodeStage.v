@@ -39,7 +39,11 @@ module DecodeStage
     input  wire       data_hazard_mem_rf_wen,
     input  wire [4:0] data_hazard_mem_wb_addr,
     input  wire       data_hazard_exe_rf_wen,
-    input  wire [4:0] data_hazard_exe_wb_addr
+    input  wire [4:0] data_hazard_exe_wb_addr,
+
+    output wire       zifencei_stall_flg,
+    input  wire       zifencei_mem_mem_wen,
+    input  wire       zifencei_exe_mem_wen
 );
 
 `include "include/core.v"
@@ -75,12 +79,12 @@ assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
 
 wire [31:0] inst = (
     wb_branch_hazard ? INST_NOP :
-    memory_stage_stall_flg ? save_inst : input_inst
+    (memory_stage_stall_flg || last_clock_fence_i_stall_flg) ? save_inst : input_inst
 );
 
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
-    memory_stage_stall_flg ? save_reg_pc : input_reg_pc
+    (memory_stage_stall_flg || last_clock_fence_i_stall_flg) ? save_reg_pc : input_reg_pc
 ); 
 
 wire [11:0] wire_imm_i = inst[31:20];
@@ -105,6 +109,26 @@ wire [6:0] opcode = inst[6:0];
 wire inst_is_ecall  = inst == INST_ECALL;
 wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
 wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
+
+
+
+
+/*------------Zifencei----------------*/
+wire inst_is_fence_i= (funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode == INST_ZIFENCEI_FENCEI_OPCODE);
+
+// fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
+assign zifencei_stall_flg   =  inst_is_fence_i && (zifencei_exe_mem_wen || zifencei_mem_mem_wen);
+
+// 前のクロックでfence_iでストールしたかどうか
+reg last_clock_fence_i_stall_flg = 0;
+
+always @(posedge clk) begin
+    last_clock_fence_i_stall_flg <= zifencei_stall_flg;
+end
+
+
+
+
 
 function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
     casex (inst)
@@ -154,13 +178,14 @@ function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_CSRRCI_FUNCT3, 5'bxxxxx, INST_CSRRCI_OPCODE  } : decode = {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_C};
         INST_ECALL                                                                                : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_E};
         
-        // Zifencei
+        /* Zifencei
         {7'bxxxxxxx , 10'bxxxxxxxxxx, INST_ZIFENCEI_FENCEI_FUNCT3, 5'bxxxxx, INST_ZIFENCEI_FENCEI_OPCODE } :
-            decode = {ALU_X, OP1_X, OP2_X, MEN_X, REN_X, WB_X, CSR_X};
+            decode = {ALU_ADD, OP1_X, OP2_X, MEN_X, REN_X, WB_X, CSR_X};
+        */
 
         // default : nop
         default : 
-            decode = {ALU_ADD  , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_X};
+            decode = {ALU_ADD, OP1_X, OP2_X, MEN_X, REN_X, WB_X, CSR_X};
     endcase
 endfunction
 
