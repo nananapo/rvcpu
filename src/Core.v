@@ -23,6 +23,8 @@ module Core(
     input wire          exited
 );
 
+`include "include/core.v"
+
 // 何クロック目かのカウント
 reg [31:0] clk_count = 0;
 
@@ -138,8 +140,8 @@ DecodeStage #() decodestage
     .data_hazard_exe_wb_addr(exe_wb_addr),
     
     .zifencei_stall_flg(id_zifencei_stall_flg),
-    .zifencei_mem_mem_wen(mem_mem_wen),
-    .zifencei_exe_mem_wen(exe_mem_wen)
+    .zifencei_mem_mem_wen(mem_mem_wen == MEN_SB || mem_mem_wen == MEN_SH || mem_mem_wen == MEN_SW),
+    .zifencei_exe_mem_wen(exe_mem_wen == MEN_SB || exe_mem_wen == MEN_SH || exe_mem_wen == MEN_SW)
 );
 
 
