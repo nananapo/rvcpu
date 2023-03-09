@@ -89,8 +89,8 @@ wire is_load        = !is_store && mem_wen != MEN_X;
 wire is_store_save  = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
 wire next_flg =    (
-    state == STATE_WAIT ? mem_wen == MEN_X :
-    state == STATE_WAIT_READY ? is_store_save : 
+    state == STATE_WAIT ? mem_wen == MEN_X || (is_store && mem_cmd_ready):
+    state == STATE_WAIT_READY ? (is_store_save && mem_cmd_ready) : 
     state == STATE_WAIT_READ_VALID ? mem_rdata_valid :
     1
 );
