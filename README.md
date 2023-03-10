@@ -17,7 +17,8 @@ TangNano9Kで動作確認済み
 CSR命令とメモリ命令を並列に動かす5段パイプライン  
 * IF -> ID -> EXE -> MEM(or CSR) -> WB
 
-lb, lh, lbu, lhu, sb, shは未実装
+追加実装
+* Zifencei fence.i命令
 
 TangNano9Kで動作確認済み
 
