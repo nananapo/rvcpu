@@ -302,6 +302,8 @@ always @(posedge clk) begin
     $display("mem.wmask     : 0x%H", mem_wmask);
     $display("mem.rdata     : 0x%H", mem_rdata);
     $display("mem.valid     : %d", mem_rdata_valid);
+    $display("save.mem_wen  : %d", save_mem_wen);
+    $display("wire.out.rdata: 0x%h", output_read_data_wire);
 end
 `endif
 
