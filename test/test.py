@@ -25,9 +25,11 @@ def test(filename):
         if "Test passed" in result:
             results.append("PASS : "+ filename)
             resultstatus.append(True)
+            print("PASS : "+ filename)
         else:
             results.append("FAIL : "+ filename)
             resultstatus.append(False)
+            print("FAIL : "+ filename)
 
 for fileName in os.listdir("riscv-tests/"):
     if not fileName.endswith(".aligned"):

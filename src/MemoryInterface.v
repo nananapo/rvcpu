@@ -50,24 +50,35 @@ wire [31:0] mem_wmask;
         .uart_tx(uart_tx)
     );
 `else
-    Memory #(
+
+    `ifndef DMEMORY_NO_UNALIGNED
+    MemoryAccessController 
+    `else
+    Memory
+    `endif
+    #(
         .MEMORY_SIZE(4096),
     `ifndef DEBUG
         .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
     `else
+        //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-sw.bin.aligned")
         .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
     `endif
     ) memory (
         .clk(clk),
 
-        .cmd_start(mem_cmd_start),
-        .cmd_write(mem_cmd_write),
-        .cmd_ready(mem_cmd_ready),
-        .addr(mem_addr),
-        .rdata(mem_rdata),
-        .rdata_valid(mem_rdata_valid),
-        .wdata(mem_wdata),
-        .wmask(mem_wmask)
+        .input_cmd_start(mem_cmd_start),
+        .input_cmd_write(mem_cmd_write),
+        .output_cmd_ready(mem_cmd_ready),
+        .input_addr(mem_addr),
+        .output_rdata(mem_rdata),
+        .output_rdata_valid(mem_rdata_valid),
+        .input_wdata(mem_wdata)
+        
+        `ifndef DMEMORY_NO_UNALIGNED
+        ,
+        .input_wmask(mem_wmask)
+        `endif
     );
 `endif
 
@@ -135,7 +146,7 @@ assign mem_addr = (
     ) : 
     status == STATE_WAIT_MEMORY_READY ? (
         mem_cmd_ready ? (
-            inst_start ? save_i_addr : save_d_addr
+            cmd_is_inst ? save_i_addr : save_d_addr
         ) : 32'hffffffff
     ) : 
     status == STATE_WAIT_MEMORY_READ ? (
