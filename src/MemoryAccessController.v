@@ -64,22 +64,30 @@ reg [31:0]  save_rdata1 = 0;
 reg [31:0]  save_rdata2 = 0;
 
 
+/*
 always @(posedge clk) begin
     $display("MEMAC---------");
     $display("state         : %d", state);
-    $display("input_start   : 0x%H", input_cmd_start);
+    $display("input_start   : %d", input_cmd_start);
+    $display("input_write   : %d", input_cmd_write);
     $display("input_addr    : 0x%H", input_addr);
     $display("ready         : %d", output_cmd_ready);
     $display("rdata         : 0x%h", output_rdata);
     $display("valid         : %d", output_rdata_valid);
+    $display("save.addr     : 0x%h", save_addr);
+    $display("save.wmask    : 0x%h", save_wmask);
+    $display("save.wdata    : 0x%h", save_wdata);
+    $display("save.read1    : 0x%h", save_rdata1);
+    $display("save.read2    : 0x%h", save_rdata2);
     $display("mem_cmd_start : %d", mem_cmd_start);
     $display("mem_cmd_write : %d", mem_cmd_write);
     $display("mem_cmd_ready : %d", mem_cmd_ready);
     $display("mem_addr      : 0x%h", mem_addr);
     $display("mem_rdata     : 0x%h", mem_rdata);
     $display("mem_rdata_v   : %d", mem_rdata_valid);
+    $display("mem_wdata     : 0x%h", mem_wdata);
 end
-
+*/
 
 assign mem_cmd_start = (
     state == STATE_IDLE ? 0 :
