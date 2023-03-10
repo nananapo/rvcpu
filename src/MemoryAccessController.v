@@ -144,15 +144,15 @@ assign mem_wdata = (
     state == STATE_WAIT_READNEXT_READY_BEFORE_WRITE ? 0 :
     state == STATE_WAIT_READNEXT_VALID_BEFORE_WRITE ? 0 :
     state == STATE_WAIT_WRITE_READY_UNALIGNED1 ? (
-        save_addr % 4 == 0 ? {(save_rdata1[31:8]  & ~save_wmask[23:0]) | (save_wdata[23:0] & save_wmask[23:0]) , save_rdata1[7:0]} :
-        save_addr % 4 == 1 ? {(save_rdata1[31:16] & ~save_wmask[15:0]) | (save_wdata[15:0] & save_wmask[15:0]) , save_rdata1[15:0]} :
-        save_addr % 4 == 2 ? {(save_rdata1[31:24] & ~save_wmask[7:0])  | (save_wdata[7:0]  & save_wmask[7:0])  , save_rdata1[23:0]} :
+        save_addr % 4 == 1 ? {(save_rdata1[31:8]  & ~save_wmask[23:0]) | (save_wdata[23:0] & save_wmask[23:0]) , save_rdata1[7:0]} :
+        save_addr % 4 == 2 ? {(save_rdata1[31:16] & ~save_wmask[15:0]) | (save_wdata[15:0] & save_wmask[15:0]) , save_rdata1[15:0]} :
+        save_addr % 4 == 3 ? {(save_rdata1[31:24] & ~save_wmask[7:0])  | (save_wdata[7:0]  & save_wmask[7:0])  , save_rdata1[23:0]} :
         0
     ) :
     state == STATE_WAIT_WRITE_READY_UNALIGNED2 ? (
-        save_addr % 4 == 0 ? {save_rdata2[31:8] , (save_rdata2[7:0]  & ~save_wmask[31:24]) | (save_wdata[31:24] & save_wmask[31:24])} :
-        save_addr % 4 == 1 ? {save_rdata2[31:16], (save_rdata2[15:0] & ~save_wmask[31:16]) | (save_wdata[31:16] & save_wmask[31:16])} :
-        save_addr % 4 == 2 ? {save_rdata2[31:24], (save_rdata2[23:0] & ~save_wmask[31:8])  | (save_wdata[31:8]  & save_wmask[31:8]) } :
+        save_addr % 4 == 1 ? {save_rdata2[31:8] , (save_rdata2[7:0]  & ~save_wmask[31:24]) | (save_wdata[31:24] & save_wmask[31:24])} :
+        save_addr % 4 == 2 ? {save_rdata2[31:16], (save_rdata2[15:0] & ~save_wmask[31:16]) | (save_wdata[31:16] & save_wmask[31:16])} :
+        save_addr % 4 == 3 ? {save_rdata2[31:24], (save_rdata2[23:0] & ~save_wmask[31:8])  | (save_wdata[31:8]  & save_wmask[31:8]) } :
         0
     ) :
     state == STATE_WAIT_READ_VALID ? 0 :
