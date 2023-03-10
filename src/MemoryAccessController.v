@@ -256,7 +256,8 @@ always @(posedge clk) begin
         end
         STATE_WAIT_READNEXT_VALID_BEFORE_WRITE: begin
             if (mem_rdata_valid) begin
-                state <= STATE_WAIT_WRITE_READY_UNALIGNED1;
+                save_rdata2 <= mem_rdata;
+                state       <= STATE_WAIT_WRITE_READY_UNALIGNED1;
             end
         end
         STATE_WAIT_WRITE_READY_UNALIGNED1: begin
