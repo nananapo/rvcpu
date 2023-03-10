@@ -130,7 +130,7 @@ assign mem_addr = (
     state == STATE_WAIT_WRITE_READY_UNALIGNED1 ? save_addr_aligned :
     state == STATE_WAIT_WRITE_READY_UNALIGNED2 ? save_addr_aligned + 4 :
     state == STATE_WAIT_READ_VALID ? REGPC_NOP :
-    state == STATE_WAIT_READNEXT_READY ? REGPC_NOP :
+    state == STATE_WAIT_READNEXT_READY ? save_addr_aligned + 4 :
     state == STATE_WAIT_READNEXT_VALID ? REGPC_NOP :
     REGPC_NOP
 );
