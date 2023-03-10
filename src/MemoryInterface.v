@@ -135,7 +135,7 @@ assign mem_addr = (
     ) : 
     status == STATE_WAIT_MEMORY_READY ? (
         mem_cmd_ready ? (
-            inst_start ? save_i_addr : save_d_addr
+            cmd_is_inst ? save_i_addr : save_d_addr
         ) : 32'hffffffff
     ) : 
     status == STATE_WAIT_MEMORY_READ ? (
