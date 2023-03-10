@@ -50,7 +50,13 @@ wire [31:0] mem_wmask;
         .uart_tx(uart_tx)
     );
 `else
-    MemoryAccessController #(
+
+    `ifndef DMEMORY_NO_UNALIGNED
+    MemoryAccessController 
+    `else
+    Memory
+    `endif
+    #(
         .MEMORY_SIZE(4096),
     `ifndef DEBUG
         .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
@@ -67,8 +73,12 @@ wire [31:0] mem_wmask;
         .input_addr(mem_addr),
         .output_rdata(mem_rdata),
         .output_rdata_valid(mem_rdata_valid),
-        .input_wdata(mem_wdata),
+        .input_wdata(mem_wdata)
+        
+        `ifndef DMEMORY_NO_UNALIGNED
+        ,
         .input_wmask(mem_wmask)
+        `endif
     );
 `endif
 
