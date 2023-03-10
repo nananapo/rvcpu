@@ -5,14 +5,14 @@ module Memory #(
 )(
     input  wire         clk,
 
-    input  wire         cmd_start,
-    input  wire         cmd_write,
-    output wire         cmd_ready,
+    input  wire         input_cmd_start,
+    input  wire         input_cmd_write,
+    output wire         output_cmd_ready,
 
-    input  wire [31:0]  addr,
-    output reg  [31:0]  rdata,
-    output wire         rdata_valid,
-    input  wire [31:0]  wdata
+    input  wire [31:0]  input_addr,
+    output reg  [31:0]  output_rdata,
+    output wire         output_rdata_valid,
+    input  wire [31:0]  input_wdata
 );
 
 // memory
@@ -22,28 +22,28 @@ initial begin
     if (MEMORY_FILE != "") begin
         $readmemh(MEMORY_FILE, mem);
     end
-    rdata = 0;
+    output_rdata = 0;
 end
 
-wire [31:0] addr_shift = (addr >> 2) % MEMORY_SIZE;
+wire [31:0] addr_shift = (input_addr >> 2) % MEMORY_SIZE;
 
-assign cmd_ready    = 1;
-assign rdata_valid  = 1;//!cmd_write;
+assign output_cmd_ready    = 1;
+assign output_rdata_valid  = 1;//!cmd_write;
 
 always @(posedge clk) begin
-    rdata <= {
+    output_rdata <= {
         mem[addr_shift][7:0],
         mem[addr_shift][15:8],
         mem[addr_shift][23:16],
         mem[addr_shift][31:24]
     };
 
-    if (cmd_start && cmd_write) begin
+    if (input_cmd_start && input_cmd_write) begin
         mem[addr_shift] = {
-            wdata[7:0],
-            wdata[15:8],
-            wdata[23:16],
-            wdata[31:24]
+            input_wdata[7:0],
+            input_wdata[15:8],
+            input_wdata[23:16],
+            input_wdata[31:24]
         };
     end
 end

@@ -28,13 +28,13 @@ Memory #(
 ) memory (
     .clk(clk),
 
-    .cmd_start(mem_cmd_start),
-    .cmd_write(mem_cmd_write),
-    .cmd_ready(mem_cmd_ready),
-    .addr(mem_addr),
-    .rdata(mem_rdata),
-    .rdata_valid(mem_rdata_valid),
-    .wdata(mem_wdata)
+    .input_cmd_start(mem_cmd_start),
+    .input_cmd_write(mem_cmd_write),
+    .output_cmd_ready(mem_cmd_ready),
+    .input_addr(mem_addr),
+    .output_rdata(mem_rdata),
+    .output_rdata_valid(mem_rdata_valid),
+    .input_wdata(mem_wdata)
 );
 
 reg         save_cmd_write  = 0;
