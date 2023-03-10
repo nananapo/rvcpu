@@ -55,19 +55,20 @@ wire [31:0] mem_wmask;
     `ifndef DEBUG
         .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
     `else
-        .MEMORY_FILE("../test/riscv-tests/rv32ui-p-fence_i.bin.aligned")
+        //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-sw.bin.aligned")
+        .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
     `endif
     ) memory (
         .clk(clk),
 
-        .cmd_start(mem_cmd_start),
-        .cmd_write(mem_cmd_write),
-        .cmd_ready(mem_cmd_ready),
-        .addr(mem_addr),
-        .rdata(mem_rdata),
-        .rdata_valid(mem_rdata_valid),
-        .wdata(mem_wdata),
-        .wmask(mem_wmask)
+        .input_cmd_start(mem_cmd_start),
+        .input_cmd_write(mem_cmd_write),
+        .output_cmd_ready(mem_cmd_ready),
+        .input_addr(mem_addr),
+        .output_rdata(mem_rdata),
+        .output_rdata_valid(mem_rdata_valid),
+        .input_wdata(mem_wdata),
+        .input_wmask(mem_wmask)
     );
 `endif
 
