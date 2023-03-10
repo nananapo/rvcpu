@@ -168,9 +168,9 @@ assign output_cmd_ready = (
 assign output_rdata = (
     state == STATE_WAIT_READ_VALID ? mem_rdata :
     state == STATE_WAIT_READNEXT_VALID ? (
-        save_addr % 4 == 1 ? {save_rdata1[7:0] , mem_rdata[31:8] } :
-        save_addr % 4 == 2 ? {save_rdata1[15:0], mem_rdata[31:16]} :
-        save_addr % 4 == 3 ? {save_rdata1[23:0], mem_rdata[31:24]} : 
+        save_addr % 4 == 1 ? {mem_rdata[7:0] , save_rdata1[31:8] } :
+        save_addr % 4 == 2 ? {mem_rdata[15:0], save_rdata1[31:16]} :
+        save_addr % 4 == 3 ? {mem_rdata[23:0], save_rdata1[31:24]} : 
         32'hffffffff
     ) : 32'hffffffff
 );
