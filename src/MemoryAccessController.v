@@ -59,10 +59,11 @@ localparam STATE_WAIT_READ_VALID            = 9;
 localparam STATE_WAIT_READNEXT_READY        = 11;
 localparam STATE_WAIT_READNEXT_VALID        = 12;
 
+localparam REGPC_NOP = 32'hffffffff;
+
 reg [3:0]   state       = STATE_IDLE;
 reg [31:0]  save_rdata1 = 0;
 reg [31:0]  save_rdata2 = 0;
-
 
 /*
 always @(posedge clk) begin
@@ -89,85 +90,120 @@ always @(posedge clk) begin
 end
 */
 
-assign mem_cmd_start = (
-    state == STATE_IDLE ? 0 :
-    state == STATE_WAIT_READY ? mem_cmd_ready :
-    state == STATE_END ? 0 :
-    state == STATE_READ_VALID_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_WRITE_READY ? mem_cmd_ready :
-    state == STATE_WAIT_READNEXT_READY_BEFORE_WRITE ? mem_cmd_ready :
-    state == STATE_WAIT_READNEXT_VALID_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED1 ? mem_rdata_valid :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED2 ? mem_rdata_valid :
-    state == STATE_WAIT_READ_VALID ? 0 :
-    state == STATE_WAIT_READNEXT_READY ? mem_cmd_ready :
-    state == STATE_WAIT_READNEXT_VALID ? 0 :
-    0
+function func_mem_cmd_start(
+    input [3:0] state,
+    input mem_cmd_ready,
+    input mem_rdata_valid
 );
+case(state)
+    //STATE_IDLE                              : func_mem_cmd_start = 0;
+    STATE_WAIT_READY                        : func_mem_cmd_start = mem_cmd_ready;
+    //STATE_END                               : func_mem_cmd_start = 0;
+    //STATE_READ_VALID_BEFORE_WRITE           : func_mem_cmd_start = 0;
+    STATE_WAIT_WRITE_READY                  : func_mem_cmd_start = mem_cmd_ready;
+    STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_cmd_start = mem_cmd_ready;
+    //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_cmd_start = 0;
+    STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_cmd_start = mem_rdata_valid;
+    STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_cmd_start = mem_rdata_valid;
+    //STATE_WAIT_READ_VALID                   : func_mem_cmd_start = 0;
+    STATE_WAIT_READNEXT_READY               : func_mem_cmd_start = mem_cmd_ready;
+    //STATE_WAIT_READNEXT_VALID               : func_mem_cmd_start = 0;
+    default: func_mem_cmd_start = 0;
+endcase
+endfunction
 
-assign mem_cmd_write = (
-    state == STATE_IDLE ? 0 :
-    state == STATE_WAIT_READY ? (
-        !mem_cmd_ready ? 0 : (
-            save_cmd_write && save_addr % 4 == 0 && save_wmask == 32'hffffffff
-        )
-    ) :
-    state == STATE_END ? 0 :
-    state == STATE_READ_VALID_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_WRITE_READY ? mem_cmd_ready :
-    state == STATE_WAIT_READNEXT_READY_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_READNEXT_VALID_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED1 ? mem_rdata_valid :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED2 ? mem_rdata_valid :
-    state == STATE_WAIT_READ_VALID ? 0 :
-    state == STATE_WAIT_READNEXT_READY ? 0 :
-    state == STATE_WAIT_READNEXT_VALID ? 0 :
-    0
+assign mem_cmd_start = func_mem_cmd_start(state, mem_cmd_ready, mem_rdata_valid);
+
+function func_mem_cmd_write(
+    input [3:0] state,
+    input mem_cmd_ready,
+    input mem_rdata_valid,
+    input save_cmd_write,
+    input [31:0]save_addr,
+    input [31:0]save_wmask
 );
+case(state)
+    //STATE_IDLE                              : func_mem_cmd_write = 0;
+    STATE_WAIT_READY                        : func_mem_cmd_write = mem_cmd_ready && 
+                                                                   save_cmd_write && 
+                                                                   save_addr % 4 == 0 && 
+                                                                   save_wmask == 32'hffffffff;
+    //STATE_END                               : func_mem_cmd_write = 0;
+    //STATE_READ_VALID_BEFORE_WRITE           : func_mem_cmd_write = 0;
+    STATE_WAIT_WRITE_READY                  : func_mem_cmd_write = mem_cmd_ready;
+    //STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_cmd_write = 0;
+    //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_cmd_write = 0;
+    STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_cmd_write = mem_rdata_valid;
+    STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_cmd_write = mem_rdata_valid;
+    //STATE_WAIT_READ_VALID                   : func_mem_cmd_write = 0;
+    //STATE_WAIT_READNEXT_READY               : func_mem_cmd_write = 0;
+    //STATE_WAIT_READNEXT_VALID               : func_mem_cmd_write = 0;
+    default: func_mem_cmd_write = 0;
+endcase
+endfunction
 
-localparam REGPC_NOP = 32'hffffffff;
+assign mem_cmd_write = func_mem_cmd_write(state, mem_cmd_ready, mem_rdata_valid, save_cmd_write, save_addr, save_wmask);
 
-assign mem_addr = (
-    state == STATE_IDLE ? REGPC_NOP :
-    state == STATE_WAIT_READY ? save_addr_aligned :
-    state == STATE_END ? REGPC_NOP :
-    state == STATE_READ_VALID_BEFORE_WRITE ? REGPC_NOP :
-    state == STATE_WAIT_WRITE_READY ? save_addr_aligned :
-    state == STATE_WAIT_READNEXT_READY_BEFORE_WRITE ? save_addr_aligned + 4 :
-    state == STATE_WAIT_READNEXT_VALID_BEFORE_WRITE ? REGPC_NOP :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED1 ? save_addr_aligned :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED2 ? save_addr_aligned + 4 :
-    state == STATE_WAIT_READ_VALID ? REGPC_NOP :
-    state == STATE_WAIT_READNEXT_READY ? save_addr_aligned + 4 :
-    state == STATE_WAIT_READNEXT_VALID ? REGPC_NOP :
-    REGPC_NOP
+function [31:0] func_mem_addr(
+    input [3:0] state,
+    input [31:0] save_addr_aligned
 );
+case(state)
+    //STATE_IDLE                              : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READY                        : func_mem_addr = save_addr_aligned;
+    //STATE_END                               : func_mem_addr = REGPC_NOP;
+    //STATE_READ_VALID_BEFORE_WRITE           : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_WRITE_READY                  : func_mem_addr = save_addr_aligned;
+    STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_addr = save_addr_aligned + 4;
+    //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_addr = save_addr_aligned;
+    STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_addr = save_addr_aligned + 4;
+    //STATE_WAIT_READ_VALID                   : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READNEXT_READY               : func_mem_addr = save_addr_aligned + 4;
+    //STATE_WAIT_READNEXT_VALID               : func_mem_addr = REGPC_NOP;
+    default: func_mem_addr = REGPC_NOP;
+endcase
+endfunction
 
-assign mem_wdata = (
-    state == STATE_IDLE ? 0 :
-    state == STATE_WAIT_READY ? save_wdata :
-    state == STATE_END ? 0 :
-    state == STATE_READ_VALID_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_WRITE_READY ? (save_rdata1 & ~save_wmask) | (save_wdata & save_wmask) :
-    state == STATE_WAIT_READNEXT_READY_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_READNEXT_VALID_BEFORE_WRITE ? 0 :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED1 ? (
-        save_addr % 4 == 1 ? {(save_rdata1[31:8]  & ~save_wmask[23:0]) | (save_wdata[23:0] & save_wmask[23:0]) , save_rdata1[7:0]} :
-        save_addr % 4 == 2 ? {(save_rdata1[31:16] & ~save_wmask[15:0]) | (save_wdata[15:0] & save_wmask[15:0]) , save_rdata1[15:0]} :
-        save_addr % 4 == 3 ? {(save_rdata1[31:24] & ~save_wmask[7:0])  | (save_wdata[7:0]  & save_wmask[7:0])  , save_rdata1[23:0]} :
-        0
-    ) :
-    state == STATE_WAIT_WRITE_READY_UNALIGNED2 ? (
-        save_addr % 4 == 1 ? {save_rdata2[31:8] , (save_rdata2[7:0]  & ~save_wmask[31:24]) | (save_wdata[31:24] & save_wmask[31:24])} :
-        save_addr % 4 == 2 ? {save_rdata2[31:16], (save_rdata2[15:0] & ~save_wmask[31:16]) | (save_wdata[31:16] & save_wmask[31:16])} :
-        save_addr % 4 == 3 ? {save_rdata2[31:24], (save_rdata2[23:0] & ~save_wmask[31:8])  | (save_wdata[31:8]  & save_wmask[31:8]) } :
-        0
-    ) :
-    state == STATE_WAIT_READ_VALID ? 0 :
-    state == STATE_WAIT_READNEXT_READY ? 0 :
-    state == STATE_WAIT_READNEXT_VALID ? 0 :
-    0
+assign mem_addr = func_mem_addr(state, save_addr_aligned);
+
+function [31:0] func_mem_wdata(
+    input [3:0] state,
+    input [31:0] save_wdata,
+    input [31:0] save_wmask,
+    input [31:0] save_rdata1,
+    input [31:0] save_rdata2
 );
+case(state)
+    //STATE_IDLE                              : func_mem_wdata = 0;
+    STATE_WAIT_READY                        : func_mem_wdata = save_wdata;
+    //STATE_END                               : func_mem_wdata = 0;
+    //STATE_READ_VALID_BEFORE_WRITE           : func_mem_wdata = 0;
+    STATE_WAIT_WRITE_READY                  : func_mem_wdata = (save_rdata1 & ~save_wmask) | (save_wdata & save_wmask);
+    //STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_wdata = 0;
+    //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_wdata = 0;
+    STATE_WAIT_WRITE_READY_UNALIGNED1       : 
+        case (save_addr % 4) 
+            1: func_mem_wdata = {(save_rdata1[31:8]  & ~save_wmask[23:0]) | (save_wdata[23:0] & save_wmask[23:0]) , save_rdata1[7:0]};
+            2: func_mem_wdata = {(save_rdata1[31:16] & ~save_wmask[15:0]) | (save_wdata[15:0] & save_wmask[15:0]) , save_rdata1[15:0]};
+            3: func_mem_wdata = {(save_rdata1[31:24] & ~save_wmask[7:0])  | (save_wdata[7:0]  & save_wmask[7:0])  , save_rdata1[23:0]};
+            0: func_mem_wdata = 0;
+        endcase 
+    STATE_WAIT_WRITE_READY_UNALIGNED2       :
+        case (save_addr % 4) 
+            1: func_mem_wdata = {save_rdata2[31:8] , (save_rdata2[7:0]  & ~save_wmask[31:24]) | (save_wdata[31:24] & save_wmask[31:24])};
+            2: func_mem_wdata = {save_rdata2[31:16], (save_rdata2[15:0] & ~save_wmask[31:16]) | (save_wdata[31:16] & save_wmask[31:16])};
+            3: func_mem_wdata = {save_rdata2[31:24], (save_rdata2[23:0] & ~save_wmask[31:8])  | (save_wdata[31:8]  & save_wmask[31:8]) };
+            0: func_mem_wdata = 0;
+        endcase 
+    //STATE_WAIT_READ_VALID                   : func_mem_wdata = 0;
+    //STATE_WAIT_READNEXT_READY               : func_mem_wdata = 0;
+    //STATE_WAIT_READNEXT_VALID               : func_mem_wdata = 0;
+    default: func_mem_wdata = 0;
+endcase
+endfunction
+
+assign mem_wdata = func_mem_wdata(state, save_wdata, save_wmask, save_rdata1, save_rdata2);
 
 assign output_cmd_ready = (
     state == STATE_IDLE ? 1 : 0
