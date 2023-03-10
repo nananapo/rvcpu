@@ -7,8 +7,9 @@ FILES = test.v \
 		ExecuteStage.v \
 		MemoryStage.v \
 		MemoryInterface.v \
+		MemoryAccessController.v \
 		CSRStage.v \
-		WriteBackStage.v 
+		WriteBackStage.v
 
 UART_FILES = Uart_rx.v \
 			Uart_tx.v \

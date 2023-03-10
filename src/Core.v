@@ -23,6 +23,8 @@ module Core(
     input wire          exited
 );
 
+`include "include/core.v"
+
 // 何クロック目かのカウント
 reg [31:0] clk_count = 0;
 
@@ -41,6 +43,8 @@ assign gp   = regfile[3];
 wire [31:0] wb_to_fetch_reg_pc;
 // 分岐ハザードが起きてしまいましたフラグ
 wire        wbstage_branch_hazard;
+// fence.i命令でストールするかのフラグ
+wire        id_zifencei_stall_flg;
 
 //**************************
 // Fetch Stage
@@ -65,7 +69,7 @@ FetchStage #() fetchstage (
     .mem_data(memory_inst),
     .mem_data_valid(memory_inst_valid),
 
-    .stall_flg(memory_stage_is_stall || data_hazard_stall)
+    .stall_flg(memory_stage_is_stall || data_hazard_stall || id_zifencei_stall_flg)
 );
 
 
@@ -133,7 +137,11 @@ DecodeStage #() decodestage
     .data_hazard_mem_rf_wen(mem_rf_wen),
     .data_hazard_mem_wb_addr(mem_wb_addr),
     .data_hazard_exe_rf_wen(exe_rf_wen),
-    .data_hazard_exe_wb_addr(exe_wb_addr)
+    .data_hazard_exe_wb_addr(exe_wb_addr),
+    
+    .zifencei_stall_flg(id_zifencei_stall_flg),
+    .zifencei_mem_mem_wen(mem_mem_wen == MEN_SB || mem_mem_wen == MEN_SH || mem_mem_wen == MEN_SW),
+    .zifencei_exe_mem_wen(exe_mem_wen == MEN_SB || exe_mem_wen == MEN_SH || exe_mem_wen == MEN_SW)
 );
 
 

@@ -89,8 +89,8 @@ wire is_load        = !is_store && mem_wen != MEN_X;
 wire is_store_save  = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
 wire next_flg =    (
-    state == STATE_WAIT ? mem_wen == MEN_X :
-    state == STATE_WAIT_READY ? is_store_save : 
+    state == STATE_WAIT ? mem_wen == MEN_X || (is_store && mem_cmd_ready):
+    state == STATE_WAIT_READY ? (is_store_save && mem_cmd_ready) : 
     state == STATE_WAIT_READ_VALID ? mem_rdata_valid :
     1
 );
@@ -302,6 +302,8 @@ always @(posedge clk) begin
     $display("mem.wmask     : 0x%H", mem_wmask);
     $display("mem.rdata     : 0x%H", mem_rdata);
     $display("mem.valid     : %d", mem_rdata_valid);
+    $display("save.mem_wen  : %d", save_mem_wen);
+    $display("wire.out.rdata: 0x%h", output_read_data_wire);
 end
 `endif
 
