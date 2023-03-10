@@ -50,33 +50,13 @@ wire [31:0] mem_wmask;
         .uart_tx(uart_tx)
     );
 `else
-    Memory #(
-        .MEMORY_SIZE(4096),
-    `ifndef DEBUG
-        .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-    `else
-        //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-        .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
-    `endif
-    ) memory (
-        .clk(clk),
-
-        .cmd_start(mem_cmd_start),
-        .cmd_write(mem_cmd_write),
-        .cmd_ready(mem_cmd_ready),
-        .addr(mem_addr),
-        .rdata(mem_rdata),
-        .rdata_valid(mem_rdata_valid),
-        .wdata(mem_wdata)
-    );
-/*
     MemoryAccessController #(
         .MEMORY_SIZE(4096),
     `ifndef DEBUG
         .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
     `else
-        .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-        //.MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+        //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-sw.bin.aligned")
+        .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
     `endif
     ) memory (
         .clk(clk),
@@ -90,7 +70,6 @@ wire [31:0] mem_wmask;
         .input_wdata(mem_wdata),
         .input_wmask(mem_wmask)
     );
- */
 `endif
 
 localparam STATE_WAIT_CMD           = 2'd0;
@@ -115,116 +94,76 @@ reg [31:0]  save_i_rdata = 32'hffffffff;
 wire d_cmd_now_is_write = d_cmd_write && d_cmd_start;
 wire d_cmd_save_is_write= save_d_cmd_write && save_d_cmd_start;
 
-function func_mem_cmd_start(
-    input [1:0] state,
-    input cmd_is_inst,
-    input inst_start,
-    input d_cmd_start,
-    input save_d_cmd_start,
-    input mem_cmd_ready,
-    input mem_rdata_valid
-);
-case (state)
-    STATE_WAIT_CMD:         func_mem_cmd_start = mem_cmd_ready && (inst_start || d_cmd_start);
-    STATE_WAIT_MEMORY_READY:func_mem_cmd_start = mem_cmd_ready;
-    STATE_WAIT_MEMORY_READ: func_mem_cmd_start = mem_rdata_valid && cmd_is_inst && save_d_cmd_start;
-    default : func_mem_cmd_start = 0;
-endcase
-endfunction
-
-assign mem_cmd_start = func_mem_cmd_start(
-    status, cmd_is_inst,
-    inst_start, 
-    d_cmd_start, 
-    save_d_cmd_start, 
-    mem_cmd_ready, 
-    mem_rdata_valid
+assign mem_cmd_start = (
+    status == STATE_WAIT_CMD ? (
+        mem_cmd_ready ? (
+            inst_start || d_cmd_start
+        ) : 0
+    ) : 
+    status == STATE_WAIT_MEMORY_READY ? (
+        mem_cmd_ready ? 1 : 0
+    ) :
+    status == STATE_WAIT_MEMORY_READ ? (
+        mem_rdata_valid ? (
+            cmd_is_inst ? save_d_cmd_start : 0
+        ) : 0
+    ) : 0
 );
 
-function func_mem_cmd_write(
-    input [1:0] state,
-    input mem_cmd_ready,
-    input inst_start,
-    input d_cmd_now_is_write,
-    input cmd_is_inst,
-    input d_cmd_save_is_write,
-    input mem_rdata_valid
-);
-case (state)
-    STATE_WAIT_CMD:         func_mem_cmd_write = mem_cmd_ready && (!inst_start && d_cmd_now_is_write);
-    STATE_WAIT_MEMORY_READY:func_mem_cmd_write = mem_cmd_ready && (!cmd_is_inst && d_cmd_save_is_write);
-    STATE_WAIT_MEMORY_READ: func_mem_cmd_write = mem_rdata_valid && cmd_is_inst && d_cmd_save_is_write;
-    default : func_mem_cmd_write = 0;
-endcase
-endfunction
-
-assign mem_cmd_write = func_mem_cmd_write(
-    status, 
-    mem_cmd_ready, 
-    inst_start, 
-    d_cmd_now_is_write, 
-    cmd_is_inst, 
-    d_cmd_save_is_write, 
-    mem_rdata_valid
+assign mem_cmd_write = (
+    status == STATE_WAIT_CMD ? (
+        mem_cmd_ready ? (
+            inst_start ? 0 : d_cmd_now_is_write
+        ) : 0
+    ) : 
+    status == STATE_WAIT_MEMORY_READY ? (
+        mem_cmd_ready ? (
+            cmd_is_inst ? 0 : d_cmd_save_is_write
+        ) : 0
+    ) :
+    status == STATE_WAIT_MEMORY_READ ? (
+        mem_rdata_valid ? (
+            cmd_is_inst ? d_cmd_save_is_write : 0
+        ) : 0
+    ) : 0 
 );
 
-function [31:0] func_mem_addr(
-    input [1:0] state,
-    input inst_start,
-    input [31:0] i_addr,
-    input [31:0] d_addr,
-    input cmd_is_inst,
-    input [31:0] save_i_addr,
-    input [31:0] save_d_addr
-);
-case (state)
-    STATE_WAIT_CMD:         func_mem_addr = inst_start ? i_addr : d_addr;
-    STATE_WAIT_MEMORY_READY:func_mem_addr = cmd_is_inst ? save_i_addr : save_d_addr;
-    STATE_WAIT_MEMORY_READ: func_mem_addr = save_d_addr;
-    default : func_mem_addr = 32'hffffffff;
-endcase
-endfunction
-
-assign mem_addr = func_mem_addr(
-    status,
-    inst_start,
-    i_addr,
-    d_addr,
-    cmd_is_inst,
-    save_i_addr,
-    save_d_addr
+assign mem_addr = (
+    status == STATE_WAIT_CMD ? (
+        mem_cmd_ready ? (
+            inst_start ? i_addr : d_addr
+        ) : 32'hffffffff
+    ) : 
+    status == STATE_WAIT_MEMORY_READY ? (
+        mem_cmd_ready ? (
+            cmd_is_inst ? save_i_addr : save_d_addr
+        ) : 32'hffffffff
+    ) : 
+    status == STATE_WAIT_MEMORY_READ ? (
+        mem_rdata_valid ? (
+            cmd_is_inst ? (
+                save_d_cmd_start ? save_d_addr : 32'hffffffff
+            ) : 32'hffffffff
+        ) : 32'hffffffff
+    ) : 32'hffffffff
 );
 
-function [31:0] func_mem_wdata(
-    input [1:0] state,
-    input [31:0] wdata,
-    input [31:0] save_wdata
+assign mem_wdata = (
+    status == STATE_WAIT_CMD ? wdata : 
+    status == STATE_WAIT_MEMORY_READY ? save_wdata : 
+    status == STATE_WAIT_MEMORY_READ ? save_wdata :
+    32'hffffffff
 );
-case (state)
-    STATE_WAIT_CMD:         func_mem_wdata = wdata;
-    STATE_WAIT_MEMORY_READY:func_mem_wdata = save_wdata;
-    STATE_WAIT_MEMORY_READ: func_mem_wdata = save_wdata;
-    default : func_mem_wdata = 32'hffffffff;
-endcase
-endfunction
 
-assign mem_wdata = func_mem_wdata(status, wdata, save_wdata);
-
-function [31:0] func_mem_wmask(
-    input [1:0] state,
-    input [31:0] wmask,
-    input [31:0] save_wmask
+assign mem_wmask = (
+    status == STATE_WAIT_CMD ? wmask : 
+    status == STATE_WAIT_MEMORY_READY ? save_wmask : 
+    status == STATE_WAIT_MEMORY_READ ? save_wmask :
+    32'hffffffff
 );
-case (state)
-    STATE_WAIT_CMD:         func_mem_wmask = wmask;
-    STATE_WAIT_MEMORY_READY:func_mem_wmask = save_wmask;
-    STATE_WAIT_MEMORY_READ: func_mem_wmask = save_wmask;
-    default : func_mem_wmask = 32'hffffffff;
-endcase
-endfunction
 
-assign mem_wmask = func_mem_wmask(status, wdata, save_wdata);
 
+// d_cmdに関してはcmd_is_instかつsave_d_cmdがnopの時には進むことができるが、簡単にするためにいったん考えない
 assign inst_ready   = status == STATE_WAIT_CMD;
 assign d_cmd_ready  = status == STATE_WAIT_CMD;
 
