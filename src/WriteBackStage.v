@@ -24,13 +24,23 @@ module WriteBackStage(
 
 `include "include/core.v"
 
-integer loop_i;
-initial begin
-    for (loop_i = 0; loop_i < 32; loop_i = loop_i + 1)
-        regfile[loop_i] = 32'hffffffff;
-end
-
-assign exit = reg_pc == 32'h00000044;
+`ifdef RISCV_TEST
+    integer loop_i;
+    initial begin
+        for (loop_i = 0; loop_i < 32; loop_i = loop_i + 1)
+            regfile[loop_i] = 32'hffffffff;
+    end
+    assign exit = reg_pc == 32'h00000044;
+`else
+    integer loop_i;
+    initial begin
+        regfile[1] = 32'hffffffff;
+        regfile[2] = 32'h00000400;
+        for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
+            regfile[loop_i] = 32'hffffffff;
+    end
+    assign exit = reg_pc == 32'hffffff00;
+`endif
 
 wire [31:0] reg_pc_plus4 = reg_pc + 4; 
 

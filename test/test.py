@@ -18,7 +18,7 @@ def test(filename):
         f.write(memory_v_test)
     # run test
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
-    system("cd ../src/ && make d > " + resultFileName)
+    system("cd ../src/ && make riscv-tests > " + resultFileName)
 
     with open(resultFileName, "r", encoding='utf-8') as f:
         result = "".join(f.readlines())
