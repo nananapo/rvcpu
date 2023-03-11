@@ -50,7 +50,7 @@ always @(posedge clk) begin
     led[5:0] = ~gp[5:0];
 end
 
-wire [7:0]  memmapio_uart_tx_buffer[255:0];
+wire [31:0] memmapio_uart_tx_buffer[63:0];
 wire [7:0]  memmapio_uart_tx_queue_tail;
 wire [7:0]  memmapio_uart_tx_queue_head;
 

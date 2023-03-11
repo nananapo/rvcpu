@@ -6,7 +6,7 @@ module MemoryInterface (
     input  wire uart_rx,
     output wire uart_tx,
     
-    output reg [7:0]    memmapio_uart_tx_buffer[255:0],
+    output reg [31:0]   memmapio_uart_tx_buffer[63:0],
     output reg [7:0]    memmapio_uart_tx_queue_tail,
     input  reg [7:0]    memmapio_uart_tx_queue_head,
  
