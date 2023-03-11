@@ -3,6 +3,8 @@ module MemoryAccessController #(
     parameter MEMORY_FILE = ""
 ) (
     input  wire         clk,
+    input  wire         uart_rx,
+    output wire         uart_tx,
 
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
@@ -27,6 +29,8 @@ Memory #(
     .MEMORY_FILE(MEMORY_FILE)
 ) memory (
     .clk(clk),
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx),
 
     .input_cmd_start(mem_cmd_start),
     .input_cmd_write(mem_cmd_write),

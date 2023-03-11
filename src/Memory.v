@@ -4,6 +4,8 @@ module Memory #(
     parameter MEMORY_FILE = ""
 )(
     input  wire         clk,
+    input  wire         uart_rx,
+    output wire         uart_tx,
 
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,

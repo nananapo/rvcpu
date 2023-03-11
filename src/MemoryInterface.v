@@ -1,5 +1,7 @@
 module MemoryInterface (
     input  wire clk,
+    input  wire mem_uart_rx,
+    output wire mem_uart_tx,
     input  wire uart_rx,
     output wire uart_tx,
  
@@ -18,7 +20,7 @@ module MemoryInterface (
     output wire [31:0]  rdata,
     output wire         rdata_valid,
 
-    input  wire         exited
+    input  wire         exited  
 );
 
 `include "include/memoryinterface.v"
@@ -46,8 +48,8 @@ wire [31:0] mem_wmask;
         .wdata(mem_wdata),
         .wmask(mem_wmask),
 
-        .uart_rx(uart_rx),
-        .uart_tx(uart_tx)
+        .uart_rx(mem_uart_rx),
+        .uart_tx(mem_uart_tx)
     );
 `else
 
@@ -66,6 +68,8 @@ wire [31:0] mem_wmask;
     `endif
     ) memory (
         .clk(clk),
+        .uart_rx(uart_rx),
+        .uart_tx(uart_tx),
 
         .input_cmd_start(mem_cmd_start),
         .input_cmd_write(mem_cmd_write),
