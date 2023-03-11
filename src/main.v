@@ -54,6 +54,15 @@ wire [7:0]  memmapio_uart_tx_buffer[255:0];
 wire [7:0]  memmapio_uart_tx_queue_tail;
 wire [7:0]  memmapio_uart_tx_queue_head;
 
+MemoryMappedIO_Uart_tx #() memmap_uarttx (
+    .clk(clk),
+    .uart_tx(uart_tx),
+    
+    .buffer(memmapio_uart_tx_buffer),
+    .queue_tail(memmapio_uart_tx_queue_tail),
+    .queue_head(memmapio_uart_tx_queue_head)
+);
+
 MemoryInterface #() memory (
     .clk(clk),
     .mem_uart_rx(mem_uart_rx),
