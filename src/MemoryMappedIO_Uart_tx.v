@@ -12,10 +12,6 @@ reg         tx_start    = 0;
 reg [7:0]   tx_data     = 0;
 wire        tx_ready;
 
-initial begin
-    queue_head = 0;
-end
-
 Uart_tx #() txModule(
     .clk(clk),
 
@@ -25,17 +21,26 @@ Uart_tx #() txModule(
     .uart_tx(uart_tx)
 );
 
+wire [7:0] queue_tail       = input_queue_tail[7:0];
+reg  [7:0] queue_head       = 0;
+
+assign output_queue_head    = {24'b0, queue_head};
+
+// アドレスは4byteずつ
 wire [5:0] addr     = queue_head[7:2]; // queue_head >> 2
 wire [1:0] addr_mod = queue_head[1:0]; // queue_head % 4
 
+// 状態
 localparam STATE_IDLE       = 0;
 localparam STATE_WAIT_READY = 1;
 
 reg state = STATE_IDLE;
 
+// バッファから読んだデータ
 reg [31:0] rdata = 0;
 
 always @(posedge clk) begin
+    //$display("queue: %d -> %d", queue_head, queue_tail);
     case (state)
         STATE_IDLE: begin
             tx_start    <= 0;
@@ -47,6 +52,7 @@ always @(posedge clk) begin
         STATE_WAIT_READY: begin
             if (tx_ready) begin
                 tx_start    <= 1;
+                //$display("uart_tx : 0x%h : %d", rdata, addr_mod);
                 case (addr_mod)
                     0: tx_data  <= rdata[7:0];
                     1: tx_data  <= rdata[15:8];
@@ -54,6 +60,7 @@ always @(posedge clk) begin
                     3: tx_data  <= rdata[31:24];
                 endcase
                 queue_head  <= queue_head + 1;
+                state <= STATE_IDLE;
             end
         end
     endcase
