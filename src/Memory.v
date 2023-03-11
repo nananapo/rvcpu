@@ -12,7 +12,7 @@ module Memory #(
 
     output reg [7:0]    memmapio_uart_tx_buffer[255:0],
     output reg [7:0]    memmapio_uart_tx_queue_tail,
-    output reg [7:0]    memmapio_uart_tx_queue_head,
+    input  wire[7:0]    memmapio_uart_tx_queue_head,
 
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
