@@ -4,8 +4,8 @@ module MemoryMappedIO_Uart_tx
     output wire         uart_tx,
 
     input wire [31:0]   buffer[63:0],
-    input wire [7:0]    queue_tail,
-    output reg [7:0]    queue_head
+    input wire [31:0]   input_queue_tail,
+    output wire[31:0]   output_queue_head
 );
 
 reg         tx_start    = 0;

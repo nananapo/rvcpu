@@ -5,8 +5,8 @@ module MemoryAccessController #(
     input  wire         clk,
 
     output wire [31:0]  memmapio_uart_tx_buffer[63:0],
-    output wire [7:0]   memmapio_uart_tx_queue_tail,
-    input  wire [7:0]   memmapio_uart_tx_queue_head,
+    output wire [31:0]  memmapio_uart_tx_queue_tail,
+    input  wire [31:0]  memmapio_uart_tx_queue_head,
 
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
