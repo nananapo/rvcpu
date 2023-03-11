@@ -3,10 +3,9 @@ module MemoryAccessController #(
     parameter MEMORY_FILE = ""
 ) (
     input  wire         clk,
-
-    output wire [31:0]  memmapio_uart_tx_buffer[63:0],
-    output wire [31:0]  memmapio_uart_tx_queue_tail,
-    input  wire [31:0]  memmapio_uart_tx_queue_head,
+    
+    input  wire         uart_rx,
+    output wire         uart_tx,
 
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
@@ -26,15 +25,13 @@ wire [31:0] mem_rdata;
 wire        mem_rdata_valid;
 wire [31:0] mem_wdata;
 
-Memory #(
+MemoryMapController #(
     .MEMORY_SIZE(MEMORY_SIZE),
     .MEMORY_FILE(MEMORY_FILE)
 ) memory (
     .clk(clk),
-
-    .memmapio_uart_tx_buffer(memmapio_uart_tx_buffer),
-    .memmapio_uart_tx_queue_tail(memmapio_uart_tx_queue_tail),
-    .memmapio_uart_tx_queue_head(memmapio_uart_tx_queue_head),
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx),
 
     .input_cmd_start(mem_cmd_start),
     .input_cmd_write(mem_cmd_write),

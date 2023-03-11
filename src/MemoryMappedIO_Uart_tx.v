@@ -3,11 +3,47 @@ module MemoryMappedIO_Uart_tx
     input  wire         clk,
     output wire         uart_tx,
 
-    input wire [31:0]   buffer[63:0],
-    input wire [31:0]   input_queue_tail,
-    output wire[31:0]   output_queue_head
+    input  wire         input_cmd_start,
+    input  wire         input_cmd_write,
+    output wire         output_cmd_ready,
+    
+    input  wire [31:0]  input_addr,
+    output reg  [31:0]  output_rdata,
+    output wire         output_rdata_valid,
+    input  wire [31:0]  input_wdata
 );
 
+reg [31:0]  buffer[63:0];
+reg  [7:0]  queue_tail  = 0;
+reg  [7:0]  queue_head  = 0;
+
+assign output_cmd_ready     = 1;
+assign output_rdata_valid   = 1;
+
+wire [5:0] buffer_addr = input_addr[7:2];
+
+wire is_queue_head_addr = input_addr == 32'h00000104;
+wire is_queue_tail_addr = input_addr == 32'h00000100;
+wire is_buffer_addr     = !is_queue_head_addr && !is_queue_tail_addr; 
+
+// メモリ
+always @(posedge clk) begin
+    if (is_buffer_addr)
+        output_rdata <= buffer[buffer_addr];
+    else if (is_queue_head_addr)
+        output_rdata <= {24'b0, queue_head};
+    else if (is_queue_tail_addr)
+        output_rdata <= {24'b0, queue_tail};
+
+    if (input_cmd_start && input_cmd_write) begin
+        if (is_buffer_addr)
+            buffer[buffer_addr] <= input_wdata;
+        else if (is_queue_tail_addr)
+            queue_tail          <= input_wdata[7:0];
+    end        
+end
+
+// UART
 reg         tx_start    = 0;
 reg [7:0]   tx_data     = 0;
 wire        tx_ready;
@@ -20,11 +56,6 @@ Uart_tx #() txModule(
     .ready(tx_ready),
     .uart_tx(uart_tx)
 );
-
-wire [7:0] queue_tail       = input_queue_tail[7:0];
-reg  [7:0] queue_head       = 0;
-
-assign output_queue_head    = {24'b0, queue_head};
 
 // アドレスは4byteずつ
 wire [5:0] addr     = queue_head[7:2]; // queue_head >> 2
@@ -40,7 +71,7 @@ reg state = STATE_IDLE;
 reg [31:0] rdata = 0;
 
 always @(posedge clk) begin
-    //$display("queue: %d -> %d", queue_head, queue_tail);
+    $display("queue: %d -> %d", queue_head, queue_tail);
     case (state)
         STATE_IDLE: begin
             tx_start    <= 0;
