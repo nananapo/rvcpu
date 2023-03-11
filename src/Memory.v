@@ -32,6 +32,7 @@ initial begin
         $readmemh(MEMORY_FILE, mem);
     end
     output_rdata = 0;
+    memmapio_uart_tx_queue_tail = 0;
 end
 
 wire [31:0] addr_shift = (input_addr >> 2) % MEMORY_SIZE;
