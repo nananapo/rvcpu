@@ -58,7 +58,7 @@ wire [31:0] mem_wmask;
     );
 `else
 
-    `ifndef DMEMORY_NO_UNALIGNED
+    `ifndef MEMORY_DISALLOW_UNALIGNED
     MemoryAccessController 
     `else
     Memory
