@@ -1,9 +1,14 @@
 module MemoryInterface (
     input  wire clk,
+
     input  wire mem_uart_rx,
     output wire mem_uart_tx,
     input  wire uart_rx,
     output wire uart_tx,
+    
+    output reg [7:0]    memmapio_uart_tx_buffer[255:0],
+    output reg [7:0]    memmapio_uart_tx_queue_tail,
+    output reg [7:0]    memmapio_uart_tx_queue_head,
  
     input  wire         inst_start,
     output wire         inst_ready,
@@ -68,8 +73,10 @@ wire [31:0] mem_wmask;
     `endif
     ) memory (
         .clk(clk),
-        .uart_rx(uart_rx),
-        .uart_tx(uart_tx),
+
+        .memmapio_uart_tx_buffer(memmapio_uart_tx_buffer),
+        .memmapio_uart_tx_queue_tail(memmapio_uart_tx_queue_tail),
+        .memmapio_uart_tx_queue_head(memmapio_uart_tx_queue_head),
 
         .input_cmd_start(mem_cmd_start),
         .input_cmd_write(mem_cmd_write),
