@@ -28,7 +28,7 @@ end
 localparam CSR_SIZE = 1024;
 `else
 localparam CSR_SIZE = 4096;
-`endif macro
+`endif
 
 reg [31:0] mem [CSR_SIZE-1:0];
 
