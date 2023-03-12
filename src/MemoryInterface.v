@@ -299,7 +299,7 @@ always @(posedge clk) begin
     end
 end
 
-/*
+`ifdef DEBUG
 always @(posedge clk) begin
     $display("MEMINF -------------");
     $display("inst_start      : %d", inst_start);
@@ -324,6 +324,6 @@ always @(posedge clk) begin
     $display("mem_rdata       : 0x%H", mem_rdata);
     $display("mem_rdata_valid : %d", mem_rdata_valid);
 end
-*/
+`endif
 
 endmodule

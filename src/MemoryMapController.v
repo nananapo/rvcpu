@@ -92,18 +92,20 @@ Memory
     .input_wdata(mem_wdata)
 );
 
-/*
+`ifdef DEBUG
 always @(posedge clk) begin
     $display("MemoryMapController--------");
     $display("addr                  : 0x%h", input_addr);
     $display("is_uart_tx_addr       : %d", is_uart_tx_addr);
     $display("uart_tx_addr          : 0x%h", uart_tx_addr);
+    $display("is_uart_rx_addr       : %d", is_uart_rx_addr);
+    $display("uart_rx_addr          : 0x%h", uart_rx_addr);
     $display("start          : %d", input_cmd_start);
     $display("write          : %d", input_cmd_write);
     $display("wdata          : %d", input_wdata);
-    $display("rdata          : 0x%h, 0x%h", output_rdata, uart_tx_rdata);
+    $display("rdata          : 0x%h, 0x%h, 0x%h", output_rdata, uart_tx_rdata, uart_rx_rdata);
 end
-*/
+`endif
 
 assign output_cmd_ready     =   is_uart_tx_addr ? uart_tx_cmd_ready : 
                                 is_uart_rx_addr ? uart_rx_cmd_ready : 
