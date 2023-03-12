@@ -33,6 +33,13 @@ ff000600            : UART RX (バッファの末尾のindex % 1024)
 ff000604            : UART RX (バッファを何周したか)
 ```
 
+#### サンプルプログラム
+
+|  ファイル名  |  概要  |
+| ---- | ---- |
+|  [test/c/uart_rx.c](https://github.com/nananapo/rvcpu/blob/main/test/c/uart_rx.c)  |  UART_RXで受信した文字に基づいてLEDの点灯を変えます  |
+|  [test/c/uart_tx.c](https://github.com/nananapo/rvcpu/blob/main/test/c/uart_tx.c)  |  UART_TXで「Hello World!」を送信します  |
+
 #### シリアル通信でメモリ操作
 
 UARTでメモリ操作(load, store)を行います  
