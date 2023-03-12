@@ -19,15 +19,15 @@ module MemoryMapController #(
 
 `include "include/memorymap.v"
 
-wire is_uart_tx_addr    = UART_TX_QUEUE_OFFSET <= input_addr && input_addr <= UART_TX_QUEUE_HEAD_OFFSET;
-wire is_uart_rx_addr    = UART_RX_BUFFER_OFFSET <= input_addr && input_addr <= UART_RX_BUFFER_COUNT_OFFSET;
+wire is_uart_tx_addr    = UART_TX_OFFSET <= input_addr && input_addr <= UART_TX_END;
+wire is_uart_rx_addr    = UART_RX_OFFSET <= input_addr && input_addr <= UART_RX_END;
 wire is_default_memory  = !is_uart_tx_addr && !is_uart_rx_addr;
 
 // UART_TX
 wire        uart_tx_cmd_start   = is_uart_tx_addr ? input_cmd_start : 0;
 wire        uart_tx_cmd_write   = is_uart_tx_addr ? input_cmd_write : 0;
 wire        uart_tx_cmd_ready;
-wire [31:0] uart_tx_addr        = input_addr - UART_TX_QUEUE_OFFSET;
+wire [31:0] uart_tx_addr        = input_addr - UART_TX_OFFSET;
 wire [31:0] uart_tx_rdata;
 wire        uart_tx_rdata_valid;
 wire [31:0] uart_tx_wdata       = input_wdata;
@@ -49,7 +49,7 @@ MemoryMappedIO_Uart_tx #() memmap_uarttx (
 wire        uart_rx_cmd_start   = is_uart_rx_addr ? input_cmd_start : 0;
 wire        uart_rx_cmd_write   = is_uart_rx_addr ? input_cmd_write : 0;
 wire        uart_rx_cmd_ready;
-wire [31:0] uart_rx_addr        = input_addr - UART_RX_BUFFER_OFFSET;
+wire [31:0] uart_rx_addr        = input_addr - UART_RX_OFFSET;
 wire [31:0] uart_rx_rdata;
 wire        uart_rx_rdata_valid;
 wire [31:0] uart_rx_wdata       = input_wdata;
