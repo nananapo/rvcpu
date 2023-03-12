@@ -157,15 +157,15 @@ case(state)
     //STATE_IDLE                              : func_mem_addr = REGPC_NOP;
     STATE_WAIT_READY                        : func_mem_addr = save_addr_aligned;
     //STATE_END                               : func_mem_addr = REGPC_NOP;
-    //STATE_READ_VALID_BEFORE_WRITE           : func_mem_addr = REGPC_NOP;
+    STATE_READ_VALID_BEFORE_WRITE           : func_mem_addr = save_addr_aligned;
     STATE_WAIT_WRITE_READY                  : func_mem_addr = save_addr_aligned;
     STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_addr = save_addr_aligned + 4;
-    //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_addr = save_addr_aligned + 4;
     STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_addr = save_addr_aligned;
     STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_addr = save_addr_aligned + 4;
-    //STATE_WAIT_READ_VALID                   : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READ_VALID                   : func_mem_addr = save_addr_aligned;
     STATE_WAIT_READNEXT_READY               : func_mem_addr = save_addr_aligned + 4;
-    //STATE_WAIT_READNEXT_VALID               : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READNEXT_VALID               : func_mem_addr = save_addr_aligned + 4;
     default: func_mem_addr = REGPC_NOP;
 endcase
 endfunction

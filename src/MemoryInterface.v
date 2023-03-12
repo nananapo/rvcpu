@@ -148,24 +148,30 @@ assign mem_cmd_write = (
     ) : 0 
 );
 
+localparam ADDR_NOP = 32'hffffffff;
+
 assign mem_addr = (
     status == STATE_WAIT_CMD ? (
         mem_cmd_ready ? (
             inst_start ? i_addr : d_addr
-        ) : 32'hffffffff
+        ) : ADDR_NOP
     ) : 
     status == STATE_WAIT_MEMORY_READY ? (
         mem_cmd_ready ? (
             cmd_is_inst ? save_i_addr : save_d_addr
-        ) : 32'hffffffff
+        ) : ADDR_NOP
     ) : 
     status == STATE_WAIT_MEMORY_READ ? (
         mem_rdata_valid ? (
             cmd_is_inst ? (
-                save_d_cmd_start ? save_d_addr : 32'hffffffff
-            ) : 32'hffffffff
-        ) : 32'hffffffff
-    ) : 32'hffffffff
+                save_d_cmd_start ? 
+                    save_d_addr :   // inst -> data
+                    save_i_addr     // inst -> endなのでi_addrを維持
+            ) : save_d_addr // data -> endなのでd_addrを維持
+        ) : (
+            cmd_is_inst ? save_i_addr : save_d_addr // valid待ちなのでaddrを維持
+        )
+    ) : ADDR_NOP
 );
 
 assign mem_wdata = (
