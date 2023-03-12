@@ -8,6 +8,7 @@ FILES = test.v \
 		MemoryStage.v \
 		MemoryInterface.v \
 		MemoryMapController.v \
+		MemoryMappedIO_Uart_rx.v \
 		MemoryMappedIO_Uart_tx.v \
 		MemoryAccessController.v \
 		CSRStage.v \
