@@ -11,6 +11,18 @@ module Uart_rx
     output wire         rdata_valid // rdata is valid(1)
 );
 
+/*
+initial begin
+    rdata_valid = 0;
+    rdata = 0;
+
+    #16 rdata = "1";
+    #16 rdata_valid = 1;
+    #17 rdata_valid = 0;
+end
+endmodule
+*/
+
 localparam  HALF_DELAY_WAIT = (DELAY_FRAMES / 2);
 
 localparam RX_STATE_IDLE        = 0;
