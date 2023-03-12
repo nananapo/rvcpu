@@ -37,9 +37,8 @@ always @(posedge clk) begin
         mem[addr_shift][23:16],
         mem[addr_shift][31:24]
     };
-
     if (input_cmd_start && input_cmd_write) begin
-        mem[addr_shift] = {
+        mem[addr_shift] <= {
             input_wdata[7:0],
             input_wdata[15:8],
             input_wdata[23:16],

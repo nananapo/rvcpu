@@ -2,8 +2,15 @@
 
 module main (
     input  wire         clk,
+
+    // メモリにUARTを使うときに使うピン
+    input  wire         mem_uart_rx,
+    output wire         mem_uart_tx,
+
+    // メモリにマップされるUARTのピン
     input  wire         uart_rx,
     output wire         uart_tx,
+    
     output reg [5:0]    led
 
 `ifdef DEBUG
@@ -45,6 +52,8 @@ end
 
 MemoryInterface #() memory (
     .clk(clk),
+    .mem_uart_rx(mem_uart_rx),
+    .mem_uart_tx(mem_uart_tx),
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
 

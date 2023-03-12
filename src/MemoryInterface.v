@@ -1,5 +1,8 @@
 module MemoryInterface (
     input  wire clk,
+
+    input  wire mem_uart_rx,
+    output wire mem_uart_tx,
     input  wire uart_rx,
     output wire uart_tx,
  
@@ -18,7 +21,7 @@ module MemoryInterface (
     output wire [31:0]  rdata,
     output wire         rdata_valid,
 
-    input  wire         exited
+    input  wire         exited  
 );
 
 `include "include/memoryinterface.v"
@@ -46,26 +49,33 @@ wire [31:0] mem_wmask;
         .wdata(mem_wdata),
         .wmask(mem_wmask),
 
-        .uart_rx(uart_rx),
-        .uart_tx(uart_tx)
+        .uart_rx(mem_uart_rx),
+        .uart_tx(mem_uart_tx)
     );
 `else
 
-    `ifndef DMEMORY_NO_UNALIGNED
+    `ifndef MEMORY_DISALLOW_UNALIGNED
     MemoryAccessController 
     `else
-    Memory
+    MemoryMapController
     `endif
     #(
         .MEMORY_SIZE(4096),
-    `ifndef DEBUG
-        .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-    `else
-        //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-sw.bin.aligned")
+    `ifdef RISCV_TEST
+        // make riscv-tests
         .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+    `elsif DEBUG
+        // make d
+        .MEMORY_FILE("../test/c/temp.bin.aligned")
+    `else
+        // build
+        .MEMORY_FILE("../test/c/temp.bin.aligned")
     `endif
     ) memory (
         .clk(clk),
+
+        .uart_rx(uart_rx),
+        .uart_tx(uart_tx),
 
         .input_cmd_start(mem_cmd_start),
         .input_cmd_write(mem_cmd_write),
@@ -138,24 +148,30 @@ assign mem_cmd_write = (
     ) : 0 
 );
 
+localparam ADDR_NOP = 32'hffffffff;
+
 assign mem_addr = (
     status == STATE_WAIT_CMD ? (
         mem_cmd_ready ? (
             inst_start ? i_addr : d_addr
-        ) : 32'hffffffff
+        ) : ADDR_NOP
     ) : 
     status == STATE_WAIT_MEMORY_READY ? (
         mem_cmd_ready ? (
             cmd_is_inst ? save_i_addr : save_d_addr
-        ) : 32'hffffffff
+        ) : ADDR_NOP
     ) : 
     status == STATE_WAIT_MEMORY_READ ? (
         mem_rdata_valid ? (
             cmd_is_inst ? (
-                save_d_cmd_start ? save_d_addr : 32'hffffffff
-            ) : 32'hffffffff
-        ) : 32'hffffffff
-    ) : 32'hffffffff
+                save_d_cmd_start ? 
+                    save_d_addr :   // inst -> data
+                    save_i_addr     // inst -> endなのでi_addrを維持
+            ) : save_d_addr // data -> endなのでd_addrを維持
+        ) : (
+            cmd_is_inst ? save_i_addr : save_d_addr // valid待ちなのでaddrを維持
+        )
+    ) : ADDR_NOP
 );
 
 assign mem_wdata = (

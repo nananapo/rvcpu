@@ -3,6 +3,9 @@ module MemoryAccessController #(
     parameter MEMORY_FILE = ""
 ) (
     input  wire         clk,
+    
+    input  wire         uart_rx,
+    output wire         uart_tx,
 
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
@@ -22,11 +25,13 @@ wire [31:0] mem_rdata;
 wire        mem_rdata_valid;
 wire [31:0] mem_wdata;
 
-Memory #(
+MemoryMapController #(
     .MEMORY_SIZE(MEMORY_SIZE),
     .MEMORY_FILE(MEMORY_FILE)
 ) memory (
     .clk(clk),
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx),
 
     .input_cmd_start(mem_cmd_start),
     .input_cmd_write(mem_cmd_write),
@@ -152,15 +157,15 @@ case(state)
     //STATE_IDLE                              : func_mem_addr = REGPC_NOP;
     STATE_WAIT_READY                        : func_mem_addr = save_addr_aligned;
     //STATE_END                               : func_mem_addr = REGPC_NOP;
-    //STATE_READ_VALID_BEFORE_WRITE           : func_mem_addr = REGPC_NOP;
+    STATE_READ_VALID_BEFORE_WRITE           : func_mem_addr = save_addr_aligned;
     STATE_WAIT_WRITE_READY                  : func_mem_addr = save_addr_aligned;
     STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_addr = save_addr_aligned + 4;
-    //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_addr = save_addr_aligned + 4;
     STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_addr = save_addr_aligned;
     STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_addr = save_addr_aligned + 4;
-    //STATE_WAIT_READ_VALID                   : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READ_VALID                   : func_mem_addr = save_addr_aligned;
     STATE_WAIT_READNEXT_READY               : func_mem_addr = save_addr_aligned + 4;
-    //STATE_WAIT_READNEXT_VALID               : func_mem_addr = REGPC_NOP;
+    STATE_WAIT_READNEXT_VALID               : func_mem_addr = save_addr_aligned + 4;
     default: func_mem_addr = REGPC_NOP;
 endcase
 endfunction

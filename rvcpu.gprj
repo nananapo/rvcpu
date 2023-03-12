@@ -17,6 +17,8 @@
         <File path="src/memory.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryAccessController.v" type="file.verilog" enable="1"/>
         <File path="src/memoryinterface.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryMapController.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryMappedIO_Uart_tx.v" type="file.verilog" enable="1"/>
         <File path="src/memorystage.v" type="file.verilog" enable="1"/>
         <File path="src/test.v" type="file.verilog" enable="1"/>
         <File path="src/Uart_rx.v" type="file.verilog" enable="1"/>
