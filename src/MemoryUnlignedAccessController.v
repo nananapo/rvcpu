@@ -1,4 +1,4 @@
-module MemoryAccessController #(
+module MemoryUnlignedAccessController #(
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
 ) (

@@ -10,7 +10,7 @@ FILES = test.v \
 		MemoryMapController.v \
 		MemoryMappedIO_Uart_rx.v \
 		MemoryMappedIO_Uart_tx.v \
-		MemoryAccessController.v \
+		MemoryUnlignedAccessController.v \
 		CSRStage.v \
 		WriteBackStage.v
 

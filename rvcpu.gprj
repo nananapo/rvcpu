@@ -15,12 +15,12 @@
         <File path="src/fetchstage.v" type="file.verilog" enable="1"/>
         <File path="src/main.v" type="file.verilog" enable="1"/>
         <File path="src/memory.v" type="file.verilog" enable="1"/>
-        <File path="src/MemoryAccessController.v" type="file.verilog" enable="1"/>
         <File path="src/memoryinterface.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryMapController.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_rx.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_tx.v" type="file.verilog" enable="1"/>
         <File path="src/memorystage.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryUnlignedAccessController.v" type="file.verilog" enable="1"/>
         <File path="src/test.v" type="file.verilog" enable="1"/>
         <File path="src/Uart_rx.v" type="file.verilog" enable="1"/>
         <File path="src/Uart_tx.v" type="file.verilog" enable="1"/>

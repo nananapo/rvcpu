@@ -55,7 +55,7 @@ wire [31:0] mem_wmask;
 `else
 
     `ifndef MEMORY_DISALLOW_UNALIGNED
-    MemoryAccessController 
+    MemoryUnlignedAccessController 
     `else
     MemoryMapController
     `endif
