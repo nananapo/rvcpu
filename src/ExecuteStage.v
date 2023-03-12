@@ -17,7 +17,6 @@ module ExecuteStage
     input wire       input_jmp_flg,
     input wire[31:0] input_imm_i_sext,
     input wire[31:0] input_imm_b_sext,
-    input wire       input_inst_is_ecall,
 
     output reg [31:0] alu_out,
     output reg        br_flg,
@@ -33,7 +32,6 @@ module ExecuteStage
     output reg [2:0]  output_csr_cmd,
     output reg        output_jmp_flg,
     output reg [31:0] output_imm_i,
-    output reg        output_inst_is_ecall,
     
     input  wire       stall_flg
 );
@@ -54,7 +52,6 @@ initial begin
     output_csr_cmd          = 0;
     output_jmp_flg          = 0;
     output_imm_i            = 0;
-    output_inst_is_ecall    = 0;
 end
 
 reg [31:0] save_reg_pc          = 0;    
@@ -70,7 +67,6 @@ reg [2:0]  save_csr_cmd         = 0;
 reg        save_jmp_flg         = 0;    
 reg [31:0] save_imm_i_sext      = 0;
 reg [31:0] save_imm_b_sext      = 0;
-reg        save_inst_is_ecall   = 0;
 
 wire [31:0] reg_pc          = stall_flg ? save_reg_pc : input_reg_pc;
 wire [4:0]  exe_fun         = stall_flg ? save_exe_fun : input_exe_fun;
@@ -85,7 +81,6 @@ wire [2:0]  csr_cmd         = stall_flg ? save_csr_cmd : input_csr_cmd;
 wire        jmp_flg         = stall_flg ? save_jmp_flg : input_jmp_flg;
 wire [31:0] imm_i_sext      = stall_flg ? save_imm_i_sext : input_imm_i_sext;
 wire [31:0] imm_b_sext      = stall_flg ? save_imm_b_sext : input_imm_b_sext;
-wire        inst_is_ecall   = stall_flg ? save_inst_is_ecall : input_inst_is_ecall;
 
 always @(posedge clk) begin
     // EX STAGE
@@ -135,7 +130,6 @@ always @(posedge clk) begin
         output_csr_cmd      <= CSR_X;
         output_jmp_flg      <= 0;
         output_imm_i        <= 32'hffffffff;
-        output_inst_is_ecall<= 0;
 
         // save
         save_reg_pc         <= 32'hffffffff;
@@ -151,7 +145,6 @@ always @(posedge clk) begin
         save_jmp_flg        <= 0;
         save_imm_i_sext     <= 32'hffffffff;
         save_imm_b_sext     <= 32'hffffffff;
-        save_inst_is_ecall  <= 0;
     end else begin
         // output
         output_reg_pc       <= reg_pc;
@@ -164,7 +157,6 @@ always @(posedge clk) begin
         output_csr_cmd      <= csr_cmd;
         output_jmp_flg      <= jmp_flg;
         output_imm_i        <= imm_i_sext;
-        output_inst_is_ecall<= inst_is_ecall;
 
         // save
         save_reg_pc         <= reg_pc;    
@@ -180,7 +172,6 @@ always @(posedge clk) begin
         save_jmp_flg        <= jmp_flg;
         save_imm_i_sext     <= imm_i_sext;
         save_imm_b_sext     <= imm_b_sext;
-        save_inst_is_ecall  <= inst_is_ecall;
     end
 end
 

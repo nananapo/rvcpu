@@ -11,6 +11,7 @@ module CSRStage #(
     input  wire [31:0]  input_imm_i,
 
     // output
+    output reg  [2:0]   output_csr_cmd,
     output reg  [31:0]  csr_rdata,
     output reg  [31:0]  trap_vector
 );
@@ -41,7 +42,7 @@ wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
 wire [31:0]imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
 
 // ecallなら0x342を読む
-wire [31:0] addr32bit = (csr_cmd == CSR_E ? 32'h342 : imm_i) % CSR_SIZE;
+wire [31:0] addr32bit = (csr_cmd == CSR_ECALL ? 32'h342 : imm_i) % CSR_SIZE;
 wire [11:0] addr = addr32bit[11:0];
 
 function [31:0] wdata_fun(
@@ -50,11 +51,11 @@ function [31:0] wdata_fun(
     input [31:0]csr_rdata
 );
     case (csr_cmd)
-        CSR_W   : wdata_fun = op1_data;
-        CSR_S   : wdata_fun = csr_rdata | op1_data;
-        CSR_C   : wdata_fun = csr_rdata & ~op1_data;
-        CSR_E   : wdata_fun = 11;
-        default : wdata_fun = 0;
+        CSR_W       : wdata_fun = op1_data;
+        CSR_S       : wdata_fun = csr_rdata | op1_data;
+        CSR_C       : wdata_fun = csr_rdata & ~op1_data;
+        CSR_ECALL   : wdata_fun = 11;
+        default     : wdata_fun = 0;
     endcase
 endfunction
 
@@ -65,8 +66,10 @@ reg [31:0]save_op1_data = 0;
 wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
 
 always @(posedge clk) begin
+    output_csr_cmd  <= csr_cmd;
     csr_rdata       <= {mem[addr][7:0], mem[addr][15:8], mem[addr][23:16], mem[addr][31:24]};
     trap_vector     <= {mem[TV_ADDR][7:0], mem[TV_ADDR][15:8], mem[TV_ADDR][23:16], mem[TV_ADDR][31:24]};
+    
     save_csr_cmd    <= csr_cmd;
     save_csr_addr   <= addr;
     save_op1_data   <= op1_data;

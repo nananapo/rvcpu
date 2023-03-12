@@ -6,12 +6,12 @@ module WriteBackStage(
     input  wire [31:0]  csr_rdata,
     input  wire [31:0]  memory_rdata,
     input  wire [4:0]   wb_addr,
+    input  wire [2:0]   csr_cmd,
     input  wire         jmp_flg,
     input  wire         rf_wen,
     input  wire         br_flg,
     input  wire [31:0]  br_target,
     input  wire [31:0]  alu_out,
-    input  wire         inst_is_ecall,
     input  wire [31:0]  trap_vector,
 
     output wire [31:0]  output_reg_pc,
@@ -65,6 +65,8 @@ function [31:0] wb_data_func(
 endfunction
 
 wire [31:0] wb_data = wb_data_func(wb_sel, memory_rdata, reg_pc_plus4, csr_rdata, alu_out);
+
+wire inst_is_ecall  = csr_cmd == CSR_ECALL;
 
 assign output_reg_pc = (
     br_flg ? br_target : 
