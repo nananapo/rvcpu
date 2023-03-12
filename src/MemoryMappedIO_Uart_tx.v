@@ -70,8 +70,18 @@ reg state = STATE_IDLE;
 // バッファから読んだデータ
 reg [31:0] rdata = 0;
 
+/*
+`ifdef DEBUG
 always @(posedge clk) begin
-    $display("queue: %d -> %d", queue_head, queue_tail);
+    $display("uart_tx queue: %d -> %d", queue_head, queue_tail);
+    if (state == STATE_WAIT_READY && tx_ready) begin
+        $display("uart_tx : 0x%h : %d", rdata, addr_mod);
+    end
+end
+`endif
+*/
+
+always @(posedge clk) begin
     case (state)
         STATE_IDLE: begin
             tx_start    <= 0;
@@ -83,7 +93,6 @@ always @(posedge clk) begin
         STATE_WAIT_READY: begin
             if (tx_ready) begin
                 tx_start    <= 1;
-                //$display("uart_tx : 0x%h : %d", rdata, addr_mod);
                 case (addr_mod)
                     0: tx_data  <= rdata[7:0];
                     1: tx_data  <= rdata[15:8];
