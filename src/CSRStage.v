@@ -23,7 +23,12 @@ initial begin
     mem[TV_ADDR]= 0;
 end
 
+`ifndef DEBUG
+// BSRAMが足りないので1024にする
+localparam CSR_SIZE = 1024;
+`else
 localparam CSR_SIZE = 4096;
+`endif macro
 
 reg [31:0] mem [CSR_SIZE-1:0];
 
