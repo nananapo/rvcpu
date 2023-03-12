@@ -78,8 +78,8 @@ wire [31:0] mem_wdata       = input_wdata;
 
 Memory
 #(
-    .MEMORY_SIZE(4096),
-    .MEMORY_FILE("../test/c/temp.bin.aligned")
+    .MEMORY_SIZE(MEMORY_SIZE),
+    .MEMORY_FILE(MEMORY_FILE)
 ) memory (
     .clk(clk),
 
