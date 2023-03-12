@@ -17,15 +17,7 @@ module MemoryMapController #(
     input  wire [31:0]  input_wdata
 );
 
-`include "include/memoryinterface.v"
-
-localparam UART_TX_QUEUE_OFFSET         = 32'hff000000;
-localparam UART_TX_QUEUE_TAIL_OFFSET    = 32'hff000100;
-localparam UART_TX_QUEUE_HEAD_OFFSET    = 32'hff000104;
-
-localparam UART_RX_BUFFER_OFFSET        = 32'hff000200;
-localparam UART_RX_BUFFER_TAIL_OFFSET   = 32'hff000600;
-localparam UART_RX_BUFFER_COUNT_OFFSET  = 32'hff000601;
+`include "include/memorymap.v"
 
 wire is_uart_tx_addr    = UART_TX_QUEUE_OFFSET <= input_addr && input_addr <= UART_TX_QUEUE_HEAD_OFFSET;
 wire is_uart_rx_addr    = UART_RX_BUFFER_OFFSET <= input_addr && input_addr <= UART_RX_BUFFER_COUNT_OFFSET;
