@@ -62,7 +62,7 @@ wire [31:0] uart_rx_rdata;
 wire        uart_rx_rdata_valid;
 wire [31:0] uart_rx_wdata       = input_wdata;
 
-MemoryMappedIO_Uart_rx #() memmap_uarttx (
+MemoryMappedIO_Uart_rx #() memmap_uartrx (
     .clk(clk),
     .uart_rx(uart_rx),
 
