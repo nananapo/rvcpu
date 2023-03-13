@@ -1,6 +1,4 @@
-module CSRStage #(
-    parameter TV_ADDR = 12'h305
-)(
+module CSRStage (
     input  wire         clk,
 
     input  wire         wb_branch_hazard,
@@ -13,24 +11,15 @@ module CSRStage #(
     // output
     output reg  [2:0]   output_csr_cmd,
     output reg  [31:0]  csr_rdata,
-    output reg  [31:0]  trap_vector
+    output wire [31:0]  trap_vector
 );
 
 `include "include/core.v"
 
 initial begin
-    csr_rdata   = 0;
-    trap_vector = 0;
-    mem[TV_ADDR]= 0;
+    output_csr_cmd  <= CSR_X;
+    csr_rdata       <= 0;
 end
-
-`ifndef DEBUG
-// BSRAMが足りないので1024にする
-localparam CSR_SIZE = 1024;
-`else
-localparam CSR_SIZE = 4096;
-`endif
-
 
 // モード
 localparam MACHINE_MODE     = 0;
@@ -42,19 +31,25 @@ localparam USER_MODE        = 3;
 reg [1:0] mode = MACHINE_MODE;
 
 
-reg [31:0] mem [CSR_SIZE-1:0];
+/*-------実装済みのCSRたち--------*/
+localparam CSR_ADDR_MSCRATCH= 12'h340;
+localparam CSR_ADDR_MCAUSE  = 12'h342;
+localparam CSR_ADDR_MTVEC   = 12'h305;
 
-initial begin
-    $readmemh("../test/bin/csr.hex", mem);
-end
+reg [31:0] mscratch = 0;
+reg [31:0] mcause   = 0;
+reg [31:0] mtvec    = 0;
+
+
+assign trap_vector = mtvec; 
+
 
 wire [2:0] csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
 wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
 wire [31:0]imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
 
 // ecallなら0x342を読む
-wire [31:0] addr32bit = (csr_cmd == CSR_ECALL ? 32'h342 : imm_i) % CSR_SIZE;
-wire [11:0] addr = addr32bit[11:0];
+wire [11:0] addr = csr_cmd == CSR_ECALL ? CSR_ADDR_MCAUSE : imm_i[11:0];
 
 function [31:0] wdata_fun(
     input [2:0] csr_cmd,
@@ -78,14 +73,25 @@ wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
 
 always @(posedge clk) begin
     output_csr_cmd  <= csr_cmd;
-    csr_rdata       <= {mem[addr][7:0], mem[addr][15:8], mem[addr][23:16], mem[addr][31:24]};
-    trap_vector     <= {mem[TV_ADDR][7:0], mem[TV_ADDR][15:8], mem[TV_ADDR][23:16], mem[TV_ADDR][31:24]};
-    
+
+    case (addr)
+        CSR_ADDR_MCAUSE:    csr_rdata <= mcause;
+        CSR_ADDR_MTVEC:     csr_rdata <= mtvec;
+        CSR_ADDR_MSCRATCH:  csr_rdata <= mscratch;
+        default:            csr_rdata <= 32'b0;
+    endcase
+
     save_csr_cmd    <= csr_cmd;
     save_csr_addr   <= addr;
     save_op1_data   <= op1_data;
+
     if (save_csr_cmd != CSR_X) begin
-        mem[save_csr_addr] <= {wdata[7:0], wdata[15:8], wdata[23:16], wdata[31:24]};
+        case (save_csr_addr)
+            CSR_ADDR_MCAUSE:    mcause <= wdata;
+            CSR_ADDR_MTVEC:     mtvec <= wdata;
+            CSR_ADDR_MSCRATCH:  mscratch <= wdata;
+            default:            mtvec <= mtvec; //nop
+        endcase
     end
 end
 
