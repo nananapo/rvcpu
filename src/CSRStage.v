@@ -31,6 +31,17 @@ localparam CSR_SIZE = 1024;
 localparam CSR_SIZE = 4096;
 `endif
 
+
+// モード
+localparam MACHINE_MODE     = 0;
+localparam SUPERVISOR_MODE  = 1;
+//localparam HYPERVISOR_MODE  = 2;
+localparam USER_MODE        = 3;
+
+// 現在のモード
+reg [1:0] mode = MACHINE_MODE;
+
+
 reg [31:0] mem [CSR_SIZE-1:0];
 
 initial begin
