@@ -1,6 +1,8 @@
 FILES = test.v \
 		main.v \
 		Core.v \
+		DivNbit.v \
+		DivUnsignedNbit.v \
 		Memory.v \
 		FetchStage.v \
 		DecodeStage.v \

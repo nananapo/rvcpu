@@ -11,6 +11,8 @@
         <File path="src/core.v" type="file.verilog" enable="1"/>
         <File path="src/csrstage.v" type="file.verilog" enable="1"/>
         <File path="src/decodestage.v" type="file.verilog" enable="1"/>
+        <File path="src/DivNbit.v" type="file.verilog" enable="1"/>
+        <File path="src/DivUnsignedNbit.v" type="file.verilog" enable="1"/>
         <File path="src/executestage.v" type="file.verilog" enable="1"/>
         <File path="src/fetchstage.v" type="file.verilog" enable="1"/>
         <File path="src/main.v" type="file.verilog" enable="1"/>
