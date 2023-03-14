@@ -149,19 +149,19 @@ wire        is_multicycle_exe =
 
 
 function func_stall_flg(
-    input [4:0]    exe_fun,
-    input          is_calculated
-    
+    input [4:0]     exe_fun,
+    input           is_calculated,
+    input           stall_flg
 `ifndef EXCLUDE_RV32M
-    ,input         divm_valid
+    ,input          divm_valid
 `endif
 );
 case (exe_fun)
 `ifndef EXCLUDE_RV32M
-    ALU_DIV     : func_stall_flg = !is_calculated || !divm_valid;
-    ALU_DIVU    : func_stall_flg = !is_calculated || !divm_valid;
-    ALU_REM     : func_stall_flg = !is_calculated || !divm_valid;
-    ALU_REMU    : func_stall_flg = !is_calculated || !divm_valid;
+    ALU_DIV     : func_stall_flg = !(is_calculated || divm_valid);
+    ALU_DIVU    : func_stall_flg = !(is_calculated || divm_valid);
+    ALU_REM     : func_stall_flg = !(is_calculated || divm_valid);
+    ALU_REMU    : func_stall_flg = !(is_calculated || divm_valid);
     default     : func_stall_flg = 0;
 `endif
 endcase  
@@ -170,7 +170,8 @@ endfunction
 // ストール判定
 assign output_stall_flg = func_stall_flg(
     exe_fun, 
-    is_calculated
+    is_calculated,
+    stall_flg
 `ifndef EXCLUDE_RV32M
     , divm_valid
 `endif
