@@ -36,12 +36,11 @@ localparam CSR_ADDR_MSCRATCH= 12'h340;
 localparam CSR_ADDR_MCAUSE  = 12'h342;
 localparam CSR_ADDR_MTVEC   = 12'h305;
 
-reg [31:0] mscratch = 0;
-reg [31:0] mcause   = 0;
-reg [31:0] mtvec    = 0;
+reg [31:0] reg_mscratch = 0;
+reg [31:0] reg_mcause   = 0;
+reg [31:0] reg_mtvec    = 0;
 
-
-assign trap_vector = mtvec; 
+assign trap_vector = reg_mtvec; 
 
 
 wire [2:0] csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
@@ -75,9 +74,9 @@ always @(posedge clk) begin
     output_csr_cmd  <= csr_cmd;
 
     case (addr)
-        CSR_ADDR_MCAUSE:    csr_rdata <= mcause;
-        CSR_ADDR_MTVEC:     csr_rdata <= mtvec;
-        CSR_ADDR_MSCRATCH:  csr_rdata <= mscratch;
+        CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
+        CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
+        CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
         default:            csr_rdata <= 32'b0;
     endcase
 
@@ -87,10 +86,10 @@ always @(posedge clk) begin
 
     if (save_csr_cmd != CSR_X) begin
         case (save_csr_addr)
-            CSR_ADDR_MCAUSE:    mcause <= wdata;
-            CSR_ADDR_MTVEC:     mtvec <= wdata;
-            CSR_ADDR_MSCRATCH:  mscratch <= wdata;
-            default:            mtvec <= mtvec; //nop
+            CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
+            CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
+            CSR_ADDR_MSCRATCH:  reg_mscratch<= wdata;
+            default:            reg_mtvec   <= reg_mtvec; //nop
         endcase
     end
 end
