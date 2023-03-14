@@ -23,8 +23,8 @@ reg state = STATE_IDLE;
 reg result_div_is_minus = 0;
 reg result_rem_is_minus = 0;
 
-wire [SIZE-1:0] mod_dividend    = is_signed ? (dividend > $signed(0) ? dividend : 0 - dividend) : dividend;
-wire [SIZE-1:0] mod_divisor     = is_signed ? (divisor > $signed(0) ? divisor : 0 - divisor) : divisor;
+wire [SIZE-1:0] mod_dividend    = is_signed ? (dividend > $signed({SIZE{1'b0}}) ? dividend : 0 - dividend) : dividend;
+wire [SIZE-1:0] mod_divisor     = is_signed ? (divisor  > $signed({SIZE{1'b0}}) ? divisor  : 0 - divisor)  : divisor;
 wire [SIZE-1:0] mod_quotient;
 wire [SIZE-1:0] mod_remainder;
 
@@ -52,9 +52,9 @@ always @(posedge clk) begin
             if (start) begin
                 state               <= STATE_WAIT;
                 result_div_is_minus <= is_signed && 
-                                        ($signed(dividend) < $signed(0)) != ($signed(divisor) < $signed(0));
+                                        ($signed(dividend) < $signed({SIZE{1'b0}})) != ($signed(divisor) < $signed({SIZE{1'b0}}));
                 result_rem_is_minus <= is_signed && 
-                                        ($signed(dividend) < $signed(0));
+                                        ($signed(dividend) < $signed({SIZE{1'b0}}));
             end
         end
         STATE_WAIT:

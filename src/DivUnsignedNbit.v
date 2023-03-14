@@ -36,7 +36,6 @@ always @(posedge clk) begin
         STATE_IDLE: begin
             if (start) begin
                 save_divisor    <= divisor;
-                shifted_divisor <= divisor;
                 if (divisor == 0) begin
                     state           <= STATE_END_ERROR;
                     remainder       <= dividend;
@@ -49,7 +48,9 @@ always @(posedge clk) begin
                     state           <= STATE_DIVIDE;
                     remainder       <= dividend;
                     quotient        <= 0;
-                    shifted_divisor <= divisor << (SIZE-1);
+                    shifted_divisor[SIZE+SIZE-1]        <= 0;
+                    shifted_divisor[SIZE+SIZE-2:SIZE-1] <= divisor;
+                    shifted_divisor[SIZE-2:0]           <= 0;
                     count           <= 1 << (SIZE - 1);
                 end
             end
@@ -57,8 +58,8 @@ always @(posedge clk) begin
         STATE_DIVIDE: begin
             if (count == 1)
                 state <= STATE_END;
-            if (remainder >= shifted_divisor) begin
-                remainder   <= remainder - shifted_divisor;
+            if ({1'b0, remainder} >= shifted_divisor[SIZE:0]) begin
+                remainder   <= remainder - shifted_divisor[SIZE-1:0];
                 quotient    <= quotient | count;
             end
             shifted_divisor <= shifted_divisor >> 1;
