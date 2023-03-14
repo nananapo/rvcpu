@@ -1,6 +1,8 @@
 `default_nettype none
 
-module Core(
+module Core #(
+    parameter FMAX_MHz = 27
+)(
     input  wire         clk,
     
     output reg          memory_inst_start,
@@ -263,7 +265,9 @@ wire [2:0]  wb_csr_cmd;
 wire [31:0] wb_csr_rdata;
 wire [31:0] wb_trap_vector;
 
-CSRStage #() csrstage
+CSRStage #(
+    .FMAX_MHz(FMAX_MHz)
+) csrstage
 (
     .clk(clk),
 
