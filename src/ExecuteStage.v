@@ -69,31 +69,37 @@ reg        save_jmp_flg     = 0;
 reg [31:0] save_imm_i_sext  = 0;
 reg [31:0] save_imm_b_sext  = 0;
 
-wire [31:0] reg_pc      = stall_flg ? save_reg_pc : input_reg_pc;
-wire [4:0]  exe_fun     = stall_flg ? save_exe_fun : input_exe_fun;
-wire [31:0] op1_data    = stall_flg ? save_op1_data : input_op1_data;
-wire [31:0] op2_data    = stall_flg ? save_op2_data : input_op2_data;
-wire [31:0] rs2_data    = stall_flg ? save_rs2_data : input_rs2_data;
-wire [3:0]  mem_wen     = stall_flg ? save_mem_wen : input_mem_wen;
-wire        rf_wen      = stall_flg ? save_rf_wen : input_rf_wen;
-wire [3:0]  wb_sel      = stall_flg ? save_wb_sel : input_wb_sel;
-wire [4:0]  wb_addr     = stall_flg ? save_wb_addr : input_wb_addr;
-wire [2:0]  csr_cmd     = stall_flg ? save_csr_cmd : input_csr_cmd;
-wire        jmp_flg     = stall_flg ? save_jmp_flg : input_jmp_flg;
-wire [31:0] imm_i_sext  = stall_flg ? save_imm_i_sext : input_imm_i_sext;
-wire [31:0] imm_b_sext  = stall_flg ? save_imm_b_sext : input_imm_b_sext;
+// 複数サイクルかかる計算を実行していて、前回からの続きからか
+// つまり、複数サイクルかかる計算を行って、結果が次に流れたら0になる
+reg         last_cycle_is_multicycle_exe = 0;
+
+// 今回のサイクルで前回のサイクルのデータを使うかどうか
+wire use_saved_data     = last_cycle_is_multicycle_exe || stall_flg;
+
+wire [31:0] reg_pc      = use_saved_data ? save_reg_pc : input_reg_pc;
+wire [4:0]  exe_fun     = use_saved_data ? save_exe_fun : input_exe_fun;
+wire [31:0] op1_data    = use_saved_data ? save_op1_data : input_op1_data;
+wire [31:0] op2_data    = use_saved_data ? save_op2_data : input_op2_data;
+wire [31:0] rs2_data    = use_saved_data ? save_rs2_data : input_rs2_data;
+wire [3:0]  mem_wen     = use_saved_data ? save_mem_wen : input_mem_wen;
+wire        rf_wen      = use_saved_data ? save_rf_wen : input_rf_wen;
+wire [3:0]  wb_sel      = use_saved_data ? save_wb_sel : input_wb_sel;
+wire [4:0]  wb_addr     = use_saved_data ? save_wb_addr : input_wb_addr;
+wire [2:0]  csr_cmd     = use_saved_data ? save_csr_cmd : input_csr_cmd;
+wire        jmp_flg     = use_saved_data ? save_jmp_flg : input_jmp_flg;
+wire [31:0] imm_i_sext  = use_saved_data ? save_imm_i_sext : input_imm_i_sext;
+wire [31:0] imm_b_sext  = use_saved_data ? save_imm_b_sext : input_imm_b_sext;
 
 `ifndef EXCLUDE_RV32M
-
 reg  divm_start     = 0;
 reg  divm_is_signed = 0;
 wire divm_ready;
 wire divm_valid;
 wire divm_error;
-reg  [31:0] divm_dividend   = 0;
-reg  [31:0] divm_divisor    = 0;
-wire [31:0] divm_quotient;
-wire [31:0] divm_remainder;
+reg  [32:0] divm_dividend   = 0;
+reg  [32:0] divm_divisor    = 0;
+wire [32:0] divm_quotient;
+wire [32:0] divm_remainder;
 
 DivNbit #(
     .SIZE(33) // オーバーフロー対策
@@ -116,13 +122,106 @@ wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $signed({1'b0,op2_data
 wire [63:0] mult_unsigned_unsigned  = $unsigned(op1_data) * $unsigned(op2_data);
 `endif
 
+// 複数サイクルかかる計算を始めたかどうか
+reg         is_calc_started = 0;
+// 複数サイクルかかる計算が済んだかどうか
+reg         is_calculated   = 0;
+// 複数サイクルかかる計算の結果
+reg [31:0]  save_calculated = 0;
+// 複数サイクルかかる計算が今クロックで終了したか
+wire        calc_valid      = 
+`ifndef EXCLUDE_RV32M
+    divm_valid || 
+`endif
+    0;
+
+// rv32mのdiv, rem命令かどうか
+`ifndef EXCLUDE_RV32M
+wire        is_rv32m_div_exe = exe_fun == ALU_DIV || exe_fun == ALU_DIVU || exe_fun == ALU_REM || exe_fun == ALU_REMU;
+`endif
+
+// 現在のexeが複数サイクルかかる計算かどうか
+wire        is_multicycle_exe = 
+`ifndef EXCLUDE_RV32M
+    is_rv32m_div_exe || 
+`endif
+    0;
+
+
+function func_stall_flg(
+    input [4:0]    exe_fun,
+    input          is_calculated
+    
+`ifndef EXCLUDE_RV32M
+    ,input         divm_valid
+`endif
+);
+case (exe_fun)
+`ifndef EXCLUDE_RV32M
+    ALU_DIV     : func_stall_flg = !is_calculated || !divm_valid;
+    ALU_DIVU    : func_stall_flg = !is_calculated || !divm_valid;
+    ALU_REM     : func_stall_flg = !is_calculated || !divm_valid;
+    ALU_REMU    : func_stall_flg = !is_calculated || !divm_valid;
+    default     : func_stall_flg = 0;
+`endif
+endcase  
+endfunction
+
+// ストール判定
+assign output_stall_flg = func_stall_flg(
+    exe_fun, 
+    is_calculated
+`ifndef EXCLUDE_RV32M
+    , divm_valid
+`endif
+);
+
 always @(posedge clk) begin
     // EX STAGE
     if (wb_branch_hazard) begin
-        alu_out     <= 32'hffffffff;
-        br_flg      <= 0; 
-        br_target   <= 32'hffffffff;
+        // calc
+        is_calc_started <= 0;
+        is_calculated   <= 0;
+        save_calculated <= 32'hffffffff;
+        last_cycle_is_multicycle_exe    <= 0;
+
+        // alu_out
+        alu_out         <= 32'hffffffff;
+        br_flg          <= 0; 
+        br_target       <= 32'hffffffff;
     end else begin
+        // calc
+        if (is_calc_started && calc_valid) begin
+            is_calc_started                 <= 0;
+            last_cycle_is_multicycle_exe    <= 0;
+            // メモリがストールしてなかったらそのまま進める
+            is_calculated                   <= stall_flg;
+
+            case (exe_fun) 
+`ifndef EXCLUDE_RV32M 
+                ALU_DIV     : save_calculated <= divm_quotient[31:0];
+                ALU_DIVU    : save_calculated <= divm_quotient[31:0];
+                ALU_REM     : save_calculated <= divm_remainder[31:0];
+                ALU_REMU    : save_calculated <= divm_remainder[31:0];
+`endif
+                default     : save_calculated <= 0;
+            endcase
+        end
+`ifndef EXCLUDE_RV32M
+        else if (!is_calc_started && !is_calculated && is_rv32m_div_exe) begin
+            last_cycle_is_multicycle_exe <= 1;
+            if (divm_ready) begin
+                // 複数サイクルかかる計算を開始する
+                is_calc_started <= 1;
+
+                divm_start      <= 1;
+                divm_is_signed  <= exe_fun == ALU_DIV || exe_fun == ALU_REMU;
+                divm_dividend   <= {1'b0, op1_data};
+                divm_divisor    <= {1'b0, op2_data};
+            end
+        end
+`endif
+
         // alu_out
         case (exe_fun) 
             ALU_ADD     : alu_out <= op1_data + op2_data;
@@ -145,10 +244,10 @@ always @(posedge clk) begin
             ALU_MULHSU  : alu_out <= mult_signed_unsigned[63:32];
             ALU_MULHU   : alu_out <= mult_unsigned_unsigned[63:32];
             */
-            ALU_DIV     : alu_out <= op2_data == 0 ? 32'hffffffff : divm_signed;
-            ALU_DIVU    : alu_out <= op2_data == 0 ? 32'hffffffff : divm_unsigned;
-            ALU_REM     : alu_out <= op2_data == 0 ? op1_data : rem_signed;
-            ALU_REMU    : alu_out <= op2_data == 0 ? op1_data : rem_unsigned;
+            ALU_DIV     : alu_out <= is_calculated ? save_calculated : divm_quotient[31:0];
+            ALU_DIVU    : alu_out <= is_calculated ? save_calculated : divm_quotient[31:0];
+            ALU_REM     : alu_out <= is_calculated ? save_calculated : divm_remainder[31:0];
+            ALU_REMU    : alu_out <= is_calculated ? save_calculated : divm_remainder[31:0];
 `endif
 
             default     : alu_out <= 0;
@@ -231,6 +330,12 @@ always @(posedge clk) begin
     $display("op1_data  : 0x%H", op1_data);
     $display("op2_data  : 0x%H", op2_data);
     $display("out.stall : %d", output_stall_flg);
+    $display("ismulticyc: %d", is_multicycle_exe);
+`ifdef EXCLUDE_RV32M
+    $display("isrv32mdiv: %d", is_rv32m_div_exe);
+    $display("div.valid : %d", divm_valid);
+`endif
+
 end
 `endif
 
