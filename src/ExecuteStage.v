@@ -220,6 +220,8 @@ always @(posedge clk) begin
                 divm_dividend   <= {1'b0, op1_data};
                 divm_divisor    <= {1'b0, op2_data};
             end
+        end else if (is_calc_started) begin
+            divm_start  <= 0;
         end
 `endif
 
@@ -265,9 +267,9 @@ always @(posedge clk) begin
         endcase
         br_target <= reg_pc + imm_b_sext;
     end
-    
-    if (wb_branch_hazard) begin
-        // output
+
+    // output
+    if (wb_branch_hazard || output_stall_flg) begin
         output_reg_pc   <= REGPC_NOP;
         output_mem_wen  <= MEN_X;
         output_rf_wen   <= REN_X;
@@ -278,8 +280,21 @@ always @(posedge clk) begin
         output_csr_cmd  <= CSR_X;
         output_jmp_flg  <= 0;
         output_imm_i    <= 32'hffffffff;
-
-        // save
+    end else begin
+        output_reg_pc   <= reg_pc;
+        output_mem_wen  <= mem_wen;
+        output_rf_wen   <= rf_wen;
+        output_rs2_data <= rs2_data;
+        output_op1_data <= op1_data;
+        output_wb_sel   <= wb_sel;
+        output_wb_addr  <= wb_addr;
+        output_csr_cmd  <= csr_cmd;
+        output_jmp_flg  <= jmp_flg;
+        output_imm_i    <= imm_i_sext;
+    end
+    
+    // save
+    if (wb_branch_hazard) begin
         save_reg_pc     <= 32'hffffffff;
         save_exe_fun    <= ALU_X;
         save_op1_data   <= 32'hffffffff;
@@ -294,19 +309,6 @@ always @(posedge clk) begin
         save_imm_i_sext <= 32'hffffffff;
         save_imm_b_sext <= 32'hffffffff;
     end else begin
-        // output
-        output_reg_pc   <= reg_pc;
-        output_mem_wen  <= mem_wen;
-        output_rf_wen   <= rf_wen;
-        output_rs2_data <= rs2_data;
-        output_op1_data <= op1_data;
-        output_wb_sel   <= wb_sel;
-        output_wb_addr  <= wb_addr;
-        output_csr_cmd  <= csr_cmd;
-        output_jmp_flg  <= jmp_flg;
-        output_imm_i    <= imm_i_sext;
-
-        // save
         save_reg_pc     <= reg_pc;    
         save_exe_fun    <= exe_fun;    
         save_op1_data   <= op1_data;
@@ -332,9 +334,11 @@ always @(posedge clk) begin
     $display("op2_data  : 0x%H", op2_data);
     $display("out.stall : %d", output_stall_flg);
     $display("ismulticyc: %d", is_multicycle_exe);
-`ifdef EXCLUDE_RV32M
+`ifndef EXCLUDE_RV32M
     $display("isrv32mdiv: %d", is_rv32m_div_exe);
     $display("div.valid : %d", divm_valid);
+    $display("iscalcstrt: %d", is_calc_started);
+    $display("iscalculed: %d", is_calculated);
 `endif
 
 end
