@@ -83,11 +83,29 @@ wire is_store       = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_S
 wire is_load        = !is_store && mem_wen != MEN_X;
 wire is_store_save  = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
-wire next_flg = (
-    state == STATE_WAIT ? mem_wen == MEN_X || (is_store && mem_cmd_ready):
-    state == STATE_WAIT_READY ? (is_store_save && mem_cmd_ready) : 
-    state == STATE_WAIT_READ_VALID ? mem_rdata_valid :
-    1
+function func_next_flg(
+    input [1:0] state,
+    input [3:0] mem_wen,
+    input is_store,
+    input mem_cmd_ready,
+    input is_store_save,
+    input mem_rdata_valid
+);
+    case(state)
+        STATE_WAIT : func_next_flg = mem_wen == MEN_X || (is_store && mem_cmd_ready);
+        STATE_WAIT_READY : func_next_flg = is_store_save && mem_cmd_ready;
+        STATE_WAIT_READ_VALID : func_next_flg = mem_rdata_valid;
+        default : func_next_flg = 1;
+    endcase
+endfunction
+
+wire next_flg = func_next_flg(
+    state,
+    mem_wen,
+    is_store,
+    mem_cmd_ready,
+    is_store_save,
+    mem_rdata_valid
 );
 
 assign output_is_stall = !next_flg;
@@ -95,65 +113,141 @@ assign output_is_stall = !next_flg;
 // ***************
 // MEMORY WIRE
 // ***************
-assign mem_cmd_start = (
-    state == STATE_WAIT ? is_store || is_load : 
-    state == STATE_WAIT_READY ? mem_cmd_ready : 0
+function func_mem_cmd_start(
+    input [1:0] state,
+    input is_store,
+    input is_load,
+    input mem_cmd_ready
+);
+    case (state)
+        STATE_WAIT: func_mem_cmd_start = is_store || is_load;
+        STATE_WAIT_READY: func_mem_cmd_start = mem_cmd_ready;
+        default: func_mem_cmd_start = 0;
+    endcase
+endfunction
+
+assign mem_cmd_start = func_mem_cmd_start(
+    state,
+    is_store,
+    is_load,
+    mem_cmd_ready
 );
 
-assign mem_cmd_write = (
-    state == STATE_WAIT ? is_store : 
-    state == STATE_WAIT_READY ? mem_cmd_ready && is_store_save : 0
+
+function func_mem_cmd_write(
+    input [1:0] state,
+    input is_store,
+    input mem_cmd_ready,
+    input is_store_save
+);
+    case (state)
+        STATE_WAIT: func_mem_cmd_write = is_store;
+        STATE_WAIT_READY: func_mem_cmd_write = mem_cmd_ready && is_store_save;
+        default: func_mem_cmd_write = 0;
+    endcase
+endfunction
+
+assign mem_cmd_write = func_mem_cmd_write(
+    state,
+    is_store,
+    mem_cmd_ready,
+    is_store_save
 );
 
-assign mem_addr = (
-    state == STATE_WAIT ? alu_out :
-    state == STATE_WAIT_READY ? save_alu_out :
-    32'hffffffff
+
+function [31:0] func_mem_addr(
+    input [1:0]  state,
+    input [31:0] alu_out,
+    input [31:0] save_alu_out
+);
+    case (state)
+        STATE_WAIT: func_mem_addr = alu_out;
+        STATE_WAIT_READY: func_mem_addr = save_alu_out;
+        default: func_mem_addr = 32'hffffffff;
+    endcase
+endfunction
+
+assign mem_addr = func_mem_addr(
+    state,
+    alu_out,
+    save_alu_out
 );
 
-assign mem_wdata = (
-    state == STATE_WAIT ? rs2_data : 
-    state == STATE_WAIT_READY ? save_rs2_data : 
-    32'hffffffff
+
+function [31:0] func_mem_wdata(
+    input [1:0]  state,
+    input [31:0] rs2_data,
+    input [31:0] save_rs2_data
+);
+    case (state)
+        STATE_WAIT: func_mem_wdata = rs2_data;
+        STATE_WAIT_READY: func_mem_wdata = save_rs2_data;
+        default: func_mem_wdata = 32'hffffffff;
+    endcase
+endfunction
+
+assign mem_wdata = func_mem_addr(
+    state,
+    rs2_data,
+    save_rs2_data
 );
 
-assign mem_wmask = (
-    state == STATE_WAIT ? (
-        mem_wen == MEN_SB ? 32'h000000ff :
-        mem_wen == MEN_SH ? 32'h0000ffff :
-        32'hffffffff
-    ) : 
-    state == STATE_WAIT_READY ? (
-        save_mem_wen == MEN_SB ? 32'h000000ff :
-        save_mem_wen == MEN_SH ? 32'h0000ffff :
-        32'hffffffff
-    ) : 
-    32'hffffffff
+
+function [31:0] func_mem_wmask(
+    input [1:0]  state,
+    input [31:0] rs2_data,
+    input [31:0] save_rs2_data
+);
+    case (state == STATE_WAIT ? mem_wen : save_mem_wen)
+        MEN_SB: func_mem_wmask = 32'h000000ff;
+        MEN_SH: func_mem_wmask = 32'h0000ffff;
+        default:func_mem_wmask = 32'hffffffff;
+    endcase
+endfunction
+
+assign mem_wmask = func_mem_wmask(
+    state,
+    rs2_data,
+    save_rs2_data
 );
 
-// ***************
 // OUTPUT
-// ***************
 
-wire [31:0] output_read_data_wire = (
-    state == STATE_WAIT ? 32'hffffffff :
-    state == STATE_WAIT_READ_VALID ? (
-        mem_rdata_valid ? (
-                save_mem_wen == MEN_LB ? {24'b0, mem_rdata[7:0]} :
-                save_mem_wen == MEN_LBU? {{24{mem_rdata[7]}}, mem_rdata[7:0]} :
-                save_mem_wen == MEN_LH ? {{16{mem_rdata[15]}}, mem_rdata[15:0]} :
-                save_mem_wen == MEN_LHU? {16'b0, mem_rdata[15:0]} :
-                mem_rdata
-        ) : 32'hffffffff
-    ) : 32'hffffffff
+function [31:0] func_output_read_data_wire(
+    input [1:0]     state,
+    input           mem_rdata_valid,
+    input [3:0]     save_mem_wen,
+    input [31:0]    mem_rdata
+);
+    case (state)
+        STATE_WAIT: func_output_read_data_wire = 32'hffffffff;
+        STATE_WAIT_READ_VALID: begin
+            if (mem_rdata_valid) begin
+                case (save_mem_wen)
+                    MEN_LB : func_output_read_data_wire = {24'b0, mem_rdata[7:0]};
+                    MEN_LBU: func_output_read_data_wire = {{24{mem_rdata[7]}}, mem_rdata[7:0]};
+                    MEN_LH : func_output_read_data_wire = {{16{mem_rdata[15]}}, mem_rdata[15:0]};
+                    MEN_LHU: func_output_read_data_wire = {16'b0, mem_rdata[15:0]};
+                    default: func_output_read_data_wire = mem_rdata;
+                endcase
+            end else
+                func_output_read_data_wire = 32'hffffffff;
+        end
+        default: func_output_read_data_wire = 32'hffffffff;
+    endcase
+endfunction
+
+wire [31:0] output_read_data_wire = func_output_read_data_wire(
+    state,
+    mem_rdata_valid,
+    save_mem_wen,
+    mem_rdata
 );
 
-wire output_is_current = (
-    state == STATE_WAIT ? (
-        (!is_store && !is_load) ? 1 :
-        mem_cmd_ready ? is_store : 0
-    ) : 0
-);
+wire output_is_current = 
+    state == STATE_WAIT && 
+    ((!is_store && !is_load) ||
+    (mem_cmd_ready && is_store));
 
 wire output_is_save = (
     state == STATE_WAIT ? 0 :
@@ -162,53 +256,6 @@ wire output_is_save = (
     0
 );
 
-wire [31:0] output_reg_pc_wire = (
-    output_is_current ? reg_pc :
-    output_is_save ? save_reg_pc :
-    32'hffffffff
-);
-
-wire [31:0] output_alu_out_wire  = (
-    output_is_current ? alu_out :
-    output_is_save ? save_alu_out :
-    32'hffffffff
-);
-
-wire output_br_flg_wire = (
-    output_is_current ? br_flg :
-    output_is_save ? save_br_flg :
-    0
-);
-
-wire [31:0] output_br_target_wire = (
-    output_is_current ? br_target :
-    output_is_save ? save_br_target :
-    32'hffffffff
-);
-
-wire output_rf_wen_wire = (
-    output_is_current ? rf_wen :
-    output_is_save ? save_rf_wen :
-    REN_X
-);
-
-wire [3:0] output_wb_sel_wire = (
-    output_is_current ? wb_sel :
-    output_is_save ? save_wb_sel :
-    WB_X
-);
-
-wire [4:0] output_wb_addr_wire = (
-    output_is_current ? wb_addr :
-    output_is_save ? save_wb_addr :
-    5'b11111
-);
-
-wire output_jmp_flg_wire = (
-    output_is_current ? jmp_flg :
-    output_is_save ? save_jmp_flg :
-    0
-);
 
 wire [1:0] state_clk = wb_branch_hazard ? STATE_WAIT : state;
 
@@ -252,15 +299,36 @@ always @(posedge clk) begin
         end
     endcase
 
+    if (output_is_current) begin
+        output_reg_pc       <= reg_pc;
+        output_alu_out      <= alu_out;
+        output_br_flg       <= br_flg;
+        output_br_target    <= br_target;
+        output_rf_wen       <= rf_wen;
+        output_wb_sel       <= wb_sel;
+        output_wb_addr      <= wb_addr;
+        output_jmp_flg      <= jmp_flg;
+    end else if (output_is_save) begin
+        output_reg_pc       <= save_reg_pc;
+        output_alu_out      <= save_alu_out;
+        output_br_flg       <= save_br_flg;
+        output_br_target    <= save_br_target;
+        output_rf_wen       <= save_rf_wen;
+        output_wb_sel       <= save_wb_sel;
+        output_wb_addr      <= save_wb_addr;
+        output_jmp_flg      <= save_jmp_flg;
+    end else begin
+        output_reg_pc       <= REGPC_NOP;
+        output_alu_out      <= 32'hffffffff;
+        output_br_flg       <= 0;
+        output_br_target    <= REGPC_NOP;
+        output_rf_wen       <= REN_X;
+        output_wb_sel       <= WB_X;
+        output_wb_addr      <= 0;
+        output_jmp_flg      <= 0;
+    end
+
     output_read_data    <= output_read_data_wire;
-    output_reg_pc       <= output_reg_pc_wire;
-    output_alu_out      <= output_alu_out_wire;
-    output_br_flg       <= output_br_flg_wire;
-    output_br_target    <= output_br_target_wire;
-    output_rf_wen       <= output_rf_wen_wire;
-    output_wb_sel       <= output_wb_sel_wire;
-    output_wb_addr      <= output_wb_addr_wire;
-    output_jmp_flg      <= output_jmp_flg_wire;
 end
 
 `ifdef DEBUG 
