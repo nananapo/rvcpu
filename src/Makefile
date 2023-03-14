@@ -47,4 +47,8 @@ test_div:
 	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.v DivUnsignedNbit.v DivNbit.v
 	vvp debug.o
 
+test_mult:
+	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_mult test_mult.v MultUnsignedNbit.v MultNbit.v
+	vvp debug.o
+
 .PHONY: d v
