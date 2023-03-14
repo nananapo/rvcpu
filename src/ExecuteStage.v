@@ -84,13 +84,36 @@ wire [31:0] imm_i_sext      = stall_flg ? save_imm_i_sext : input_imm_i_sext;
 wire [31:0] imm_b_sext      = stall_flg ? save_imm_b_sext : input_imm_b_sext;
 
 `ifndef EXCLUDE_RV32M
+
+reg  divm_start      = 0;
+reg  divm_is_signed  = 0;
+wire divm_ready;
+wire divm_valid;
+wire divm_error;
+reg  [31:0] divm_dividend    = 0;
+reg  [31:0] divm_divisor     = 0;
+wire [31:0] divm_quotient;
+wire [31:0] divm_remainder;
+
+DivNbit #(
+    .SIZE(33) // オーバーフロー対策
+) divnbitm(
+    .clk(clk),
+
+    .start(divm_start),
+    .is_signed(divm_is_signed),
+    .ready(divm_ready),
+    .valid(divm_valid),
+    .error(divm_error),
+    .dividend(divm_dividend),
+    .divisor(divm_divisor),
+    .quotient(divm_quotient),
+    .remainder(divm_remainder)
+);
+
 wire [63:0] mult_signed_signed      = $signed(op1_data) * $signed(op2_data);
 wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $signed({1'b0,op2_data});
 wire [63:0] mult_unsigned_unsigned  = $unsigned(op1_data) * $unsigned(op2_data);
-wire [31:0] div_signed              = $signed(op1_data) / $signed(op2_data);
-wire [31:0] div_unsigned            = $unsigned(op1_data) / $unsigned(op2_data);
-wire [31:0] rem_signed              = $signed(op1_data) % $signed(op2_data);
-wire [31:0] rem_unsigned            = $unsigned(op1_data) % $unsigned(op2_data);
 `endif
 
 always @(posedge clk) begin
@@ -116,12 +139,14 @@ always @(posedge clk) begin
             ALU_COPY1   : alu_out <= op1_data;
 
 `ifndef EXCLUDE_RV32M 
+            /*
             ALU_MUL     : alu_out <= mult_signed_signed[31:0];
             ALU_MULH    : alu_out <= mult_signed_signed[63:32];
             ALU_MULHSU  : alu_out <= mult_signed_unsigned[63:32];
             ALU_MULHU   : alu_out <= mult_unsigned_unsigned[63:32];
-            ALU_DIV     : alu_out <= op2_data == 0 ? 32'hffffffff : div_signed;
-            ALU_DIVU    : alu_out <= op2_data == 0 ? 32'hffffffff : div_unsigned;
+            */
+            ALU_DIV     : alu_out <= op2_data == 0 ? 32'hffffffff : divm_signed;
+            ALU_DIVU    : alu_out <= op2_data == 0 ? 32'hffffffff : divm_unsigned;
             ALU_REM     : alu_out <= op2_data == 0 ? op1_data : rem_signed;
             ALU_REMU    : alu_out <= op2_data == 0 ? op1_data : rem_unsigned;
 `endif
