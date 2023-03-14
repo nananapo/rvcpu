@@ -158,10 +158,10 @@ function func_stall_flg(
 );
 case (exe_fun)
 `ifndef EXCLUDE_RV32M
-    ALU_DIV     : func_stall_flg = !(is_calculated || divm_valid);
-    ALU_DIVU    : func_stall_flg = !(is_calculated || divm_valid);
-    ALU_REM     : func_stall_flg = !(is_calculated || divm_valid);
-    ALU_REMU    : func_stall_flg = !(is_calculated || divm_valid);
+    ALU_DIV     : func_stall_flg = !(is_calculated || (divm_valid && is_calc_started));
+    ALU_DIVU    : func_stall_flg = !(is_calculated || (divm_valid && is_calc_started));
+    ALU_REM     : func_stall_flg = !(is_calculated || (divm_valid && is_calc_started));
+    ALU_REMU    : func_stall_flg = !(is_calculated || (divm_valid && is_calc_started));
     default     : func_stall_flg = 0;
 `endif
 endcase  
@@ -190,6 +190,10 @@ always @(posedge clk) begin
         alu_out         <= 32'hffffffff;
         br_flg          <= 0; 
         br_target       <= 32'hffffffff;
+        
+`ifndef EXCLUDE_RV32M
+        divm_start  <= 0;
+`endif
     end else begin
         // calc
         if (is_calc_started && calc_valid) begin
