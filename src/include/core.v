@@ -21,6 +21,18 @@ localparam ALU_JALR = 5'd16;
 localparam ALU_COPY1= 5'd17; // op1をそのまま
 localparam ALU_X    = 5'd18; // 何もしない
 
+// RV32M
+`ifdef RV32M
+localparam ALU_MUL      = 5'd19;
+localparam ALU_MULH     = 5'd20;
+localparam ALU_MULHSU   = 5'd21;
+localparam ALU_MULHU    = 5'd22;
+localparam ALU_DIV      = 5'd23;
+localparam ALU_DIVU     = 5'd24;
+localparam ALU_REM      = 5'd25;
+localparam ALU_REMU     = 5'd26;
+`endif
+
 localparam OP1_X    = 4'd0;
 localparam OP1_RS1  = 4'd1;
 localparam OP1_PC   = 4'd2;
