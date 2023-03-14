@@ -147,15 +147,15 @@ localparam INST_MRET            = 32'b0011000_00010_00000_000_00000_1110011;
 
 /*----------------RV32M----------------*/
 `ifdef RV32M
-localparam INST_RV32M_OPCODE    = 7'b0110011;
-localparam INST_RV32M_FUNCT7    = 7'b0000001;
+localparam INST_RV32M_OPCODE        = 7'b0110011;
+localparam INST_RV32M_FUNCT7        = 7'b0000001;
 
-localparam INST_RV32M_MUL       = 3'b000;
-localparam INST_RV32M_MULH      = 3'b001;
-localparam INST_RV32M_MULHSU    = 3'b010;
-localparam INST_RV32M_MULHU     = 3'b011;
-localparam INST_RV32M_DIV       = 3'b100;
-localparam INST_RV32M_DIVU      = 3'b101;
-localparam INST_RV32M_REM       = 3'b110;
-localparam INST_RV32M_REMU      = 3'b111;
+localparam INST_RV32M_MUL_FUNCT3    = 3'b000;
+localparam INST_RV32M_MULH_FUNCT3   = 3'b001;
+localparam INST_RV32M_MULHSU_FUNCT3 = 3'b010;
+localparam INST_RV32M_MULHU_FUNCT3  = 3'b011;
+localparam INST_RV32M_DIV_FUNCT3    = 3'b100;
+localparam INST_RV32M_DIVU_FUNCT3   = 3'b101;
+localparam INST_RV32M_REM_FUNCT3    = 3'b110;
+localparam INST_RV32M_REMU_FUNCT3   = 3'b111;
 `endif
