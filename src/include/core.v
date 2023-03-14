@@ -22,7 +22,7 @@ localparam ALU_COPY1= 5'd17; // op1をそのまま
 localparam ALU_X    = 5'd18; // 何もしない
 
 // RV32M
-`ifdef RV32M
+`ifndef EXCLUDE_RV32M
 localparam ALU_MUL      = 5'd19;
 localparam ALU_MULH     = 5'd20;
 localparam ALU_MULHSU   = 5'd21;

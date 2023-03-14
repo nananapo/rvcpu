@@ -182,7 +182,7 @@ function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
             decode = {ALU_ADD, OP1_X, OP2_X, MEN_X, REN_X, WB_X, CSR_X};
         */
 
-`ifdef RV32M
+`ifndef EXCLUDE_RV32M
         {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MUL_FUNCT3   , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALU_MUL      , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU, CSR_X};
         {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MULH_FUNCT3  , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALU_MULH     , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU, CSR_X};
         {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MULHSU_FUNCT3, 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALU_MULHSU   , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU, CSR_X};

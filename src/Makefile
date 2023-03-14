@@ -18,7 +18,7 @@ UART_FILES = Uart_rx.v \
 			Uart_tx.v \
 			UARTMemory.v
 
-DEFINE_DEBUG = -DDEBUG -DRV32M
+DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST
 DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
 
@@ -36,7 +36,7 @@ dm:
 
 v:
 	verilator --lint-only main.v
-	verilator --lint-only -DDEBUG main.v
+	verilator --lint-only -DEXCLUDE_RV32M main.v
 	verilator --lint-only $(DEFINE_DEBUG) main.v
 	verilator --lint-only $(DEFINE_RISCV_TESTS) main.v
 	verilator --lint-only $(DEFINE_MEMORY_UART) main.v

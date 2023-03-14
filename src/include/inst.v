@@ -146,7 +146,7 @@ localparam INST_SRET            = 32'b0001000_00010_00000_000_00000_1110011;
 localparam INST_MRET            = 32'b0011000_00010_00000_000_00000_1110011;
 
 /*----------------RV32M----------------*/
-`ifdef RV32M
+`ifndef EXCLUDE_RV32M
 localparam INST_RV32M_OPCODE        = 7'b0110011;
 localparam INST_RV32M_FUNCT7        = 7'b0000001;
 
