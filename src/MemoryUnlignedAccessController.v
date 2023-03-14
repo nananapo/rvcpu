@@ -1,4 +1,5 @@
 module MemoryUnlignedAccessController #(
+    parameter FMAX_MHz = 27,
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
 ) (
@@ -26,6 +27,7 @@ wire        mem_rdata_valid;
 wire [31:0] mem_wdata;
 
 MemoryMapController #(
+    .FMAX_MHz(FMAX_MHz),
     .MEMORY_SIZE(MEMORY_SIZE),
     .MEMORY_FILE(MEMORY_FILE)
 ) memory (

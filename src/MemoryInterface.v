@@ -1,4 +1,6 @@
-module MemoryInterface (
+module MemoryInterface #(
+    parameter FMAX_MHz = 27
+)(
     input  wire         clk,
 
     input  wire         mem_uart_rx,
@@ -37,7 +39,9 @@ wire [31:0] mem_wdata;
 wire [31:0] mem_wmask;
 
 `ifdef MEMORY_UART
-    UARTMemory #() memory (
+    UARTMemory #(
+        .FMAX_MHz(FMAX_MHz)
+    ) memory (
         .clk(clk),
 
         .cmd_start(mem_cmd_start),
@@ -60,6 +64,7 @@ wire [31:0] mem_wmask;
     MemoryMapController
     `endif
     #(
+        .FMAX_MHz(FMAX_MHz),
         .MEMORY_SIZE(4096),
     `ifdef RISCV_TEST
         // make riscv-tests
@@ -69,7 +74,7 @@ wire [31:0] mem_wmask;
         .MEMORY_FILE("../test/c/temp.bin.aligned")
     `else
         // build
-        .MEMORY_FILE("../test/c/temp.bin.aligned")
+        .MEMORY_FILE("../test/c/uart_rx.c.bin.aligned")
     `endif
     ) memory (
         .clk(clk),

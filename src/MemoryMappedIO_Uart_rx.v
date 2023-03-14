@@ -1,5 +1,6 @@
-module MemoryMappedIO_Uart_rx
-(
+module MemoryMappedIO_Uart_rx #(
+    parameter FMAX_MHz = 27
+)(
     input  wire         clk,
     input  wire         uart_rx,
 
@@ -39,7 +40,9 @@ wire is_buffer_addr = !is_count_addr && !is_tail_addr;
 wire [7:0]  rx_rdata;
 wire        rx_rdata_valid;
 
-Uart_rx #() rxModule(
+Uart_rx #(
+    .FMAX_MHz(FMAX_MHz)
+) rxModule(
     .clk(clk),
     .rdata(rx_rdata),
     .rdata_valid(rx_rdata_valid),

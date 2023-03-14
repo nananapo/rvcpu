@@ -1,5 +1,6 @@
-module MemoryMappedIO_Uart_tx
-(
+module MemoryMappedIO_Uart_tx #(
+    parameter FMAX_MHz = 27
+)(
     input  wire         clk,
     output wire         uart_tx,
 
@@ -50,7 +51,9 @@ reg         tx_start    = 0;
 reg [7:0]   tx_data     = 0;
 wire        tx_ready;
 
-Uart_tx #() txModule(
+Uart_tx #(
+    .FMAX_MHz(FMAX_MHz)
+) txModule(
     .clk(clk),
 
     .start(tx_start),

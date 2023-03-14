@@ -1,4 +1,6 @@
-module UARTMemory(
+module UARTMemory #(
+    parameter FMAX_MHz = 27 
+)(
     input  wire         clk,
     input  wire         uart_rx,
     output wire         uart_tx,
@@ -27,7 +29,9 @@ reg         tx_start = 0;
 reg  [7:0]  tx_data  = 0;
 wire        tx_ready;
 
-Uart_rx #() rxModule(
+Uart_rx #(
+    .FMAX_MHz(FMAX_MHz)
+) rxModule (
     .clk(clk),
     .uart_rx(uart_rx),
     .rdata(rx_rdata),

@@ -1,4 +1,5 @@
 module MemoryMapController #(
+    parameter FMAX_MHz = 27,
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
 ) (
@@ -32,7 +33,9 @@ wire [31:0] uart_tx_rdata;
 wire        uart_tx_rdata_valid;
 wire [31:0] uart_tx_wdata       = input_wdata;
 
-MemoryMappedIO_Uart_tx #() memmap_uarttx (
+MemoryMappedIO_Uart_tx #(
+    .FMAX_MHz(FMAX_MHz)
+) memmap_uarttx (
     .clk(clk),
     .uart_tx(uart_tx),
 
@@ -54,7 +57,9 @@ wire [31:0] uart_rx_rdata;
 wire        uart_rx_rdata_valid;
 wire [31:0] uart_rx_wdata       = input_wdata;
 
-MemoryMappedIO_Uart_rx #() memmap_uartrx (
+MemoryMappedIO_Uart_rx #(
+    .FMAX_MHz(FMAX_MHz)
+) memmap_uartrx (
     .clk(clk),
     .uart_rx(uart_rx),
 
