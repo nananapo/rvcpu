@@ -117,14 +117,36 @@ DivNbit #(
     .remainder(divm_remainder)
 );
 
-wire [63:0] mult_signed_signed      = $signed(op1_data) * $signed(op2_data);
-wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $signed({1'b0,op2_data});
-wire [63:0] mult_unsigned_unsigned  = $unsigned(op1_data) * $unsigned(op2_data);
+reg         multm_start;
+reg         multm_is_signed;
+wire        multm_ready;
+wire        multm_valid;
+wire [65:0] multm_product;
+reg  [32:0] multm_multiplicand;
+reg  [32:0] multm_multiplier;
+
+MultNbit #(
+    .SIZE(33) // s * u用
+) m (
+    .clk(clk),
+
+    .start(multm_start),
+    .is_signed(multm_is_signed),
+    .ready(multm_ready),
+    .valid(multm_valid),
+    .multiplicand(multm_multiplicand),
+    .multiplier(multm_multiplier),
+    .product(multm_product)
+);
 
 // rv32mのdiv, rem命令かどうか
 wire        is_rv32m_div_exe    = exe_fun == ALU_DIV || exe_fun == ALU_DIVU || exe_fun == ALU_REM || exe_fun == ALU_REMU;
 // rv32mのdiv, remをsignedとして実行すべきかどうか
 wire        is_rv32m_div_signed = exe_fun == ALU_DIV || exe_fun == ALU_REM;
+// rv32mのmul命令かどうか
+wire        is_rv32m_mul_exe    = exe_fun == ALU_MUL || exe_fun == ALU_MULH || exe_fun == ALU_MULHU || exe_fun == ALU_MULHSU;
+// rv32mのmul命令をsignedとして実行すべきかどうか
+wire        is_rv32m_mul_signed = exe_fun == ALU_MUL || exe_fun == ALU_MULH || exe_fun == ALU_MULHSU;
 
 `endif
 
@@ -138,12 +160,14 @@ reg [31:0]  save_calculated = 0;
 wire        calc_valid      = 
 `ifndef EXCLUDE_RV32M
     divm_valid || 
+    multm_valid || 
 `endif
     0;
 // 現在のexeが複数サイクルかかる計算かどうか
 wire        is_multicycle_exe = 
 `ifndef EXCLUDE_RV32M
     is_rv32m_div_exe || 
+    is_rv32m_mul_exe || 
 `endif
     0;
 
@@ -154,6 +178,7 @@ function func_stall_flg(
     input           stall_flg
 `ifndef EXCLUDE_RV32M
     ,input          divm_valid
+    ,input          multm_valid
 `endif
 );
 case (exe_fun)
@@ -162,6 +187,10 @@ case (exe_fun)
     ALU_DIVU    : func_stall_flg = !(is_calculated || (divm_valid && is_calc_started));
     ALU_REM     : func_stall_flg = !(is_calculated || (divm_valid && is_calc_started));
     ALU_REMU    : func_stall_flg = !(is_calculated || (divm_valid && is_calc_started));
+    ALU_MUL     : func_stall_flg = !(is_calculated || (multm_valid && is_calc_started));
+    ALU_MULH    : func_stall_flg = !(is_calculated || (multm_valid && is_calc_started));
+    ALU_MULHU   : func_stall_flg = !(is_calculated || (multm_valid && is_calc_started));
+    ALU_MULHSU  : func_stall_flg = !(is_calculated || (multm_valid && is_calc_started));
     default     : func_stall_flg = 0;
 `endif
 endcase  
@@ -174,6 +203,7 @@ assign output_stall_flg = func_stall_flg(
     stall_flg
 `ifndef EXCLUDE_RV32M
     , divm_valid
+    , multm_valid
 `endif
 );
 
@@ -193,6 +223,7 @@ always @(posedge clk) begin
         
 `ifndef EXCLUDE_RV32M
         divm_start  <= 0;
+        multm_start <= 0;
 `endif
     end else begin
         // calc
@@ -208,6 +239,10 @@ always @(posedge clk) begin
                 ALU_DIVU    : save_calculated <= divm_quotient[31:0];
                 ALU_REM     : save_calculated <= divm_remainder[31:0];
                 ALU_REMU    : save_calculated <= divm_remainder[31:0];
+                ALU_MUL     : save_calculated <= multm_product[31:0];
+                ALU_MULH    : save_calculated <= multm_product[63:32];
+                ALU_MULHU   : save_calculated <= multm_product[63:32];
+                ALU_MULHSU  : save_calculated <= multm_product[63:32];
 `endif
                 default     : save_calculated <= 0;
             endcase
@@ -224,8 +259,20 @@ always @(posedge clk) begin
                 divm_dividend   <= is_rv32m_div_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};
                 divm_divisor    <= is_rv32m_div_signed ? {op2_data[31], op2_data} : {1'b0, op2_data};
             end
+        end else if (!is_calc_started && !is_calculated && is_rv32m_mul_exe) begin
+            last_cycle_is_multicycle_exe <= 1;
+            if (multm_ready) begin
+                // 複数サイクルかかる計算を開始する
+                is_calc_started <= 1;
+
+                multm_start         <= 1;
+                multm_is_signed     <= is_rv32m_mul_signed;
+                multm_multiplicand  <= is_rv32m_mul_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};
+                multm_multiplier    <= is_rv32m_mul_signed && exe_fun != ALU_MULHSU ? {op2_data[31], op2_data} : {1'b0, op2_data};
+            end
         end else if (is_calc_started) begin
             divm_start  <= 0;
+            multm_start <= 0;
         end
 `endif
 
@@ -245,12 +292,10 @@ always @(posedge clk) begin
             ALU_COPY1   : alu_out <= op1_data;
 
 `ifndef EXCLUDE_RV32M 
-            /*
-            ALU_MUL     : alu_out <= mult_signed_signed[31:0];
-            ALU_MULH    : alu_out <= mult_signed_signed[63:32];
-            ALU_MULHSU  : alu_out <= mult_signed_unsigned[63:32];
-            ALU_MULHU   : alu_out <= mult_unsigned_unsigned[63:32];
-            */
+            ALU_MUL     : alu_out <= is_calculated ? save_calculated : multm_product[31:0];
+            ALU_MULH    : alu_out <= is_calculated ? save_calculated : multm_product[63:32];
+            ALU_MULHSU  : alu_out <= is_calculated ? save_calculated : multm_product[63:32];
+            ALU_MULHU   : alu_out <= is_calculated ? save_calculated : multm_product[63:32];
             ALU_DIV     : alu_out <= is_calculated ? save_calculated : divm_quotient[31:0];
             ALU_DIVU    : alu_out <= is_calculated ? save_calculated : divm_quotient[31:0];
             ALU_REM     : alu_out <= is_calculated ? save_calculated : divm_remainder[31:0];
@@ -339,10 +384,12 @@ always @(posedge clk) begin
     $display("out.stall : %d", output_stall_flg);
     $display("ismulticyc: %d", is_multicycle_exe);
 `ifndef EXCLUDE_RV32M
-    $display("isrv32mdiv: %d", is_rv32m_div_exe);
-    $display("div.valid : %d", divm_valid);
     $display("iscalcstrt: %d", is_calc_started);
     $display("iscalculed: %d", is_calculated);
+    $display("isrv32mdiv: %d", is_rv32m_div_exe);
+    $display("div.valid : %d", divm_valid);
+    $display("isrv32mmul: %d", is_rv32m_mul_exe);
+    $display("mult.valid: %d", multm_valid);
 `endif
 
 end
