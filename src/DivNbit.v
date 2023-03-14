@@ -28,8 +28,8 @@ wire [SIZE-1:0] mod_divisor     = is_signed ? (divisor > $signed(0) ? divisor : 
 wire [SIZE-1:0] mod_quotient;
 wire [SIZE-1:0] mod_remainder;
 
-assign quotient     = result_div_is_minus ? $signed($signed(0) - $signed(mod_quotient)) : mod_quotient;
-assign remainder    = result_rem_is_minus ? $signed($signed(0) - $signed(mod_remainder)) : mod_remainder;
+assign quotient     = !error && result_div_is_minus ? $signed($signed(0) - $signed(mod_quotient)) : mod_quotient;
+assign remainder    = !error && result_rem_is_minus ? $signed($signed(0) - $signed(mod_remainder)) : mod_remainder;
 
 DivUnsignedNbit #(
     .SIZE(SIZE)
