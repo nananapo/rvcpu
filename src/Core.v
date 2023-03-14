@@ -45,6 +45,8 @@ wire [31:0] wb_to_fetch_reg_pc;
 wire        wbstage_branch_hazard;
 // fence.i命令でストールするかのフラグ
 wire        id_zifencei_stall_flg;
+// exeステージでストールしているかどうかのフラグ
+wire        exe_stage_alu_stall_flg;
 
 //**************************
 // Fetch Stage
@@ -69,7 +71,7 @@ FetchStage #() fetchstage (
     .mem_data(memory_inst),
     .mem_data_valid(memory_inst_valid),
 
-    .stall_flg(memory_stage_is_stall || data_hazard_stall || id_zifencei_stall_flg)
+    .stall_flg(memory_stage_is_stall || data_hazard_stall || id_zifencei_stall_flg || exe_stage_alu_stall_flg)
 );
 
 
@@ -125,7 +127,7 @@ DecodeStage #() decodestage
     .csr_cmd(exe_csr_cmd),
     .jmp_flg(exe_jmp_flg),
 
-    .memory_stage_stall_flg(memory_stage_is_stall),
+    .memory_stage_stall_flg(memory_stage_is_stall || exe_stage_alu_stall_flg),
 
     .wb_branch_hazard(wbstage_branch_hazard),
 
@@ -198,7 +200,8 @@ ExecuteStage #() executestage
     .output_jmp_flg(mem_jmp_flg),
     .output_imm_i(csr_imm_i),
 
-    .stall_flg(memory_stage_is_stall)
+    .stall_flg(memory_stage_is_stall),
+    .output_stall_flg(exe_stage_alu_stall_flg)
 );
 
 // **************************
