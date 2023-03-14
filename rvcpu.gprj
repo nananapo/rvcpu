@@ -23,6 +23,8 @@
         <File path="src/MemoryMappedIO_Uart_tx.v" type="file.verilog" enable="1"/>
         <File path="src/memorystage.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryUnlignedAccessController.v" type="file.verilog" enable="1"/>
+        <File path="src/MultNbit.v" type="file.verilog" enable="1"/>
+        <File path="src/MultUnsignedNbit.v" type="file.verilog" enable="1"/>
         <File path="src/test.v" type="file.verilog" enable="1"/>
         <File path="src/Uart_rx.v" type="file.verilog" enable="1"/>
         <File path="src/Uart_tx.v" type="file.verilog" enable="1"/>

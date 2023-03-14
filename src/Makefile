@@ -13,6 +13,8 @@ FILES = test.v \
 		MemoryMappedIO_Uart_rx.v \
 		MemoryMappedIO_Uart_tx.v \
 		MemoryUnlignedAccessController.v \
+		MultNbit.v \
+		MultUnsignedNbit.v \
 		CSRStage.v \
 		WriteBackStage.v
 
