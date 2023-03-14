@@ -35,52 +35,134 @@ end
 reg [31:0]  saved_reg_pc = REGPC_NOP;
 reg [31:0]  saved_inst   = INST_NOP;
 
-assign mem_start = (
-    state == STATE_WAIT_READY ? mem_ready :
-    state == STATE_WAIT_VALID ? (
-        (!is_fetched && mem_data_valid) ? (
-            stall_flg ? 0 : mem_ready
-        ) :
-        is_fetched ? (
-            !stall_flg ? mem_ready : 0
-        ) : 0
-    ) : 0
+function func_mem_start(
+    input state,
+    input mem_ready,
+    input is_fetched,
+    input mem_data_valid,
+    input stall_flg
+);
+    case (state)
+        STATE_WAIT_READY : func_mem_start = mem_ready;
+        STATE_WAIT_VALID : begin
+            if (stall_flg)
+                func_mem_start = 0;
+            else if (!is_fetched && mem_data_valid)
+                func_mem_start = mem_ready;
+            else if (is_fetched)
+                func_mem_start = mem_ready;
+            else
+                func_mem_start = 0;
+        end
+    endcase
+
+endfunction
+
+assign mem_start = func_mem_start(
+    state,
+    mem_ready,
+    is_fetched,
+    mem_data_valid,
+    stall_flg
 );
 
-assign mem_addr = (
-    state == STATE_WAIT_READY ? (
-        wb_branch_hazard ? wb_reg_pc : inner_reg_pc
-    ) :
-    state == STATE_WAIT_VALID ? (
-        (!is_fetched && mem_data_valid) ? (
-            stall_flg ? REGPC_NOP : (
-                wb_branch_hazard ? wb_reg_pc : inner_reg_pc + 4
-            )
-        ) :
-        is_fetched ? (
-            !stall_flg ? (
-                wb_branch_hazard ? wb_reg_pc : inner_reg_pc
-            ) : REGPC_NOP
-        ) : REGPC_NOP
-    ) : REGPC_NOP
+function [31:0] func_mem_addr(
+    input state,
+    input wb_branch_hazard,
+    input [31:0] wb_reg_pc,
+    input [31:0] inner_reg_pc,
+    input stall_flg,
+    input is_fetched,
+    input mem_data_valid
+);
+    case (state)
+        STATE_WAIT_READY :
+            func_mem_addr = wb_branch_hazard ? wb_reg_pc : inner_reg_pc;
+        STATE_WAIT_VALID : begin
+            if (stall_flg)
+                func_mem_addr = REGPC_NOP;
+            else if (!is_fetched && mem_data_valid)
+                func_mem_addr = wb_branch_hazard ? wb_reg_pc : inner_reg_pc + 4;
+            else if (is_fetched)
+                func_mem_addr = wb_branch_hazard ? wb_reg_pc : inner_reg_pc;
+            else
+                func_mem_addr = REGPC_NOP;
+        end
+    endcase
+endfunction
+
+assign mem_addr = func_mem_addr(
+    state,
+    wb_branch_hazard,
+    wb_reg_pc,
+    inner_reg_pc,
+    stall_flg,
+    is_fetched,
+    mem_data_valid
 );
 
-wire [31:0] output_reg_pc = (
-    stall_flg ? REGPC_NOP :
-    wb_branch_hazard ? REGPC_NOP :
-    state == STATE_WAIT_VALID ? (
-        (!is_fetched && mem_data_valid) ? inner_reg_pc :
-        is_fetched ? saved_reg_pc : REGPC_NOP
-    ) : REGPC_NOP
+function [31:0] func_output_reg_pc(
+    input stall_flg,
+    input wb_branch_hazard,
+    input state,
+    input is_fetched,
+    input mem_data_valid,
+    input [31:0] inner_reg_pc,
+    input [31:0] saved_reg_pc
+);
+    if (stall_flg || wb_branch_hazard)
+        func_output_reg_pc = REGPC_NOP;
+    else if (state == STATE_WAIT_VALID) begin
+        if (!is_fetched && mem_data_valid)
+            func_output_reg_pc = inner_reg_pc;
+        else if (is_fetched)
+            func_output_reg_pc = saved_reg_pc;
+        else
+            func_output_reg_pc = REGPC_NOP;
+    end else 
+        func_output_reg_pc = REGPC_NOP;
+endfunction
+
+wire [31:0] output_reg_pc = func_output_reg_pc(
+    stall_flg,
+    wb_branch_hazard,
+    state,
+    is_fetched,
+    mem_data_valid,
+    inner_reg_pc,
+    saved_reg_pc
 );
 
-wire [31:0] output_inst = (
-    stall_flg ? INST_NOP :
-    wb_branch_hazard ? INST_NOP :
-    state == STATE_WAIT_VALID ? (
-        (!is_fetched && mem_data_valid) ? mem_data :
-        is_fetched ? saved_inst : INST_NOP
-    ) : INST_NOP
+function [31:0] func_output_inst(
+    input stall_flg,
+    input wb_branch_hazard,
+    input state,
+    input is_fetched,
+    input mem_data_valid,
+    input [31:0] mem_data,
+    input [31:0] saved_inst
+);
+    if (stall_flg || wb_branch_hazard)
+        func_output_inst = INST_NOP;
+    else if (state == STATE_WAIT_VALID) begin
+        if (!is_fetched && mem_data_valid)
+            func_output_inst = mem_data;
+        else if (is_fetched)
+            func_output_inst = saved_inst;
+        else
+            func_output_inst = INST_NOP;
+    end else
+        func_output_inst = INST_NOP;
+endfunction
+
+wire [31:0] output_inst = func_output_inst(
+    stall_flg,
+    wb_branch_hazard,
+    state,
+    is_fetched,
+    mem_data_valid,
+    mem_data,
+    saved_inst
 );
 
 always @(posedge clk) begin
