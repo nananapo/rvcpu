@@ -120,10 +120,10 @@ always @(posedge clk) begin
             ALU_MULH    : alu_out <= mult_signed_signed[63:32];
             ALU_MULHSU  : alu_out <= mult_signed_unsigned[63:32];
             ALU_MULHU   : alu_out <= mult_unsigned_unsigned[63:32];
-            ALU_DIV     : alu_out <= div_signed;
-            ALU_DIVU    : alu_out <= div_unsigned;
-            ALU_REM     : alu_out <= rem_signed;
-            ALU_REMU    : alu_out <= rem_unsigned;
+            ALU_DIV     : alu_out <= op2_data == 0 ? 32'hffffffff : div_signed;
+            ALU_DIVU    : alu_out <= op2_data == 0 ? 32'hffffffff : div_unsigned;
+            ALU_REM     : alu_out <= op2_data == 0 ? op1_data : rem_signed;
+            ALU_REMU    : alu_out <= op2_data == 0 ? op1_data : rem_unsigned;
 `endif
 
             default     : alu_out <= 0;
