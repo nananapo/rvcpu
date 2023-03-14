@@ -85,7 +85,7 @@ wire [31:0] imm_b_sext      = stall_flg ? save_imm_b_sext : input_imm_b_sext;
 
 `ifndef EXCLUDE_RV32M
 wire [63:0] mult_signed_signed      = $signed(op1_data) * $signed(op2_data);
-wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $unsigned(op2_data);
+wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $signed({1'b0,op2_data});
 wire [63:0] mult_unsigned_unsigned  = $unsigned(op1_data) * $unsigned(op2_data);
 `endif
 
