@@ -22,7 +22,7 @@ reg  [7:0]  queue_head  = 0;
 assign output_cmd_ready     = 1;
 assign output_rdata_valid   = 1;
 
-wire [5:0] buffer_addr = input_addr[7:2];
+wire [5:0] buffer_addr  = input_addr[7:2];
 
 wire is_queue_head_addr = input_addr == UART_TX_QUEUE_HEAD_OFFSET;
 wire is_queue_tail_addr = input_addr == UART_TX_QUEUE_TAIL_OFFSET;

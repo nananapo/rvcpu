@@ -5,15 +5,15 @@ module Core(
     
     output reg          memory_inst_start,
     input  wire         memory_inst_ready,
-    output reg [31:0]   memory_i_addr,
+    output reg  [31:0]  memory_i_addr,
     input  wire [31:0]  memory_inst,
     input  wire         memory_inst_valid,
     output reg          memory_d_cmd_start,
     output reg          memory_d_cmd_write,
     input  wire         memory_d_cmd_ready,
-    output reg [31:0]   memory_d_addr,
-    output reg [31:0]   memory_wdata,
-    output reg [31:0]   memory_wmask,
+    output reg  [31:0]  memory_d_addr,
+    output reg  [31:0]  memory_wdata,
+    output reg  [31:0]  memory_wmask,
     input  wire [31:0]  memory_rdata,
     input  wire         memory_rdata_valid,
 
@@ -256,9 +256,9 @@ MemoryStage #() memorystage
 // **************************
 // CSR Stage
 // **************************
-wire [2:0]     wb_csr_cmd;
-wire [31:0]    wb_csr_rdata;
-wire [31:0]    wb_trap_vector;
+wire [2:0]  wb_csr_cmd;
+wire [31:0] wb_csr_rdata;
+wire [31:0] wb_trap_vector;
 
 CSRStage #() csrstage
 (

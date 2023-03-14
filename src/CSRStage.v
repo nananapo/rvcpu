@@ -30,13 +30,13 @@ reg [1:0] mode = MACHINE_MODE;
 
 
 /*-------実装済みのCSRたち--------*/
-localparam CSR_ADDR_MSCRATCH= 12'h340;
-localparam CSR_ADDR_MCAUSE  = 12'h342;
-localparam CSR_ADDR_MTVEC   = 12'h305;
-localparam CSR_ADDR_CYCLE   = 12'hc00;
-localparam CSR_ADDR_TIME    = 12'hc01;
-localparam CSR_ADDR_CYCLEH  = 12'hc80;
-localparam CSR_ADDR_TIMEH   = 12'hc81;
+localparam CSR_ADDR_MSCRATCH    = 12'h340;
+localparam CSR_ADDR_MCAUSE      = 12'h342;
+localparam CSR_ADDR_MTVEC       = 12'h305;
+localparam CSR_ADDR_CYCLE       = 12'hc00;
+localparam CSR_ADDR_TIME        = 12'hc01;
+localparam CSR_ADDR_CYCLEH      = 12'hc80;
+localparam CSR_ADDR_TIMEH       = 12'hc81;
 
 reg [31:0] reg_mscratch = 0;
 reg [31:0] reg_mcause   = 0;
@@ -64,9 +64,9 @@ initial begin
     csr_rdata       = 0;
 end
 
-wire [2:0] csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
-wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
-wire [31:0]imm_i      = wb_branch_hazard ? 32'hffffffff : input_imm_i;
+wire [2:0] csr_cmd  = wb_branch_hazard ? CSR_X : input_csr_cmd;
+wire [31:0]op1_data = wb_branch_hazard ? 32'hffffffff : input_op1_data;
+wire [31:0]imm_i    = wb_branch_hazard ? 32'hffffffff : input_imm_i;
 
 // ecallなら0x342を読む
 wire [11:0] addr = csr_cmd == CSR_ECALL ? CSR_ADDR_MCAUSE : imm_i[11:0];

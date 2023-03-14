@@ -151,7 +151,7 @@ always @(posedge clk) begin
     $display("buffer    :%d (%d)", buffer_tail, buffer_count);
     $display("          :%d, 0x%h %d %h", read_addr, buffer[read_addr], output_rdata_valid, output_rdata);
     if (state == STATE_IDLE && rx_rdata_valid) begin
-        $display("rvalid : 0x%h : %d", rx_rdata, buffer_tail[1:0]);
+        $display("rvalid    : 0x%h : %d", rx_rdata, buffer_tail[1:0]);
     end
 end
 `endif
