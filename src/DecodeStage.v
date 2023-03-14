@@ -27,7 +27,6 @@ module DecodeStage
     output reg [4:0]  wb_addr,  // ライトバック先レジスタ番号
     output reg [2:0]  csr_cmd,  // CSR
     output reg        jmp_flg,  // ジャンプ命令かのフラグ
-    output reg        output_inst_is_ecall, // ecallかどうか
 
     input  wire       memory_stage_stall_flg, // メモリステージでストールしているかどうか
 
@@ -60,7 +59,6 @@ initial begin
     wb_addr                 = 0;
     csr_cmd                 = 0;
     jmp_flg                 = 0;
-    output_inst_is_ecall    = 0;
 end
 
 reg  [31:0] save_inst   = INST_NOP;
@@ -106,7 +104,6 @@ wire [2:0] funct3 = inst[14:12];
 wire [6:0] funct7 = inst[31:25];
 wire [6:0] opcode = inst[6:0];
 
-wire inst_is_ecall  = inst == INST_ECALL;
 wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
 wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
 
@@ -176,7 +173,9 @@ function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_CSRRSI_FUNCT3, 5'bxxxxx, INST_CSRRSI_OPCODE  } : decode = {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_S};
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_CSRRC_FUNCT3 , 5'bxxxxx, INST_CSRRC_OPCODE   } : decode = {ALU_COPY1, OP1_RS1, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_C};
         {7'bxxxxxxx         , 10'bxxxxxxxxxx, INST_CSRRCI_FUNCT3, 5'bxxxxx, INST_CSRRCI_OPCODE  } : decode = {ALU_COPY1, OP1_IMZ, OP2_X   , MEN_X , REN_S, WB_CSR  , CSR_C};
-        INST_ECALL                                                                                : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_E};
+        INST_ECALL                                                                                : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_ECALL};
+        INST_SRET                                                                                 : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_SRET};
+        INST_MRET                                                                                 : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_MRET};
         
         /* Zifencei
         {7'bxxxxxxx , 10'bxxxxxxxxxx, INST_ZIFENCEI_FENCEI_FUNCT3, 5'bxxxxx, INST_ZIFENCEI_FENCEI_OPCODE } :
@@ -215,7 +214,6 @@ always @(posedge clk) begin
         op2_data                <= 32'hffffffff;
         rs2_data                <= 32'hffffffff;
         jmp_flg                 <= 0;
-        output_inst_is_ecall    <= 0;
         output_reg_pc           <= 32'hffffffff;
         exe_fun                 <= ALU_ADD;
         mem_wen                 <= MEN_X;
@@ -249,7 +247,6 @@ always @(posedge clk) begin
 
         rs2_data                <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
         jmp_flg                 <= inst_is_jal || inst_is_jalr;
-        output_inst_is_ecall    <= inst_is_ecall;
 
         output_reg_pc   <= reg_pc;
         exe_fun         <= wire_exe_fun;

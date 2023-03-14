@@ -61,4 +61,6 @@ localparam CSR_X    = 3'd0;
 localparam CSR_W    = 3'd1;
 localparam CSR_S    = 3'd2;
 localparam CSR_C    = 3'd3;
-localparam CSR_E    = 3'd4;
+localparam CSR_ECALL= 3'd4;
+localparam CSR_SRET = 3'd5;
+localparam CSR_MRET = 3'd6;

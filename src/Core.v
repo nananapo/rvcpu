@@ -97,7 +97,6 @@ wire [3:0]  exe_wb_sel;
 wire [4:0]  exe_wb_addr;
 wire [2:0]  exe_csr_cmd;
 wire        exe_jmp_flg;
-wire        exe_inst_is_ecall;
 
 DecodeStage #() decodestage
 (
@@ -125,7 +124,6 @@ DecodeStage #() decodestage
     .wb_addr(exe_wb_addr),
     .csr_cmd(exe_csr_cmd),
     .jmp_flg(exe_jmp_flg),
-    .output_inst_is_ecall(exe_inst_is_ecall),
 
     .memory_stage_stall_flg(memory_stage_is_stall),
 
@@ -152,7 +150,6 @@ DecodeStage #() decodestage
 wire [31:0] mem_alu_out;
 wire        mem_br_flg;
 wire [31:0] mem_br_target;
-wire        mem_inst_is_ecall;
 
 wire [31:0] mem_reg_pc;
 wire [3:0]  mem_mem_wen;
@@ -185,7 +182,6 @@ ExecuteStage #() executestage
     .input_jmp_flg(exe_jmp_flg),
     .input_imm_i_sext(exe_imm_i_sext),
     .input_imm_b_sext(exe_imm_b_sext),
-    .input_inst_is_ecall(exe_inst_is_ecall),
 
     .alu_out(mem_alu_out),
     .br_flg(mem_br_flg),
@@ -201,7 +197,6 @@ ExecuteStage #() executestage
     .output_csr_cmd(csr_csr_cmd),
     .output_jmp_flg(mem_jmp_flg),
     .output_imm_i(csr_imm_i),
-    .output_inst_is_ecall(mem_inst_is_ecall),
 
     .stall_flg(memory_stage_is_stall)
 );
@@ -219,7 +214,6 @@ wire [31:0] wb_br_target;
 wire [3:0]  wb_wb_sel;
 wire [4:0]  wb_wb_addr;
 wire        wb_jmp_flg;
-wire        wb_inst_is_ecall;
 
 MemoryStage #() memorystage
 (
@@ -237,7 +231,6 @@ MemoryStage #() memorystage
     .input_wb_sel(mem_wb_sel),
     .input_wb_addr(mem_wb_addr),
     .input_jmp_flg(mem_jmp_flg),
-    .input_inst_is_ecall(mem_inst_is_ecall),
 
     .output_rf_wen(wb_rf_wen),
     .output_read_data(wb_read_data),
@@ -248,7 +241,6 @@ MemoryStage #() memorystage
     .output_wb_sel(wb_wb_sel),
     .output_wb_addr(wb_wb_addr),
     .output_jmp_flg(wb_jmp_flg),
-    .output_inst_is_ecall(wb_inst_is_ecall),
     .output_is_stall(memory_stage_is_stall),
 
     .mem_cmd_start(memory_d_cmd_start),
@@ -264,6 +256,7 @@ MemoryStage #() memorystage
 // **************************
 // CSR Stage
 // **************************
+wire [2:0]     wb_csr_cmd;
 wire [31:0]    wb_csr_rdata;
 wire [31:0]    wb_trap_vector;
 
@@ -277,6 +270,7 @@ CSRStage #() csrstage
     .input_op1_data(csr_op1_data),
     .input_imm_i(csr_imm_i),
 
+    .output_csr_cmd(wb_csr_cmd),
     .csr_rdata(wb_csr_rdata),
     .trap_vector(wb_trap_vector)
 );
@@ -293,12 +287,12 @@ WriteBackStage #() wbstage(
     .csr_rdata(wb_csr_rdata),
     .memory_rdata(wb_read_data),
     .wb_addr(wb_wb_addr),
+    .csr_cmd(wb_csr_cmd),
     .jmp_flg(wb_jmp_flg),
     .rf_wen(wb_rf_wen),
     .br_flg(wb_br_flg),
     .br_target(wb_br_target),
     .alu_out(wb_alu_out),
-    .inst_is_ecall(wb_inst_is_ecall),
     .trap_vector(wb_trap_vector),
 
     .output_reg_pc(wb_to_fetch_reg_pc),

@@ -13,7 +13,6 @@ module MemoryStage(
     input  wire[3:0]     input_wb_sel,
     input  wire[4:0]     input_wb_addr,
     input  wire          input_jmp_flg,
-    input  wire          input_inst_is_ecall,
 
     output reg [31:0]    output_read_data,
     output reg [31:0]    output_reg_pc,
@@ -24,7 +23,6 @@ module MemoryStage(
     output reg [3:0]     output_wb_sel,
     output reg [4:0]     output_wb_addr,
     output reg           output_jmp_flg,
-    output reg           output_inst_is_ecall,
     output reg           output_is_stall,
 
     output wire          mem_cmd_start,
@@ -50,7 +48,6 @@ initial begin
     output_wb_sel           = 0;
     output_wb_addr          = 0;
     output_jmp_flg          = 0;
-    output_inst_is_ecall    = 0;
 end
 
 localparam STATE_WAIT               = 0;
@@ -69,7 +66,6 @@ wire        rf_wen          = wb_branch_hazard ? REN_X          : input_rf_wen;
 wire [3:0]  wb_sel          = wb_branch_hazard ? WB_X           : input_wb_sel;
 wire [4:0]  wb_addr         = wb_branch_hazard ? 0              : input_wb_addr;
 wire        jmp_flg         = wb_branch_hazard ? 0              : input_jmp_flg;
-wire        inst_is_ecall   = wb_branch_hazard ? 0              : input_inst_is_ecall;
 
 reg [31:0]  save_reg_pc         = REGPC_NOP;
 reg [31:0]  save_alu_out        = 0;
@@ -81,7 +77,6 @@ reg         save_rf_wen         = 0;
 reg [3:0]   save_wb_sel         = 0;
 reg [4:0]   save_wb_addr        = 0;
 reg         save_jmp_flg        = 0;
-reg         save_inst_is_ecall  = 0;
 
 
 wire is_store       = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
@@ -215,12 +210,6 @@ wire output_jmp_flg_wire = (
     0
 );
 
-wire output_inst_is_ecall_wire = (
-    output_is_current ? inst_is_ecall :
-    output_is_save ? save_inst_is_ecall :
-    0
-);
-
 wire [1:0] state_clk = wb_branch_hazard ? STATE_WAIT : state;
 
 always @(posedge clk) begin
@@ -236,7 +225,6 @@ always @(posedge clk) begin
             save_wb_sel         <= wb_sel;
             save_wb_addr        <= wb_addr;
             save_jmp_flg        <= jmp_flg;
-            save_inst_is_ecall  <= inst_is_ecall;
 
             if (is_store) begin
                 if (mem_cmd_ready)
@@ -273,7 +261,6 @@ always @(posedge clk) begin
     output_wb_sel           <= output_wb_sel_wire;
     output_wb_addr          <= output_wb_addr_wire;
     output_jmp_flg          <= output_jmp_flg_wire;
-    output_inst_is_ecall    <= output_inst_is_ecall_wire;
 end
 
 `ifdef DEBUG 
