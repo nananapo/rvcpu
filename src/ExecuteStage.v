@@ -86,6 +86,8 @@ wire [31:0] imm_b_sext      = stall_flg ? save_imm_b_sext : input_imm_b_sext;
 wire [63:0] mult_signed_signed      = $signed(op1_data) * $signed(op2_data);
 wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $unsigned(op2_data);
 wire [63:0] mult_unsigned_unsigned  = $unsigned(op1_data) * $unsigned(op2_data);
+wire [31:0] div_signed              = $signed($signed(op1_data) / $signed(op2_data));
+wire [31:0] div_unsigned            = $unsigned($unsigned(op1_data) / $unsigned(op2_data));
 `endif
 
 always @(posedge clk) begin
@@ -115,12 +117,10 @@ always @(posedge clk) begin
             ALU_MULH    : alu_out <= mult_signed_signed[63:32];
             ALU_MULHSU  : alu_out <= mult_signed_unsigned[63:32];
             ALU_MULHU   : alu_out <= mult_unsigned_unsigned[63:32];
-            /*
-            ALU_DIV     :
-            ALU_DIVU    :
-            ALU_REM     :
-            ALU_REMU    :
-            */
+            ALU_DIV     : alu_out <= div_signed;
+            ALU_DIVU    : alu_out <= div_unsigned;
+            //ALU_REM     :
+            //ALU_REMU    :
 `endif
 
             default     : alu_out <= 0;
