@@ -36,5 +36,9 @@ dm:
 
 v:
 	verilator --lint-only main.v
+	verilator --lint-only -DDEBUG main.v
+	verilator --lint-only $(DEFINE_DEBUG) main.v
+	verilator --lint-only $(DEFINE_RISCV_TESTS) main.v
+	verilator --lint-only $(DEFINE_MEMORY_UART) main.v
 
 .PHONY: d v
