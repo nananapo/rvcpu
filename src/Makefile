@@ -18,18 +18,20 @@ UART_FILES = Uart_rx.v \
 			Uart_tx.v \
 			UARTMemory.v
 
-DEFALUT_DEFINE = -DDEBUG
+DEFINE_DEBUG = -DDEBUG -DRV32M
+DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST
+DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
 
 d:
-	iverilog $(DEFALUT_DEFINE) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_DEBUG) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
 	vvp debug.o
 
 riscv-tests:
-	iverilog $(DEFALUT_DEFINE) -DRISCV_TEST -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_RISCV_TESTS) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
 	vvp debug.o
 
 dm:
-	iverilog $(DEFALUT_DEFINE) -DMEMORY_UART -g2005-sv -o debug.o -s test  $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_MEMORY_UART) -g2005-sv -o debug.o -s test  $(FILES) $(UART_FILES)
 	vvp debug.o
 
 v:
