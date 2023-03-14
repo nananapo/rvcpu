@@ -74,7 +74,9 @@ MemoryInterface #() memory (
     .exited(exited)
 );
 
-Core core (
+Core #(
+    .FMAX_MHz(24)
+) core (
     .clk(clk),
 
     .memory_inst_start(mem_inst_start),

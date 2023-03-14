@@ -1,7 +1,7 @@
 module Uart_rx
 #(
-    // ボーレートから計算 (27000000 / 115200)
-    parameter DELAY_FRAMES = 234
+    // ボーレートから計算 (24000000 / 115200)
+    parameter DELAY_FRAMES = 208
 )
 (
     input  wire         clk,        // system clock
