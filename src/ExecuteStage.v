@@ -82,6 +82,12 @@ wire        jmp_flg         = stall_flg ? save_jmp_flg : input_jmp_flg;
 wire [31:0] imm_i_sext      = stall_flg ? save_imm_i_sext : input_imm_i_sext;
 wire [31:0] imm_b_sext      = stall_flg ? save_imm_b_sext : input_imm_b_sext;
 
+`ifndef EXCLUDE_RV32M
+wire [63:0] mult_signed_signed      = $signed(op1_data) * $signed(op2_data);
+wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $unsigned(op2_data);
+wire [63:0] mult_unsigned_unsigned  = $unsigned(op1_data) * $unsigned(op2_data);
+`endif
+
 always @(posedge clk) begin
     // EX STAGE
     if (wb_branch_hazard) begin
@@ -103,6 +109,20 @@ always @(posedge clk) begin
             ALU_SLTU    : alu_out <= {31'b0, op1_data < op2_data};
             ALU_JALR    : alu_out <= (op1_data + op2_data) & (~1);
             ALU_COPY1   : alu_out <= op1_data;
+
+`ifndef EXCLUDE_RV32M 
+            ALU_MUL     : alu_out <= mult_signed_signed[31:0];
+            ALU_MULH    : alu_out <= mult_signed_signed[63:32];
+            ALU_MULHSU  : alu_out <= mult_signed_unsigned[63:32];
+            ALU_MULHU   : alu_out <= mult_unsigned_unsigned[63:32];
+            /*
+            ALU_DIV     :
+            ALU_DIVU    :
+            ALU_REM     :
+            ALU_REMU    :
+            */
+`endif
+
             default     : alu_out <= 0;
         endcase
         // br_flg
