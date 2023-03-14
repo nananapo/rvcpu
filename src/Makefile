@@ -41,8 +41,8 @@ v:
 	verilator --lint-only $(DEFINE_RISCV_TESTS) main.v
 	verilator --lint-only $(DEFINE_MEMORY_UART) main.v
 
-test_divu:
-	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_divu test_divu.v DivUnsigned32bit.v
+test_div:
+	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.v DivUnsigned32bit.v Div32bit.v
 	vvp debug.o
 
 .PHONY: d v

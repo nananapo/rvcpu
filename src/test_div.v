@@ -1,20 +1,22 @@
 `default_nettype none
 
-module test_divu();
+module test_div();
   reg clk = 1;
 
   reg           start;
+  reg           is_signed;
   wire          ready;
   wire          valid;
   wire          error;
-  reg [31:0]    dividend; 
-  reg [31:0]    divisor;  
-  wire [31:0]   quotient; 
-  wire [31:0]   remainder;
+  reg signed  [31:0]   dividend; 
+  reg signed  [31:0]   divisor;  
+  wire signed [31:0]   quotient; 
+  wire signed [31:0]   remainder;
 
-  DivUnsigned32bit #() m(
+  Div32bit #() m(
     .clk(clk),
     .start(start),
+    .is_signed(is_signed),
     .ready(ready),
     .valid(valid),
     .error(error),
@@ -44,8 +46,9 @@ module test_divu();
   initial begin
     #0 begin
         start       = 1;
-        dividend    = 101;
-        divisor     = 10;
+        is_signed   = 1;
+        dividend    = -111111;
+        divisor     = -7;
     end
   end
 endmodule
