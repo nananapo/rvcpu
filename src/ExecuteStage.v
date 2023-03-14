@@ -91,29 +91,29 @@ always @(posedge clk) begin
     end else begin
         // alu_out
         case (exe_fun) 
-            ALU_ADD   : alu_out <= op1_data + op2_data;
-            ALU_SUB   : alu_out <= op1_data - op2_data;
-            ALU_AND   : alu_out <= op1_data & op2_data;
-            ALU_OR    : alu_out <= op1_data | op2_data;
-            ALU_XOR   : alu_out <= op1_data ^ op2_data;
-            ALU_SLL   : alu_out <= op1_data << op2_data[4:0];
-            ALU_SRL   : alu_out <= op1_data >> op2_data[4:0];
-            ALU_SRA   : alu_out <= $signed($signed(op1_data) >>> op2_data[4:0]);
-            ALU_SLT   : alu_out <= {31'b0, ($signed(op1_data) < $signed(op2_data))};
-            ALU_SLTU  : alu_out <= {31'b0, op1_data < op2_data};
-            ALU_JALR  : alu_out <= (op1_data + op2_data) & (~1);
-            ALU_COPY1 : alu_out <= op1_data;
-            default   : alu_out <= 0;
+            ALU_ADD     : alu_out <= op1_data + op2_data;
+            ALU_SUB     : alu_out <= op1_data - op2_data;
+            ALU_AND     : alu_out <= op1_data & op2_data;
+            ALU_OR      : alu_out <= op1_data | op2_data;
+            ALU_XOR     : alu_out <= op1_data ^ op2_data;
+            ALU_SLL     : alu_out <= op1_data << op2_data[4:0];
+            ALU_SRL     : alu_out <= op1_data >> op2_data[4:0];
+            ALU_SRA     : alu_out <= $signed($signed(op1_data) >>> op2_data[4:0]);
+            ALU_SLT     : alu_out <= {31'b0, ($signed(op1_data) < $signed(op2_data))};
+            ALU_SLTU    : alu_out <= {31'b0, op1_data < op2_data};
+            ALU_JALR    : alu_out <= (op1_data + op2_data) & (~1);
+            ALU_COPY1   : alu_out <= op1_data;
+            default     : alu_out <= 0;
         endcase
         // br_flg
         case(exe_fun) 
-            BR_BEQ   : br_flg <= (op1_data == op2_data);
-            BR_BNE   : br_flg <= !(op1_data == op2_data);
-            BR_BLT   : br_flg <= ($signed(op1_data) < $signed(op2_data));
-            BR_BGE   : br_flg <= !($signed(op1_data) < $signed(op2_data));
-            BR_BLTU  : br_flg <= (op1_data < op2_data);
-            BR_BGEU  : br_flg <= !(op1_data < op2_data);
-            default  : br_flg <= 0;
+            BR_BEQ  : br_flg <= (op1_data == op2_data);
+            BR_BNE  : br_flg <= !(op1_data == op2_data);
+            BR_BLT  : br_flg <= ($signed(op1_data) < $signed(op2_data));
+            BR_BGE  : br_flg <= !($signed(op1_data) < $signed(op2_data));
+            BR_BLTU : br_flg <= (op1_data < op2_data);
+            BR_BGEU : br_flg <= !(op1_data < op2_data);
+            default : br_flg <= 0;
         endcase
         br_target <= reg_pc + imm_b_sext;
     end
