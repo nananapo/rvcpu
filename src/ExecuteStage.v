@@ -120,6 +120,12 @@ DivNbit #(
 wire [63:0] mult_signed_signed      = $signed(op1_data) * $signed(op2_data);
 wire [63:0] mult_signed_unsigned    = $signed(op1_data) * $signed({1'b0,op2_data});
 wire [63:0] mult_unsigned_unsigned  = $unsigned(op1_data) * $unsigned(op2_data);
+
+// rv32mのdiv, rem命令かどうか
+wire        is_rv32m_div_exe    = exe_fun == ALU_DIV || exe_fun == ALU_DIVU || exe_fun == ALU_REM || exe_fun == ALU_REMU;
+// rv32mのdiv, remをsignedとして実行すべきかどうか
+wire        is_rv32m_div_signed = exe_fun == ALU_DIV || exe_fun == ALU_REM;
+
 `endif
 
 // 複数サイクルかかる計算を始めたかどうか
@@ -134,12 +140,6 @@ wire        calc_valid      =
     divm_valid || 
 `endif
     0;
-
-// rv32mのdiv, rem命令かどうか
-`ifndef EXCLUDE_RV32M
-wire        is_rv32m_div_exe = exe_fun == ALU_DIV || exe_fun == ALU_DIVU || exe_fun == ALU_REM || exe_fun == ALU_REMU;
-`endif
-
 // 現在のexeが複数サイクルかかる計算かどうか
 wire        is_multicycle_exe = 
 `ifndef EXCLUDE_RV32M
@@ -220,9 +220,9 @@ always @(posedge clk) begin
                 is_calc_started <= 1;
 
                 divm_start      <= 1;
-                divm_is_signed  <= exe_fun == ALU_DIV || exe_fun == ALU_REMU;
-                divm_dividend   <= {1'b0, op1_data};
-                divm_divisor    <= {1'b0, op2_data};
+                divm_is_signed  <= is_rv32m_div_signed;
+                divm_dividend   <= is_rv32m_div_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};
+                divm_divisor    <= is_rv32m_div_signed ? {op2_data[31], op2_data} : {1'b0, op2_data};
             end
         end else if (is_calc_started) begin
             divm_start  <= 0;
