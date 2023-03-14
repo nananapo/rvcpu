@@ -1,4 +1,7 @@
-module CSRStage (
+module CSRStage #(
+    parameter FMAX_MHz = 27
+)
+(
     input  wire         clk,
 
     input  wire         wb_branch_hazard,
@@ -16,11 +19,6 @@ module CSRStage (
 
 `include "include/core.v"
 
-initial begin
-    output_csr_cmd  <= CSR_X;
-    csr_rdata       <= 0;
-end
-
 // モード
 localparam MACHINE_MODE     = 0;
 localparam SUPERVISOR_MODE  = 1;
@@ -35,13 +33,36 @@ reg [1:0] mode = MACHINE_MODE;
 localparam CSR_ADDR_MSCRATCH= 12'h340;
 localparam CSR_ADDR_MCAUSE  = 12'h342;
 localparam CSR_ADDR_MTVEC   = 12'h305;
+localparam CSR_ADDR_CYCLE   = 12'hc00;
+localparam CSR_ADDR_TIME    = 12'hc01;
+localparam CSR_ADDR_CYCLEH  = 12'hc80;
+localparam CSR_ADDR_TIMEH   = 12'hc81;
 
 reg [31:0] reg_mscratch = 0;
 reg [31:0] reg_mcause   = 0;
 reg [31:0] reg_mtvec    = 0;
+reg [63:0] reg_cycle    = 0;
+reg [63:0] reg_time     = 0;
+
+reg [31:0] timecounter = 0;
+always @(posedge clk) begin
+    // cycleは毎クロックインクリメント
+    reg_cycle   <= reg_cycle + 1;
+    // timeをμ秒ごとにインクリメント
+    if (timecounter == FMAX_MHz - 1) begin
+        reg_time    <= reg_time + 1;
+        timecounter <= timecounter + 1;
+    end
+end
 
 assign trap_vector = reg_mtvec; 
 
+
+/*---------CSR命令の実行----------*/
+initial begin
+    output_csr_cmd  = CSR_X;
+    csr_rdata       = 0;
+end
 
 wire [2:0] csr_cmd    = wb_branch_hazard ? CSR_X : input_csr_cmd;
 wire [31:0]op1_data   = wb_branch_hazard ? 32'hffffffff : input_op1_data;
@@ -77,6 +98,10 @@ always @(posedge clk) begin
         CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
         CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
         CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
+        CSR_ADDR_CYCLE:     csr_rdata <= reg_cycle[31:0];
+        CSR_ADDR_TIME:      csr_rdata <= reg_time[31:0];
+        CSR_ADDR_CYCLEH:    csr_rdata <= reg_cycle[63:32];
+        CSR_ADDR_TIMEH:     csr_rdata <= reg_time[63:32];
         default:            csr_rdata <= 32'b0;
     endcase
 
@@ -89,6 +114,10 @@ always @(posedge clk) begin
             CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
             CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
             CSR_ADDR_MSCRATCH:  reg_mscratch<= wdata;
+            // CSR_ADDR_CYCLE: // READ ONLY
+            // CSR_ADDR_TIME: // READ ONLY
+            // CSR_ADDR_CYCLEH: // READ ONLY
+            // CSR_ADDR_TIMEH: // READ ONLY
             default:            reg_mtvec   <= reg_mtvec; //nop
         endcase
     end
