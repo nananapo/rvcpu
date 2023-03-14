@@ -1,3 +1,5 @@
+import sys
+
 MEMORY_V_FILENAME = "../src/MemoryInterface.v"
 REPLACE_WORD = "MEMORY_FILE_NAME"
 
@@ -34,7 +36,8 @@ def test(filename):
 for fileName in os.listdir("riscv-tests/"):
     if not fileName.endswith(".aligned"):
         continue
-    test(fileName)
+    if len(sys.argv) == 1 or fileName.find(sys.argv[1]) != -1:
+        test(fileName)
 
 results = sorted(results)
 
