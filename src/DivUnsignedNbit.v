@@ -1,5 +1,6 @@
-module DivUnsigned32bit
-(
+module DivUnsignedNbit #(
+    parameter SIZE = 32
+) (
     input wire  clk,
 
     input wire  start,
@@ -7,10 +8,10 @@ module DivUnsigned32bit
     output wire valid,
     output wire error,
 
-    input wire [31:0]   dividend,   // 被除数
-    input wire [31:0]   divisor,    // 除数
-    output reg [31:0]   quotient,   // 商
-    output reg [31:0]   remainder   // 余り
+    input wire [SIZE-1:0]   dividend,   // 被除数
+    input wire [SIZE-1:0]   divisor,    // 除数
+    output reg [SIZE-1:0]   quotient,   // 商
+    output reg [SIZE-1:0]   remainder   // 余り
 );
 
 localparam STATE_IDLE       = 0;
@@ -21,10 +22,10 @@ localparam STATE_DIVIDE     = 4;
 
 reg [2:0] state = STATE_IDLE;
 
-reg [31:0] count;
-reg [63:0] shifted_divisor;
+reg [SIZE-1:0] count;
+reg [SIZE + SIZE - 1:0] shifted_divisor;
 
-reg [31:0] save_divisor;
+reg [SIZE-1:0] save_divisor;
 
 assign ready = state == STATE_IDLE;
 assign valid = state == STATE_END || state == STATE_END_ERROR;
@@ -37,19 +38,19 @@ always @(posedge clk) begin
                 save_divisor    <= divisor;
                 shifted_divisor <= divisor;
                 if (divisor == 0) begin
-                    state <= STATE_END_ERROR;
+                    state           <= STATE_END_ERROR;
                     remainder       <= dividend;
-                    quotient        <= 32'hffff_ffff;
+                    quotient        <= -1;
                 end else if (divisor > dividend) begin
-                    state <= STATE_END;
+                    state           <= STATE_END;
                     remainder       <= dividend;
-                    quotient        <= 32'h0;
+                    quotient        <= 0;
                 end else begin
-                    state <= STATE_DIVIDE;
+                    state           <= STATE_DIVIDE;
                     remainder       <= dividend;
-                    quotient        <= 32'h0;
-                    shifted_divisor <= divisor << 31;
-                    count           <= 32'h8000_0000;
+                    quotient        <= 0;
+                    shifted_divisor <= divisor << (SIZE-1);
+                    count           <= 1 << (SIZE - 1);
                 end
             end
         end

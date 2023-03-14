@@ -42,7 +42,7 @@ v:
 	verilator --lint-only $(DEFINE_MEMORY_UART) main.v
 
 test_div:
-	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.v DivUnsigned32bit.v Div32bit.v
+	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.v DivUnsignedNbit.v DivNbit.v
 	vvp debug.o
 
 .PHONY: d v

@@ -13,7 +13,7 @@ module test_div();
   wire signed [31:0]   quotient; 
   wire signed [31:0]   remainder;
 
-  Div32bit #() m(
+  DivNbit #() m(
     .clk(clk),
     .start(start),
     .is_signed(is_signed),
@@ -47,8 +47,8 @@ module test_div();
     #0 begin
         start       = 1;
         is_signed   = 1;
-        dividend    = -111111;
-        divisor     = -7;
+        dividend    = 100;
+        divisor     = 3;
     end
   end
 endmodule
