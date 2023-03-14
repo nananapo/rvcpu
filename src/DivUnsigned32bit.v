@@ -21,11 +21,9 @@ localparam STATE_DIVIDE     = 4;
 
 reg [2:0] state = STATE_IDLE;
 
-reg [31:0] right1;
-reg [31:0] left1;
-reg [31:0] shifted_divisor;
+reg [31:0] count;
+reg [63:0] shifted_divisor;
 
-reg [31:0] save_divident;
 reg [31:0] save_divisor;
 
 assign ready = state == STATE_IDLE;
@@ -36,44 +34,54 @@ always @(posedge clk) begin
     case (state)
         STATE_IDLE: begin
             if (start) begin
-                save_divident   <= dividend;
                 save_divisor    <= divisor;
                 shifted_divisor <= divisor;
-                left1           <= 32'h8000_0000;
-                right1          <= 32'h0000_0001;
-                quotient        <= 0;
-                remainder       <= dividend;
-                if (divisor == 0) 
+                if (divisor == 0) begin
                     state <= STATE_END_ERROR;
-                else if (divisor > dividend)
+                    remainder       <= dividend;
+                    quotient        <= 32'hffff_ffff;
+                end else if (divisor > dividend) begin
                     state <= STATE_END;
-                else
-                    state <= STATE_FIND_ONE;
-            end
-        end
-        STATE_FIND_ONE: begin
-            if (left1 & save_divisor == 1) begin
-                state       <= STATE_DIVIDE;
-            end else begin
-                shifted_divisor <= shifted_divisor << 1;
-                left1           <= left1 >> 1;
-                right1          <= right1 << 1;
+                    remainder       <= dividend;
+                    quotient        <= 32'h0;
+                end else begin
+                    state <= STATE_DIVIDE;
+                    remainder       <= dividend;
+                    quotient        <= 32'h0;
+                    shifted_divisor <= divisor << 31;
+                    count           <= 32'h8000_0000;
+                end
             end
         end
         STATE_DIVIDE: begin
-            if (right1 == 1)
+            if (count == 1)
                 state <= STATE_END;
-            if (remainder > shifted_divisor) begin
+            if (remainder >= shifted_divisor) begin
                 remainder   <= remainder - shifted_divisor;
-                quotient    <= quotient | right1;
+                quotient    <= quotient | count;
             end
             shifted_divisor <= shifted_divisor >> 1;
-            right1          <= right1 >> 1;
+            count           <= count >> 1;
         end
         //STATE_END:          state <= STATE_IDLE;
         //STATE_END_ERROR:    state <= STATE_IDLE;
         default: state <= STATE_IDLE;
     endcase
 end
+
+`ifdef DEBUG
+`ifdef PRINT_ALU_MODULE
+always @(posedge clk) begin
+    $display("DIV-------------------");
+    $display("state             : %d", state);
+    $display("save_divisor      : 0b%b", save_divisor);
+    $display("shifted_divisor   : 0b%b", shifted_divisor);
+    $display("count             : 0b%b", count);
+    $display("quotient          : %d", quotient);
+    $display("remainder         : %d", remainder);
+    $display("remainder         : 0b%b", remainder);
+end
+`endif
+`endif
 
 endmodule
