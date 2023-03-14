@@ -1,7 +1,7 @@
 module Uart_rx
 #(
-    // ボーレートから計算 (24000000 / 115200)
-    parameter DELAY_FRAMES = 208
+    parameter FMAX_MHz = 27,
+    parameter BaudRate = 115200
 )
 (
     input  wire         clk,        // system clock
@@ -10,6 +10,8 @@ module Uart_rx
     output reg  [7:0]   rdata,      // rdata
     output wire         rdata_valid // rdata is valid(1)
 );
+
+localparam DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
 
 /*
 initial begin
