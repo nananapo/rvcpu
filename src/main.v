@@ -1,6 +1,8 @@
 `default_nettype none
 
-module main (
+module main #(
+    parameter FMAX_MHz = 22    
+)(
     input  wire         clk,
 
     // メモリにUARTを使うときに使うピン
@@ -50,7 +52,9 @@ always @(posedge clk) begin
     led[5:0] = ~gp[5:0];
 end
 
-MemoryInterface #() memory (
+MemoryInterface #(
+    .FMAX_MHz(FMAX_MHz)
+) memory (
     .clk(clk),
     .mem_uart_rx(mem_uart_rx),
     .mem_uart_tx(mem_uart_tx),
@@ -75,7 +79,7 @@ MemoryInterface #() memory (
 );
 
 Core #(
-    .FMAX_MHz(24)
+    .FMAX_MHz(FMAX_MHz)
 ) core (
     .clk(clk),
 
