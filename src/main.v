@@ -1,9 +1,9 @@
 `default_nettype none
 
 module main #(
-    parameter FMAX_MHz = 20 
+    parameter FMAX_MHz = 18 
 )(
-    input  wire         clk,
+    input  wire         clk27MHz,
 
     // メモリにUARTを使うときに使うピン
     input  wire         mem_uart_rx,
@@ -27,6 +27,17 @@ module main #(
     wire[31:0]   gp;
 `endif
 
+// クロックの生成
+wire clkConstrained;
+`ifdef DEBUG
+    assign clkConstrained = clk27MHz;
+`else
+    Gowin_rPLL rpll_clk(
+        .clkout(clkConstrained), //output clkout
+        .clkin(clk27MHz) //input clkin
+    );
+`endif
+
 reg         mem_inst_start;
 reg         mem_inst_ready;
 reg [31:0]  mem_i_addr;
@@ -44,7 +55,7 @@ reg         mem_rdata_valid;
 reg [31:0]  clkCount    = 0;
 reg         exited      = 0;
 
-always @(posedge clk) begin
+always @(posedge clkConstrained) begin
     clkCount <= clkCount + 1;
     if (exit) begin
         exited <= 1;
@@ -52,17 +63,14 @@ always @(posedge clk) begin
     led[5:0] = ~gp[5:0];
 end
 
-reg a = 1;
-wire b;
-
 MemoryInterface #(
     .FMAX_MHz(FMAX_MHz)
 ) memory (
-    .clk(clk),
+    .clk(clkConstrained),
     .mem_uart_rx(mem_uart_rx),
     .mem_uart_tx(mem_uart_tx),
-    .uart_rx(a),
-    .uart_tx(b),
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx),
 
     .inst_start(mem_inst_start),
     .inst_ready(mem_inst_ready),
@@ -84,7 +92,7 @@ MemoryInterface #(
 Core #(
     .FMAX_MHz(FMAX_MHz)
 ) core (
-    .clk(clk),
+    .clk(clkConstrained),
 
     .memory_inst_start(mem_inst_start),
     .memory_inst_ready(mem_inst_ready),
@@ -105,31 +113,5 @@ Core #(
 
     .exited(exited)
 );
-
-reg         tx_start    = 0;
-reg [7:0]   tx_data     = "A";
-wire        tx_ready;
-
-Uart_tx #(
-    .FMAX_MHz(FMAX_MHz)
-) txModule(
-    .clk(clk),
-
-    .start(tx_start),
-    .data(tx_data),
-    .ready(tx_ready),
-    .uart_tx(uart_tx)
-);
-
-reg tmit = 0;
-
-always @(posedge clk) begin
-    if (tmit) begin
-        tx_start <= 0;
-    end else if (clkCount == 1000) begin
-        tx_start <= 1;
-        tmit <= 1;
-    end
-end
 
 endmodule
