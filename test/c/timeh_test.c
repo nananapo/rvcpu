@@ -26,9 +26,10 @@ void uart_send_char(char c)
 {
     // TODO バッファが空くのを待った後、ロックを取りたい
     int tail = *UART_TX_TAILPTR;
+    int tailTo = (tail + 1) % UART_TX_BUFSIZE;
     UART_TX_DATAPTR[tail] = c;
-    *UART_TX_TAILPTR = (tail + 1) % UART_TX_BUFSIZE;
-    while (*UART_TX_HEADPTR >= tail + 1); // 送信完了を待つ
+    *UART_TX_TAILPTR = tailTo;
+    while (*UART_TX_HEADPTR != tailTo); // 送信完了を待つ
 }
 #else
 void uart_send_char(char c)
