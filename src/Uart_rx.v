@@ -1,7 +1,7 @@
 module Uart_rx
 #(
-    parameter FMAX_MHz = 27,
-    parameter BaudRate = 115200
+    parameter FMAX_MHz = 32'd27,
+    parameter BaudRate = 32'd115200
 )
 (
     input  wire         clk,        // system clock
@@ -11,7 +11,7 @@ module Uart_rx
     output wire         rdata_valid // rdata is valid(1)
 );
 
-localparam DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
+localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
 
 /*
 initial begin
