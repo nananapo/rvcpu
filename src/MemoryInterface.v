@@ -1,10 +1,12 @@
-module MemoryInterface (
-    input  wire clk,
+module MemoryInterface #(
+    parameter FMAX_MHz = 27
+)(
+    input  wire         clk,
 
-    input  wire mem_uart_rx,
-    output wire mem_uart_tx,
-    input  wire uart_rx,
-    output wire uart_tx,
+    input  wire         mem_uart_rx,
+    output wire         mem_uart_tx,
+    input  wire         uart_rx,
+    output wire         uart_tx,
  
     input  wire         inst_start,
     output wire         inst_ready,
@@ -37,7 +39,9 @@ wire [31:0] mem_wdata;
 wire [31:0] mem_wmask;
 
 `ifdef MEMORY_UART
-    UARTMemory #() memory (
+    UARTMemory #(
+        .FMAX_MHz(FMAX_MHz)
+    ) memory (
         .clk(clk),
 
         .cmd_start(mem_cmd_start),
@@ -60,16 +64,17 @@ wire [31:0] mem_wmask;
     MemoryMapController
     `endif
     #(
+        .FMAX_MHz(FMAX_MHz),
         .MEMORY_SIZE(4096),
     `ifdef RISCV_TEST
         // make riscv-tests
         .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
     `elsif DEBUG
         // make d
-        .MEMORY_FILE("../test/c/temp.bin.aligned")
+        .MEMORY_FILE("../test/c/uart_tx.c.bin.aligned")
     `else
         // build
-        .MEMORY_FILE("../test/c/temp.bin.aligned")
+        .MEMORY_FILE("../test/c/uart_tx.c.bin.aligned")
     `endif
     ) memory (
         .clk(clk),
@@ -302,27 +307,27 @@ end
 `ifdef DEBUG
 always @(posedge clk) begin
     $display("MEMINF -------------");
-    $display("inst_start      : %d", inst_start);
-    $display("inst_ready      : %d", inst_ready);
-    $display("i_addr          : 0x%H", i_addr);
-    $display("inst            : 0x%H", inst);
-    $display("inst_valid      : %d", inst_valid);
-    $display("d_cmd_start     : %d", d_cmd_start);
-    $display("d_cmd_write     : %d", d_cmd_write);
-    $display("d_cmd_ready     : %d", d_cmd_ready);
-    $display("d_addr          : 0x%H", d_addr);
-    $display("wdata           : 0x%H", wdata);
-    $display("wmask           : 0x%H", wmask);
-    $display("rdata           : 0x%H", rdata);
-    $display("rdata_valid     : %d", rdata_valid);
-    $display("status          : %d", status);
-    $display("cmd_is_inst     : %d", cmd_is_inst);
-    $display("mem_cmd_start   : %d", mem_cmd_start);
-    $display("mem_cmd_write   : %d", mem_cmd_write);
-    $display("mem_cmd_ready   : %d", mem_cmd_ready);
-    $display("mem_addr        : 0x%H", mem_addr);
-    $display("mem_rdata       : 0x%H", mem_rdata);
-    $display("mem_rdata_valid : %d", mem_rdata_valid);
+    $display("inst_start        : %d", inst_start);
+    $display("inst_ready        : %d", inst_ready);
+    $display("i_addr            : 0x%H", i_addr);
+    $display("inst              : 0x%H", inst);
+    $display("inst_valid        : %d", inst_valid);
+    $display("d_cmd_start       : %d", d_cmd_start);
+    $display("d_cmd_write       : %d", d_cmd_write);
+    $display("d_cmd_ready       : %d", d_cmd_ready);
+    $display("d_addr            : 0x%H", d_addr);
+    $display("wdata             : 0x%H", wdata);
+    $display("wmask             : 0x%H", wmask);
+    $display("rdata             : 0x%H", rdata);
+    $display("rdata_valid       : %d", rdata_valid);
+    $display("status            : %d", status);
+    $display("cmd_is_inst       : %d", cmd_is_inst);
+    $display("mem_cmd_start     : %d", mem_cmd_start);
+    $display("mem_cmd_write     : %d", mem_cmd_write);
+    $display("mem_cmd_ready     : %d", mem_cmd_ready);
+    $display("mem_addr          : 0x%H", mem_addr);
+    $display("mem_rdata         : 0x%H", mem_rdata);
+    $display("mem_rdata_valid   : %d", mem_rdata_valid);
 end
 `endif
 

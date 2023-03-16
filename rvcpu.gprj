@@ -5,26 +5,31 @@
     <Version>5</Version>
     <Device name="GW1NR-9C" pn="GW1NR-LV9QN88PC6/I5">gw1nr9c-004</Device>
     <FileList>
-        <File path="src/include/core.v" type="file.verilog" enable="1"/>
-        <File path="src/include/inst.v" type="file.verilog" enable="1"/>
-        <File path="src/include/memoryinterface.v" type="file.verilog" enable="1"/>
+        <File path="src/DivNbit.v" type="file.verilog" enable="1"/>
+        <File path="src/DivUnsignedNbit.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryMapController.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryMappedIO_Uart_rx.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryMappedIO_Uart_tx.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryUnlignedAccessController.v" type="file.verilog" enable="1"/>
+        <File path="src/MultNbit.v" type="file.verilog" enable="1"/>
+        <File path="src/MultUnsignedNbit.v" type="file.verilog" enable="1"/>
+        <File path="src/UARTMemory.v" type="file.verilog" enable="1"/>
+        <File path="src/Uart_rx.v" type="file.verilog" enable="1"/>
+        <File path="src/Uart_tx.v" type="file.verilog" enable="1"/>
         <File path="src/core.v" type="file.verilog" enable="1"/>
         <File path="src/csrstage.v" type="file.verilog" enable="1"/>
         <File path="src/decodestage.v" type="file.verilog" enable="1"/>
         <File path="src/executestage.v" type="file.verilog" enable="1"/>
         <File path="src/fetchstage.v" type="file.verilog" enable="1"/>
+        <File path="src/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
+        <File path="src/include/core.v" type="file.verilog" enable="1"/>
+        <File path="src/include/inst.v" type="file.verilog" enable="1"/>
+        <File path="src/include/memoryinterface.v" type="file.verilog" enable="1"/>
         <File path="src/main.v" type="file.verilog" enable="1"/>
         <File path="src/memory.v" type="file.verilog" enable="1"/>
         <File path="src/memoryinterface.v" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMapController.v" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMappedIO_Uart_rx.v" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMappedIO_Uart_tx.v" type="file.verilog" enable="1"/>
         <File path="src/memorystage.v" type="file.verilog" enable="1"/>
-        <File path="src/MemoryUnlignedAccessController.v" type="file.verilog" enable="1"/>
         <File path="src/test.v" type="file.verilog" enable="1"/>
-        <File path="src/Uart_rx.v" type="file.verilog" enable="1"/>
-        <File path="src/Uart_tx.v" type="file.verilog" enable="1"/>
-        <File path="src/UARTMemory.v" type="file.verilog" enable="1"/>
         <File path="src/writebackstage.v" type="file.verilog" enable="1"/>
         <File path="src/tangnano9k.cst" type="file.cst" enable="1"/>
         <File path="src/rvcpu.sdc" type="file.sdc" enable="1"/>

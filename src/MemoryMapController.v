@@ -1,4 +1,5 @@
 module MemoryMapController #(
+    parameter FMAX_MHz = 27,
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
 ) (
@@ -32,7 +33,9 @@ wire [31:0] uart_tx_rdata;
 wire        uart_tx_rdata_valid;
 wire [31:0] uart_tx_wdata       = input_wdata;
 
-MemoryMappedIO_Uart_tx #() memmap_uarttx (
+MemoryMappedIO_Uart_tx #(
+    .FMAX_MHz(FMAX_MHz)
+) memmap_uarttx (
     .clk(clk),
     .uart_tx(uart_tx),
 
@@ -54,7 +57,9 @@ wire [31:0] uart_rx_rdata;
 wire        uart_rx_rdata_valid;
 wire [31:0] uart_rx_wdata       = input_wdata;
 
-MemoryMappedIO_Uart_rx #() memmap_uartrx (
+MemoryMappedIO_Uart_rx #(
+    .FMAX_MHz(FMAX_MHz)
+) memmap_uartrx (
     .clk(clk),
     .uart_rx(uart_rx),
 
@@ -95,15 +100,15 @@ Memory
 `ifdef DEBUG
 always @(posedge clk) begin
     $display("MemoryMapController--------");
-    $display("addr                  : 0x%h", input_addr);
-    $display("is_uart_tx_addr       : %d", is_uart_tx_addr);
-    $display("uart_tx_addr          : 0x%h", uart_tx_addr);
-    $display("is_uart_rx_addr       : %d", is_uart_rx_addr);
-    $display("uart_rx_addr          : 0x%h", uart_rx_addr);
-    $display("start          : %d", input_cmd_start);
-    $display("write          : %d", input_cmd_write);
-    $display("wdata          : %d", input_wdata);
-    $display("rdata          : 0x%h, 0x%h, 0x%h", output_rdata, uart_tx_rdata, uart_rx_rdata);
+    $display("addr              : 0x%h", input_addr);
+    $display("is_uart_tx_addr   : %d", is_uart_tx_addr);
+    $display("uart_tx_addr      : 0x%h", uart_tx_addr);
+    $display("is_uart_rx_addr   : %d", is_uart_rx_addr);
+    $display("uart_rx_addr      : 0x%h", uart_rx_addr);
+    $display("start             : %d", input_cmd_start);
+    $display("write             : %d", input_cmd_write);
+    $display("wdata             : %d", input_wdata);
+    $display("rdata             : 0x%h, 0x%h, 0x%h", output_rdata, uart_tx_rdata, uart_rx_rdata);
 end
 `endif
 

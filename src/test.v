@@ -8,7 +8,7 @@ module test();
   reg uart_tx;
 
   main #() m(
-    .clk(clk),
+    .clk27MHz(clk),
     .uart_tx(uart_tx),
     .uart_rx(uart_rx),
     .exit(exit),
@@ -29,6 +29,11 @@ module test();
 			$display("Test failed : gp(%d) is not 1", gp);
     	$finish;
 	end 
+  end
+
+ initial begin
+    $dumpfile("debug.vcd");
+    $dumpvars(0,test);
   end
 
 endmodule

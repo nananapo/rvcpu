@@ -39,51 +39,51 @@ module MemoryStage(
 `include "include/memoryinterface.v"
 
 initial begin
-    output_read_data        = 32'hffffffff;
-    output_reg_pc           = 32'hffffffff;
-    output_alu_out          = 32'hffffffff;
-    output_br_flg           = 0;
-    output_br_target        = 0;
-    output_rf_wen           = 0;
-    output_wb_sel           = 0;
-    output_wb_addr          = 0;
-    output_jmp_flg          = 0;
+    output_read_data    = 32'hffffffff;
+    output_reg_pc       = 32'hffffffff;
+    output_alu_out      = 32'hffffffff;
+    output_br_flg       = 0;
+    output_br_target    = 0;
+    output_rf_wen       = 0;
+    output_wb_sel       = 0;
+    output_wb_addr      = 0;
+    output_jmp_flg      = 0;
 end
 
 localparam STATE_WAIT               = 0;
 localparam STATE_WAIT_READY         = 1;
 localparam STATE_WAIT_READ_VALID    = 2;
 
-reg [1:0]   state           = STATE_WAIT;
+reg [1:0]   state       = STATE_WAIT;
 
-wire [31:0] reg_pc          = wb_branch_hazard ? REGPC_NOP      : input_reg_pc;
-wire [31:0] rs2_data        = wb_branch_hazard ? 32'hffffffff   : input_rs2_data;
-wire [31:0] alu_out         = wb_branch_hazard ? 32'hffffffff   : input_alu_out;
-wire        br_flg          = wb_branch_hazard ? 0              : input_br_flg;
-wire [31:0] br_target       = wb_branch_hazard ? 32'hffffffff   : input_br_target;
-wire [3:0]  mem_wen         = wb_branch_hazard ? MEN_X          : input_mem_wen;
-wire        rf_wen          = wb_branch_hazard ? REN_X          : input_rf_wen;
-wire [3:0]  wb_sel          = wb_branch_hazard ? WB_X           : input_wb_sel;
-wire [4:0]  wb_addr         = wb_branch_hazard ? 0              : input_wb_addr;
-wire        jmp_flg         = wb_branch_hazard ? 0              : input_jmp_flg;
+wire [31:0] reg_pc      = wb_branch_hazard ? REGPC_NOP      : input_reg_pc;
+wire [31:0] rs2_data    = wb_branch_hazard ? 32'hffffffff   : input_rs2_data;
+wire [31:0] alu_out     = wb_branch_hazard ? 32'hffffffff   : input_alu_out;
+wire        br_flg      = wb_branch_hazard ? 0              : input_br_flg;
+wire [31:0] br_target   = wb_branch_hazard ? 32'hffffffff   : input_br_target;
+wire [3:0]  mem_wen     = wb_branch_hazard ? MEN_X          : input_mem_wen;
+wire        rf_wen      = wb_branch_hazard ? REN_X          : input_rf_wen;
+wire [3:0]  wb_sel      = wb_branch_hazard ? WB_X           : input_wb_sel;
+wire [4:0]  wb_addr     = wb_branch_hazard ? 0              : input_wb_addr;
+wire        jmp_flg     = wb_branch_hazard ? 0              : input_jmp_flg;
 
-reg [31:0]  save_reg_pc         = REGPC_NOP;
-reg [31:0]  save_alu_out        = 0;
-reg         save_br_flg         = 0;
-reg [31:0]  save_br_target      = 0;
-reg [31:0]  save_rs2_data       = 0;
-reg [3:0]   save_mem_wen        = 0;
-reg         save_rf_wen         = 0;
-reg [3:0]   save_wb_sel         = 0;
-reg [4:0]   save_wb_addr        = 0;
-reg         save_jmp_flg        = 0;
+reg [31:0]  save_reg_pc     = REGPC_NOP;
+reg [31:0]  save_alu_out    = 0;
+reg         save_br_flg     = 0;
+reg [31:0]  save_br_target  = 0;
+reg [31:0]  save_rs2_data   = 0;
+reg [3:0]   save_mem_wen    = 0;
+reg         save_rf_wen     = 0;
+reg [3:0]   save_wb_sel     = 0;
+reg [4:0]   save_wb_addr    = 0;
+reg         save_jmp_flg    = 0;
 
 
 wire is_store       = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
 wire is_load        = !is_store && mem_wen != MEN_X;
 wire is_store_save  = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
-wire next_flg =    (
+wire next_flg = (
     state == STATE_WAIT ? mem_wen == MEN_X || (is_store && mem_cmd_ready):
     state == STATE_WAIT_READY ? (is_store_save && mem_cmd_ready) : 
     state == STATE_WAIT_READ_VALID ? mem_rdata_valid :
@@ -215,16 +215,16 @@ wire [1:0] state_clk = wb_branch_hazard ? STATE_WAIT : state;
 always @(posedge clk) begin
     case (state_clk)
         STATE_WAIT: begin
-            save_reg_pc         <= reg_pc;
-            save_alu_out        <= alu_out;
-            save_br_flg         <= br_flg;
-            save_br_target      <= br_target;
-            save_rs2_data       <= rs2_data;
-            save_mem_wen        <= mem_wen;
-            save_rf_wen         <= rf_wen;
-            save_wb_sel         <= wb_sel;
-            save_wb_addr        <= wb_addr;
-            save_jmp_flg        <= jmp_flg;
+            save_reg_pc     <= reg_pc;
+            save_alu_out    <= alu_out;
+            save_br_flg     <= br_flg;
+            save_br_target  <= br_target;
+            save_rs2_data   <= rs2_data;
+            save_mem_wen    <= mem_wen;
+            save_rf_wen     <= rf_wen;
+            save_wb_sel     <= wb_sel;
+            save_wb_addr    <= wb_addr;
+            save_jmp_flg    <= jmp_flg;
 
             if (is_store) begin
                 if (mem_cmd_ready)
@@ -252,15 +252,15 @@ always @(posedge clk) begin
         end
     endcase
 
-    output_read_data        <= output_read_data_wire;
-    output_reg_pc           <= output_reg_pc_wire;
-    output_alu_out          <= output_alu_out_wire;
-    output_br_flg           <= output_br_flg_wire;
-    output_br_target        <= output_br_target_wire;
-    output_rf_wen           <= output_rf_wen_wire;
-    output_wb_sel           <= output_wb_sel_wire;
-    output_wb_addr          <= output_wb_addr_wire;
-    output_jmp_flg          <= output_jmp_flg_wire;
+    output_read_data    <= output_read_data_wire;
+    output_reg_pc       <= output_reg_pc_wire;
+    output_alu_out      <= output_alu_out_wire;
+    output_br_flg       <= output_br_flg_wire;
+    output_br_target    <= output_br_target_wire;
+    output_rf_wen       <= output_rf_wen_wire;
+    output_wb_sel       <= output_wb_sel_wire;
+    output_wb_addr      <= output_wb_addr_wire;
+    output_jmp_flg      <= output_jmp_flg_wire;
 end
 
 `ifdef DEBUG 

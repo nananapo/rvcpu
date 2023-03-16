@@ -1,7 +1,9 @@
-module UARTMemory(
-    input  wire clk,
-    input  wire uart_rx,
-    output wire uart_tx,
+module UARTMemory #(
+    parameter FMAX_MHz = 27 
+)(
+    input  wire         clk,
+    input  wire         uart_rx,
+    output wire         uart_tx,
 
     input  wire         cmd_start,
     input  wire         cmd_write,
@@ -27,7 +29,9 @@ reg         tx_start = 0;
 reg  [7:0]  tx_data  = 0;
 wire        tx_ready;
 
-Uart_rx #() rxModule(
+Uart_rx #(
+    .FMAX_MHz(FMAX_MHz)
+) rxModule (
     .clk(clk),
     .uart_rx(uart_rx),
     .rdata(rx_rdata),
@@ -42,15 +46,15 @@ Uart_tx #() txModule(
     .uart_tx(uart_tx)
 );
 
-localparam STATE_IDLE           = 0;
-localparam STATE_SEND_CMD       = 1;
-localparam STATE_SEND_CMD_RESET = 2;
-localparam STATE_SEND_ADDR      = 3;
-localparam STATE_SEND_ADDR_RESET= 4;
-localparam STATE_SEND_DATA      = 5;
-localparam STATE_SEND_DATA_RESET= 6;
-localparam STATE_RECEIVE_DATA   = 7;
-localparam STATE_END            = 8;
+localparam STATE_IDLE               = 0;
+localparam STATE_SEND_CMD           = 1;
+localparam STATE_SEND_CMD_RESET     = 2;
+localparam STATE_SEND_ADDR          = 3;
+localparam STATE_SEND_ADDR_RESET    = 4;
+localparam STATE_SEND_DATA          = 5;
+localparam STATE_SEND_DATA_RESET    = 6;
+localparam STATE_RECEIVE_DATA       = 7;
+localparam STATE_END                = 8;
 
 reg [3:0]   state = STATE_IDLE;
 

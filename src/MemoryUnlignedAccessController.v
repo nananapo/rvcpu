@@ -1,4 +1,5 @@
 module MemoryUnlignedAccessController #(
+    parameter FMAX_MHz = 27,
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
 ) (
@@ -26,6 +27,7 @@ wire        mem_rdata_valid;
 wire [31:0] mem_wdata;
 
 MemoryMapController #(
+    .FMAX_MHz(FMAX_MHz),
     .MEMORY_SIZE(MEMORY_SIZE),
     .MEMORY_FILE(MEMORY_FILE)
 ) memory (
@@ -49,20 +51,20 @@ reg [31:0]  save_wmask      = 0;
 
 wire[31:0]  save_addr_aligned   = {save_addr[31:2], 2'b00};
 
-localparam STATE_IDLE               = 0;
-localparam STATE_WAIT_READY         = 1;
-localparam STATE_END                = 2;
+localparam STATE_IDLE                               = 0;
+localparam STATE_WAIT_READY                         = 1;
+localparam STATE_END                                = 2;
 
-localparam STATE_READ_VALID_BEFORE_WRITE    = 3;
-localparam STATE_WAIT_WRITE_READY   = 4;
+localparam STATE_READ_VALID_BEFORE_WRITE            = 3;
+localparam STATE_WAIT_WRITE_READY                   = 4;
 localparam STATE_WAIT_READNEXT_READY_BEFORE_WRITE   = 5;
 localparam STATE_WAIT_READNEXT_VALID_BEFORE_WRITE   = 6;
-localparam STATE_WAIT_WRITE_READY_UNALIGNED1    = 7;
-localparam STATE_WAIT_WRITE_READY_UNALIGNED2    = 8;
+localparam STATE_WAIT_WRITE_READY_UNALIGNED1        = 7;
+localparam STATE_WAIT_WRITE_READY_UNALIGNED2        = 8;
 
-localparam STATE_WAIT_READ_VALID            = 9;
-localparam STATE_WAIT_READNEXT_READY        = 11;
-localparam STATE_WAIT_READNEXT_VALID        = 12;
+localparam STATE_WAIT_READ_VALID                    = 9;
+localparam STATE_WAIT_READNEXT_READY                = 11;
+localparam STATE_WAIT_READNEXT_VALID                = 12;
 
 localparam REGPC_NOP = 32'hffffffff;
 

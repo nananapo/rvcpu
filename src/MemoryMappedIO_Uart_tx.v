@@ -1,5 +1,6 @@
-module MemoryMappedIO_Uart_tx
-(
+module MemoryMappedIO_Uart_tx #(
+    parameter FMAX_MHz = 27
+)(
     input  wire         clk,
     output wire         uart_tx,
 
@@ -22,7 +23,7 @@ reg  [7:0]  queue_head  = 0;
 assign output_cmd_ready     = 1;
 assign output_rdata_valid   = 1;
 
-wire [5:0] buffer_addr = input_addr[7:2];
+wire [5:0] buffer_addr  = input_addr[7:2];
 
 wire is_queue_head_addr = input_addr == UART_TX_QUEUE_HEAD_OFFSET;
 wire is_queue_tail_addr = input_addr == UART_TX_QUEUE_TAIL_OFFSET;
@@ -50,7 +51,9 @@ reg         tx_start    = 0;
 reg [7:0]   tx_data     = 0;
 wire        tx_ready;
 
-Uart_tx #() txModule(
+Uart_tx #(
+    .FMAX_MHz(FMAX_MHz)
+) txModule(
     .clk(clk),
 
     .start(tx_start),

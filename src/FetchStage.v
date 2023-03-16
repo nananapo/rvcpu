@@ -138,20 +138,20 @@ end
 `ifdef DEBUG 
 always @(posedge clk) begin
     $display("FETCH -------------");
-    $display("status    : %d", state);
-    $display("fetched   : %d", is_fetched);
-    $display("reg_pc    : 0x%H", inner_reg_pc);
-    $display("out.reg_pc: 0x%H", output_reg_pc);
-    $display("out.inst  : 0x%H", output_inst);
-    $display("id.reg_pc : 0x%H", id_reg_pc);
-    $display("id.inst   : 0x%H", id_inst);
-    $display("mem.start : %d", mem_start);
-    $display("mem.ready : %d", mem_ready);
-    $display("mem.data  : 0x%H", mem_data);
-    $display("mem.valid : %d", mem_data_valid);
-    $display("stall_flg : %d", stall_flg);
-    $display("branch_haz: %d", wb_branch_hazard);
-    $display("branch_adr: 0x%H", wb_reg_pc);
+    $display("status        : %d", state);
+    $display("fetched       : %d", is_fetched);
+    $display("reg_pc        : 0x%H", inner_reg_pc);
+    $display("out.reg_pc    : 0x%H", output_reg_pc);
+    $display("out.inst      : 0x%H", output_inst);
+    $display("id.reg_pc     : 0x%H", id_reg_pc);
+    $display("id.inst       : 0x%H", id_inst);
+    $display("mem.start     : %d", mem_start);
+    $display("mem.ready     : %d", mem_ready);
+    $display("mem.data      : 0x%H", mem_data);
+    $display("mem.valid     : %d", mem_data_valid);
+    $display("stall_flg     : %d", stall_flg);
+    $display("branch_haz    : %d", wb_branch_hazard);
+    $display("branch_adr    : 0x%H", wb_reg_pc);
 end
 `endif
 
