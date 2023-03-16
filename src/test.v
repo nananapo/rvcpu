@@ -8,7 +8,7 @@ module test();
   reg uart_tx;
 
   main #() m(
-    .clk(clk),
+    .clk27MHz(clk),
     .uart_tx(uart_tx),
     .uart_rx(uart_rx),
     .exit(exit),

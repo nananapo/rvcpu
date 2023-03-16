@@ -1,7 +1,7 @@
 module Uart_tx
 #(
-    parameter FMAX_MHz = 27,
-    parameter BaudRate = 115200
+    parameter FMAX_MHz = 32'd27,
+    parameter BaudRate = 32'd115200
 )
 (
     input  wire         clk,        // system clock
@@ -12,7 +12,7 @@ module Uart_tx
     output wire         ready       // ready (1), busy (0)
 );
 
-localparam DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
+localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
 
 reg [3:0]   txState     = 0;
 reg [31:0]  txCounter   = 0;
