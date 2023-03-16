@@ -15,6 +15,10 @@ int main(void)
     {
         unsigned int rdtime = r_time();
         send_uint(rdtime);
+        uart_send_char('u');
+        uart_send_char('s');
+        uart_send_char('e');
+        uart_send_char('c');
         uart_send_char('\n');
 
         for (volatile int i = 0; i < 1000000; i++);
