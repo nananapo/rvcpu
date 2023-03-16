@@ -31,4 +31,9 @@ module test();
 	end 
   end
 
+ initial begin
+    $dumpfile("debug.vcd");
+    $dumpvars(0,test);
+  end
+
 endmodule
