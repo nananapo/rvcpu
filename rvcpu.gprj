@@ -21,6 +21,7 @@
         <File path="src/decodestage.v" type="file.verilog" enable="1"/>
         <File path="src/executestage.v" type="file.verilog" enable="1"/>
         <File path="src/fetchstage.v" type="file.verilog" enable="1"/>
+        <File path="src/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
         <File path="src/include/core.v" type="file.verilog" enable="1"/>
         <File path="src/include/inst.v" type="file.verilog" enable="1"/>
         <File path="src/include/memoryinterface.v" type="file.verilog" enable="1"/>
