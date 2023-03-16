@@ -1,7 +1,7 @@
 `default_nettype none
 
 module main #(
-    parameter FMAX_MHz = 22    
+    parameter FMAX_MHz = 20 
 )(
     input  wire         clk,
 
@@ -52,14 +52,17 @@ always @(posedge clk) begin
     led[5:0] = ~gp[5:0];
 end
 
+reg a = 1;
+wire b;
+
 MemoryInterface #(
     .FMAX_MHz(FMAX_MHz)
 ) memory (
     .clk(clk),
     .mem_uart_rx(mem_uart_rx),
     .mem_uart_tx(mem_uart_tx),
-    .uart_rx(uart_rx),
-    .uart_tx(uart_tx),
+    .uart_rx(a),
+    .uart_tx(b),
 
     .inst_start(mem_inst_start),
     .inst_ready(mem_inst_ready),
@@ -102,5 +105,31 @@ Core #(
 
     .exited(exited)
 );
+
+reg         tx_start    = 0;
+reg [7:0]   tx_data     = "A";
+wire        tx_ready;
+
+Uart_tx #(
+    .FMAX_MHz(FMAX_MHz)
+) txModule(
+    .clk(clk),
+
+    .start(tx_start),
+    .data(tx_data),
+    .ready(tx_ready),
+    .uart_tx(uart_tx)
+);
+
+reg tmit = 0;
+
+always @(posedge clk) begin
+    if (tmit) begin
+        tx_start <= 0;
+    end else if (clkCount == 1000) begin
+        tx_start <= 1;
+        tmit <= 1;
+    end
+end
 
 endmodule
