@@ -3,6 +3,24 @@
 #define UART_TX_DATAPTR ((volatile char *)(0xff000000))
 #define UART_TX_BUFSIZE 256
 
+void uart_send_char(char c);
+void send_int(int value);
+void send_uint(unsigned int value);
+
+static inline unsigned int r_time();
+
+int main(void)
+{
+    while (1)
+    {
+        unsigned int rdtime = r_time();
+        send_uint(rdtime);
+        uart_send_char('\n');
+
+        for (volatile int i = 0; i < 1000000; i++);
+    }
+}
+
 #ifndef DEBUG
 void uart_send_char(char c)
 {
@@ -96,15 +114,3 @@ static unsigned int r_time()
     return 10100010;
 }
 #endif
-
-int main(void)
-{
-    while (1)
-    {
-        unsigned int rdtime = r_time();
-        send_uint(rdtime);
-        uart_send_char('\n');
-
-        for (volatile int i = 0; i < 1000000; i++);
-    }
-}
