@@ -3,14 +3,21 @@
 #define UART_TX_DATAPTR ((volatile char *)(0xff000000))
 #define UART_TX_BUFSIZE 256
 
+#ifndef DEBUG
 void uart_send_char(char c)
 {
     // TODO バッファが空くのを待った後、ロックを取りたい
     int tail = *UART_TX_TAILPTR;
     UART_TX_DATAPTR[tail] = c;
     *UART_TX_TAILPTR = (tail + 1) % UART_TX_BUFSIZE;
-    //while (*UART_TX_HEADPTR >= tail + 1); // 送信完了を待つ
+    while (*UART_TX_HEADPTR >= tail + 1); // 送信完了を待つ
 }
+#else
+void uart_send_char(char c)
+{
+    printf("%c", c);
+}
+#endif
 
 void send_int(int value)
 {
@@ -76,12 +83,19 @@ void send_uint(unsigned int value)
     }
 }
 
+#ifndef DEBUG
 static inline unsigned int r_time()
 {
   unsigned int x;
   __asm__ volatile("csrr %0, time" : "=r" (x));
   return x;
 }
+#else
+static unsigned int r_time()
+{
+    return 10100010;
+}
+#endif
 
 int main(void)
 {
