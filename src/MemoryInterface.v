@@ -65,7 +65,7 @@ wire [31:0] mem_wmask;
     `endif
     #(
         .FMAX_MHz(FMAX_MHz),
-        .MEMORY_SIZE(4096),
+        .MEMORY_SIZE(8192),
     `ifdef RISCV_TEST
         // make riscv-tests
         .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
