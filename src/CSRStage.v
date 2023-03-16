@@ -51,6 +51,8 @@ always @(posedge clk) begin
     // timeをμ秒ごとにインクリメント
     if (timecounter == FMAX_MHz - 1) begin
         reg_time    <= reg_time + 1;
+        timecounter <= 0;
+    end else begin
         timecounter <= timecounter + 1;
     end
 end
