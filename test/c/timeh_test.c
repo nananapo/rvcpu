@@ -20,15 +20,12 @@ int main(void)
         uart_send_char('e');
         uart_send_char('c');
         uart_send_char('\n');
-
-        for (volatile int i = 0; i < 1000000; i++);
     }
 }
 
 #ifndef DEBUG
 void uart_send_char(char c)
 {
-    // TODO バッファが空くのを待った後、ロックを取りたい
     int tail = *UART_TX_TAILPTR;
     int tailTo = (tail + 1) % UART_TX_BUFSIZE;
     UART_TX_DATAPTR[tail] = c;
