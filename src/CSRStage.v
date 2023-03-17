@@ -30,11 +30,6 @@ reg [1:0]   mode = MACHINE_MODE;
 
 
 /*-------実装済みのCSRたち--------*/
-localparam CSR_ADDR_MSCRATCH    = 12'h340;
-localparam CSR_ADDR_MCAUSE      = 12'h342;
-
-reg [31:0]  reg_mscratch = 0;
-reg [31:0]  reg_mcause   = 0;
 
 // Counters and Timers
 localparam CSR_ADDR_CYCLE       = 12'hc00;
@@ -137,8 +132,32 @@ reg         reg_mstatush_sbe    = 0;
 //reg [3:0]   reg_mstatush_wpri   = 0;
 
 reg [31:0]  reg_mie             = 0;
-
 reg [31:0]  reg_mtvec           = 0;
+
+// Machine Trap Handling
+/*
+3.1.9
+割り込みiがM-modeにトラップする条件(全部trueのとき)
+(a) 今のモードがMで、mstatusのMIEがsetされてる(1?) / または、M-odeより低いモード
+(b) mipとmieでiがsetされている
+(c) midelegがあるなら、iがmidelegに設定されていない
+*/
+localparam CSR_ADDR_MSCRATCH    = 12'h340; // 自由
+localparam CSR_ADDR_MEPC        = 12'h341; // M-modeにトラップするとき、仮想アドレスに設定する
+localparam CSR_ADDR_MCAUSE      = 12'h342; // trapするときに書き込む。上位1bitでInterruptかを判断する
+localparam CSR_ADDR_MTVAL       = 12'h343; // exceptionなら実装によって書き込まれる?
+localparam CSR_ADDR_MIP         = 12'h344; // 3.1.9
+localparam CSR_ADDR_MTINST      = 12'h34a; // 0でいい、 8.6.3に書いてある?
+localparam CSR_ADDR_MTVAL2      = 12'h34b; // 0でいい
+
+reg [31:0]  reg_mscratch    = 0;
+reg [31:0]  reg_mepc        = 0;
+reg [31:0]  reg_mcause      = 0;
+reg [31:0]  reg_mtval       = 0;
+reg [31:0]  reg_mip         = 0;
+reg [31:0]  reg_mtinst      = 0;
+reg [31:0]  reg_mtval2      = 0;
+
 
 reg [31:0]  timecounter = 0;
 always @(posedge clk) begin
@@ -193,9 +212,6 @@ always @(posedge clk) begin
     output_csr_cmd  <= csr_cmd;
 
     case (addr)
-        CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
-        CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
-        
         // Counters and Timers
         CSR_ADDR_CYCLE:     csr_rdata <= reg_cycle[31:0];
         CSR_ADDR_TIME:      csr_rdata <= reg_time[31:0];
@@ -245,6 +261,15 @@ always @(posedge clk) begin
             reg_mstatush_sbe,
             4'b0
         };
+
+        // Machine Trap Handling
+        CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
+        CSR_ADDR_MEPC:      csr_rdata <= reg_mepc;
+        CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
+        CSR_ADDR_MTVAL:     csr_rdata <= reg_mtval;
+        CSR_ADDR_MIP:       csr_rdata <= reg_mip;
+        // CSR_ADDR_MTINST:    0
+        // CSR_ADDR_MTVAL2:    0
         default:            csr_rdata <= 32'b0;
     endcase
 
@@ -309,6 +334,15 @@ always @(posedge clk) begin
                 reg_mstatush_sbe    <= wdata[4];
                 //reg_mstatush_wpri   <= wdata[3:0];
             end
+
+            // Machine Trap Handling
+            CSR_ADDR_MSCRATCH:  reg_mscratch <= wdata;
+            CSR_ADDR_MEPC:      reg_mepc     <= wdata;
+            CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
+            CSR_ADDR_MTVAL:     reg_mtval    <= wdata;
+            CSR_ADDR_MIP:       reg_mip      <= wdata;
+            // CSR_ADDR_MTINST:    0
+            // CSR_ADDR_MTVAL2:    0
             default:            reg_mtvec   <= reg_mtvec; //nop
         endcase
     end
