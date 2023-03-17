@@ -33,10 +33,19 @@ reg [1:0] mode = MACHINE_MODE;
 localparam CSR_ADDR_MSCRATCH    = 12'h340;
 localparam CSR_ADDR_MCAUSE      = 12'h342;
 localparam CSR_ADDR_MTVEC       = 12'h305;
+
+// Counters and Timers
 localparam CSR_ADDR_CYCLE       = 12'hc00;
 localparam CSR_ADDR_TIME        = 12'hc01;
 localparam CSR_ADDR_CYCLEH      = 12'hc80;
 localparam CSR_ADDR_TIMEH       = 12'hc81;
+
+// Machine Information Registers
+localparam CSR_ADDR_MVENDORID   = 12'hf11;
+localparam CSR_ADDR_MARCHID     = 12'hf12;
+localparam CSR_ADDR_MIPID       = 12'hf13;
+localparam CSR_ADDR_MHARTID     = 12'hf14;
+localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
 
 reg [31:0] reg_mscratch = 0;
 reg [31:0] reg_mcause   = 0;
@@ -100,10 +109,20 @@ always @(posedge clk) begin
         CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
         CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
         CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
+        
+        // Counters and Timers
         CSR_ADDR_CYCLE:     csr_rdata <= reg_cycle[31:0];
         CSR_ADDR_TIME:      csr_rdata <= reg_time[31:0];
         CSR_ADDR_CYCLEH:    csr_rdata <= reg_cycle[63:32];
         CSR_ADDR_TIMEH:     csr_rdata <= reg_time[63:32];
+
+        // Machine Information Registers
+        // 全部 0
+        //CSR_ADDR_MVENDORID: 
+        //CSR_ADDR_MARCHID:
+        //CSR_ADDR_MIPID:
+        //CSR_ADDR_MHARTID:
+        //CSR_ADDR_MCONFIGPTR:
         default:            csr_rdata <= 32'b0;
     endcase
 
@@ -116,10 +135,20 @@ always @(posedge clk) begin
             CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
             CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
             CSR_ADDR_MSCRATCH:  reg_mscratch<= wdata;
-            // CSR_ADDR_CYCLE: // READ ONLY
-            // CSR_ADDR_TIME: // READ ONLY
-            // CSR_ADDR_CYCLEH: // READ ONLY
-            // CSR_ADDR_TIMEH: // READ ONLY
+            // Counters and Timers
+            // READ ONLY
+            // CSR_ADDR_CYCLE:
+            // CSR_ADDR_TIME:
+            // CSR_ADDR_CYCLEH:
+            // CSR_ADDR_TIMEH:
+            
+            // Machine Information Registers
+            // READ ONLY
+            //CSR_ADDR_MVENDORID: 
+            //CSR_ADDR_MARCHID:
+            //CSR_ADDR_MIPID:
+            //CSR_ADDR_MHARTID:
+            //CSR_ADDR_MCONFIGPTR:
             default:            reg_mtvec   <= reg_mtvec; //nop
         endcase
     end
