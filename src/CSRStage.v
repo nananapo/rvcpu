@@ -276,8 +276,9 @@ always @(posedge clk) begin
     save_csr_addr   <= addr;
     save_op1_data   <= op1_data;
 
-    if (save_csr_cmd != CSR_X) begin
-        if (save_csr_cmd == CSR_ECALL) begin
+    case (save_csr_cmd)
+        CSR_X: reg_mtvec <= reg_mtvec; // nop
+        CSR_ECALL: begin
             // 現在のモードに応じて書き込む値を変える
             case (mode)
                 MODE_MACHINE:       reg_mcause <= 11;
@@ -286,7 +287,8 @@ always @(posedge clk) begin
                 MODE_USER:          reg_mcause <= 8;
                 default:            reg_mcause <= 0;
             endcase
-        end else begin
+        end
+        default: begin
             case (save_csr_addr)
                 CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
                 CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
@@ -355,7 +357,7 @@ always @(posedge clk) begin
                 default:            reg_mtvec   <= reg_mtvec; //nop
             endcase
         end
-    end
+    endcase
 end
 
 `ifdef DEBUG 
