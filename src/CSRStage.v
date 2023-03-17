@@ -14,16 +14,16 @@ module CSRStage #(
     // output
     output reg  [2:0]   output_csr_cmd,
     output reg  [31:0]  csr_rdata,
-    output wire [31:0]  trap_vector
+    output reg  [31:0]  trap_vector
 );
 
 `include "include/core.v"
 
 // モード
-localparam MODE_MACHINE     = 0;
-localparam MODE_SUPERVISOR  = 1;
+localparam MODE_MACHINE     = 3;
 //localparam HYPERVISOR_MODE  = 2;
-localparam MODE_USER        = 3;
+localparam MODE_SUPERVISOR  = 1;
+localparam MODE_USER        = 0;
 
 // 現在のモード
 reg [1:0]   mode = MODE_MACHINE;
@@ -172,9 +172,6 @@ always @(posedge clk) begin
     end
 end
 
-assign trap_vector = reg_mtvec; 
-
-
 /*---------CSR命令の実行----------*/
 initial begin
     output_csr_cmd  = CSR_X;
@@ -287,7 +284,23 @@ always @(posedge clk) begin
                 MODE_USER:          reg_mcause <= 8;
                 default:            reg_mcause <= 0;
             endcase
+            trap_vector <= reg_mtvec;
         end
+        CSR_MRET: begin
+            // 現在のモードをチェックしてない
+            mode            <= reg_mstatus_mpp;
+            reg_mstatus_mpp <= MODE_USER;
+            reg_mstatus_mie <= reg_mstatus_mpie;
+            if (reg_mstatus_mpp != MODE_MACHINE) begin
+                reg_mstatus_mprv <= 0;
+            end
+            trap_vector     <= reg_mepc;
+        end
+        /*
+        CSR_SRET: begin
+            trap_vector <= reg_sepc;
+        end
+        */
         default: begin
             case (save_csr_addr)
                 CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
