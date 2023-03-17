@@ -141,6 +141,11 @@ reg [31:0]  reg_mtvec           = 0;
 (a) 今のモードがMで、mstatusのMIEがsetされてる(1?) / または、M-odeより低いモード
 (b) mipとmieでiがsetされている
 (c) midelegがあるなら、iがmidelegに設定されていない
+
+3.1.14
+M-modeにトラップするとき、mepcにはtrapが発生した時の(仮想)アドレスを設定する
+それ以外では書かない、ソフトウェアも書き込む
+-> ecallで書き込むってこと？
 */
 localparam CSR_ADDR_MSCRATCH    = 12'h340; // 自由
 localparam CSR_ADDR_MEPC        = 12'h341; // M-modeにトラップするとき、仮想アドレスに設定する
