@@ -26,19 +26,24 @@ localparam SUPERVISOR_MODE  = 1;
 localparam USER_MODE        = 3;
 
 // 現在のモード
-reg [1:0] mode = MACHINE_MODE;
+reg [1:0]   mode = MACHINE_MODE;
 
 
 /*-------実装済みのCSRたち--------*/
 localparam CSR_ADDR_MSCRATCH    = 12'h340;
 localparam CSR_ADDR_MCAUSE      = 12'h342;
-localparam CSR_ADDR_MTVEC       = 12'h305;
+
+reg [31:0]  reg_mscratch = 0;
+reg [31:0]  reg_mcause   = 0;
 
 // Counters and Timers
 localparam CSR_ADDR_CYCLE       = 12'hc00;
 localparam CSR_ADDR_TIME        = 12'hc01;
 localparam CSR_ADDR_CYCLEH      = 12'hc80;
 localparam CSR_ADDR_TIMEH       = 12'hc81;
+
+reg [63:0]  reg_cycle    = 0;
+reg [63:0]  reg_time     = 0;
 
 // Machine Information Registers
 localparam CSR_ADDR_MVENDORID   = 12'hf11;
@@ -47,13 +52,95 @@ localparam CSR_ADDR_MIPID       = 12'hf13;
 localparam CSR_ADDR_MHARTID     = 12'hf14;
 localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
 
-reg [31:0] reg_mscratch = 0;
-reg [31:0] reg_mcause   = 0;
-reg [31:0] reg_mtvec    = 0;
-reg [63:0] reg_cycle    = 0;
-reg [63:0] reg_time     = 0;
+// Machine Trap Setup
+/*
+基本はマシンモードで処理
+trapは高い特権モードから低い特権モードに遷移することはない
+ただ、同じ特権モードに遷移することはある
 
-reg [31:0] timecounter = 0;
+S-modeからM-modeにトラップするとき、
+mpieはmieになる。mieは0になる。mppはSになる(S-modeを表すものになる)
+
+mretする。MPPが権限モードyを表しているとする。
+MIEはMPIEに変更される。MIPEは1になる。
+MPPはサポートされてる最も低い権限モードの値に設定される。
+(UがサポートされてたらU、それ以外はM)
+(UではなくSの場合は？)
+MPP!=Mの時、MPRVを0に設定する
+
+RV32なら、SXL, UXLは32で固定
+
+3.1.6.3
+MPRVは有効な特権モードを変更する
+MPRV=0:
+    普通。現在のモードのtranslation(ページング？)とプロテクション機構を使う
+MPRV=1:
+    現在のモードがMPPに設定されてるかのように
+    load, storeのアドレスはtranslate & protected。エンディアンも*
+    命令は関係ない
+UモードがサポートされてないならMPRV=read-only 0
+
+M->S, U、S->Urにretするとき、mprvは0になる
+
+MXRが有効だと、ReadableだけでなくてExecutableも読めるようになる
+ページベースの仮想メモリじゃないなら意味なし
+*/
+localparam CSR_ADDR_MSTATUS     = 12'h300;
+localparam CSR_ADDR_MISA        = 12'h301;
+localparam CSR_ADDR_MEDELEG     = 12'h302;
+localparam CSR_ADDR_MIDELEG     = 12'h303;
+localparam CSR_ADDR_MIE         = 12'h304;
+localparam CSR_ADDR_MTVEC       = 12'h305;
+localparam CSR_ADDR_MCOUNTEREN  = 12'h306;
+localparam CSR_ADDR_MSTATUSH    = 12'h310;
+
+reg         reg_mstatus_sd      = 0;
+//reg [7:0]   reg_mstatus_wpri    = 0;
+reg         reg_mstatus_tsr     = 0;
+reg         reg_mstatus_tw      = 0;
+reg         reg_mstatus_tvm     = 0;
+reg         reg_mstatus_mxr     = 0;
+reg         reg_mstatus_sum     = 0;
+reg         reg_mstatus_mprv    = 0;
+reg [1:0]   reg_mstatus_xs      = 0;
+reg [1:0]   reg_mstatus_fs      = 0;
+// S-modeでtrapしても書き込まれない
+reg [1:0]   reg_mstatus_mpp     = 0;
+reg [1:0]   reg_mstatus_vs      = 0;
+// S-modeでtrapしたとき、アクティブなとモードが書き込まれる
+reg         reg_mstatus_spp     = 0;
+// S-modeでtrapしても書き込まれない
+reg         reg_mstatus_mpie    = 0;
+reg         reg_mstatus_ube     = 0;
+// S-modeでtrapした時、sieが書き込まれる
+reg         reg_mstatus_spie    = 0;
+//reg         reg_mstatus_wpri    = 0;
+// M-modeでtrapしたとき、クリアされる
+reg         reg_mstatus_mie     = 0;
+//reg         reg_mstatus_wpri    = 0;
+// S-modeでtrapしたとき、クリアされる
+reg         reg_mstatus_sie     = 0;
+//reg         reg_mstatus_wpri    = 0;
+
+// サポートしないtrapは0を保持する
+// 1はreadonlyであってはならない。
+// デリゲートできるasynchronous trapはデリゲートされないことも必ずサポートしないといけない
+reg [31:0]  reg_medeleg         = 0;
+// サポートしないtrapは0を保持する
+// machine-levelの割り込みに対して1のread-onlyなbitを作ってはいけない
+// それ以外はOK
+reg [31:0]  reg_mideleg         = 0;
+
+//reg [25:0]  reg_mstatush_wpri   = 0;
+reg         reg_mstatush_mbe    = 0;
+reg         reg_mstatush_sbe    = 0;
+//reg [3:0]   reg_mstatush_wpri   = 0;
+
+reg [31:0]  reg_mie             = 0;
+
+reg [31:0]  reg_mtvec           = 0;
+
+reg [31:0]  timecounter = 0;
 always @(posedge clk) begin
     // cycleは毎クロックインクリメント
     reg_cycle   <= reg_cycle + 1;
@@ -107,7 +194,6 @@ always @(posedge clk) begin
 
     case (addr)
         CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
-        CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
         CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
         
         // Counters and Timers
@@ -117,12 +203,48 @@ always @(posedge clk) begin
         CSR_ADDR_TIMEH:     csr_rdata <= reg_time[63:32];
 
         // Machine Information Registers
-        // 全部 0
-        //CSR_ADDR_MVENDORID: 
-        //CSR_ADDR_MARCHID:
-        //CSR_ADDR_MIPID:
-        //CSR_ADDR_MHARTID:
-        //CSR_ADDR_MCONFIGPTR:
+        // CSR_ADDR_MVENDORID:  0
+        // CSR_ADDR_MARCHID:    0
+        // CSR_ADDR_MIPID:      0
+        // CSR_ADDR_MHARTID:    0
+        // CSR_ADDR_MCONFIGPTR: 0
+
+        // Machine Trap Setup
+        CSR_ADDR_MSTATUS:   csr_rdata <= {
+            reg_mstatus_sd,
+            8'b0,
+            reg_mstatus_tsr,
+            reg_mstatus_tw,
+            reg_mstatus_tvm,
+            reg_mstatus_mxr,
+            reg_mstatus_sum,
+            reg_mstatus_mprv,
+            reg_mstatus_xs,
+            reg_mstatus_fs,
+            reg_mstatus_mpp,
+            reg_mstatus_vs,
+            reg_mstatus_spp,
+            reg_mstatus_mpie,
+            reg_mstatus_ube,
+            reg_mstatus_spie,
+            1'b0,
+            reg_mstatus_mie,
+            1'b0,
+            reg_mstatus_sie,
+            1'b0
+        };
+        // CSR_ADDR_MISA = 0
+        CSR_ADDR_MEDELEG:   csr_rdata <= reg_medeleg;
+        CSR_ADDR_MIDELEG:   csr_rdata <= reg_mideleg;
+        CSR_ADDR_MIE:       csr_rdata <= reg_mie;
+        CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
+        // CSR_ADDR_MCOUNTEREN: 実装しない
+        CSR_ADDR_MSTATUSH:  csr_rdata <= {
+            26'b0,
+            reg_mstatush_mbe,
+            reg_mstatush_sbe,
+            4'b0
+        };
         default:            csr_rdata <= 32'b0;
     endcase
 
@@ -135,6 +257,7 @@ always @(posedge clk) begin
             CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
             CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
             CSR_ADDR_MSCRATCH:  reg_mscratch<= wdata;
+            
             // Counters and Timers
             // READ ONLY
             // CSR_ADDR_CYCLE:
@@ -144,11 +267,48 @@ always @(posedge clk) begin
             
             // Machine Information Registers
             // READ ONLY
-            //CSR_ADDR_MVENDORID: 
-            //CSR_ADDR_MARCHID:
-            //CSR_ADDR_MIPID:
-            //CSR_ADDR_MHARTID:
-            //CSR_ADDR_MCONFIGPTR:
+            // CSR_ADDR_MVENDORID: 
+            // CSR_ADDR_MARCHID:
+            // CSR_ADDR_MIPID:
+            // CSR_ADDR_MHARTID:
+            // CSR_ADDR_MCONFIGPTR:
+
+            // Machine Trap Setup
+            CSR_ADDR_MSTATUS: begin
+                reg_mstatus_sd      <= wdata[31];
+                //reg_mstatus_wpri    <= wdata[30:23];
+                reg_mstatus_tsr     <= wdata[22];
+                reg_mstatus_tw      <= wdata[21];
+                reg_mstatus_tvm     <= wdata[10];
+                reg_mstatus_mxr     <= wdata[19];
+                reg_mstatus_sum     <= wdata[18];
+                reg_mstatus_mprv    <= wdata[17];
+                reg_mstatus_xs      <= wdata[16:15];
+                reg_mstatus_fs      <= wdata[14:13];
+                reg_mstatus_mpp     <= wdata[12:11];
+                reg_mstatus_vs      <= wdata[10:9];
+                reg_mstatus_spp     <= wdata[8];
+                reg_mstatus_mpie    <= wdata[7];
+                reg_mstatus_ube     <= wdata[6];
+                reg_mstatus_spie    <= wdata[5];
+                //reg_mstatus_wpri    <= wdata[4];
+                reg_mstatus_mie     <= wdata[3];
+                //reg_mstatus_wpri    <= wdata[2];
+                reg_mstatus_sie     <= wdata[1];
+                //reg_mstatus_wpri    <= wdata[0];
+            end
+            // CSR_ADDR_MISA: READ ONLY
+            CSR_ADDR_MEDELEG:   reg_medeleg <= wdata;
+            CSR_ADDR_MIDELEG:   reg_mideleg <= wdata;
+            CSR_ADDR_MIE:       reg_mie     <= wdata;
+            CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
+            // CSR_ADDR_MCOUNTEREN: 実装しない
+            CSR_ADDR_MSTATUSH: begin
+                //reg_mstatush_wpri   <= wdata[31:6],
+                reg_mstatush_mbe    <= wdata[5];
+                reg_mstatush_sbe    <= wdata[4];
+                //reg_mstatush_wpri   <= wdata[3:0];
+            end
             default:            reg_mtvec   <= reg_mtvec; //nop
         endcase
     end
