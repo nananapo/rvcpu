@@ -257,7 +257,7 @@ always @(posedge clk) begin
                 // H-mode = 10
                 // S-mode = 9
                 // U-mode = 8
-                reg_mcause  <= {28'b0, 4'd8 + mode};
+                reg_mcause  <= {28'b0, 4'd8 + {2'b0,mode}};
                 mode        <= MODE_MACHINE; // TODO 適切なモードにする
             end
             CSR_MRET: begin
