@@ -4,6 +4,7 @@ module MemoryStage(
     input  wire          wb_branch_hazard,
 
     input  wire[31:0]    input_reg_pc,
+    input  wire[31:0]    input_inst,
     input  wire[31:0]    input_rs2_data,
     input  wire[31:0]    input_alu_out,
     input  wire          input_br_flg,
@@ -16,6 +17,7 @@ module MemoryStage(
 
     output reg [31:0]    output_read_data,
     output reg [31:0]    output_reg_pc,
+    output reg [31:0]    output_inst,
     output reg [31:0]    output_alu_out,
     output reg           output_br_flg,
     output reg [31:0]    output_br_target,
@@ -40,7 +42,8 @@ module MemoryStage(
 
 initial begin
     output_read_data    = 32'hffffffff;
-    output_reg_pc       = 32'hffffffff;
+    output_reg_pc       = REGPC_NOP;
+    output_inst         = INST_NOP;
     output_alu_out      = 32'hffffffff;
     output_br_flg       = 0;
     output_br_target    = 0;
@@ -57,6 +60,7 @@ localparam STATE_WAIT_READ_VALID    = 2;
 reg [1:0]   state       = STATE_WAIT;
 
 wire [31:0] reg_pc      = wb_branch_hazard ? REGPC_NOP      : input_reg_pc;
+wire [31:0] inst        = wb_branch_hazard ? INST_NOP       : input_inst;
 wire [31:0] rs2_data    = wb_branch_hazard ? 32'hffffffff   : input_rs2_data;
 wire [31:0] alu_out     = wb_branch_hazard ? 32'hffffffff   : input_alu_out;
 wire        br_flg      = wb_branch_hazard ? 0              : input_br_flg;
@@ -68,6 +72,7 @@ wire [4:0]  wb_addr     = wb_branch_hazard ? 0              : input_wb_addr;
 wire        jmp_flg     = wb_branch_hazard ? 0              : input_jmp_flg;
 
 reg [31:0]  save_reg_pc     = REGPC_NOP;
+reg [31:0]  save_inst       = INST_NOP;
 reg [31:0]  save_alu_out    = 0;
 reg         save_br_flg     = 0;
 reg [31:0]  save_br_target  = 0;
@@ -165,7 +170,13 @@ wire output_is_save = (
 wire [31:0] output_reg_pc_wire = (
     output_is_current ? reg_pc :
     output_is_save ? save_reg_pc :
-    32'hffffffff
+    REGPC_NOP
+);
+
+wire [31:0] output_inst_wire = (
+    output_is_current ? inst :
+    output_is_save ? save_inst :
+    INST_NOP
 );
 
 wire [31:0] output_alu_out_wire  = (
@@ -216,6 +227,7 @@ always @(posedge clk) begin
     case (state_clk)
         STATE_WAIT: begin
             save_reg_pc     <= reg_pc;
+            save_inst       <= inst;
             save_alu_out    <= alu_out;
             save_br_flg     <= br_flg;
             save_br_target  <= br_target;
@@ -254,6 +266,7 @@ always @(posedge clk) begin
 
     output_read_data    <= output_read_data_wire;
     output_reg_pc       <= output_reg_pc_wire;
+    output_inst         <= output_inst_wire;
     output_alu_out      <= output_alu_out_wire;
     output_br_flg       <= output_br_flg_wire;
     output_br_target    <= output_br_target_wire;

@@ -57,6 +57,10 @@ wire        exe_stage_alu_stall_flg;
 // 割り込みが起こりそうで、ifステージをストールさせているかのフラグ
 wire        stall_flg_may_interrupt;
 
+// inst
+wire [31:0] mem_inst;
+wire [31:0] wb_inst;
+
 //**************************
 // Fetch Stage
 //**************************
@@ -104,6 +108,7 @@ wire [31:0] exe_imm_u_shifted;
 wire [31:0] exe_imm_z_uext;
 
 wire [31:0] exe_reg_pc;
+wire [31:0] exe_inst;
 wire [4:0]  exe_exe_fun; // TODO bitwise
 wire [31:0] exe_op1_data;
 wire [31:0] exe_op2_data;
@@ -131,6 +136,7 @@ DecodeStage #() decodestage
     .imm_z_uext(exe_imm_z_uext),
 
     .output_reg_pc(exe_reg_pc),
+    .output_inst(exe_inst),
     .exe_fun(exe_exe_fun),
     .op1_data(exe_op1_data),
     .op2_data(exe_op2_data),
@@ -187,6 +193,7 @@ ExecuteStage #() executestage
     .wb_branch_hazard(wbstage_branch_hazard),
 
     .input_reg_pc(exe_reg_pc),
+    .input_inst(exe_inst),
     .input_exe_fun(exe_exe_fun),
     .input_op1_data(exe_op1_data),
     .input_op2_data(exe_op2_data),
@@ -205,6 +212,7 @@ ExecuteStage #() executestage
     .br_target(mem_br_target),
 
     .output_reg_pc(mem_reg_pc),
+    .output_inst(mem_inst),
     .output_mem_wen(mem_mem_wen),
     .output_rf_wen(mem_rf_wen),
     .output_rs2_data(mem_rs2_data),
@@ -240,6 +248,7 @@ MemoryStage #() memorystage
     .wb_branch_hazard(wbstage_branch_hazard),
 
     .input_reg_pc(mem_reg_pc),
+    .input_inst(mem_inst),
     .input_rs2_data(mem_rs2_data),
     .input_alu_out(mem_alu_out),
     .input_br_flg(mem_br_flg),
@@ -253,6 +262,7 @@ MemoryStage #() memorystage
     .output_rf_wen(wb_rf_wen),
     .output_read_data(wb_read_data),
     .output_reg_pc(wb_reg_pc),
+    .output_inst(wb_inst),
     .output_alu_out(wb_alu_out),
     .output_br_flg(wb_br_flg),
     .output_br_target(wb_br_target),

@@ -7,8 +7,10 @@ module DecodeStage
     input  wire[31:0]   input_reg_pc,
     input  wire[31:0]   regfile[31:0],
 
-    // 即値
+    
     output reg [31:0]   output_reg_pc,
+    output reg [31:0]   output_inst,
+    // 即値
     output reg [31:0]   imm_i_sext,
     output reg [31:0]   imm_s_sext,
     output reg [31:0]   imm_b_sext,
@@ -49,6 +51,16 @@ module DecodeStage
 `include "include/inst.v"
 
 initial begin
+    output_reg_pc   = REGPC_NOP;
+    output_inst     = INST_NOP;
+    
+    imm_i_sext      = 0;
+    imm_s_sext      = 0;
+    imm_b_sext      = 0;
+    imm_j_sext      = 0;
+    imm_u_shifted   = 0;
+    imm_z_uext      = 0;
+    
     exe_fun     = 0;
     op1_data    = 0;
     op2_data    = 0;
@@ -214,6 +226,9 @@ wire [4:0] wire_wb_addr     = inst[11:7];
 
 always @(posedge clk) begin
     if (data_hazard_stall_flg) begin
+        output_reg_pc   <= REGPC_NOP;
+        output_inst     <= INST_NOP;
+
         imm_i_sext      <= 32'hffffffff;
         imm_s_sext      <= 32'hffffffff;
         imm_b_sext      <= 32'hffffffff;
@@ -225,7 +240,7 @@ always @(posedge clk) begin
         op2_data        <= 32'hffffffff;
         rs2_data        <= 32'hffffffff;
         jmp_flg         <= 0;
-        output_reg_pc   <= 32'hffffffff;
+
         exe_fun         <= ALU_ADD;
         mem_wen         <= MEN_X;
         rf_wen          <= REN_X;
@@ -233,6 +248,9 @@ always @(posedge clk) begin
         wb_addr         <= 0;
         csr_cmd         <= CSR_X;
     end else begin
+        output_reg_pc   <= reg_pc;
+        output_inst     <= inst;
+
         imm_i_sext      <= wire_imm_i_sext;
         imm_s_sext      <= wire_imm_s_sext;
         imm_b_sext      <= wire_imm_b_sext;
@@ -259,7 +277,6 @@ always @(posedge clk) begin
         rs2_data        <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
         jmp_flg         <= inst_is_jal || inst_is_jalr;
 
-        output_reg_pc   <= reg_pc;
         exe_fun         <= wire_exe_fun;
         mem_wen         <= wire_mem_wen;
         rf_wen          <= wire_rf_wen;
