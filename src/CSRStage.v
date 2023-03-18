@@ -295,10 +295,6 @@ always @(posedge clk) begin
         */
         default: begin
             case (save_csr_addr)
-                CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
-                CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
-                CSR_ADDR_MSCRATCH:  reg_mscratch<= wdata;
-                
                 // Counters and Timers
                 // READ ONLY
                 // CSR_ADDR_CYCLE:
