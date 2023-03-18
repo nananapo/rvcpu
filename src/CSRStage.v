@@ -454,6 +454,10 @@ always @(posedge clk) begin
     $display("wdata        : 0x%H", wdata);
     $display("trap_vector  : 0x%H", trap_vector);
     $display("mtvec        : 0x%H", reg_mtvec);
+    $display("mtime        : 0x%H", reg_mtime);
+    $display("mtimecmp     : 0x%H", reg_mtimecmp);
+    $display("time.stall   : %d", timer_stall);
+    $display("intr.ready   : %d", input_interrupt_ready);
 end
 `endif
 

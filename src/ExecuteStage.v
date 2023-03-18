@@ -394,6 +394,7 @@ always @(posedge clk) begin
     $display("op2_data  : 0x%H", op2_data);
     $display("out.stall : %d", output_stall_flg);
     $display("ismulticyc: %d", is_multicycle_exe);
+    $display("lastismulc: %d", last_cycle_is_multicycle_exe);
 `ifndef EXCLUDE_RV32M
     $display("iscalcstrt: %d", is_calc_started);
     $display("iscalculed: %d", is_calculated);
