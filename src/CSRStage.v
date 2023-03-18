@@ -232,12 +232,16 @@ always @(posedge clk) begin
     if (timer_stall && input_interrupt_ready) begin
         output_csr_cmd  <= CSR_ECALL;
         if (reg_mideleg_mtie == 0) begin
-            mode        <= MODE_MACHINE;
-            trap_vector <= reg_mtvec; 
+            mode                <= MODE_MACHINE;
+            trap_vector         <= reg_mtvec;
+            reg_mstatus_mpie    <= reg_mstatus_mie;
+            reg_mstatus_mie     <= 0;
         end else begin
-            mode        <= MODE_SUPERVISOR;
-            trap_vector <= reg_mtvec; 
-            //trap_vector <= reg_stvec; 
+            mode                <= MODE_SUPERVISOR;
+            trap_vector         <= reg_mtvec; 
+            //trap_vector         <= reg_stvec; 
+            reg_mstatus_spie    <= reg_mstatus_sie;
+            reg_mstatus_sie     <= 0;
         end
     end else begin
         output_csr_cmd  <= csr_cmd;
