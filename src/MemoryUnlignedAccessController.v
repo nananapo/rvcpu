@@ -8,6 +8,9 @@ module MemoryUnlignedAccessController #(
     input  wire         uart_rx,
     output wire         uart_tx,
 
+    input  wire [63:0]  mtime,
+    output wire [63:0]  mtimecmp,
+
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
     output wire         output_cmd_ready,
@@ -32,8 +35,12 @@ MemoryMapController #(
     .MEMORY_FILE(MEMORY_FILE)
 ) memory (
     .clk(clk),
+
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
+
+    .mtime(mtime),
+    .mtimecmp(mtimecmp),
 
     .input_cmd_start(mem_cmd_start),
     .input_cmd_write(mem_cmd_write),
