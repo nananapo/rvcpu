@@ -175,6 +175,8 @@ localparam CSR_ADDR_MIP         = 12'h344; // 3.1.9
 localparam CSR_ADDR_MTINST      = 12'h34a; // 0でいい、 8.6.3に書いてある?
 localparam CSR_ADDR_MTVAL2      = 12'h34b; // 0でいい
 
+localparam MCAUSE_MACHINE_TIMER_INTERRUPT = 32'b10000000_00000000_00000000_10000000;
+
 reg [31:0]  reg_mscratch    = 0;
 reg [31:0]  reg_mepc        = 0;
 reg [31:0]  reg_mcause      = 0;
@@ -233,6 +235,7 @@ always @(posedge clk) begin
     if (timer_stall && input_interrupt_ready) begin
         output_csr_cmd  <= CSR_ECALL;
         reg_mstatus_mpp <= mode;
+        reg_mcause      <= MCAUSE_MACHINE_TIMER_INTERRUPT;
         `ifdef DEBUG
         $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
         `endif
