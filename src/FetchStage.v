@@ -84,10 +84,10 @@ wire [31:0] output_inst = (
 );
 
 always @(posedge clk) begin
-    if (!stall_flg) begin
-        id_reg_pc   <= output_reg_pc;
-        id_inst     <= output_inst;
-    end
+
+    id_reg_pc   <= output_reg_pc;
+    id_inst     <= output_inst;
+
     if (wb_branch_hazard) begin
         inner_reg_pc <= wb_reg_pc;
     end
