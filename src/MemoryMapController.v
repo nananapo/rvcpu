@@ -8,6 +8,9 @@ module MemoryMapController #(
     input  wire uart_rx,
     output wire uart_tx,
 
+    input  wire [63:0]  mtime,
+    output wire [63:0]  mtimecmp,
+
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
     output wire         output_cmd_ready,
@@ -22,7 +25,8 @@ module MemoryMapController #(
 
 wire is_uart_tx_addr    = UART_TX_OFFSET <= input_addr && input_addr <= UART_TX_END;
 wire is_uart_rx_addr    = UART_RX_OFFSET <= input_addr && input_addr <= UART_RX_END;
-wire is_default_memory  = !is_uart_tx_addr && !is_uart_rx_addr;
+wire is_mtimereg_addr   = MACHINETIMEREG_OFFSET <= input_addr && input_addr <= MACHINETIMEREG_END;
+wire is_default_memory  = !is_uart_tx_addr && !is_uart_rx_addr && !is_mtimereg_addr;
 
 // UART_TX
 wire        uart_tx_cmd_start   = is_uart_tx_addr ? input_cmd_start : 0;
@@ -72,6 +76,33 @@ MemoryMappedIO_Uart_rx #(
     .input_wdata(uart_rx_wdata)
 );
 
+// Machine Time Register
+wire        mtimereg_cmd_start   = is_mtimereg_addr ? input_cmd_start : 0;
+wire        mtimereg_cmd_write   = is_mtimereg_addr ? input_cmd_write : 0;
+wire        mtimereg_cmd_ready;
+wire [31:0] mtimereg_addr        = input_addr - MACHINETIMEREG_OFFSET;
+wire [31:0] mtimereg_rdata;
+wire        mtimereg_rdata_valid;
+wire [31:0] mtimereg_wdata       = input_wdata;
+
+MemoryMappedIO_MachineTimeRegister #(
+    .FMAX_MHz(FMAX_MHz)
+) memmap_uarttx (
+    .clk(clk),
+
+    .input_cmd_start(mtimereg_cmd_start),
+    .input_cmd_write(mtimereg_cmd_write),
+    .output_cmd_ready(mtimereg_cmd_ready),
+    .input_addr(mtimereg_addr),
+    .output_rdata(mtimereg_rdata),
+    .output_rdata_valid(mtimereg_rdata_valid),
+    .input_wdata(mtimereg_wdata),
+
+    .mtime(mtime),
+    .mtimecmp(mtimecmp)
+);
+
+
 // メモリ
 wire        mem_cmd_start   = is_default_memory ? input_cmd_start : 0;
 wire        mem_cmd_write   = is_default_memory ? input_cmd_write : 0;
@@ -105,6 +136,8 @@ always @(posedge clk) begin
     $display("uart_tx_addr      : 0x%h", uart_tx_addr);
     $display("is_uart_rx_addr   : %d", is_uart_rx_addr);
     $display("uart_rx_addr      : 0x%h", uart_rx_addr);
+    $display("is_mtimereg_addr  : %d", is_mtimereg_addr);
+    $display("mtimereg_addr     : 0x%h", mtimereg_addr);
     $display("start             : %d", input_cmd_start);
     $display("write             : %d", input_cmd_write);
     $display("wdata             : %d", input_wdata);
@@ -114,12 +147,15 @@ end
 
 assign output_cmd_ready     =   is_uart_tx_addr ? uart_tx_cmd_ready : 
                                 is_uart_rx_addr ? uart_rx_cmd_ready : 
+                                is_mtimereg_addr? mtimereg_cmd_ready :
                                 mem_cmd_ready;
 assign output_rdata         =   is_uart_tx_addr ? uart_tx_rdata : 
                                 is_uart_rx_addr ? uart_rx_rdata : 
+                                is_mtimereg_addr? mtimereg_rdata :
                                 mem_rdata;
 assign output_rdata_valid   =   is_uart_tx_addr ? uart_tx_rdata_valid : 
                                 is_uart_rx_addr ? uart_rx_rdata_valid : 
+                                is_mtimereg_addr? mtimereg_rdata_valid : 
                                 mem_rdata_valid;
 
 endmodule
