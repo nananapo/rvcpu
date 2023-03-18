@@ -52,25 +52,46 @@ reg [31:0]  mem_wmask;
 reg [31:0]  mem_rdata;
 reg         mem_rdata_valid;
 
-reg [31:0]  clkCount    = 0;
 reg         exited      = 0;
 
 always @(posedge clkConstrained) begin
-    clkCount <= clkCount + 1;
     if (exit) begin
         exited <= 1;
     end
     led[5:0] = ~gp[5:0];
 end
 
+// Counter and Timers
+reg [63:0]  reg_cycle    = 0;
+reg [63:0]  reg_time     = 0;
+wire[63:0]  reg_mtimecmp;
+
+reg [31:0]  timecounter = 0;
+always @(posedge clkConstrained) begin
+    // cycleは毎クロックインクリメント
+    reg_cycle   <= reg_cycle + 1;
+    // timeをμ秒ごとにインクリメント
+    if (timecounter == FMAX_MHz - 1) begin
+        reg_time    <= reg_time + 1;
+        timecounter <= 0;
+    end else begin
+        timecounter <= timecounter + 1;
+    end
+end
+
 MemoryInterface #(
     .FMAX_MHz(FMAX_MHz)
 ) memory (
     .clk(clkConstrained),
+
     .mem_uart_rx(mem_uart_rx),
     .mem_uart_tx(mem_uart_tx),
+
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
+
+    .mtime(reg_time),
+    .mtimecmp(reg_mtimecmp),
 
     .inst_start(mem_inst_start),
     .inst_ready(mem_inst_ready),
@@ -93,6 +114,10 @@ Core #(
     .FMAX_MHz(FMAX_MHz)
 ) core (
     .clk(clkConstrained),
+    
+    .reg_cycle(reg_cycle),
+    .reg_time(reg_time),
+    .reg_mtimecmp(reg_mtimecmp),
 
     .memory_inst_start(mem_inst_start),
     .memory_inst_ready(mem_inst_ready),

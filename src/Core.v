@@ -4,6 +4,10 @@ module Core #(
     parameter FMAX_MHz = 27
 )(
     input  wire         clk,
+
+    input wire [63:0]   reg_cycle,
+    input wire [63:0]   reg_time,
+    input wire [63:0]   reg_mtimecmp,
     
     output reg          memory_inst_start,
     input  wire         memory_inst_ready,
@@ -270,6 +274,10 @@ CSRStage #(
 ) csrstage
 (
     .clk(clk),
+    
+    .reg_cycle(reg_cycle),
+    .reg_time(reg_time),
+    .reg_mtimecmp(reg_mtimecmp),
 
     .wb_branch_hazard(wbstage_branch_hazard),
 

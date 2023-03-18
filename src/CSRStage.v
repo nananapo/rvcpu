@@ -3,6 +3,10 @@ module CSRStage #(
 )
 (
     input  wire         clk,
+    
+    input wire [63:0]   reg_cycle,
+    input wire [63:0]   reg_time,
+    input wire [63:0]   reg_mtimecmp,
 
     input  wire         wb_branch_hazard,
     
@@ -36,9 +40,6 @@ localparam CSR_ADDR_CYCLE       = 12'hc00;
 localparam CSR_ADDR_TIME        = 12'hc01;
 localparam CSR_ADDR_CYCLEH      = 12'hc80;
 localparam CSR_ADDR_TIMEH       = 12'hc81;
-
-reg [63:0]  reg_cycle    = 0;
-reg [63:0]  reg_time     = 0;
 
 // Machine Information Registers
 localparam CSR_ADDR_MVENDORID   = 12'hf11;
@@ -162,20 +163,6 @@ reg [31:0]  reg_mtval       = 0;
 reg [31:0]  reg_mip         = 0;
 reg [31:0]  reg_mtinst      = 0;
 reg [31:0]  reg_mtval2      = 0;
-
-
-reg [31:0]  timecounter = 0;
-always @(posedge clk) begin
-    // cycleは毎クロックインクリメント
-    reg_cycle   <= reg_cycle + 1;
-    // timeをμ秒ごとにインクリメント
-    if (timecounter == FMAX_MHz - 1) begin
-        reg_time    <= reg_time + 1;
-        timecounter <= 0;
-    end else begin
-        timecounter <= timecounter + 1;
-    end
-end
 
 /*---------CSR命令の実行----------*/
 initial begin
