@@ -89,12 +89,20 @@ assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
 
 wire [31:0] inst = (
     wb_branch_hazard ? INST_NOP :
-    (memory_stage_stall_flg || last_clock_fence_i_stall_flg) ? save_inst : input_inst
+    (
+        memory_stage_stall_flg || 
+        last_clock_fence_i_stall_flg ||
+        last_data_hazard_stall_flg
+    ) ? save_inst : input_inst
 );
 
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
-    (memory_stage_stall_flg || last_clock_fence_i_stall_flg) ? save_reg_pc : input_reg_pc
+    (
+        memory_stage_stall_flg || 
+        last_clock_fence_i_stall_flg ||
+        last_data_hazard_stall_flg
+    ) ? save_reg_pc : input_reg_pc
 ); 
 
 wire [11:0] wire_imm_i  = inst[31:20];
@@ -130,11 +138,13 @@ assign zifencei_stall_flg = inst_is_fence_i && (zifencei_exe_mem_wen || zifencei
 
 // 前のクロックでfence_iでストールしたかどうか
 reg last_clock_fence_i_stall_flg = 0;
+// 前のクロックでデータハザードでストールしたかどうか
+reg last_data_hazard_stall_flg = 0;
 
 always @(posedge clk) begin
-    last_clock_fence_i_stall_flg <= zifencei_stall_flg;
+    last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
+    last_data_hazard_stall_flg      <= data_hazard_stall_flg;
 end
-
 
 
 
@@ -225,7 +235,7 @@ wire [4:0] wire_rs2_addr    = inst[24:20];
 wire [4:0] wire_wb_addr     = inst[11:7];
 
 always @(posedge clk) begin
-    if (data_hazard_stall_flg) begin
+    if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
         output_reg_pc   <= REGPC_NOP;
         output_inst     <= INST_NOP;
 
@@ -283,11 +293,16 @@ always @(posedge clk) begin
         wb_sel          <= wire_wb_sel;
         wb_addr         <= wire_wb_addr;
         csr_cmd         <= wire_csr_cmd;
+
     end
 
-    // save
-    save_inst   <= wb_branch_hazard ? INST_NOP  : inst;
-    save_reg_pc <= wb_branch_hazard ? REGPC_NOP : reg_pc;
+    if (wb_branch_hazard) begin
+        save_inst       <= INST_NOP;
+        save_reg_pc     <= REGPC_NOP;
+    end else if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
+        save_inst       <= inst;
+        save_reg_pc     <= reg_pc;
+    end
 end
 
 `ifdef DEBUG 
@@ -328,6 +343,9 @@ always @(posedge clk) begin
     $display("dh.exe.adr: %d", data_hazard_exe_wb_addr);
     $display("is fence.i: %d", inst_is_fence_i);
     $display("fence.i st: %d", zifencei_stall_flg);
+    $display("last.dh   : %d", last_data_hazard_stall_flg);
+    $display("save.regpc: 0x%h", save_reg_pc);
+    $display("save.inst : 0x%h", save_inst);
 end
 `endif
 
