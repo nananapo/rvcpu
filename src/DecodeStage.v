@@ -296,12 +296,15 @@ always @(posedge clk) begin
 
     end
 
-    if (wb_branch_hazard) begin
-        save_inst       <= INST_NOP;
-        save_reg_pc     <= REGPC_NOP;
-    end else if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
+    if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
         save_inst       <= inst;
         save_reg_pc     <= reg_pc;
+    end else if (wb_branch_hazard) begin
+        save_inst       <= INST_NOP;
+        save_reg_pc     <= REGPC_NOP;
+    end else begin 
+        save_inst       <= INST_NOP;
+        save_reg_pc     <= REGPC_NOP;
     end
 end
 
