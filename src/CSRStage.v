@@ -246,6 +246,36 @@ always @(posedge clk) begin
         end
     end else begin
         output_csr_cmd  <= csr_cmd;
+
+        case (csr_cmd)
+            CSR_ECALL: begin
+                $display("MCAUSE : %d", mode);
+                // environment call from x-Mode execeptionを起こす
+                trap_vector <= reg_mtvec;
+                // 現在のモードに応じて書き込む値を変える
+                // M-mode = 11
+                // H-mode = 10
+                // S-mode = 9
+                // U-mode = 8
+                reg_mcause  <= {28'b0, 4'd8 + mode};
+                mode        <= MODE_MACHINE; // TODO 適切なモードにする
+            end
+            CSR_MRET: begin
+                $display("MPP %d", reg_mstatus_mpp);
+                // 現在のモードをチェックしてない...
+                trap_vector     <= reg_mepc;
+                mode            <= reg_mstatus_mpp;
+                reg_mstatus_mpp <= MODE_USER;
+                reg_mstatus_mie <= reg_mstatus_mpie;
+                if (reg_mstatus_mpp != MODE_MACHINE) begin
+                    reg_mstatus_mprv <= 0;
+                end
+            end
+            CSR_SRET: begin
+                //trap_vector <= reg_sepc;
+            end
+            default: begin end
+        endcase 
     end
 
     case (addr)
@@ -330,27 +360,11 @@ always @(posedge clk) begin
     case (save_csr_cmd)
         CSR_X: reg_mtvec <= reg_mtvec; // nop
         CSR_ECALL: begin
-            // environment call from x-Mode execeptionを起こす
-            // 現在のモードに応じて書き込む値を変える
-            reg_mcause  <= {30'b0, mode};
-            mode        <= MODE_MACHINE; // TODO 適切なモードにする            
-            trap_vector <= reg_mtvec;
         end
         CSR_MRET: begin
-            // 現在のモードをチェックしてない
-            mode            <= reg_mstatus_mpp;
-            reg_mstatus_mpp <= MODE_USER;
-            reg_mstatus_mie <= reg_mstatus_mpie;
-            if (reg_mstatus_mpp != MODE_MACHINE) begin
-                reg_mstatus_mprv <= 0;
-            end
-            trap_vector     <= reg_mepc;
         end
-        /*
         CSR_SRET: begin
-            trap_vector <= reg_sepc;
         end
-        */
         default: begin
             case (save_csr_addr)
                 // Counters and Timers
@@ -431,6 +445,7 @@ end
 `ifdef DEBUG 
 always @(posedge clk) begin
     $display("CSR STAGE------------");
+    $display("mode         : %d", mode);
     $display("cmd          : %d", csr_cmd);
     $display("op1_data     : 0x%H", op1_data);
     $display("imm_i        : 0x%H", imm_i);
@@ -438,6 +453,7 @@ always @(posedge clk) begin
     $display("rdata        : 0x%H", csr_rdata);
     $display("wdata        : 0x%H", wdata);
     $display("trap_vector  : 0x%H", trap_vector);
+    $display("mtvec        : 0x%H", reg_mtvec);
 end
 `endif
 
