@@ -227,10 +227,11 @@ reg [31:0]save_op1_data = 0;
 wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
 
 always @(posedge clk) begin
-    
     // タイマ割り込みを起こす
     if (timer_stall && input_interrupt_ready) begin
         output_csr_cmd  <= CSR_ECALL;
+        reg_mstatus_mpp <= mode;
+        // TODO mepc
         if (reg_mideleg_mtie == 0) begin
             mode                <= MODE_MACHINE;
             trap_vector         <= reg_mtvec;
