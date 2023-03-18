@@ -62,8 +62,8 @@ void set_next_timecmp(unsigned int interval)
         mtimeh += 1;
     mtime += interval;
 
-    *MTIMEH_ADDR = mtimeh;
-    *MTIME_ADDR = mtime;
+    *MTIMECMPH_ADDR = mtimeh;
+    *MTIMECMP_ADDR = mtime;
 }
 
 static inline void w_mtvec(unsigned int x)
