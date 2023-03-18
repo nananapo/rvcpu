@@ -18,6 +18,10 @@ module MemoryMapped_MachineTimeRegister #(
 
 `include "include/memorymap.v"
 
+initial begin
+    mtimecmp = 64'hffff_ffff_ffff_ffff;
+end
+
 assign output_cmd_ready     = 1;
 assign output_rdata_valid   = 1;
 
@@ -35,7 +39,7 @@ always @(posedge clk) begin
         MACHINETIMEREG_MTIMEH:      output_rdata <= mtime[63:32];
         MACHINETIMEREG_MTIMECMP:    output_rdata <= mtimecmp[31:0];
         MACHINETIMEREG_MTIMECMPH:   output_rdata <= mtimecmp[63:32];
-        default:                    nop <= 0;
+        default:                    nopr <= 0;
     endcase
 
     if (input_cmd_write) begin
