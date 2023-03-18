@@ -111,7 +111,7 @@ reg         reg_mstatus_mprv    = 0;
 reg [1:0]   reg_mstatus_xs      = 0;
 reg [1:0]   reg_mstatus_fs      = 0;
 // S-modeでtrapしても書き込まれない
-reg [1:0]   reg_mstatus_mpp     = 0;
+reg [1:0]   reg_mstatus_mpp     = MODE_MACHINE; // 初期値をM-modeにする
 reg [1:0]   reg_mstatus_vs      = 0;
 // S-modeでtrapしたとき、アクティブなとモードが書き込まれる
 reg         reg_mstatus_spp     = 0;
