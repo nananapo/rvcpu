@@ -8,6 +8,7 @@
         <File path="src/DivNbit.v" type="file.verilog" enable="1"/>
         <File path="src/DivUnsignedNbit.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryMapController.v" type="file.verilog" enable="1"/>
+        <File path="src/MemoryMapped_MachineTimeRegister.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_rx.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_tx.v" type="file.verilog" enable="1"/>
         <File path="src/MemoryUnlignedAccessController.v" type="file.verilog" enable="1"/>
