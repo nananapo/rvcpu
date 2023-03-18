@@ -123,17 +123,24 @@ reg         reg_mstatus_sie     = 0;
 // 1はreadonlyであってはならない。
 // デリゲートできるasynchronous trapはデリゲートされないことも必ずサポートしないといけない
 reg [31:0]  reg_medeleg         = 0;
+
 // サポートしないtrapは0を保持する
 // machine-levelの割り込みに対して1のread-onlyなbitを作ってはいけない
 // それ以外はOK
-reg [31:0]  reg_mideleg         = 0;
+reg         reg_mideleg_mtie    = 0; // 7
 
 //reg [25:0]  reg_mstatush_wpri   = 0;
 reg         reg_mstatush_mbe    = 0;
 reg         reg_mstatush_sbe    = 0;
 //reg [3:0]   reg_mstatush_wpri   = 0;
 
-reg [31:0]  reg_mie             = 0;
+reg         reg_mie_meie        = 0;
+reg         reg_mie_seie        = 0;
+reg         reg_mie_mtie        = 0; // 7
+reg         reg_mie_stie        = 0;
+reg         reg_mie_msie        = 0;
+reg         reg_mie_ssie        = 0;
+
 reg [31:0]  reg_mtvec           = 0;
 
 // Machine Trap Handling
@@ -240,8 +247,21 @@ always @(posedge clk) begin
         };
         // CSR_ADDR_MISA = 0
         CSR_ADDR_MEDELEG:   csr_rdata <= reg_medeleg;
-        CSR_ADDR_MIDELEG:   csr_rdata <= reg_mideleg;
-        CSR_ADDR_MIE:       csr_rdata <= reg_mie;
+        CSR_ADDR_MIDELEG:   csr_rdata <= {
+            24'b0,
+            reg_mideleg_mtie,
+            7'b0
+        };
+        CSR_ADDR_MIE:       csr_rdata <= {
+            16'b0,
+            4'b0,
+            reg_mie_meie, 1'b0,
+            reg_mie_seie, 1'b0,
+            reg_mie_mtie, 1'b0,
+            reg_mie_stie, 1'b0,
+            reg_mie_msie, 1'b0,
+            reg_mie_ssie, 1'b0
+        };
         CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
         // CSR_ADDR_MCOUNTEREN: 実装しない
         CSR_ADDR_MSTATUSH:  csr_rdata <= {
@@ -337,8 +357,17 @@ always @(posedge clk) begin
                 end
                 // CSR_ADDR_MISA: READ ONLY
                 CSR_ADDR_MEDELEG:   reg_medeleg <= wdata;
-                CSR_ADDR_MIDELEG:   reg_mideleg <= wdata;
-                CSR_ADDR_MIE:       reg_mie     <= wdata;
+                CSR_ADDR_MIDELEG: begin
+                    reg_mideleg_mtie <= wdata[7]; 
+                end
+                CSR_ADDR_MIE: begin
+                    reg_mie_meie <= wdata[11];
+                    reg_mie_seie <= wdata[9];
+                    reg_mie_mtie <= wdata[7];
+                    reg_mie_stie <= wdata[5];
+                    reg_mie_msie <= wdata[3];
+                    reg_mie_ssie <= wdata[1];
+                end
                 CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
                 // CSR_ADDR_MCOUNTEREN: 実装しない
                 CSR_ADDR_MSTATUSH: begin
