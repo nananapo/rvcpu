@@ -85,9 +85,9 @@ wire [31:0] mtimereg_rdata;
 wire        mtimereg_rdata_valid;
 wire [31:0] mtimereg_wdata       = input_wdata;
 
-MemoryMappedIO_MachineTimeRegister #(
+MemoryMapped_MachineTimeRegister #(
     .FMAX_MHz(FMAX_MHz)
-) memmap_uarttx (
+) memmap_mtimereg (
     .clk(clk),
 
     .input_cmd_start(mtimereg_cmd_start),
