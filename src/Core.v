@@ -7,6 +7,7 @@ module Core #(
 
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
+    input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
     
     output reg          memory_inst_start,
@@ -277,6 +278,7 @@ CSRStage #(
     
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
+    .reg_mtime(reg_mtime),
     .reg_mtimecmp(reg_mtimecmp),
 
     .wb_branch_hazard(wbstage_branch_hazard),

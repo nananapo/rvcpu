@@ -6,6 +6,7 @@ module CSRStage #(
     
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
+    input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
 
     input  wire         wb_branch_hazard,

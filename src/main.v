@@ -117,6 +117,7 @@ Core #(
     
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
+    .reg_mtime(reg_time),
     .reg_mtimecmp(reg_mtimecmp),
 
     .memory_inst_start(mem_inst_start),
