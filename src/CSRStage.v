@@ -31,10 +31,10 @@ module CSRStage #(
 `include "include/core.v"
 
 // モード
-localparam MODE_MACHINE     = 3;
-//localparam HYPERVISOR_MODE  = 2;
-localparam MODE_SUPERVISOR  = 1;
-localparam MODE_USER        = 0;
+localparam MODE_MACHINE     = 2'b11;
+//localparam HYPERVISOR_MODE  = 2'b10;
+localparam MODE_SUPERVISOR  = 2'b01;
+localparam MODE_USER        = 2'b00;
 
 // 現在のモード
 reg [1:0]   mode = MODE_MACHINE;
