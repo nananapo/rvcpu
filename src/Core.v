@@ -305,6 +305,13 @@ CSRStage #(
     .input_op1_data(csr_op1_data),
     .input_imm_i(csr_imm_i),
 
+    .input_interrupt_ready(
+        wb_inst == INST_NOP && 
+        mem_inst == INST_NOP &&
+        exe_inst == INST_NOP &&
+        id_inst == INST_NOP
+    ),
+
     .output_csr_cmd(wb_csr_cmd),
     .csr_rdata(wb_csr_rdata),
     .trap_vector(wb_trap_vector),

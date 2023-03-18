@@ -9,12 +9,15 @@ module CSRStage #(
     input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
 
-    input  wire         wb_branch_hazard,
+    input wire          wb_branch_hazard,
     
     // input
-    input  wire [2:0]   input_csr_cmd,
-    input  wire [31:0]  input_op1_data,
-    input  wire [31:0]  input_imm_i,
+    input wire [2:0]    input_csr_cmd,
+    input wire [31:0]   input_op1_data,
+    input wire [31:0]   input_imm_i,
+
+    // interruptができる状態(ほかのステージがnopか)どうか
+    input wire          input_interrupt_ready,
 
     // output
     output reg  [2:0]   output_csr_cmd,
@@ -180,9 +183,12 @@ reg [31:0]  reg_mtval2      = 0;
 
 // タイマ割りこみが起こりそうなのでストールするかどうか
 wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大きい
+                                                    // TODO sie
                     reg_mie_mtie == 1 &&            // mieのmtieが1
                     (
-                        (mode == MODE_MACHINE && reg_mideleg_mtie == 0 && reg_mstatus_mie == 1) || 
+                        // M-modeのとき、midelegによってS-modeに委譲されていなくて、mstatus.mieが1であることを確認する
+                        (mode == MODE_MACHINE && reg_mideleg_mtie == 0 && reg_mstatus_mie == 1) ||
+                        // S-modeのとき、midelegによってS-modeに委譲されていて、mstatus.sieが1であることを確認する
                         (mode == MODE_SUPERVISOR && reg_mideleg_mtie == 1 && reg_mstatus_sie == 1)
                     );
 
@@ -221,7 +227,21 @@ reg [31:0]save_op1_data = 0;
 wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
 
 always @(posedge clk) begin
-    output_csr_cmd  <= csr_cmd;
+    
+    // タイマ割り込みを起こす
+    if (timer_stall && input_interrupt_ready) begin
+        output_csr_cmd  <= CSR_ECALL;
+        if (reg_mideleg_mtie == 0) begin
+            mode        <= MODE_MACHINE;
+            trap_vector <= reg_mtvec; 
+        end else begin
+            mode        <= MODE_SUPERVISOR;
+            trap_vector <= reg_mtvec; 
+            //trap_vector <= reg_stvec; 
+        end
+    end else begin
+        output_csr_cmd  <= csr_cmd;
+    end
 
     case (addr)
         // Counters and Timers
@@ -305,14 +325,10 @@ always @(posedge clk) begin
     case (save_csr_cmd)
         CSR_X: reg_mtvec <= reg_mtvec; // nop
         CSR_ECALL: begin
+            // environment call from x-Mode execeptionを起こす
             // 現在のモードに応じて書き込む値を変える
-            case (mode)
-                MODE_MACHINE:       reg_mcause <= 11;
-                //MODE_HYPERVISOR:    reg_mcause = 10;
-                MODE_SUPERVISOR:    reg_mcause <= 9;
-                MODE_USER:          reg_mcause <= 8;
-                default:            reg_mcause <= 0;
-            endcase
+            reg_mcause  <= {30'b0, mode};
+            mode        <= MODE_MACHINE; // TODO 適切なモードにする            
             trap_vector <= reg_mtvec;
         end
         CSR_MRET: begin
