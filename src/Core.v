@@ -54,6 +54,8 @@ wire        wbstage_branch_hazard;
 wire        id_zifencei_stall_flg;
 // exeステージでストールしているかどうかのフラグ
 wire        exe_stage_alu_stall_flg;
+// 割り込みが起こりそうで、ifステージをストールさせているかのフラグ
+wire        stall_flg_may_interrupt;
 
 //**************************
 // Fetch Stage
@@ -78,7 +80,13 @@ FetchStage #() fetchstage (
     .mem_data(memory_inst),
     .mem_data_valid(memory_inst_valid),
 
-    .stall_flg(memory_stage_is_stall || data_hazard_stall || id_zifencei_stall_flg || exe_stage_alu_stall_flg)
+    .stall_flg(
+        memory_stage_is_stall || 
+        data_hazard_stall || 
+        id_zifencei_stall_flg || 
+        exe_stage_alu_stall_flg ||
+        stall_flg_may_interrupt
+    )
 );
 
 
@@ -289,7 +297,8 @@ CSRStage #(
 
     .output_csr_cmd(wb_csr_cmd),
     .csr_rdata(wb_csr_rdata),
-    .trap_vector(wb_trap_vector)
+    .trap_vector(wb_trap_vector),
+    .output_stall_flg_may_interrupt(stall_flg_may_interrupt)
 );
 
 

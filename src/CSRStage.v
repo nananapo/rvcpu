@@ -19,7 +19,10 @@ module CSRStage #(
     // output
     output reg  [2:0]   output_csr_cmd,
     output reg  [31:0]  csr_rdata,
-    output reg  [31:0]  trap_vector
+    output reg  [31:0]  trap_vector,
+
+    // trapを起こしたいときにEXE以前を止めるために使う
+    output wire         output_stall_flg_may_interrupt
 );
 
 `include "include/core.v"
@@ -171,6 +174,16 @@ reg [31:0]  reg_mtval       = 0;
 reg [31:0]  reg_mip         = 0;
 reg [31:0]  reg_mtinst      = 0;
 reg [31:0]  reg_mtval2      = 0;
+
+// タイマ割りこみが起こりそうなのでストールするかどうか
+wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大きい
+                    reg_mie_mtie == 1 &&            // mieのmtieが1
+                    (
+                        (mode == MODE_MACHINE && reg_mideleg_mtie == 0 && reg_mstatus_mie == 1) || 
+                        (mode == MODE_SUPERVISOR && reg_mideleg_mtie == 1 && reg_mstatus_sie == 1)
+                    );
+
+assign output_stall_flg_may_interrupt = timer_stall;
 
 /*---------CSR命令の実行----------*/
 initial begin
