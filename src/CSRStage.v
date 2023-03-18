@@ -18,6 +18,8 @@ module CSRStage #(
 
     // interruptができる状態(ほかのステージがnopか)どうか
     input wire          input_interrupt_ready,
+    // Fetchステージのpc
+    input wire [31:0]   if_reg_pc,
 
     // output
     output reg  [2:0]   output_csr_cmd,
@@ -231,25 +233,32 @@ always @(posedge clk) begin
     if (timer_stall && input_interrupt_ready) begin
         output_csr_cmd  <= CSR_ECALL;
         reg_mstatus_mpp <= mode;
+        `ifdef DEBUG
+        $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
+        `endif
         // TODO mepc
         if (reg_mideleg_mtie == 0) begin
             mode                <= MODE_MACHINE;
             trap_vector         <= reg_mtvec;
             reg_mstatus_mpie    <= reg_mstatus_mie;
             reg_mstatus_mie     <= 0;
+            reg_mepc            <= if_reg_pc;
         end else begin
             mode                <= MODE_SUPERVISOR;
             trap_vector         <= reg_mtvec; 
             //trap_vector         <= reg_stvec; 
             reg_mstatus_spie    <= reg_mstatus_sie;
             reg_mstatus_sie     <= 0;
+            //reg_sepc            <= if_reg_pc;
         end
     end else begin
         output_csr_cmd  <= csr_cmd;
 
         case (csr_cmd)
             CSR_ECALL: begin
+                `ifdef DEBUG
                 $display("MCAUSE : %d", mode);
+                `endif
                 // environment call from x-Mode execeptionを起こす
                 trap_vector <= reg_mtvec;
                 // 現在のモードに応じて書き込む値を変える
@@ -261,7 +270,9 @@ always @(posedge clk) begin
                 mode        <= MODE_MACHINE; // TODO 適切なモードにする
             end
             CSR_MRET: begin
+                `ifdef DEBUG
                 $display("MPP %d", reg_mstatus_mpp);
+                `endif
                 // 現在のモードをチェックしてない...
                 trap_vector     <= reg_mepc;
                 mode            <= reg_mstatus_mpp;

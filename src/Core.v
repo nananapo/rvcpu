@@ -66,8 +66,11 @@ wire [31:0] wb_inst;
 //**************************
 
 // fetch -> decode 用のwire
-wire [31:0]  id_reg_pc;
-wire [31:0]  id_inst;
+wire [31:0] id_reg_pc;
+wire [31:0] id_inst;
+
+// fetch -> csr
+wire [31:0] if_reg_pc;
 
 FetchStage #() fetchstage (
     .clk(clk),
@@ -77,6 +80,8 @@ FetchStage #() fetchstage (
 
     .id_reg_pc(id_reg_pc),
     .id_inst(id_inst),
+
+    .if_reg_pc(if_reg_pc),
 
     .mem_start(memory_inst_start),
     .mem_ready(memory_inst_ready),
@@ -311,6 +316,8 @@ CSRStage #(
         exe_inst == INST_NOP &&
         id_inst == INST_NOP
     ),
+
+    .if_reg_pc(if_reg_pc),
 
     .output_csr_cmd(wb_csr_cmd),
     .csr_rdata(wb_csr_rdata),
