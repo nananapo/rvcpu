@@ -41,6 +41,16 @@ wire memory_stage_is_stall;
 // データハザードによるストールフラグ
 wire data_hazard_stall;
 
+// データハザードが起きるかどうか判定するためのワイヤ
+wire        exestage_datahazard_rf_wen;
+wire [4:0]  exestage_datahazard_wb_addr;
+wire        memstage_datahazard_rf_wen;
+wire [4:0]  memstage_datahazard_wb_addr;
+wire        wbstage_datahazard_rf_wen;
+wire [4:0]  wbstage_datahazard_wb_addr;
+
+
+
 // レジスタ
 wire [31:0] regfile[31:0];
 
@@ -158,12 +168,12 @@ DecodeStage #() decodestage
     .wb_branch_hazard(wbstage_branch_hazard),
 
     .data_hazard_stall_flg(data_hazard_stall),
-    .data_hazard_wb_rf_wen(wb_rf_wen),
-    .data_hazard_wb_wb_addr(wb_wb_addr),
-    .data_hazard_mem_rf_wen(mem_rf_wen),
-    .data_hazard_mem_wb_addr(mem_wb_addr),
-    .data_hazard_exe_rf_wen(exe_rf_wen),
-    .data_hazard_exe_wb_addr(exe_wb_addr),
+    .data_hazard_wb_rf_wen(wbstage_datahazard_rf_wen),
+    .data_hazard_wb_wb_addr(wbstage_datahazard_wb_addr),
+    .data_hazard_mem_rf_wen(memstage_datahazard_rf_wen),
+    .data_hazard_mem_wb_addr(memstage_datahazard_wb_addr),
+    .data_hazard_exe_rf_wen(exestage_datahazard_rf_wen),
+    .data_hazard_exe_wb_addr(exestage_datahazard_wb_addr),
     
     .zifencei_stall_flg(id_zifencei_stall_flg),
     .zifencei_mem_mem_wen(mem_mem_wen == MEN_SB || mem_mem_wen == MEN_SH || mem_mem_wen == MEN_SW),
@@ -229,7 +239,10 @@ ExecuteStage #() executestage
     .output_imm_i(csr_imm_i),
 
     .memory_stage_stall_flg(memory_stage_is_stall),
-    .output_stall_flg(exe_stage_alu_stall_flg)
+    .output_stall_flg(exe_stage_alu_stall_flg),
+
+    .output_datahazard_rf_wen(exestage_datahazard_rf_wen),
+    .output_datahazard_wb_addr(exestage_datahazard_wb_addr)
 );
 
 // **************************
@@ -283,7 +296,10 @@ MemoryStage #() memorystage
     .mem_wdata(memory_wdata),
     .mem_wmask(memory_wmask),
     .mem_rdata(memory_rdata),
-    .mem_rdata_valid(memory_rdata_valid)
+    .mem_rdata_valid(memory_rdata_valid),
+
+    .output_datahazard_rf_wen(memstage_datahazard_rf_wen),
+    .output_datahazard_wb_addr(memstage_datahazard_wb_addr)
 );
 
 // **************************
@@ -329,6 +345,10 @@ CSRStage #(
 // **************************
 // WriteBack Stage
 // **************************
+
+assign wbstage_datahazard_rf_wen    = wb_rf_wen;
+assign wbstage_datahazard_wb_addr   = wb_wb_addr;
+
 WriteBackStage #() wbstage(
     .clk(clk),
 

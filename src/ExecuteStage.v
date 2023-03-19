@@ -36,7 +36,10 @@ module ExecuteStage
     output reg [31:0]   output_imm_i,
     
     input  wire         memory_stage_stall_flg,
-    output wire         output_stall_flg
+    output wire         output_stall_flg,
+
+    output wire         output_datahazard_rf_wen,
+    output wire [4:0]   output_datahazard_wb_addr
 );
 
 `include "include/core.v"
@@ -214,9 +217,15 @@ assign output_stall_flg = func_stall_flg(
 `endif
 );
 
+assign output_datahazard_rf_wen  = wb_branch_hazard ? 0 : rf_wen;
+assign output_datahazard_wb_addr = wb_branch_hazard ? 0 : wb_addr;
+
 always @(posedge clk) begin
     // EX STAGE
     if (wb_branch_hazard) begin
+        //output_datahazard_rf_wen        <= 0;
+        //output_datahazard_wb_addr       <= 0;
+
         last_is_memstage_stall          <= 0;
 
         // calc
@@ -235,6 +244,8 @@ always @(posedge clk) begin
         multm_start <= 0;
 `endif
     end else begin
+        //output_datahazard_rf_wen        <= rf_wen;
+        //output_datahazard_wb_addr       <= wb_addr;
 
         last_is_memstage_stall <= memory_stage_stall_flg;
 
