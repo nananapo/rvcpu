@@ -143,8 +143,8 @@ assign mem_wmask = (
 // OUTPUT
 // ***************
 
-assign output_datahazard_rf_wen     = rf_wen;
-assign output_datahazard_wb_addr    = wb_addr;
+assign output_datahazard_rf_wen     = state == STATE_WAIT ? rf_wen : save_rf_wen;
+assign output_datahazard_wb_addr    = state == STATE_WAIT ? wb_addr : save_wb_addr;
 
 wire [31:0] output_read_data_wire = (
     state == STATE_WAIT ? 32'hffffffff :
