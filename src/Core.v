@@ -228,7 +228,7 @@ ExecuteStage #() executestage
     .output_jmp_flg(mem_jmp_flg),
     .output_imm_i(csr_imm_i),
 
-    .stall_flg(memory_stage_is_stall),
+    .memory_stage_stall_flg(memory_stage_is_stall),
     .output_stall_flg(exe_stage_alu_stall_flg)
 );
 

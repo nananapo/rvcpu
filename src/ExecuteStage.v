@@ -35,7 +35,7 @@ module ExecuteStage
     output reg          output_jmp_flg,
     output reg [31:0]   output_imm_i,
     
-    input  wire         stall_flg,
+    input  wire         memory_stage_stall_flg,
     output wire         output_stall_flg
 );
 
@@ -78,9 +78,11 @@ reg [31:0] save_imm_b_sext  = 0;
 // 複数サイクルかかる計算を実行していて、前回からの続きからか
 // つまり、複数サイクルかかる計算を行って、結果が次に流れたら0になる
 reg         last_cycle_is_multicycle_exe = 0;
+// 前回のクロックでメモリステージでストールしていたかどうか
+reg         last_is_memstage_stall = 0;
 
 // 今回のサイクルで前回のサイクルのデータを使うかどうか
-wire use_saved_data     = last_cycle_is_multicycle_exe || stall_flg;
+wire use_saved_data     = last_cycle_is_multicycle_exe || last_is_memstage_stall;
 
 wire [31:0] reg_pc      = use_saved_data ? save_reg_pc : input_reg_pc;
 wire [31:0] inst        = use_saved_data ? save_inst : input_inst;
@@ -181,8 +183,7 @@ wire        is_multicycle_exe =
 
 function func_stall_flg(
     input [4:0]     exe_fun,
-    input           is_calculated,
-    input           stall_flg
+    input           is_calculated
 `ifndef EXCLUDE_RV32M
     ,input          divm_valid
     ,input          multm_valid
@@ -206,8 +207,7 @@ endfunction
 // ストール判定
 assign output_stall_flg = func_stall_flg(
     exe_fun, 
-    is_calculated,
-    stall_flg
+    is_calculated
 `ifndef EXCLUDE_RV32M
     , divm_valid
     , multm_valid
@@ -217,6 +217,8 @@ assign output_stall_flg = func_stall_flg(
 always @(posedge clk) begin
     // EX STAGE
     if (wb_branch_hazard) begin
+        last_is_memstage_stall          <= 0;
+
         // calc
         is_calc_started <= 0;
         is_calculated   <= 0;
@@ -233,12 +235,15 @@ always @(posedge clk) begin
         multm_start <= 0;
 `endif
     end else begin
+
+        last_is_memstage_stall <= memory_stage_stall_flg;
+
         // calc
         if (is_calc_started && calc_valid) begin
             is_calc_started                 <= 0;
             last_cycle_is_multicycle_exe    <= 0;
             // メモリがストールしてなかったらそのまま進める
-            is_calculated                   <= stall_flg;
+            is_calculated                   <= memory_stage_stall_flg;
 
             case (exe_fun) 
 `ifndef EXCLUDE_RV32M 
@@ -325,7 +330,7 @@ always @(posedge clk) begin
     end
 
     // output
-    if (wb_branch_hazard || output_stall_flg) begin
+    if (wb_branch_hazard || memory_stage_stall_flg || output_stall_flg) begin
         output_reg_pc   <= REGPC_NOP;
         output_inst     <= INST_NOP;
         output_mem_wen  <= MEN_X;
