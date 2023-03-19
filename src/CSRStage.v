@@ -206,6 +206,8 @@ localparam CSR_ADDR_SCAUSE      = 12'h142;
 localparam CSR_ADDR_STVAL       = 12'h143;
 localparam CSR_ADDR_SIP         = 12'h144;
 
+localparam SCAUSE_SUPERVISOR_TIMER_INTERRUPT    = 32'b10000000_00000000_00000000_00100000;
+
 reg [31:0]  reg_sscratch    = 0;
 reg [31:0]  reg_sepc        = 0;
 reg [31:0]  reg_scause      = 0;
@@ -275,26 +277,50 @@ always @(posedge clk) begin
     // タイマ割り込みを起こす
     if (timer_stall && input_interrupt_ready) begin
         output_csr_cmd  <= CSR_ECALL;
-        reg_mstatus_mpp <= mode;
-        reg_mcause      <= MCAUSE_MACHINE_TIMER_INTERRUPT;
-        `ifdef DEBUG
-        $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
-        `endif
-        // TODO mepc
-        if (reg_mideleg_mtie == 0) begin
-            mode                <= MODE_MACHINE;
+
+        // トラップ先はxtvec
+        // 前のxieをxpieに保存して、xieは0にする
+        // これは処理を共通にしたい....
+
+        if (mode == MODE_MACHINE) begin
+            // M-modeでタイマ割込みが起きたらM-modeにしか遷移しない
+            mode            <= MODE_MACHINE;
+            reg_mstatus_mpp <= mode;
+            reg_mcause      <= MCAUSE_MACHINE_TIMER_INTERRUPT;
+
             trap_vector         <= reg_mtvec;
             reg_mstatus_mpie    <= reg_mstatus_mie;
             reg_mstatus_mie     <= 0;
             reg_mepc            <= if_reg_pc;
         end else begin
-            mode                <= MODE_SUPERVISOR;
-            trap_vector         <= reg_mtvec; 
-            //trap_vector         <= reg_stvec; 
-            reg_mstatus_spie    <= reg_mstatus_sie;
-            reg_mstatus_sie     <= 0;
-            //reg_sepc            <= if_reg_pc;
+            // S-modeなら、S-modeかM-modeに遷移する
+            // xppは、S-modeなら1、U-modeなら0になる
+            if (reg_mideleg_mtie == 0) begin
+                // M-modeに遷移
+                mode            <= MODE_MACHINE;
+                reg_mstatus_mpp <= mode;
+                reg_mcause      <= MCAUSE_MACHINE_TIMER_INTERRUPT;
+
+                trap_vector         <= reg_mtvec;
+                reg_mstatus_mpie    <= reg_mstatus_mie;
+                reg_mstatus_mie     <= 0;
+                reg_mepc            <= if_reg_pc;
+            end else begin
+                // S-modeに遷移
+                mode            <= MODE_SUPERVISOR;
+                reg_mstatus_spp <= mode[0];
+                reg_scause      <= SCAUSE_SUPERVISOR_TIMER_INTERRUPT;
+
+                trap_vector         <= reg_stvec;
+                reg_mstatus_spie    <= reg_mstatus_sie;
+                reg_mstatus_sie     <= 0;
+                reg_sepc            <= if_reg_pc;
+            end
         end
+
+        `ifdef DEBUG
+        $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
+        `endif
     end else begin
         output_csr_cmd  <= csr_cmd;
 
