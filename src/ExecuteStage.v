@@ -40,7 +40,8 @@ module ExecuteStage
 
     output wire         output_datahazard_rf_wen,
     output wire [4:0]   output_datahazard_wb_addr,
-    output wire         output_trappable
+    output wire         output_trappable,
+    output wire [3:0]   output_zifencei_mem_wen
 );
 
 `include "include/core.v"
@@ -221,6 +222,7 @@ assign output_stall_flg = func_stall_flg(
 assign output_datahazard_rf_wen  = wb_branch_hazard ? 0 : rf_wen;
 assign output_datahazard_wb_addr = wb_branch_hazard ? 0 : wb_addr;
 assign output_trappable          = wb_branch_hazard ? 1 : inst == INST_NOP;
+assign output_zifencei_mem_wen   = wb_branch_hazard ? WB_X : mem_wen;
 
 always @(posedge clk) begin
     // EX STAGE

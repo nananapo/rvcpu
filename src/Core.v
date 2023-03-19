@@ -70,6 +70,10 @@ wire        exe_stage_alu_stall_flg;
 // 割り込みが起こりそうで、ifステージをストールさせているかのフラグ
 wire        stall_flg_may_interrupt;
 
+// zifenceiでstallが起きるかどうかを判断するためのワイヤ
+wire [3:0]  mem_zifencei_mem_wen;
+wire [3:0]  exe_zifencei_mem_wen;
+
 // inst
 wire [31:0] mem_inst;
 wire [31:0] wb_inst;
@@ -179,9 +183,16 @@ DecodeStage #() decodestage
     .data_hazard_exe_wb_addr(exestage_datahazard_wb_addr),
     
     .zifencei_stall_flg(id_zifencei_stall_flg),
-    .zifencei_mem_mem_wen(mem_mem_wen == MEN_SB || mem_mem_wen == MEN_SH || mem_mem_wen == MEN_SW),
-    .zifencei_exe_mem_wen(exe_mem_wen == MEN_SB || exe_mem_wen == MEN_SH || exe_mem_wen == MEN_SW),
-
+    .zifencei_mem_mem_wen(
+        mem_zifencei_mem_wen == MEN_SB || 
+        mem_zifencei_mem_wen == MEN_SH || 
+        mem_zifencei_mem_wen == MEN_SW
+    ),
+    .zifencei_exe_mem_wen(
+        exe_zifencei_mem_wen == MEN_SB || 
+        exe_zifencei_mem_wen == MEN_SH || 
+        exe_zifencei_mem_wen == MEN_SW
+    ),
     .output_trappable(id_trappable)
 );
 
@@ -248,7 +259,8 @@ ExecuteStage #() executestage
 
     .output_datahazard_rf_wen(exestage_datahazard_rf_wen),
     .output_datahazard_wb_addr(exestage_datahazard_wb_addr),
-    .output_trappable(exe_trappable)
+    .output_trappable(exe_trappable),
+    .output_zifencei_mem_wen(exe_zifencei_mem_wen)
 );
 
 // **************************
@@ -306,7 +318,8 @@ MemoryStage #() memorystage
 
     .output_datahazard_rf_wen(memstage_datahazard_rf_wen),
     .output_datahazard_wb_addr(memstage_datahazard_wb_addr),
-    .output_trappable(mem_trappable)
+    .output_trappable(mem_trappable),
+    .output_zifencei_mem_wen(mem_zifencei_mem_wen)
 );
 
 // **************************
