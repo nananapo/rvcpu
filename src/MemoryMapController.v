@@ -140,7 +140,7 @@ always @(posedge clk) begin
     $display("mtimereg_addr     : 0x%h", mtimereg_addr);
     $display("start             : %d", input_cmd_start);
     $display("write             : %d", input_cmd_write);
-    $display("wdata             : %d", input_wdata);
+    $display("wdata             : 0x%h", input_wdata);
     $display("rdata             : 0x%h, 0x%h, 0x%h", output_rdata, uart_tx_rdata, uart_rx_rdata);
 end
 `endif

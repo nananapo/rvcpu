@@ -80,6 +80,7 @@ reg [31:0]  save_rdata1 = 0;
 reg [31:0]  save_rdata2 = 0;
 
 /*
+`ifdef DEBUG
 always @(posedge clk) begin
     $display("MEMAC---------");
     $display("state         : %d", state);
@@ -102,6 +103,7 @@ always @(posedge clk) begin
     $display("mem_rdata_v   : %d", mem_rdata_valid);
     $display("mem_wdata     : 0x%h", mem_wdata);
 end
+`endif
 */
 
 function func_mem_cmd_start(

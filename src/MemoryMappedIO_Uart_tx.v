@@ -75,16 +75,14 @@ reg state = STATE_IDLE;
 // バッファから読んだデータ
 reg [31:0] rdata = 0;
 
-/*
 `ifdef DEBUG
 always @(posedge clk) begin
     $display("uart_tx queue: %d -> %d", queue_head, queue_tail);
     if (state == STATE_WAIT_READY && tx_ready) begin
-        $display("uart_tx : 0x%h : %d", rdata, addr_mod);
+        $display("uart_tx send : 0x%h : %d", rdata, addr_mod);
     end
 end
 `endif
-*/
 
 always @(posedge clk) begin
     case (state)
