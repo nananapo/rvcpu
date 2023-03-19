@@ -223,9 +223,6 @@ assign output_datahazard_wb_addr = wb_branch_hazard ? 0 : wb_addr;
 always @(posedge clk) begin
     // EX STAGE
     if (wb_branch_hazard) begin
-        //output_datahazard_rf_wen        <= 0;
-        //output_datahazard_wb_addr       <= 0;
-
         last_is_memstage_stall          <= 0;
 
         // calc
@@ -244,9 +241,6 @@ always @(posedge clk) begin
         multm_start <= 0;
 `endif
     end else begin
-        //output_datahazard_rf_wen        <= rf_wen;
-        //output_datahazard_wb_addr       <= wb_addr;
-
         last_is_memstage_stall <= memory_stage_stall_flg;
 
         // calc
