@@ -1,4 +1,4 @@
-module MemoryUnlignedAccessController #(
+module MemoryUnalignedAccessController #(
     parameter FMAX_MHz = 27,
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
@@ -79,7 +79,6 @@ reg [3:0]   state       = STATE_IDLE;
 reg [31:0]  save_rdata1 = 0;
 reg [31:0]  save_rdata2 = 0;
 
-/*
 `ifdef DEBUG
 always @(posedge clk) begin
     $display("MEMAC---------");
@@ -104,7 +103,6 @@ always @(posedge clk) begin
     $display("mem_wdata     : 0x%h", mem_wdata);
 end
 `endif
-*/
 
 function func_mem_cmd_start(
     input [3:0] state,
