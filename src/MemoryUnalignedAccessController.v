@@ -86,6 +86,7 @@ always @(posedge clk) begin
     $display("input_start   : %d", input_cmd_start);
     $display("input_write   : %d", input_cmd_write);
     $display("input_addr    : 0x%H", input_addr);
+    $display("input.wdata   : 0x%H", input_wdata);
     $display("ready         : %d", output_cmd_ready);
     $display("rdata         : 0x%h", output_rdata);
     $display("valid         : %d", output_rdata_valid);
