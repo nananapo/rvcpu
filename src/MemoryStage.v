@@ -162,7 +162,7 @@ wire output_is_current = (
 
 wire output_is_save = (
     state == STATE_WAIT ? 0 :
-    state == STATE_WAIT_READY ? is_store_save :
+    state == STATE_WAIT_READY ? mem_cmd_ready && is_store_save :
     state == STATE_WAIT_READ_VALID ? mem_rdata_valid : 
     0
 );
