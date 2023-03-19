@@ -85,8 +85,9 @@ wire [31:0] output_inst = (
     ) : INST_NOP
 );
 
-assign if_reg_pc = (state == STATE_WAIT_VALID && is_fetched) ?
-                    saved_reg_pc : inner_reg_pc;
+assign if_reg_pc =  wb_branch_hazard ? wb_reg_pc :
+                    (state == STATE_WAIT_VALID && is_fetched) ? saved_reg_pc :
+                    inner_reg_pc;
 
 always @(posedge clk) begin
 
