@@ -35,7 +35,7 @@ module WriteBackStage(
     integer loop_i;
     initial begin
         regfile[1] = 32'hffffffff;
-        regfile[2] = 32'h00000800;
+        regfile[2] = 32'h00002000;
         for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
             regfile[loop_i] = 32'hffffffff;
     end
