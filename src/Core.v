@@ -4,6 +4,11 @@ module Core #(
     parameter FMAX_MHz = 27
 )(
     input  wire         clk,
+
+    input wire [63:0]   reg_cycle,
+    input wire [63:0]   reg_time,
+    input wire [63:0]   reg_mtime,
+    input wire [63:0]   reg_mtimecmp,
     
     output reg          memory_inst_start,
     input  wire         memory_inst_ready,
@@ -36,6 +41,19 @@ wire memory_stage_is_stall;
 // データハザードによるストールフラグ
 wire data_hazard_stall;
 
+// データハザードが起きるかどうか判定するためのワイヤ
+wire        exestage_datahazard_rf_wen;
+wire [4:0]  exestage_datahazard_wb_addr;
+wire        memstage_datahazard_rf_wen;
+wire [4:0]  memstage_datahazard_wb_addr;
+wire        wbstage_datahazard_rf_wen;
+wire [4:0]  wbstage_datahazard_wb_addr;
+
+// トラップ可能かどうかのフラグ
+wire mem_trappable;
+wire exe_trappable;
+wire id_trappable;
+
 // レジスタ
 wire [31:0] regfile[31:0];
 
@@ -49,14 +67,27 @@ wire        wbstage_branch_hazard;
 wire        id_zifencei_stall_flg;
 // exeステージでストールしているかどうかのフラグ
 wire        exe_stage_alu_stall_flg;
+// 割り込みが起こりそうで、ifステージをストールさせているかのフラグ
+wire        stall_flg_may_interrupt;
+
+// zifenceiでstallが起きるかどうかを判断するためのワイヤ
+wire [3:0]  mem_zifencei_mem_wen;
+wire [3:0]  exe_zifencei_mem_wen;
+
+// inst
+wire [31:0] mem_inst;
+wire [31:0] wb_inst;
 
 //**************************
 // Fetch Stage
 //**************************
 
 // fetch -> decode 用のwire
-wire [31:0]  id_reg_pc;
-wire [31:0]  id_inst;
+wire [31:0] id_reg_pc;
+wire [31:0] id_inst;
+
+// fetch -> csr
+wire [31:0] if_reg_pc;
 
 FetchStage #() fetchstage (
     .clk(clk),
@@ -67,13 +98,21 @@ FetchStage #() fetchstage (
     .id_reg_pc(id_reg_pc),
     .id_inst(id_inst),
 
+    .if_reg_pc(if_reg_pc),
+
     .mem_start(memory_inst_start),
     .mem_ready(memory_inst_ready),
     .mem_addr(memory_i_addr),
     .mem_data(memory_inst),
     .mem_data_valid(memory_inst_valid),
 
-    .stall_flg(memory_stage_is_stall || data_hazard_stall || id_zifencei_stall_flg || exe_stage_alu_stall_flg)
+    .stall_flg(
+        memory_stage_is_stall || 
+        data_hazard_stall || 
+        id_zifencei_stall_flg || 
+        exe_stage_alu_stall_flg ||
+        stall_flg_may_interrupt
+    )
 );
 
 
@@ -91,6 +130,7 @@ wire [31:0] exe_imm_u_shifted;
 wire [31:0] exe_imm_z_uext;
 
 wire [31:0] exe_reg_pc;
+wire [31:0] exe_inst;
 wire [4:0]  exe_exe_fun; // TODO bitwise
 wire [31:0] exe_op1_data;
 wire [31:0] exe_op2_data;
@@ -118,6 +158,7 @@ DecodeStage #() decodestage
     .imm_z_uext(exe_imm_z_uext),
 
     .output_reg_pc(exe_reg_pc),
+    .output_inst(exe_inst),
     .exe_fun(exe_exe_fun),
     .op1_data(exe_op1_data),
     .op2_data(exe_op2_data),
@@ -134,16 +175,25 @@ DecodeStage #() decodestage
     .wb_branch_hazard(wbstage_branch_hazard),
 
     .data_hazard_stall_flg(data_hazard_stall),
-    .data_hazard_wb_rf_wen(wb_rf_wen),
-    .data_hazard_wb_wb_addr(wb_wb_addr),
-    .data_hazard_mem_rf_wen(mem_rf_wen),
-    .data_hazard_mem_wb_addr(mem_wb_addr),
-    .data_hazard_exe_rf_wen(exe_rf_wen),
-    .data_hazard_exe_wb_addr(exe_wb_addr),
+    .data_hazard_wb_rf_wen(wbstage_datahazard_rf_wen),
+    .data_hazard_wb_wb_addr(wbstage_datahazard_wb_addr),
+    .data_hazard_mem_rf_wen(memstage_datahazard_rf_wen),
+    .data_hazard_mem_wb_addr(memstage_datahazard_wb_addr),
+    .data_hazard_exe_rf_wen(exestage_datahazard_rf_wen),
+    .data_hazard_exe_wb_addr(exestage_datahazard_wb_addr),
     
     .zifencei_stall_flg(id_zifencei_stall_flg),
-    .zifencei_mem_mem_wen(mem_mem_wen == MEN_SB || mem_mem_wen == MEN_SH || mem_mem_wen == MEN_SW),
-    .zifencei_exe_mem_wen(exe_mem_wen == MEN_SB || exe_mem_wen == MEN_SH || exe_mem_wen == MEN_SW)
+    .zifencei_mem_mem_wen(
+        mem_zifencei_mem_wen == MEN_SB || 
+        mem_zifencei_mem_wen == MEN_SH || 
+        mem_zifencei_mem_wen == MEN_SW
+    ),
+    .zifencei_exe_mem_wen(
+        exe_zifencei_mem_wen == MEN_SB || 
+        exe_zifencei_mem_wen == MEN_SH || 
+        exe_zifencei_mem_wen == MEN_SW
+    ),
+    .output_trappable(id_trappable)
 );
 
 
@@ -174,6 +224,7 @@ ExecuteStage #() executestage
     .wb_branch_hazard(wbstage_branch_hazard),
 
     .input_reg_pc(exe_reg_pc),
+    .input_inst(exe_inst),
     .input_exe_fun(exe_exe_fun),
     .input_op1_data(exe_op1_data),
     .input_op2_data(exe_op2_data),
@@ -192,6 +243,7 @@ ExecuteStage #() executestage
     .br_target(mem_br_target),
 
     .output_reg_pc(mem_reg_pc),
+    .output_inst(mem_inst),
     .output_mem_wen(mem_mem_wen),
     .output_rf_wen(mem_rf_wen),
     .output_rs2_data(mem_rs2_data),
@@ -202,8 +254,13 @@ ExecuteStage #() executestage
     .output_jmp_flg(mem_jmp_flg),
     .output_imm_i(csr_imm_i),
 
-    .stall_flg(memory_stage_is_stall),
-    .output_stall_flg(exe_stage_alu_stall_flg)
+    .memory_stage_stall_flg(memory_stage_is_stall),
+    .output_stall_flg(exe_stage_alu_stall_flg),
+
+    .output_datahazard_rf_wen(exestage_datahazard_rf_wen),
+    .output_datahazard_wb_addr(exestage_datahazard_wb_addr),
+    .output_trappable(exe_trappable),
+    .output_zifencei_mem_wen(exe_zifencei_mem_wen)
 );
 
 // **************************
@@ -227,6 +284,7 @@ MemoryStage #() memorystage
     .wb_branch_hazard(wbstage_branch_hazard),
 
     .input_reg_pc(mem_reg_pc),
+    .input_inst(mem_inst),
     .input_rs2_data(mem_rs2_data),
     .input_alu_out(mem_alu_out),
     .input_br_flg(mem_br_flg),
@@ -240,6 +298,7 @@ MemoryStage #() memorystage
     .output_rf_wen(wb_rf_wen),
     .output_read_data(wb_read_data),
     .output_reg_pc(wb_reg_pc),
+    .output_inst(wb_inst),
     .output_alu_out(wb_alu_out),
     .output_br_flg(wb_br_flg),
     .output_br_target(wb_br_target),
@@ -255,7 +314,12 @@ MemoryStage #() memorystage
     .mem_wdata(memory_wdata),
     .mem_wmask(memory_wmask),
     .mem_rdata(memory_rdata),
-    .mem_rdata_valid(memory_rdata_valid)
+    .mem_rdata_valid(memory_rdata_valid),
+
+    .output_datahazard_rf_wen(memstage_datahazard_rf_wen),
+    .output_datahazard_wb_addr(memstage_datahazard_wb_addr),
+    .output_trappable(mem_trappable),
+    .output_zifencei_mem_wen(mem_zifencei_mem_wen)
 );
 
 // **************************
@@ -270,6 +334,11 @@ CSRStage #(
 ) csrstage
 (
     .clk(clk),
+    
+    .reg_cycle(reg_cycle),
+    .reg_time(reg_time),
+    .reg_mtime(reg_mtime),
+    .reg_mtimecmp(reg_mtimecmp),
 
     .wb_branch_hazard(wbstage_branch_hazard),
 
@@ -277,15 +346,29 @@ CSRStage #(
     .input_op1_data(csr_op1_data),
     .input_imm_i(csr_imm_i),
 
+    .input_interrupt_ready(
+        //wb_inst == INST_NOP && 
+        mem_trappable &&
+        exe_trappable &&
+        id_trappable
+    ),
+
+    .if_reg_pc(if_reg_pc),
+
     .output_csr_cmd(wb_csr_cmd),
     .csr_rdata(wb_csr_rdata),
-    .trap_vector(wb_trap_vector)
+    .trap_vector(wb_trap_vector),
+    .output_stall_flg_may_interrupt(stall_flg_may_interrupt)
 );
 
 
 // **************************
 // WriteBack Stage
 // **************************
+
+assign wbstage_datahazard_rf_wen    = wb_rf_wen;
+assign wbstage_datahazard_wb_addr   = wb_wb_addr;
+
 WriteBackStage #() wbstage(
     .clk(clk),
 

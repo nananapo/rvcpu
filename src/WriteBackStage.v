@@ -35,7 +35,7 @@ module WriteBackStage(
     integer loop_i;
     initial begin
         regfile[1] = 32'hffffffff;
-        regfile[2] = 32'h00000800;
+        regfile[2] = 32'h00002000;
         for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
             regfile[loop_i] = 32'hffffffff;
     end
@@ -66,16 +66,18 @@ endfunction
 
 wire [31:0] wb_data = wb_data_func(wb_sel, memory_rdata, reg_pc_plus4, csr_rdata, alu_out);
 
-wire inst_is_ecall  = csr_cmd == CSR_ECALL;
+wire is_trap  = csr_cmd == CSR_ECALL ||
+                csr_cmd == CSR_MRET ||
+                csr_cmd == CSR_SRET;
 
 assign output_reg_pc = (
     br_flg ? br_target : 
     jmp_flg ? alu_out :
-    inst_is_ecall ? trap_vector :
+    is_trap ? trap_vector :
     reg_pc_plus4
 );
 
-assign output_branch_hazard = br_flg || jmp_flg || inst_is_ecall;
+assign output_branch_hazard = br_flg || jmp_flg || is_trap;
 
 reg [31:0] inst_count = 0;
 
@@ -101,7 +103,7 @@ always @(posedge clk) begin
     $display("br_flg         : %d", br_flg);
     $display("br_target      : 0x%H", br_target);
     $display("alu_out        : 0x%H", alu_out);
-    $display("inst_is_ecall  : %d", inst_is_ecall);
+    $display("is_trap        : %d", is_trap);
     $display("trap_vector    : 0x%H", trap_vector);
     $display("branch hazard  : %d", output_branch_hazard);
     $display("wb_data        : 0x%H", wb_data);

@@ -20,6 +20,12 @@ reg [31:0]  buffer[63:0];
 reg  [7:0]  queue_tail  = 0;
 reg  [7:0]  queue_head  = 0;
 
+integer loop_i;
+initial begin
+    for (loop_i = 0; loop_i < 64; loop_i = loop_i + 1)
+        buffer[loop_i] = 32'b0;
+end
+
 assign output_cmd_ready     = 1;
 assign output_rdata_valid   = 1;
 
@@ -75,16 +81,14 @@ reg state = STATE_IDLE;
 // バッファから読んだデータ
 reg [31:0] rdata = 0;
 
-/*
 `ifdef DEBUG
 always @(posedge clk) begin
     $display("uart_tx queue: %d -> %d", queue_head, queue_tail);
     if (state == STATE_WAIT_READY && tx_ready) begin
-        $display("uart_tx : 0x%h : %d", rdata, addr_mod);
+        $display("uart_tx send : 0x%h : %d", rdata, addr_mod);
     end
 end
 `endif
-*/
 
 always @(posedge clk) begin
     case (state)

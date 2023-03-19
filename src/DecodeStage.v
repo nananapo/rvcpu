@@ -7,8 +7,10 @@ module DecodeStage
     input  wire[31:0]   input_reg_pc,
     input  wire[31:0]   regfile[31:0],
 
-    // 即値
+    
     output reg [31:0]   output_reg_pc,
+    output reg [31:0]   output_inst,
+    // 即値
     output reg [31:0]   imm_i_sext,
     output reg [31:0]   imm_s_sext,
     output reg [31:0]   imm_b_sext,
@@ -42,13 +44,25 @@ module DecodeStage
 
     output wire         zifencei_stall_flg,
     input  wire         zifencei_mem_mem_wen,
-    input  wire         zifencei_exe_mem_wen
+    input  wire         zifencei_exe_mem_wen,
+
+    output wire         output_trappable
 );
 
 `include "include/core.v"
 `include "include/inst.v"
 
 initial begin
+    output_reg_pc   = REGPC_NOP;
+    output_inst     = INST_NOP;
+    
+    imm_i_sext      = 0;
+    imm_s_sext      = 0;
+    imm_b_sext      = 0;
+    imm_j_sext      = 0;
+    imm_u_shifted   = 0;
+    imm_z_uext      = 0;
+    
     exe_fun     = 0;
     op1_data    = 0;
     op2_data    = 0;
@@ -77,12 +91,20 @@ assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
 
 wire [31:0] inst = (
     wb_branch_hazard ? INST_NOP :
-    (memory_stage_stall_flg || last_clock_fence_i_stall_flg) ? save_inst : input_inst
+    (
+        last_memory_stage_stall_flg || 
+        last_clock_fence_i_stall_flg ||
+        last_data_hazard_stall_flg
+    ) ? save_inst : input_inst
 );
 
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
-    (memory_stage_stall_flg || last_clock_fence_i_stall_flg) ? save_reg_pc : input_reg_pc
+    (
+        last_memory_stage_stall_flg || 
+        last_clock_fence_i_stall_flg ||
+        last_data_hazard_stall_flg
+    ) ? save_reg_pc : input_reg_pc
 ); 
 
 wire [11:0] wire_imm_i  = inst[31:20];
@@ -119,12 +141,13 @@ assign zifencei_stall_flg = inst_is_fence_i && (zifencei_exe_mem_wen || zifencei
 // 前のクロックでfence_iでストールしたかどうか
 reg last_clock_fence_i_stall_flg = 0;
 
-always @(posedge clk) begin
-    last_clock_fence_i_stall_flg <= zifencei_stall_flg;
-end
 
-
-
+// 前のクロックでデータハザードでストールしたかどうか
+reg last_data_hazard_stall_flg = 0;
+// 前のクロックでメモリステージがストールしたかどうか
+reg last_memory_stage_stall_flg = 0;
+// トラップ可能かどうか
+assign output_trappable = inst == INST_NOP;
 
 
 function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
@@ -213,7 +236,10 @@ wire [4:0] wire_rs2_addr    = inst[24:20];
 wire [4:0] wire_wb_addr     = inst[11:7];
 
 always @(posedge clk) begin
-    if (data_hazard_stall_flg) begin
+    if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
+        output_reg_pc   <= REGPC_NOP;
+        output_inst     <= INST_NOP;
+
         imm_i_sext      <= 32'hffffffff;
         imm_s_sext      <= 32'hffffffff;
         imm_b_sext      <= 32'hffffffff;
@@ -225,7 +251,7 @@ always @(posedge clk) begin
         op2_data        <= 32'hffffffff;
         rs2_data        <= 32'hffffffff;
         jmp_flg         <= 0;
-        output_reg_pc   <= 32'hffffffff;
+
         exe_fun         <= ALU_ADD;
         mem_wen         <= MEN_X;
         rf_wen          <= REN_X;
@@ -233,6 +259,9 @@ always @(posedge clk) begin
         wb_addr         <= 0;
         csr_cmd         <= CSR_X;
     end else begin
+        output_reg_pc   <= reg_pc;
+        output_inst     <= inst;
+
         imm_i_sext      <= wire_imm_i_sext;
         imm_s_sext      <= wire_imm_s_sext;
         imm_b_sext      <= wire_imm_b_sext;
@@ -259,18 +288,34 @@ always @(posedge clk) begin
         rs2_data        <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
         jmp_flg         <= inst_is_jal || inst_is_jalr;
 
-        output_reg_pc   <= reg_pc;
         exe_fun         <= wire_exe_fun;
         mem_wen         <= wire_mem_wen;
         rf_wen          <= wire_rf_wen;
         wb_sel          <= wire_wb_sel;
         wb_addr         <= wire_wb_addr;
         csr_cmd         <= wire_csr_cmd;
+
     end
 
-    // save
-    save_inst   <= wb_branch_hazard ? INST_NOP  : inst;
-    save_reg_pc <= wb_branch_hazard ? REGPC_NOP : reg_pc;
+    if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
+        save_inst       <= inst;
+        save_reg_pc     <= reg_pc;
+        last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
+        last_data_hazard_stall_flg      <= data_hazard_stall_flg;
+        last_memory_stage_stall_flg     <= memory_stage_stall_flg;
+    end else if (wb_branch_hazard) begin
+        save_inst       <= INST_NOP;
+        save_reg_pc     <= REGPC_NOP;
+        last_clock_fence_i_stall_flg    <= 0;
+        last_data_hazard_stall_flg      <= 0;
+        last_memory_stage_stall_flg     <= 0;
+    end else begin 
+        save_inst       <= INST_NOP;
+        save_reg_pc     <= REGPC_NOP;
+        last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
+        last_data_hazard_stall_flg      <= data_hazard_stall_flg;
+        last_memory_stage_stall_flg     <= memory_stage_stall_flg;
+    end
 end
 
 `ifdef DEBUG 
@@ -281,6 +326,7 @@ always @(posedge clk) begin
     $display("rs1_addr  : %d", wire_rs1_addr);
     $display("rs2_addr  : %d", wire_rs2_addr);
     $display("wb_addr   : %d", wire_wb_addr);
+    $display("rs2_data  : 0x%H", (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr]);
     $display("op1_data  : 0x%H", (
         wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
         wire_op1_sel == OP1_PC  ? reg_pc :
@@ -311,6 +357,10 @@ always @(posedge clk) begin
     $display("dh.exe.adr: %d", data_hazard_exe_wb_addr);
     $display("is fence.i: %d", inst_is_fence_i);
     $display("fence.i st: %d", zifencei_stall_flg);
+    $display("last.dh   : %d", last_data_hazard_stall_flg);
+    $display("save.regpc: 0x%h", save_reg_pc);
+    $display("save.inst : 0x%h", save_inst);
+    $display("mem.stall : %d", memory_stage_stall_flg);
 end
 `endif
 

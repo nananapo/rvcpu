@@ -5,8 +5,12 @@ module MemoryInterface #(
 
     input  wire         mem_uart_rx,
     output wire         mem_uart_tx,
+    
     input  wire         uart_rx,
     output wire         uart_tx,
+
+    input  wire [63:0]  mtime,
+    output wire [63:0]  mtimecmp,
  
     input  wire         inst_start,
     output wire         inst_ready,
@@ -59,7 +63,7 @@ wire [31:0] mem_wmask;
 `else
 
     `ifndef MEMORY_DISALLOW_UNALIGNED
-    MemoryUnlignedAccessController 
+    MemoryUnalignedAccessController 
     `else
     MemoryMapController
     `endif
@@ -81,6 +85,9 @@ wire [31:0] mem_wmask;
 
         .uart_rx(uart_rx),
         .uart_tx(uart_tx),
+
+        .mtime(mtime),
+        .mtimecmp(mtimecmp),
 
         .input_cmd_start(mem_cmd_start),
         .input_cmd_write(mem_cmd_write),

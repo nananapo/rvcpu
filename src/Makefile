@@ -10,9 +10,10 @@ FILES = test.v \
 		MemoryStage.v \
 		MemoryInterface.v \
 		MemoryMapController.v \
+		MemoryMapped_MachineTimeRegister.v \
 		MemoryMappedIO_Uart_rx.v \
 		MemoryMappedIO_Uart_tx.v \
-		MemoryUnlignedAccessController.v \
+		MemoryUnalignedAccessController.v \
 		MultNbit.v \
 		MultUnsignedNbit.v \
 		CSRStage.v \
@@ -39,8 +40,7 @@ dm:
 	vvp debug.o
 
 v:
-	verilator --lint-only main.v
-	verilator --lint-only -DEXCLUDE_RV32M main.v
+	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M main.v
 	verilator --lint-only $(DEFINE_DEBUG) main.v
 	verilator --lint-only $(DEFINE_RISCV_TESTS) main.v
 	verilator --lint-only $(DEFINE_MEMORY_UART) main.v

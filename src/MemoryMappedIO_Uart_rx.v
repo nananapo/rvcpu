@@ -28,7 +28,7 @@ reg [31:0] buffer_count = 0;
 
 `ifdef DEBUG
 initial begin
-    $readmemh("../test/bin/mem256zero.hex", buffer);
+    $readmemh("../test/bin/mem256zero.hex", buffer, 0, 255);
 end
 `endif
 

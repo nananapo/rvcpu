@@ -1,4 +1,4 @@
-module MemoryUnlignedAccessController #(
+module MemoryUnalignedAccessController #(
     parameter FMAX_MHz = 27,
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
@@ -7,6 +7,9 @@ module MemoryUnlignedAccessController #(
     
     input  wire         uart_rx,
     output wire         uart_tx,
+
+    input  wire [63:0]  mtime,
+    output wire [63:0]  mtimecmp,
 
     input  wire         input_cmd_start,
     input  wire         input_cmd_write,
@@ -32,8 +35,12 @@ MemoryMapController #(
     .MEMORY_FILE(MEMORY_FILE)
 ) memory (
     .clk(clk),
+
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
+
+    .mtime(mtime),
+    .mtimecmp(mtimecmp),
 
     .input_cmd_start(mem_cmd_start),
     .input_cmd_write(mem_cmd_write),
@@ -72,13 +79,14 @@ reg [3:0]   state       = STATE_IDLE;
 reg [31:0]  save_rdata1 = 0;
 reg [31:0]  save_rdata2 = 0;
 
-/*
+`ifdef DEBUG
 always @(posedge clk) begin
     $display("MEMAC---------");
     $display("state         : %d", state);
     $display("input_start   : %d", input_cmd_start);
     $display("input_write   : %d", input_cmd_write);
     $display("input_addr    : 0x%H", input_addr);
+    $display("input.wdata   : 0x%H", input_wdata);
     $display("ready         : %d", output_cmd_ready);
     $display("rdata         : 0x%h", output_rdata);
     $display("valid         : %d", output_rdata_valid);
@@ -95,7 +103,7 @@ always @(posedge clk) begin
     $display("mem_rdata_v   : %d", mem_rdata_valid);
     $display("mem_wdata     : 0x%h", mem_wdata);
 end
-*/
+`endif
 
 function func_mem_cmd_start(
     input [3:0] state,

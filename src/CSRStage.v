@@ -3,27 +3,40 @@ module CSRStage #(
 )
 (
     input  wire         clk,
+    
+    input wire [63:0]   reg_cycle,
+    input wire [63:0]   reg_time,
+    input wire [63:0]   reg_mtime,
+    input wire [63:0]   reg_mtimecmp,
 
-    input  wire         wb_branch_hazard,
+    input wire          wb_branch_hazard,
     
     // input
-    input  wire [2:0]   input_csr_cmd,
-    input  wire [31:0]  input_op1_data,
-    input  wire [31:0]  input_imm_i,
+    input wire [2:0]    input_csr_cmd,
+    input wire [31:0]   input_op1_data,
+    input wire [31:0]   input_imm_i,
+
+    // interruptができる状態(ほかのステージがnopか)どうか
+    input wire          input_interrupt_ready,
+    // Fetchステージのpc
+    input wire [31:0]   if_reg_pc,
 
     // output
     output reg  [2:0]   output_csr_cmd,
     output reg  [31:0]  csr_rdata,
-    output reg  [31:0]  trap_vector
+    output reg  [31:0]  trap_vector,
+
+    // trapを起こしたいときにEXE以前を止めるために使う
+    output wire         output_stall_flg_may_interrupt
 );
 
 `include "include/core.v"
 
 // モード
-localparam MODE_MACHINE     = 3;
-//localparam HYPERVISOR_MODE  = 2;
-localparam MODE_SUPERVISOR  = 1;
-localparam MODE_USER        = 0;
+localparam MODE_MACHINE     = 2'b11;
+//localparam HYPERVISOR_MODE  = 2'b10;
+localparam MODE_SUPERVISOR  = 2'b01;
+localparam MODE_USER        = 2'b00;
 
 // 現在のモード
 reg [1:0]   mode = MODE_MACHINE;
@@ -36,9 +49,6 @@ localparam CSR_ADDR_CYCLE       = 12'hc00;
 localparam CSR_ADDR_TIME        = 12'hc01;
 localparam CSR_ADDR_CYCLEH      = 12'hc80;
 localparam CSR_ADDR_TIMEH       = 12'hc81;
-
-reg [63:0]  reg_cycle    = 0;
-reg [63:0]  reg_time     = 0;
 
 // Machine Information Registers
 localparam CSR_ADDR_MVENDORID   = 12'hf11;
@@ -53,9 +63,11 @@ localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
 trapは高い特権モードから低い特権モードに遷移することはない
 ただ、同じ特権モードに遷移することはある
 
+3.1.7
 S-modeからM-modeにトラップするとき、
 mpieはmieになる。mieは0になる。mppはSになる(S-modeを表すものになる)
 
+3.1.7
 mretする。MPPが権限モードyを表しているとする。
 MIEはMPIEに変更される。MIPEは1になる。
 MPPはサポートされてる最も低い権限モードの値に設定される。
@@ -63,6 +75,7 @@ MPPはサポートされてる最も低い権限モードの値に設定され�
 (UではなくSの場合は？)
 MPP!=Mの時、MPRVを0に設定する
 
+3.1.8
 RV32なら、SXL, UXLは32で固定
 
 3.1.6.3
@@ -100,7 +113,7 @@ reg         reg_mstatus_mprv    = 0;
 reg [1:0]   reg_mstatus_xs      = 0;
 reg [1:0]   reg_mstatus_fs      = 0;
 // S-modeでtrapしても書き込まれない
-reg [1:0]   reg_mstatus_mpp     = 0;
+reg [1:0]   reg_mstatus_mpp     = MODE_MACHINE; // 初期値をM-modeにする
 reg [1:0]   reg_mstatus_vs      = 0;
 // S-modeでtrapしたとき、アクティブなとモードが書き込まれる
 reg         reg_mstatus_spp     = 0;
@@ -121,17 +134,24 @@ reg         reg_mstatus_sie     = 0;
 // 1はreadonlyであってはならない。
 // デリゲートできるasynchronous trapはデリゲートされないことも必ずサポートしないといけない
 reg [31:0]  reg_medeleg         = 0;
+
 // サポートしないtrapは0を保持する
 // machine-levelの割り込みに対して1のread-onlyなbitを作ってはいけない
 // それ以外はOK
-reg [31:0]  reg_mideleg         = 0;
+reg         reg_mideleg_mtie    = 0; // 7
 
 //reg [25:0]  reg_mstatush_wpri   = 0;
 reg         reg_mstatush_mbe    = 0;
 reg         reg_mstatush_sbe    = 0;
 //reg [3:0]   reg_mstatush_wpri   = 0;
 
-reg [31:0]  reg_mie             = 0;
+reg         reg_mie_meie        = 0;
+reg         reg_mie_seie        = 0;
+reg         reg_mie_mtie        = 0; // 7
+reg         reg_mie_stie        = 0;
+reg         reg_mie_msie        = 0;
+reg         reg_mie_ssie        = 0;
+
 reg [31:0]  reg_mtvec           = 0;
 
 // Machine Trap Handling
@@ -141,6 +161,11 @@ reg [31:0]  reg_mtvec           = 0;
 (a) 今のモードがMで、mstatusのMIEがsetされてる(1?) / または、M-odeより低いモード
 (b) mipとmieでiがsetされている
 (c) midelegがあるなら、iがmidelegに設定されていない
+
+3.1.14
+M-modeにトラップするとき、mepcにはtrapが発生した時の(仮想)アドレスを設定する
+それ以外では書かない、ソフトウェアも書き込む
+-> ecallで書き込むってこと？
 */
 localparam CSR_ADDR_MSCRATCH    = 12'h340; // 自由
 localparam CSR_ADDR_MEPC        = 12'h341; // M-modeにトラップするとき、仮想アドレスに設定する
@@ -150,6 +175,8 @@ localparam CSR_ADDR_MIP         = 12'h344; // 3.1.9
 localparam CSR_ADDR_MTINST      = 12'h34a; // 0でいい、 8.6.3に書いてある?
 localparam CSR_ADDR_MTVAL2      = 12'h34b; // 0でいい
 
+localparam MCAUSE_MACHINE_TIMER_INTERRUPT = 32'b10000000_00000000_00000000_10000000;
+
 reg [31:0]  reg_mscratch    = 0;
 reg [31:0]  reg_mepc        = 0;
 reg [31:0]  reg_mcause      = 0;
@@ -158,19 +185,18 @@ reg [31:0]  reg_mip         = 0;
 reg [31:0]  reg_mtinst      = 0;
 reg [31:0]  reg_mtval2      = 0;
 
+// タイマ割りこみが起こりそうなのでストールするかどうか
+wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大きい
+                                                    // TODO sie
+                    reg_mie_mtie == 1 &&            // mieのmtieが1
+                    (
+                        // M-modeのとき、midelegによってS-modeに委譲されていなくて、mstatus.mieが1であることを確認する
+                        (mode == MODE_MACHINE && reg_mideleg_mtie == 0 && reg_mstatus_mie == 1) ||
+                        // S-modeのとき、midelegによってS-modeに委譲されていて、mstatus.sieが1であることを確認する
+                        (mode == MODE_SUPERVISOR && reg_mideleg_mtie == 1 && reg_mstatus_sie == 1)
+                    );
 
-reg [31:0]  timecounter = 0;
-always @(posedge clk) begin
-    // cycleは毎クロックインクリメント
-    reg_cycle   <= reg_cycle + 1;
-    // timeをμ秒ごとにインクリメント
-    if (timecounter == FMAX_MHz - 1) begin
-        reg_time    <= reg_time + 1;
-        timecounter <= 0;
-    end else begin
-        timecounter <= timecounter + 1;
-    end
-end
+assign output_stall_flg_may_interrupt = timer_stall;
 
 /*---------CSR命令の実行----------*/
 initial begin
@@ -205,7 +231,66 @@ reg [31:0]save_op1_data = 0;
 wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
 
 always @(posedge clk) begin
-    output_csr_cmd  <= csr_cmd;
+    // タイマ割り込みを起こす
+    if (timer_stall && input_interrupt_ready) begin
+        output_csr_cmd  <= CSR_ECALL;
+        reg_mstatus_mpp <= mode;
+        reg_mcause      <= MCAUSE_MACHINE_TIMER_INTERRUPT;
+        `ifdef DEBUG
+        $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
+        `endif
+        // TODO mepc
+        if (reg_mideleg_mtie == 0) begin
+            mode                <= MODE_MACHINE;
+            trap_vector         <= reg_mtvec;
+            reg_mstatus_mpie    <= reg_mstatus_mie;
+            reg_mstatus_mie     <= 0;
+            reg_mepc            <= if_reg_pc;
+        end else begin
+            mode                <= MODE_SUPERVISOR;
+            trap_vector         <= reg_mtvec; 
+            //trap_vector         <= reg_stvec; 
+            reg_mstatus_spie    <= reg_mstatus_sie;
+            reg_mstatus_sie     <= 0;
+            //reg_sepc            <= if_reg_pc;
+        end
+    end else begin
+        output_csr_cmd  <= csr_cmd;
+
+        case (csr_cmd)
+            CSR_ECALL: begin
+                `ifdef DEBUG
+                $display("MCAUSE : %d", mode);
+                `endif
+                // environment call from x-Mode execeptionを起こす
+                trap_vector <= reg_mtvec;
+                // 現在のモードに応じて書き込む値を変える
+                // M-mode = 11
+                // H-mode = 10
+                // S-mode = 9
+                // U-mode = 8
+                reg_mcause  <= {28'b0, 4'd8 + {2'b0,mode}};
+                mode        <= MODE_MACHINE; // TODO 適切なモードにする
+            end
+            CSR_MRET: begin
+                `ifdef DEBUG
+                $display("MPP %d", reg_mstatus_mpp);
+                `endif
+                // 現在のモードをチェックしてない...
+                trap_vector     <= reg_mepc;
+                mode            <= reg_mstatus_mpp;
+                reg_mstatus_mpp <= MODE_USER;
+                reg_mstatus_mie <= reg_mstatus_mpie;
+                if (reg_mstatus_mpp != MODE_MACHINE) begin
+                    reg_mstatus_mprv <= 0;
+                end
+            end
+            CSR_SRET: begin
+                //trap_vector <= reg_sepc;
+            end
+            default: begin end
+        endcase 
+    end
 
     case (addr)
         // Counters and Timers
@@ -247,8 +332,21 @@ always @(posedge clk) begin
         };
         // CSR_ADDR_MISA = 0
         CSR_ADDR_MEDELEG:   csr_rdata <= reg_medeleg;
-        CSR_ADDR_MIDELEG:   csr_rdata <= reg_mideleg;
-        CSR_ADDR_MIE:       csr_rdata <= reg_mie;
+        CSR_ADDR_MIDELEG:   csr_rdata <= {
+            24'b0,
+            reg_mideleg_mtie,
+            7'b0
+        };
+        CSR_ADDR_MIE:       csr_rdata <= {
+            16'b0,
+            4'b0,
+            reg_mie_meie, 1'b0,
+            reg_mie_seie, 1'b0,
+            reg_mie_mtie, 1'b0,
+            reg_mie_stie, 1'b0,
+            reg_mie_msie, 1'b0,
+            reg_mie_ssie, 1'b0
+        };
         CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
         // CSR_ADDR_MCOUNTEREN: 実装しない
         CSR_ADDR_MSTATUSH:  csr_rdata <= {
@@ -276,37 +374,13 @@ always @(posedge clk) begin
     case (save_csr_cmd)
         CSR_X: reg_mtvec <= reg_mtvec; // nop
         CSR_ECALL: begin
-            // 現在のモードに応じて書き込む値を変える
-            case (mode)
-                MODE_MACHINE:       reg_mcause <= 11;
-                //MODE_HYPERVISOR:    reg_mcause = 10;
-                MODE_SUPERVISOR:    reg_mcause <= 9;
-                MODE_USER:          reg_mcause <= 8;
-                default:            reg_mcause <= 0;
-            endcase
-            trap_vector <= reg_mtvec;
         end
         CSR_MRET: begin
-            // 現在のモードをチェックしてない
-            mode            <= reg_mstatus_mpp;
-            reg_mstatus_mpp <= MODE_USER;
-            reg_mstatus_mie <= reg_mstatus_mpie;
-            if (reg_mstatus_mpp != MODE_MACHINE) begin
-                reg_mstatus_mprv <= 0;
-            end
-            trap_vector     <= reg_mepc;
         end
-        /*
         CSR_SRET: begin
-            trap_vector <= reg_sepc;
         end
-        */
         default: begin
             case (save_csr_addr)
-                CSR_ADDR_MCAUSE:    reg_mcause  <= wdata;
-                CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
-                CSR_ADDR_MSCRATCH:  reg_mscratch<= wdata;
-                
                 // Counters and Timers
                 // READ ONLY
                 // CSR_ADDR_CYCLE:
@@ -348,8 +422,17 @@ always @(posedge clk) begin
                 end
                 // CSR_ADDR_MISA: READ ONLY
                 CSR_ADDR_MEDELEG:   reg_medeleg <= wdata;
-                CSR_ADDR_MIDELEG:   reg_mideleg <= wdata;
-                CSR_ADDR_MIE:       reg_mie     <= wdata;
+                CSR_ADDR_MIDELEG: begin
+                    reg_mideleg_mtie <= wdata[7]; 
+                end
+                CSR_ADDR_MIE: begin
+                    reg_mie_meie <= wdata[11];
+                    reg_mie_seie <= wdata[9];
+                    reg_mie_mtie <= wdata[7];
+                    reg_mie_stie <= wdata[5];
+                    reg_mie_msie <= wdata[3];
+                    reg_mie_ssie <= wdata[1];
+                end
                 CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
                 // CSR_ADDR_MCOUNTEREN: 実装しない
                 CSR_ADDR_MSTATUSH: begin
@@ -376,6 +459,7 @@ end
 `ifdef DEBUG 
 always @(posedge clk) begin
     $display("CSR STAGE------------");
+    $display("mode         : %d", mode);
     $display("cmd          : %d", csr_cmd);
     $display("op1_data     : 0x%H", op1_data);
     $display("imm_i        : 0x%H", imm_i);
@@ -383,6 +467,11 @@ always @(posedge clk) begin
     $display("rdata        : 0x%H", csr_rdata);
     $display("wdata        : 0x%H", wdata);
     $display("trap_vector  : 0x%H", trap_vector);
+    $display("mtvec        : 0x%H", reg_mtvec);
+    $display("mtime        : 0x%H", reg_mtime);
+    $display("mtimecmp     : 0x%H", reg_mtimecmp);
+    $display("time.stall   : %d", timer_stall);
+    $display("intr.ready   : %d", input_interrupt_ready);
 end
 `endif
 

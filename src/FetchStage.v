@@ -7,6 +7,8 @@ module FetchStage(
     output reg [31:0]   id_reg_pc,
     output reg [31:0]   id_inst,
 
+    output wire [31:0]  if_reg_pc,
+
     output wire         mem_start,
     input  wire         mem_ready,
     output wire [31:0]  mem_addr,
@@ -83,11 +85,15 @@ wire [31:0] output_inst = (
     ) : INST_NOP
 );
 
+assign if_reg_pc =  wb_branch_hazard ? wb_reg_pc :
+                    (state == STATE_WAIT_VALID && is_fetched) ? saved_reg_pc :
+                    inner_reg_pc;
+
 always @(posedge clk) begin
-    if (!stall_flg) begin
-        id_reg_pc   <= output_reg_pc;
-        id_inst     <= output_inst;
-    end
+
+    id_reg_pc   <= output_reg_pc;
+    id_inst     <= output_inst;
+
     if (wb_branch_hazard) begin
         inner_reg_pc <= wb_reg_pc;
     end
