@@ -49,7 +49,10 @@ wire [4:0]  memstage_datahazard_wb_addr;
 wire        wbstage_datahazard_rf_wen;
 wire [4:0]  wbstage_datahazard_wb_addr;
 
-
+// トラップ可能かどうかのフラグ
+wire mem_trappable;
+wire exe_trappable;
+wire id_trappable;
 
 // レジスタ
 wire [31:0] regfile[31:0];
@@ -177,7 +180,9 @@ DecodeStage #() decodestage
     
     .zifencei_stall_flg(id_zifencei_stall_flg),
     .zifencei_mem_mem_wen(mem_mem_wen == MEN_SB || mem_mem_wen == MEN_SH || mem_mem_wen == MEN_SW),
-    .zifencei_exe_mem_wen(exe_mem_wen == MEN_SB || exe_mem_wen == MEN_SH || exe_mem_wen == MEN_SW)
+    .zifencei_exe_mem_wen(exe_mem_wen == MEN_SB || exe_mem_wen == MEN_SH || exe_mem_wen == MEN_SW),
+
+    .output_trappable(id_trappable)
 );
 
 
@@ -242,7 +247,8 @@ ExecuteStage #() executestage
     .output_stall_flg(exe_stage_alu_stall_flg),
 
     .output_datahazard_rf_wen(exestage_datahazard_rf_wen),
-    .output_datahazard_wb_addr(exestage_datahazard_wb_addr)
+    .output_datahazard_wb_addr(exestage_datahazard_wb_addr),
+    .output_trappable(exe_trappable)
 );
 
 // **************************
@@ -299,7 +305,8 @@ MemoryStage #() memorystage
     .mem_rdata_valid(memory_rdata_valid),
 
     .output_datahazard_rf_wen(memstage_datahazard_rf_wen),
-    .output_datahazard_wb_addr(memstage_datahazard_wb_addr)
+    .output_datahazard_wb_addr(memstage_datahazard_wb_addr),
+    .output_trappable(mem_trappable)
 );
 
 // **************************
@@ -327,10 +334,10 @@ CSRStage #(
     .input_imm_i(csr_imm_i),
 
     .input_interrupt_ready(
-        wb_inst == INST_NOP && 
-        mem_inst == INST_NOP &&
-        exe_inst == INST_NOP &&
-        id_inst == INST_NOP
+        //wb_inst == INST_NOP && 
+        mem_trappable &&
+        exe_trappable &&
+        id_trappable
     ),
 
     .if_reg_pc(if_reg_pc),

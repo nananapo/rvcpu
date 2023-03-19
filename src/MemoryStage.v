@@ -37,7 +37,8 @@ module MemoryStage(
     input  wire          mem_rdata_valid,
 
     output wire          output_datahazard_rf_wen,
-    output wire [4:0]    output_datahazard_wb_addr
+    output wire [4:0]    output_datahazard_wb_addr,
+    output wire          output_trappable
 );
 
 `include "include/core.v"
@@ -145,6 +146,7 @@ assign mem_wmask = (
 
 assign output_datahazard_rf_wen     = state == STATE_WAIT ? rf_wen : save_rf_wen;
 assign output_datahazard_wb_addr    = state == STATE_WAIT ? wb_addr : save_wb_addr;
+assign output_trappable             = state == STATE_WAIT ? inst : save_inst;
 
 wire [31:0] output_read_data_wire = (
     state == STATE_WAIT ? 32'hffffffff :

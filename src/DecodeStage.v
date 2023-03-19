@@ -44,7 +44,9 @@ module DecodeStage
 
     output wire         zifencei_stall_flg,
     input  wire         zifencei_mem_mem_wen,
-    input  wire         zifencei_exe_mem_wen
+    input  wire         zifencei_exe_mem_wen,
+
+    output wire         output_trappable
 );
 
 `include "include/core.v"
@@ -138,10 +140,14 @@ assign zifencei_stall_flg = inst_is_fence_i && (zifencei_exe_mem_wen || zifencei
 
 // 前のクロックでfence_iでストールしたかどうか
 reg last_clock_fence_i_stall_flg = 0;
+
+
 // 前のクロックでデータハザードでストールしたかどうか
 reg last_data_hazard_stall_flg = 0;
 // 前のクロックでメモリステージがストールしたかどうか
 reg last_memory_stage_stall_flg = 0;
+// トラップ可能かどうか
+assign output_trappable = inst == INST_NOP;
 
 
 function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
