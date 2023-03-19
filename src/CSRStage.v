@@ -191,6 +191,11 @@ localparam CSR_ADDR_SIE         = 12'h104;
 localparam CSR_ADDR_STVEC       = 12'h105;
 localparam CSR_ADDR_SCOUNTEREN  = 12'h106; // 4.1.5 cycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
 
+reg [31:0]  reg_sstatus     = 0;
+//reg [31:0]  reg_sie         = 0;
+reg [31:0]  reg_stvec       = 0;
+reg [31:0]  reg_scounteren  = 0;
+
 // Supervisor Configuration
 localparam CSR_ADDR_SENVCFG     = 12'h10a; // 後で調べる
 
@@ -221,14 +226,16 @@ reg [31:0]  reg_scontext    = 0; // わからん
 
 // タイマ割りこみが起こりそうなのでストールするかどうか
 wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大きい
-                                                    // TODO sie
-                    reg_mie_mtie == 1 &&            // mieのmtieが1
-                    (
-                        // M-modeのとき、midelegによってS-modeに委譲されていなくて、mstatus.mieが1であることを確認する
-                        (mode == MODE_MACHINE && reg_mideleg_mtie == 0 && reg_mstatus_mie == 1) ||
-                        // S-modeのとき、midelegによってS-modeに委譲されていて、mstatus.sieが1であることを確認する
-                        (mode == MODE_SUPERVISOR && reg_mideleg_mtie == 1 && reg_mstatus_sie == 1)
-                    );
+                    ((
+                        mode == MODE_MACHINE &&     // M-mode
+                        reg_mie_mtie == 1 &&        // タイマ割込みが有効
+                        reg_mideleg_mtie == 0 &&    // S-modeに委譲されていない
+                        reg_mstatus_mie == 1        // mieによってマスクされない
+                    ) || (
+                        mode == MODE_SUPERVISOR &&  // S-mode
+                        reg_mie_stie == 1 &&        // タイマ割込みが有効
+                        reg_mstatus_sie == 1        // sieによってマスクされない
+                    ));
 
 assign output_stall_flg_may_interrupt = timer_stall;
 
