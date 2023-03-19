@@ -18,7 +18,20 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
 * IF -> ID -> EXE -> MEM(or CSR) -> WB
 
 追加実装
-* Zifencei fence.i命令
+* Zifencei拡張
+    - [x] fence.i
+* RV32M拡張
+    - [x] div
+    - [x] divu
+    - [x] mul
+    - [x] mulh
+    - [x] mulhsu
+    - [x] mulhu
+    - [x] rem
+    - [x] remu
+* CSR
+    - [x] mret命令
+    - [x] M-modeでのタイマ割込み
 
 TangNano9Kで動作確認済み
 
