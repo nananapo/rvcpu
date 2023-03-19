@@ -185,6 +185,40 @@ reg [31:0]  reg_mip         = 0;
 reg [31:0]  reg_mtinst      = 0;
 reg [31:0]  reg_mtval2      = 0;
 
+// Supervisor Trap Setup
+localparam CSR_ADDR_SSTATUS     = 12'h100;
+localparam CSR_ADDR_SIE         = 12'h104;
+localparam CSR_ADDR_STVEC       = 12'h105;
+localparam CSR_ADDR_SCOUNTEREN  = 12'h106; // 4.1.5 cycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
+
+// Supervisor Configuration
+localparam CSR_ADDR_SENVCFG     = 12'h10a; // 後で調べる
+
+// Supervisor Trap Handling
+localparam CSR_ADDR_SSCRATCH    = 12'h140;
+localparam CSR_ADDR_SEPC        = 12'h141;
+localparam CSR_ADDR_SCAUSE      = 12'h142;
+localparam CSR_ADDR_STVAL       = 12'h143;
+localparam CSR_ADDR_SIP         = 12'h144;
+
+reg [31:0]  reg_sscratch    = 0;
+reg [31:0]  reg_sepc        = 0;
+reg [31:0]  reg_scause      = 0;
+reg [31:0]  reg_stval       = 0;
+reg [31:0]  reg_sip         = 0;
+
+// Supervisor Protection and Translation
+localparam CSR_ADDR_SATP        = 12'h180;
+
+reg [31:0]  reg_satp        = 0;
+
+// Debug/Trace Registers
+localparam CSR_ADDR_SCONTEXT    = 12'h5a8;
+
+reg [31:0]  reg_scontext    = 0; // わからん
+
+
+
 // タイマ割りこみが起こりそうなのでストールするかどうか
 wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大きい
                                                     // TODO sie
