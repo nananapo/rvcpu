@@ -320,6 +320,7 @@ always @(posedge clk) begin
     $display("rs1_addr  : %d", wire_rs1_addr);
     $display("rs2_addr  : %d", wire_rs2_addr);
     $display("wb_addr   : %d", wire_wb_addr);
+    $display("rs2_data  : 0x%H", (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr]);
     $display("op1_data  : 0x%H", (
         wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
         wire_op1_sel == OP1_PC  ? reg_pc :
