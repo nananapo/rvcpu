@@ -3,12 +3,12 @@
 #define MTIMECMP_ADDR   ((unsigned int *)0xf0000008)
 #define MTIMECMPH_ADDR  ((unsigned int *)0xf000000c)
 
-#define G_CNT ((unsigned int *)0x5000)
+#define DEBUG_COUNT ((unsigned int *)0xf0000010)
 
 #define MSTATUS_MIE (1 << 3)
 #define MIE_MTIE (1 << 7)
 
-#define INTERVAL 100
+#define INTERVAL 1000000
 
 extern void timervec(void);
 
@@ -20,10 +20,10 @@ int main(void)
 {
     timerinit();
 
-    *G_CNT = 0;
+    *DEBUG_COUNT = 0;
     while (1)
     {
-       (*G_CNT)++;
+        *DEBUG_COUNT = *DEBUG_COUNT + 1;
     }
 }
 
@@ -31,7 +31,7 @@ int main(void)
 
 void timer_interrupt(void)
 {
-    set_next_timecmp(INTERVAL);
+    //send_uint(*DEBUG_COUNT);
 
     uart_send_char('t');
     uart_send_char('i');
@@ -48,16 +48,16 @@ void timer_interrupt(void)
     uart_send_char('u');
     uart_send_char('p');
     uart_send_char('t');
+
     uart_send_char('\n');
+    set_next_timecmp(INTERVAL);
 }
 
 void set_next_timecmp(unsigned int interval)
 {
     unsigned int mtime  = *MTIME_ADDR;
     unsigned int mtimeh = *MTIMEH_ADDR;
-    unsigned int temp;
 
-    temp = mtime + interval;
     if (mtime + interval < mtime)
         mtimeh += 1;
     mtime += interval;
