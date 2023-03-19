@@ -144,10 +144,10 @@ wire [31:0] output_read_data_wire = (
     state == STATE_WAIT ? 32'hffffffff :
     state == STATE_WAIT_READ_VALID ? (
         mem_rdata_valid ? (
-                save_mem_wen == MEN_LB ? {24'b0, mem_rdata[7:0]} :
-                save_mem_wen == MEN_LBU? {{24{mem_rdata[7]}}, mem_rdata[7:0]} :
-                save_mem_wen == MEN_LH ? {{16{mem_rdata[15]}}, mem_rdata[15:0]} :
-                save_mem_wen == MEN_LHU? {16'b0, mem_rdata[15:0]} :
+                save_mem_wen == MEN_LB ? {{24{mem_rdata[7]}}, mem_rdata[7:0]} :
+                save_mem_wen == MEN_LBU? {24'b0, mem_rdata[7:0]} :
+                save_mem_wen == MEN_LH ? {16'b0, mem_rdata[15:0]} :
+                save_mem_wen == MEN_LHU? {{16{mem_rdata[15]}}, mem_rdata[15:0]} :
                 mem_rdata
         ) : 32'hffffffff
     ) : 32'hffffffff
