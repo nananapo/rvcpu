@@ -90,7 +90,7 @@ assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
 wire [31:0] inst = (
     wb_branch_hazard ? INST_NOP :
     (
-        memory_stage_stall_flg || 
+        last_memory_stage_stall_flg || 
         last_clock_fence_i_stall_flg ||
         last_data_hazard_stall_flg
     ) ? save_inst : input_inst
@@ -99,7 +99,7 @@ wire [31:0] inst = (
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
     (
-        memory_stage_stall_flg || 
+        last_memory_stage_stall_flg || 
         last_clock_fence_i_stall_flg ||
         last_data_hazard_stall_flg
     ) ? save_reg_pc : input_reg_pc
@@ -140,13 +140,8 @@ assign zifencei_stall_flg = inst_is_fence_i && (zifencei_exe_mem_wen || zifencei
 reg last_clock_fence_i_stall_flg = 0;
 // 前のクロックでデータハザードでストールしたかどうか
 reg last_data_hazard_stall_flg = 0;
-
-always @(posedge clk) begin
-    last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
-    last_data_hazard_stall_flg      <= data_hazard_stall_flg;
-end
-
-
+// 前のクロックでメモリステージがストールしたかどうか
+reg last_memory_stage_stall_flg = 0;
 
 
 function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
@@ -299,12 +294,21 @@ always @(posedge clk) begin
     if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
         save_inst       <= inst;
         save_reg_pc     <= reg_pc;
+        last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
+        last_data_hazard_stall_flg      <= data_hazard_stall_flg;
+        last_memory_stage_stall_flg     <= memory_stage_stall_flg;
     end else if (wb_branch_hazard) begin
         save_inst       <= INST_NOP;
         save_reg_pc     <= REGPC_NOP;
+        last_clock_fence_i_stall_flg    <= 0;
+        last_data_hazard_stall_flg      <= 0;
+        last_memory_stage_stall_flg     <= 0;
     end else begin 
         save_inst       <= INST_NOP;
         save_reg_pc     <= REGPC_NOP;
+        last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
+        last_data_hazard_stall_flg      <= data_hazard_stall_flg;
+        last_memory_stage_stall_flg     <= memory_stage_stall_flg;
     end
 end
 
@@ -349,6 +353,7 @@ always @(posedge clk) begin
     $display("last.dh   : %d", last_data_hazard_stall_flg);
     $display("save.regpc: 0x%h", save_reg_pc);
     $display("save.inst : 0x%h", save_inst);
+    $display("mem.stall : %d", memory_stage_stall_flg);
 end
 `endif
 
