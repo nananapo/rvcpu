@@ -186,7 +186,14 @@ reg [31:0]  reg_mscratch    = 0;
 reg [31:0]  reg_mepc        = 0;
 reg [31:0]  reg_mcause      = 0;
 reg [31:0]  reg_mtval       = 0;
-reg [31:0]  reg_mip         = 0;
+
+reg         reg_mip_meip    = 0;
+reg         reg_mip_seip    = 0;
+reg         reg_mip_mtip    = 0;
+reg         reg_mip_stip    = 0;
+reg         reg_mip_msip    = 0;
+reg         reg_mip_ssip    = 0;
+
 reg [31:0]  reg_mtinst      = 0;
 reg [31:0]  reg_mtval2      = 0;
 
@@ -484,7 +491,15 @@ always @(posedge clk) begin
         CSR_ADDR_MEPC:      csr_rdata <= reg_mepc;
         CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
         CSR_ADDR_MTVAL:     csr_rdata <= reg_mtval;
-        CSR_ADDR_MIP:       csr_rdata <= reg_mip;
+        CSR_ADDR_MIP:       csr_rdata <= {
+            20'b0,
+            reg_mip_meip, 1'b0,
+            reg_mip_seip, 1'b0,
+            reg_mip_mtip, 1'b0,
+            reg_mip_stip, 1'b0,
+            reg_mip_msip, 1'b0,
+            reg_mip_ssip, 1'b0
+        };
         // CSR_ADDR_MTINST:    0
         // CSR_ADDR_MTVAL2:    0
 
@@ -621,7 +636,14 @@ always @(posedge clk) begin
                 CSR_ADDR_MEPC:      reg_mepc     <= wdata;
                 CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
                 CSR_ADDR_MTVAL:     reg_mtval    <= wdata;
-                CSR_ADDR_MIP:       reg_mip      <= wdata;
+                CSR_ADDR_MIP: begin
+                    reg_mip_meip    <= wdata[11];
+                    reg_mip_seip    <= wdata[9];
+                    reg_mip_mtip    <= wdata[7];
+                    reg_mip_stip    <= wdata[5];
+                    reg_mip_msip    <= wdata[3];
+                    reg_mip_ssip    <= wdata[1];
+                end
                 // CSR_ADDR_MTINST:    0
                 // CSR_ADDR_MTVAL2:    0
         
