@@ -375,7 +375,11 @@ always @(posedge clk) begin
                 end
             end
             CSR_SRET: begin
-                //trap_vector <= reg_sepc;
+                trap_vector     <= reg_sepc;
+                mode            <= {1'b0, reg_mstatus_spp};
+                reg_mstatus_spp <= MODE_USER;
+                reg_mstatus_sie <= reg_mstatus_spie;
+                reg_mstatus_mprv<= 0;
             end
             default: begin end
         endcase 
