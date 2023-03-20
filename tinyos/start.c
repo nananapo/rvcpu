@@ -6,7 +6,7 @@ void timerinit();
 extern void main(void);
 extern void timervec(void);
 
-unsigned int timer_scratch[6]; 
+unsigned int timer_scratch[7]; 
 
 void start(void)
 {
@@ -72,14 +72,14 @@ timerinit()
     *CLINT_MTIMECMP = mtime + interval;
     
     // タイマ割込みの時に使う情報をmscratchに入れる
-    // scratch[0..2] : timervecで一時的にレジスタの値を避難させる場所
-    // scratch[3] : mtimecmpのアドレス
-    // scratch[4] : mtimecmphのアドレス
-    // scratch[5] : interval
+    // scratch[0..3] : timervecで一時的にレジスタの値を避難させる場所
+    // scratch[4] : mtimecmpのアドレス
+    // scratch[5] : mtimecmphのアドレス
+    // scratch[6] : interval
     unsigned int *scratch = timer_scratch;
-    scratch[3] = CLINT_MTIMECMP;
-    scratch[4] = CLINT_MTIMECMPH;
-    scratch[5] = interval;
+    scratch[4] = CLINT_MTIMECMP;
+    scratch[5] = CLINT_MTIMECMPH;
+    scratch[6] = interval;
     w_mscratch((unsigned int)scratch);
 
     // トラップ先をtimervecに設定する
