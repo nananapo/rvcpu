@@ -576,13 +576,10 @@ always @(posedge clk) begin
     save_op1_data   <= op1_data;
 
     case (save_csr_cmd)
-        CSR_X: reg_mtvec <= reg_mtvec; // nop
-        CSR_ECALL: begin
-        end
-        CSR_MRET: begin
-        end
-        CSR_SRET: begin
-        end
+        CSR_X: begin end
+        CSR_ECALL: begin end
+        CSR_MRET: begin end
+        CSR_SRET: begin end
         default: begin
             case (save_csr_addr)
                 // Counters and Timers
@@ -715,7 +712,7 @@ always @(posedge clk) begin
                 // Supervisor Protection and Translation
                 CSR_ADDR_SATP:      reg_satp    <= wdata; 
 
-                default:            reg_mtvec   <= reg_mtvec; //nop
+                default: begin end
             endcase
         end
     endcase
