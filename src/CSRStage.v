@@ -141,11 +141,11 @@ reg [31:0]  reg_medeleg         = 0;
 // それ以外はOK
 reg         reg_mideleg_mtie    = 0; // 7
 
-reg         reg_mie_meie        = 0;
+reg         reg_mie_meie        = 0; // external interrupt、つまり何～？
 reg         reg_mie_seie        = 0;
-reg         reg_mie_mtie        = 0; // 7
+reg         reg_mie_mtie        = 0; // 7 timer interrupt
 reg         reg_mie_stie        = 0;
-reg         reg_mie_msie        = 0;
+reg         reg_mie_msie        = 0; // software interrupt、つまりecall?
 reg         reg_mie_ssie        = 0;
 
 reg [31:0]  reg_mtvec           = 0;
@@ -189,6 +189,13 @@ reg [31:0]  reg_mtval       = 0;
 reg [31:0]  reg_mip         = 0;
 reg [31:0]  reg_mtinst      = 0;
 reg [31:0]  reg_mtval2      = 0;
+
+// Machine Memory Protection
+localparam CSR_ADDR_PMPADDR0    = 12'h3B0;
+localparam CSR_ADDR_PMPCFG0     = 12'h3A0;
+
+reg [31:0]  reg_pmpaddr0    = 0;
+reg [31:0]  reg_pmpcfg0     = 0;
 
 // Supervisor Trap Setup
 localparam CSR_ADDR_SSTATUS     = 12'h100;
@@ -481,6 +488,10 @@ always @(posedge clk) begin
         // CSR_ADDR_MTINST:    0
         // CSR_ADDR_MTVAL2:    0
 
+        // Machine Memory Protection
+        CSR_ADDR_PMPADDR0:  csr_rdata <= reg_pmpaddr0;
+        CSR_ADDR_PMPCFG0:   csr_rdata <= reg_pmpcfg0;
+
         // Supervisor Trap Setup
         // sstatusはmstatusのサブセット
         CSR_ADDR_SSTATUS:       csr_rdata <= {
@@ -613,6 +624,10 @@ always @(posedge clk) begin
                 CSR_ADDR_MIP:       reg_mip      <= wdata;
                 // CSR_ADDR_MTINST:    0
                 // CSR_ADDR_MTVAL2:    0
+        
+                // Machine Memory Protection
+                CSR_ADDR_PMPADDR0:  reg_pmpaddr0 <= wdata;
+                CSR_ADDR_PMPCFG0:   reg_pmpcfg0 <= wdata;
 
                 // Supervisor Trap Setup
                 CSR_ADDR_SSTATUS: begin
