@@ -49,6 +49,7 @@ localparam CSR_ADDR_CYCLE       = 12'hc00;
 localparam CSR_ADDR_TIME        = 12'hc01;
 localparam CSR_ADDR_CYCLEH      = 12'hc80;
 localparam CSR_ADDR_TIMEH       = 12'hc81;
+// TODO? INSTRET
 
 // Machine Information Registers
 localparam CSR_ADDR_MVENDORID   = 12'hf11;
@@ -367,10 +368,47 @@ always @(posedge clk) begin
 
     case (addr)
         // Counters and Timers
-        CSR_ADDR_CYCLE:     csr_rdata <= reg_cycle[31:0];
-        CSR_ADDR_TIME:      csr_rdata <= reg_time[31:0];
-        CSR_ADDR_CYCLEH:    csr_rdata <= reg_cycle[63:32];
-        CSR_ADDR_TIMEH:     csr_rdata <= reg_time[63:32];
+        // TODO アクセス制御を共通化したい
+        CSR_ADDR_CYCLE: begin
+            // M-modeか、counterenで許可されているならアクセスできる
+            if (mode == MODE_MACHINE || 
+                (reg_mcounteren_cy == 1 && 
+                    (mode == MODE_SUPERVISOR || 
+                    (mode == MODE_USER && reg_scounteren_cy == 1))))
+                csr_rdata <= reg_cycle[31:0]; 
+            else
+                csr_rdata <= 0;
+        end
+        CSR_ADDR_TIME: begin
+            // M-modeか、counterenで許可されているならアクセスできる
+            if (mode == MODE_MACHINE || 
+                (reg_mcounteren_tm == 1 && 
+                    (mode == MODE_SUPERVISOR || 
+                    (mode == MODE_USER && reg_scounteren_tm == 1))))
+                csr_rdata <= reg_time[31:0]; 
+            else
+                csr_rdata <= 0;
+        end
+        CSR_ADDR_CYCLEH: begin
+            // M-modeか、counterenで許可されているならアクセスできる
+            if (mode == MODE_MACHINE || 
+                (reg_mcounteren_cy == 1 && 
+                    (mode == MODE_SUPERVISOR || 
+                    (mode == MODE_USER && reg_scounteren_cy == 1))))
+                csr_rdata <= reg_cycle[63:32]; 
+            else
+                csr_rdata <= 0;
+        end
+        CSR_ADDR_TIMEH: begin
+            // M-modeか、counterenで許可されているならアクセスできる
+            if (mode == MODE_MACHINE || 
+                (reg_mcounteren_tm == 1 && 
+                    (mode == MODE_SUPERVISOR || 
+                    (mode == MODE_USER && reg_scounteren_tm == 1))))
+                csr_rdata <= reg_time[63:32]; 
+            else
+                csr_rdata <= 0;
+        end
 
         // Machine Information Registers
         // CSR_ADDR_MVENDORID:  0
