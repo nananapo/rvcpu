@@ -149,7 +149,9 @@ reg         reg_mie_ssie        = 0;
 
 reg [31:0]  reg_mtvec           = 0;
 
-// TODO mcounteren
+reg         reg_mcounteren_ir   = 0; // S-mode, U-modeがinstretにアクセスできるかどうか
+reg         reg_mcounteren_tm   = 0; // S-mode, U-modeがtimeにアクセスできるかどうか
+reg         reg_mcounteren_cy   = 0; // S-mode, U-modeがcycleにアクセスできるかどうか
 
 //reg [25:0]  reg_mstatush_wpri   = 0;
 reg         reg_mstatush_mbe    = 0;
@@ -196,9 +198,9 @@ localparam CSR_ADDR_SCOUNTEREN  = 12'h106; // 4.1.5 cycle, time, instret, or hpm
 // reg [31:0]  reg_sstatus     = 0;
 // reg [31:0]  reg_sie         = 0;
 reg [31:0]  reg_stvec       = 0;
-reg reg_scounteren_ir       = 0; // instretにアクセスできるかどうか
-reg reg_scounteren_tm       = 0; // 
-reg reg_scounteren_cy       = 0;
+reg reg_scounteren_ir       = 0; // U-modeがinstretにアクセスできるかどうか
+reg reg_scounteren_tm       = 0; // U-modeがtimeにアクセスできるかどうか
+reg reg_scounteren_cy       = 0; // U-modeがcycleにアクセスできるかどうか
 
 // Supervisor Configuration
 localparam CSR_ADDR_SENVCFG     = 12'h10a; // 後で調べる
@@ -419,7 +421,12 @@ always @(posedge clk) begin
             reg_mie_ssie, 1'b0
         };
         CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
-        // CSR_ADDR_MCOUNTEREN: 実装しない
+        CSR_ADDR_MCOUNTEREN:csr_rdata <= {
+            29'b0,
+            reg_mcounteren_ir,
+            reg_mcounteren_tm,
+            reg_mcounteren_cy
+        };
         CSR_ADDR_MSTATUSH:  csr_rdata <= {
             26'b0,
             reg_mstatush_mbe,
@@ -545,7 +552,11 @@ always @(posedge clk) begin
                     reg_mie_ssie <= wdata[1];
                 end
                 CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
-                // CSR_ADDR_MCOUNTEREN: 実装しない
+                CSR_ADDR_MCOUNTEREN: begin
+                    reg_mcounteren_ir <= wdata[2];
+                    reg_mcounteren_tm <= wdata[1];
+                    reg_mcounteren_cy <= wdata[0];
+                end
                 CSR_ADDR_MSTATUSH: begin
                     //reg_mstatush_wpri   <= wdata[31:6],
                     reg_mstatush_mbe    <= wdata[5];
