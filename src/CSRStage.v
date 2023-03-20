@@ -520,6 +520,9 @@ always @(posedge clk) begin
             reg_scounteren_cy
         };
 
+        // Supervisor Protection and Translation
+        CSR_ADDR_SATP:      csr_rdata <= reg_satp; 
+
         default:            csr_rdata <= 32'b0;
     endcase
 
@@ -641,6 +644,10 @@ always @(posedge clk) begin
                     reg_scounteren_tm <= wdata[1];
                     reg_scounteren_cy <= wdata[0];
                 end
+
+                // Supervisor Protection and Translation
+                CSR_ADDR_SATP:      reg_satp    <= wdata; 
+
                 default:            reg_mtvec   <= reg_mtvec; //nop
             endcase
         end
