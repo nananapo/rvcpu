@@ -233,7 +233,8 @@ reg [31:0]  reg_sscratch    = 0;
 reg [31:0]  reg_sepc        = 0;
 reg [31:0]  reg_scause      = 0;
 reg [31:0]  reg_stval       = 0;
-reg [31:0]  reg_sip         = 0;
+// sipはmipのサブセット
+// reg [31:0]  reg_sip         = 0;
 
 // Supervisor Protection and Translation
 localparam CSR_ADDR_SATP        = 12'h180;
@@ -546,6 +547,20 @@ always @(posedge clk) begin
             reg_scounteren_cy
         };
 
+        // Supervisor Trap Handling
+        CSR_ADDR_SSCRATCH:  csr_rdata <= reg_sscratch;
+        CSR_ADDR_SEPC:      csr_rdata <= reg_sepc;
+        CSR_ADDR_SCAUSE:    csr_rdata <= reg_scause;
+        CSR_ADDR_STVAL:     csr_rdata <= reg_stval;
+        CSR_ADDR_SIP:       csr_rdata <= {
+            22'b0,
+            reg_mip_seip, 1'b0,
+            2'b0,
+            reg_mip_stip, 1'b0,
+            2'b0,
+            reg_mip_ssip, 1'b0
+        };
+
         // Supervisor Protection and Translation
         CSR_ADDR_SATP:      csr_rdata <= reg_satp; 
 
@@ -680,6 +695,17 @@ always @(posedge clk) begin
                     reg_scounteren_ir <= wdata[2];
                     reg_scounteren_tm <= wdata[1];
                     reg_scounteren_cy <= wdata[0];
+                end
+
+                // Supervisor Trap Handling
+                CSR_ADDR_SSCRATCH:  reg_sscratch <= wdata;
+                CSR_ADDR_SEPC:      reg_sepc <= wdata;
+                CSR_ADDR_SCAUSE:    reg_scause <= wdata;
+                CSR_ADDR_STVAL:     reg_stval <= wdata;
+                CSR_ADDR_SIP: begin
+                    reg_mip_seip    <= wdata[9];
+                    reg_mip_stip    <= wdata[5];
+                    reg_mip_ssip    <= wdata[1];
                 end
 
                 // Supervisor Protection and Translation
