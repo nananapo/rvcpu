@@ -1,4 +1,4 @@
-.section .text
+.section .kernelEntry
 .global _entry
 _entry:
     # レジスタを0初期化する
