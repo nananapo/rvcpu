@@ -140,11 +140,6 @@ reg [31:0]  reg_medeleg         = 0;
 // それ以外はOK
 reg         reg_mideleg_mtie    = 0; // 7
 
-//reg [25:0]  reg_mstatush_wpri   = 0;
-reg         reg_mstatush_mbe    = 0;
-reg         reg_mstatush_sbe    = 0;
-//reg [3:0]   reg_mstatush_wpri   = 0;
-
 reg         reg_mie_meie        = 0;
 reg         reg_mie_seie        = 0;
 reg         reg_mie_mtie        = 0; // 7
@@ -153,6 +148,13 @@ reg         reg_mie_msie        = 0;
 reg         reg_mie_ssie        = 0;
 
 reg [31:0]  reg_mtvec           = 0;
+
+// TODO mcounteren
+
+//reg [25:0]  reg_mstatush_wpri   = 0;
+reg         reg_mstatush_mbe    = 0;
+reg         reg_mstatush_sbe    = 0;
+//reg [3:0]   reg_mstatush_wpri   = 0;
 
 // Machine Trap Handling
 /*
@@ -191,10 +193,12 @@ localparam CSR_ADDR_SIE         = 12'h104;
 localparam CSR_ADDR_STVEC       = 12'h105;
 localparam CSR_ADDR_SCOUNTEREN  = 12'h106; // 4.1.5 cycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
 
-reg [31:0]  reg_sstatus     = 0;
-//reg [31:0]  reg_sie         = 0;
+// reg [31:0]  reg_sstatus     = 0;
+// reg [31:0]  reg_sie         = 0;
 reg [31:0]  reg_stvec       = 0;
-reg [31:0]  reg_scounteren  = 0;
+reg reg_scounteren_ir       = 0; // instretにアクセスできるかどうか
+reg reg_scounteren_tm       = 0; // 
+reg reg_scounteren_cy       = 0;
 
 // Supervisor Configuration
 localparam CSR_ADDR_SENVCFG     = 12'h10a; // 後で調べる
@@ -431,6 +435,46 @@ always @(posedge clk) begin
         CSR_ADDR_MIP:       csr_rdata <= reg_mip;
         // CSR_ADDR_MTINST:    0
         // CSR_ADDR_MTVAL2:    0
+
+        // Supervisor Trap Setup
+        // sstatusはmstatusのサブセット
+        CSR_ADDR_SSTATUS:       csr_rdata <= {
+            reg_mstatus_sd,
+            11'b0,
+            reg_mstatus_mxr,
+            reg_mstatus_sum,
+            1'b0,
+            reg_mstatus_xs,
+            reg_mstatus_fs,
+            2'b0,
+            reg_mstatus_vs,
+            reg_mstatus_spp,
+            1'b0,
+            reg_mstatus_ube,
+            reg_mstatus_spie,
+            3'b0,
+            reg_mstatus_sie,
+            1'b0
+        };
+        // sieはmieのサブセット
+        CSR_ADDR_SIE:           csr_rdata <= {
+            16'b0,
+            6'b0,
+            reg_mie_seie,
+            3'b0,
+            reg_mie_stie,
+            3'b0,
+            reg_mie_ssie,
+            1'b0
+        };
+        CSR_ADDR_STVEC:         csr_rdata <= reg_stvec;
+        CSR_ADDR_SCOUNTEREN:    csr_rdata <= {
+            29'b0,
+            reg_scounteren_ir,
+            reg_scounteren_tm,
+            reg_scounteren_cy
+        };
+
         default:            csr_rdata <= 32'b0;
     endcase
 
@@ -517,6 +561,37 @@ always @(posedge clk) begin
                 CSR_ADDR_MIP:       reg_mip      <= wdata;
                 // CSR_ADDR_MTINST:    0
                 // CSR_ADDR_MTVAL2:    0
+
+                // Supervisor Trap Setup
+                CSR_ADDR_SSTATUS: begin
+                    reg_mstatus_sd      <= wdata[31];
+                    //reg_mstatus_wpri    <= wdata[30:20];
+                    reg_mstatus_mxr     <= wdata[19];
+                    reg_mstatus_sum     <= wdata[18];
+                    //reg_mstatus_wpri    <= wdata[17];
+                    reg_mstatus_xs      <= wdata[16:15];
+                    reg_mstatus_fs      <= wdata[14:13];
+                    //reg_mstatus_wpri    <= wdata[12:11];
+                    reg_mstatus_vs      <= wdata[10:9];
+                    reg_mstatus_spp     <= wdata[8];
+                    //reg_mstatus_wpri    <= wdata[7];
+                    reg_mstatus_ube     <= wdata[6];
+                    reg_mstatus_spie    <= wdata[5];
+                    //reg_mstatus_wpri    <= wdata[4:2];
+                    reg_mstatus_sie     <= wdata[1];
+                    //reg_mstatus_wpri    <= wdata[0];
+                end
+                CSR_ADDR_SIE: begin
+                    reg_mie_seie <= wdata[9];
+                    reg_mie_stie <= wdata[5];
+                    reg_mie_ssie <= wdata[1];
+                end
+                CSR_ADDR_STVEC:     reg_stvec   <= wdata;
+                CSR_ADDR_SCOUNTEREN: begin
+                    reg_scounteren_ir <= wdata[2];
+                    reg_scounteren_tm <= wdata[1];
+                    reg_scounteren_cy <= wdata[0];
+                end
                 default:            reg_mtvec   <= reg_mtvec; //nop
             endcase
         end
