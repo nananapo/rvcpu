@@ -36,7 +36,7 @@ void start(void)
     // configure Physical Memory Protection to give supervisor mode
     // access to all of physical memory.
     // ↑メモリプロテクションなんて実装してません...
-    w_pmpaddr0(0x3fffffffffffffull);
+    w_pmpaddr0(0x3fffffffu);
     w_pmpcfg0(0xf);
 
     // タイマ割込みの設定をする
