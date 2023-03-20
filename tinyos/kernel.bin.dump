@@ -1,0 +1,164 @@
+
+kernel.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_entry>:
+       0:	00000093          	li	ra,0
+       4:	00001137          	lui	sp,0x1
+       8:	00000193          	li	gp,0
+       c:	00000213          	li	tp,0
+      10:	00000293          	li	t0,0
+      14:	00000313          	li	t1,0
+      18:	00000393          	li	t2,0
+      1c:	00000413          	li	s0,0
+      20:	00000493          	li	s1,0
+      24:	00000513          	li	a0,0
+      28:	00000593          	li	a1,0
+      2c:	00000613          	li	a2,0
+      30:	00000693          	li	a3,0
+      34:	00000713          	li	a4,0
+      38:	00000793          	li	a5,0
+      3c:	00000813          	li	a6,0
+      40:	00000893          	li	a7,0
+      44:	00000913          	li	s2,0
+      48:	00000993          	li	s3,0
+      4c:	00000a13          	li	s4,0
+      50:	00000a93          	li	s5,0
+      54:	00000b13          	li	s6,0
+      58:	00000b93          	li	s7,0
+      5c:	00000c13          	li	s8,0
+      60:	00000c93          	li	s9,0
+      64:	00000d13          	li	s10,0
+      68:	00000d93          	li	s11,0
+      6c:	00000e13          	li	t3,0
+      70:	00000e93          	li	t4,0
+      74:	00000f13          	li	t5,0
+      78:	00000f93          	li	t6,0
+      7c:	784010ef          	jal	ra,1800 <start>
+	...
+
+00001800 <start>:
+    1800:	300027f3          	csrr	a5,mstatus
+    1804:	ffffe737          	lui	a4,0xffffe
+    1808:	7ff70713          	addi	a4,a4,2047 # ffffe7ff <_end+0xffffce1b>
+    180c:	00e7f7b3          	and	a5,a5,a4
+    1810:	00001737          	lui	a4,0x1
+    1814:	80070713          	addi	a4,a4,-2048 # 800 <_entry+0x800>
+    1818:	00e7e7b3          	or	a5,a5,a4
+    181c:	30079073          	csrw	mstatus,a5
+    1820:	000027b7          	lui	a5,0x2
+    1824:	9c478793          	addi	a5,a5,-1596 # 19c4 <main>
+    1828:	34179073          	csrw	mepc,a5
+    182c:	00000793          	li	a5,0
+    1830:	18079073          	csrw	satp,a5
+    1834:	000107b7          	lui	a5,0x10
+    1838:	fff78793          	addi	a5,a5,-1 # ffff <_end+0xe61b>
+    183c:	30279073          	csrw	medeleg,a5
+    1840:	30379073          	csrw	mideleg,a5
+    1844:	104027f3          	csrr	a5,sie
+    1848:	2227e793          	ori	a5,a5,546
+    184c:	10479073          	csrw	sie,a5
+    1850:	400007b7          	lui	a5,0x40000
+    1854:	fff78793          	addi	a5,a5,-1 # 3fffffff <_end+0x3fffe61b>
+    1858:	3b079073          	csrw	pmpaddr0,a5
+    185c:	00f00793          	li	a5,15
+    1860:	3a079073          	csrw	pmpcfg0,a5
+    1864:	f0000737          	lui	a4,0xf0000
+    1868:	00072603          	lw	a2,0(a4) # f0000000 <_end+0xefffe61c>
+    186c:	fffe87b7          	lui	a5,0xfffe8
+    1870:	00472583          	lw	a1,4(a4)
+    1874:	95f78793          	addi	a5,a5,-1697 # fffe795f <_end+0xfffe5f7b>
+    1878:	00c7b7b3          	sltu	a5,a5,a2
+    187c:	000186b7          	lui	a3,0x18
+    1880:	6a068693          	addi	a3,a3,1696 # 186a0 <_end+0x16cbc>
+    1884:	00f585b3          	add	a1,a1,a5
+    1888:	00b72623          	sw	a1,12(a4)
+    188c:	00d60633          	add	a2,a2,a3
+    1890:	000027b7          	lui	a5,0x2
+    1894:	9c878793          	addi	a5,a5,-1592 # 19c8 <timer_scratch>
+    1898:	00c72423          	sw	a2,8(a4)
+    189c:	00c70513          	addi	a0,a4,12
+    18a0:	00870593          	addi	a1,a4,8
+    18a4:	00b7a823          	sw	a1,16(a5)
+    18a8:	00a7aa23          	sw	a0,20(a5)
+    18ac:	00d7ac23          	sw	a3,24(a5)
+    18b0:	34079073          	csrw	mscratch,a5
+    18b4:	000027b7          	lui	a5,0x2
+    18b8:	96078793          	addi	a5,a5,-1696 # 1960 <timervec>
+    18bc:	30579073          	csrw	mtvec,a5
+    18c0:	300027f3          	csrr	a5,mstatus
+    18c4:	0087e793          	ori	a5,a5,8
+    18c8:	30079073          	csrw	mstatus,a5
+    18cc:	304027f3          	csrr	a5,mie
+    18d0:	0807e793          	ori	a5,a5,128
+    18d4:	30479073          	csrw	mie,a5
+    18d8:	30200073          	mret
+    18dc:	00008067          	ret
+
+000018e0 <timerinit>:
+    18e0:	f0000737          	lui	a4,0xf0000
+    18e4:	00072603          	lw	a2,0(a4) # f0000000 <_end+0xefffe61c>
+    18e8:	fffe87b7          	lui	a5,0xfffe8
+    18ec:	00472583          	lw	a1,4(a4)
+    18f0:	95f78793          	addi	a5,a5,-1697 # fffe795f <_end+0xfffe5f7b>
+    18f4:	00c7b7b3          	sltu	a5,a5,a2
+    18f8:	000186b7          	lui	a3,0x18
+    18fc:	6a068693          	addi	a3,a3,1696 # 186a0 <_end+0x16cbc>
+    1900:	00f585b3          	add	a1,a1,a5
+    1904:	00b72623          	sw	a1,12(a4)
+    1908:	00d60633          	add	a2,a2,a3
+    190c:	000027b7          	lui	a5,0x2
+    1910:	9c878793          	addi	a5,a5,-1592 # 19c8 <timer_scratch>
+    1914:	00c72423          	sw	a2,8(a4)
+    1918:	00c70513          	addi	a0,a4,12
+    191c:	00870593          	addi	a1,a4,8
+    1920:	00b7a823          	sw	a1,16(a5)
+    1924:	00a7aa23          	sw	a0,20(a5)
+    1928:	00d7ac23          	sw	a3,24(a5)
+    192c:	34079073          	csrw	mscratch,a5
+    1930:	000027b7          	lui	a5,0x2
+    1934:	96078793          	addi	a5,a5,-1696 # 1960 <timervec>
+    1938:	30579073          	csrw	mtvec,a5
+    193c:	300027f3          	csrr	a5,mstatus
+    1940:	0087e793          	ori	a5,a5,8
+    1944:	30079073          	csrw	mstatus,a5
+    1948:	304027f3          	csrr	a5,mie
+    194c:	0807e793          	ori	a5,a5,128
+    1950:	30479073          	csrw	mie,a5
+    1954:	00008067          	ret
+	...
+
+00001960 <timervec>:
+    1960:	34051573          	csrrw	a0,mscratch,a0
+    1964:	00b52023          	sw	a1,0(a0)
+    1968:	00c52223          	sw	a2,4(a0)
+    196c:	00d52423          	sw	a3,8(a0)
+    1970:	00e52623          	sw	a4,12(a0)
+    1974:	01052583          	lw	a1,16(a0)
+    1978:	01852603          	lw	a2,24(a0)
+    197c:	0005a683          	lw	a3,0(a1)
+    1980:	00d60733          	add	a4,a2,a3
+    1984:	00e5a023          	sw	a4,0(a1)
+    1988:	00d75a63          	bge	a4,a3,199c <notincrement_mtimecmph>
+    198c:	01452683          	lw	a3,20(a0)
+    1990:	0006a703          	lw	a4,0(a3)
+    1994:	00170713          	addi	a4,a4,1
+    1998:	00e6a023          	sw	a4,0(a3)
+
+0000199c <notincrement_mtimecmph>:
+    199c:	00200593          	li	a1,2
+    19a0:	14459073          	csrw	sip,a1
+    19a4:	00c52703          	lw	a4,12(a0)
+    19a8:	00852683          	lw	a3,8(a0)
+    19ac:	00452603          	lw	a2,4(a0)
+    19b0:	00052583          	lw	a1,0(a0)
+    19b4:	34051573          	csrrw	a0,mscratch,a0
+    19b8:	30200073          	mret
+	...
+
+Disassembly of section .text.startup:
+
+000019c4 <main>:
+    19c4:	00008067          	ret
