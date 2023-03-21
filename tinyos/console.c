@@ -1,0 +1,4 @@
+void consoleinit(void)
+{
+    
+}
