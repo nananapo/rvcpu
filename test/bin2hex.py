@@ -8,6 +8,8 @@ all = []
 for b in allbytes:
     all.append(format(b, '02x'))
 
+all += ["00"] * (4 - len(all) % 4)
+
 aligned = []
 for i in range(0, len(all), 4):
     aligned.append(all[i] + all[i+1] + all[i+2] + all[i+3] + "\n")
