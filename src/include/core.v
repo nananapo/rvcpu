@@ -55,6 +55,10 @@ localparam MEN_LBU  = 4'd5;
 localparam MEN_LH   = 4'd6;
 localparam MEN_LHU  = 4'd7;
 localparam MEN_LW   = 4'd8;
+// RV32A
+`ifndef EXCLUDE_RV32A
+localparam MEN_AMOSWAP_W_AQRL = 4'd9;
+`endif
 
 localparam REN_X    = 1'b0;
 localparam REN_S    = 1'b1;

@@ -159,3 +159,13 @@ localparam INST_RV32M_DIVU_FUNCT3   = 3'b101;
 localparam INST_RV32M_REM_FUNCT3    = 3'b110;
 localparam INST_RV32M_REMU_FUNCT3   = 3'b111;
 `endif
+
+/*----------------RV32M----------------*/
+`ifndef EXCLUDE_RV32A
+
+localparam INST_RV32A_OPCODE            = 7'b0101111;
+
+localparam INST_RV32A_AMOSWAP_W_FUNCT3  = 3'b010;
+localparam INST_RV32A_AMOSWAP_W_FUNCT5  = 5'b00001;
+
+`endif
