@@ -1,0 +1,14 @@
+
+amoswap.w.aqrl.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	00000513          	li	a0,0
+   4:	00400593          	li	a1,4
+   8:	06400613          	li	a2,100
+   c:	00f00693          	li	a3,15
+  10:	06b52223          	sw	a1,100(a0)
+  14:	0ed622af          	amoswap.w.aqrl	t0,a3,(a2)
+  18:	06452303          	lw	t1,100(a0)
