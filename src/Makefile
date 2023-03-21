@@ -41,6 +41,8 @@ dm:
 
 v:
 	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M main.v
+	verilator --lint-only -DDEBUG -DEXCLUDE_RV32A main.v
+	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.v
 	verilator --lint-only $(DEFINE_DEBUG) main.v
 	verilator --lint-only $(DEFINE_RISCV_TESTS) main.v
 	verilator --lint-only $(DEFINE_MEMORY_UART) main.v
