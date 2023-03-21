@@ -100,5 +100,5 @@ void panic(char *s)
 
 void printfinit(void)
 {
-    spinlock_acquire(&prlock);
+    spinlock_init(&prlock);
 }
