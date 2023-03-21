@@ -89,14 +89,34 @@ reg [4:0]   save_wb_addr    = 0;
 reg         save_jmp_flg    = 0;
 
 
-wire is_store       = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
+`ifndef EXCLUDE_RV32A
+wire is_amoswap_w_aqrl      = mem_wen == MEN_AMOSWAP_W_AQRL;
+wire is_amoswap_w_aqrl_save = save_mem_wen == MEN_AMOSWAP_W_AQRL;
+`endif
+
+wire is_store       = (
+    mem_wen == MEN_SB || 
+    mem_wen == MEN_SH || 
+    mem_wen == MEN_SW
+`ifndef EXCLUDE_RV32A
+    || mem_wen == MEN_AMOSWAP_W_AQRL // loadとして扱ってしまう
+`endif
+    );
+
 wire is_load        = !is_store && mem_wen != MEN_X;
 wire is_store_save  = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
 wire next_flg = (
     state == STATE_WAIT ? mem_wen == MEN_X || (is_store && mem_cmd_ready):
     state == STATE_WAIT_READY ? (is_store_save && mem_cmd_ready) : 
-    state == STATE_WAIT_READ_VALID ? mem_rdata_valid :
+    state == STATE_WAIT_READ_VALID ?
+
+`ifndef EXCLUDE_RV32A
+        // amoswap.w.aqrlならstoreします
+        !is_amoswap_w_aqrl_save &&
+`endif
+        mem_rdata_valid :
+
     1
 );
 
@@ -150,8 +170,9 @@ assign output_datahazard_wb_addr    = state == STATE_WAIT ? wb_addr : save_wb_ad
 assign output_trappable             = state == STATE_WAIT ? inst == INST_NOP : save_inst == INST_NOP;
 assign output_zifencei_mem_wen      = state == STATE_WAIT ? mem_wen : save_mem_wen;
 
+reg [31:0] mem_rdata_save = 32'hffffffff;
+
 wire [31:0] output_read_data_wire = (
-    state == STATE_WAIT ? 32'hffffffff :
     state == STATE_WAIT_READ_VALID ? (
         mem_rdata_valid ? (
                 save_mem_wen == MEN_LB ? {{24{mem_rdata[7]}}, mem_rdata[7:0]} :
@@ -160,7 +181,7 @@ wire [31:0] output_read_data_wire = (
                 save_mem_wen == MEN_LHU? {{16{mem_rdata[15]}}, mem_rdata[15:0]} :
                 mem_rdata
         ) : 32'hffffffff
-    ) : 32'hffffffff
+    ) : mem_rdata_save
 );
 
 wire output_is_current = (
@@ -269,8 +290,16 @@ always @(posedge clk) begin
             end
         end
         STATE_WAIT_READ_VALID: begin
-            if (mem_rdata_valid)
-                state <= STATE_WAIT;
+            if (mem_rdata_valid) begin
+`ifndef EXCLUDE_RV32A
+                if (is_amoswap_w_aqrl_save) begin
+                    state           <= STATE_WAIT_READY;
+                    save_mem_wen    <= MEN_SW;
+                    mem_rdata_save  <= mem_rdata;
+                end else
+`endif
+                    state <= STATE_WAIT;
+            end
         end
     endcase
 
