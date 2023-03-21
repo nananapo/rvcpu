@@ -106,9 +106,9 @@ static inline unsigned int amoswap(unsigned int *addr, unsigned int value)
     unsigned int x;
 
     asm volatile(
-				"	amoswap.w.aqrl %0, %2, %1"
-				: "=r" (x), "+A" (addr)
-				: "r" (value)
+				"	amoswap.w.aqrl %0, %2, (%1)"
+				: "=r" (x)
+				: "r" (addr), "r" (value)
 				: "memory"
                 );	
     return x;

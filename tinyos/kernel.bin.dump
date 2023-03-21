@@ -606,7 +606,7 @@ Disassembly of section .text:
     2024:	01010413          	addi	s0,sp,16
     2028:	000027b7          	lui	a5,0x2
     202c:	2b478513          	addi	a0,a5,692 # 22b4 <prlock>
-    2030:	0a0000ef          	jal	ra,20d0 <spinlock_acquire>
+    2030:	070000ef          	jal	ra,20a0 <spinlock_init>
     2034:	00000013          	nop
     2038:	00c12083          	lw	ra,12(sp)
     203c:	00812403          	lw	s0,8(sp)
@@ -629,9 +629,9 @@ Disassembly of section .text:
     2070:	03010413          	addi	s0,sp,48
     2074:	fca42e23          	sw	a0,-36(s0)
     2078:	fcb42c23          	sw	a1,-40(s0)
-    207c:	fd842783          	lw	a5,-40(s0)
-    2080:	fdc40713          	addi	a4,s0,-36
-    2084:	0ef727af          	amoswap.w.aqrl	a5,a5,(a4)
+    207c:	fdc42783          	lw	a5,-36(s0)
+    2080:	fd842703          	lw	a4,-40(s0)
+    2084:	0ee7a7af          	amoswap.w.aqrl	a5,a4,(a5)
     2088:	fef42623          	sw	a5,-20(s0)
     208c:	fec42783          	lw	a5,-20(s0)
     2090:	00078513          	mv	a0,a5
