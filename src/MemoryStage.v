@@ -98,12 +98,14 @@ wire is_store       = (
     mem_wen == MEN_SB || 
     mem_wen == MEN_SH || 
     mem_wen == MEN_SW
-`ifndef EXCLUDE_RV32A
-    || mem_wen == MEN_AMOSWAP_W_AQRL // loadとして扱ってしまう
-`endif
     );
 
-wire is_load        = !is_store && mem_wen != MEN_X;
+wire is_load        = !is_store && mem_wen != MEN_X
+    `ifndef EXCLUDE_RV32A
+        || mem_wen == MEN_AMOSWAP_W_AQRL // loadとして扱ってしまう
+    `endif
+    ;
+
 wire is_store_save  = save_mem_wen == MEN_SB || save_mem_wen == MEN_SH || save_mem_wen == MEN_SW;
 
 wire next_flg = (
