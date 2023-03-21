@@ -41,7 +41,7 @@ always @(posedge clk) begin
                 txCounter   <= 0;
                 dataCopy    <= data;
                 `ifdef DEBUG
-                    $display("UART_TX : %d", data);
+                    $display("UART_TX : %c(%d)", data, data);
                 `endif
             end
         end
