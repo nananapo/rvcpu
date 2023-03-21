@@ -94,3 +94,44 @@ static inline void w_sie(unsigned int x)
 {
   asm volatile("csrw sie, %0" : : "r" (x));
 }
+
+// 0でいい
+static inline unsigned int mycpu()
+{
+    return 0;
+}
+
+static inline unsigned int amoswap(unsigned int *addr, unsigned int value)
+{
+    unsigned int x;
+
+    asm volatile(
+				"	amoswap.w.aqrl %0, %2, (%1)"
+				: "=r" (x)
+				: "r" (addr), "r" (value)
+				: "memory"
+                );	
+    return x;
+}
+
+/*
+// enable device interrupts
+static inline void intr_on()
+{
+  w_sstatus(r_sstatus() | SSTATUS_SIE);
+}
+
+// disable device interrupts
+static inline void intr_off()
+{
+  w_sstatus(r_sstatus() & ~SSTATUS_SIE);
+}
+
+*/
+
+#ifndef RISCV_H
+# define RISCV_H
+
+void panic(char *reason);
+
+#endif

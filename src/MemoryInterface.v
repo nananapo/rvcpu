@@ -75,10 +75,10 @@ wire [31:0] mem_wmask;
         .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
     `elsif DEBUG
         // make d
-        .MEMORY_FILE("../test/c/uart_tx.c.bin.aligned")
+        .MEMORY_FILE("../tinyos/kernel.bin.aligned")
     `else
         // build
-        .MEMORY_FILE("../test/c/uart_tx.c.bin.aligned")
+        .MEMORY_FILE("../tinyos/kernel.bin.aligned")
     `endif
     ) memory (
         .clk(clk),
