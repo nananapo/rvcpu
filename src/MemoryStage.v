@@ -317,7 +317,7 @@ always @(posedge clk) begin
     output_jmp_flg      <= output_jmp_flg_wire;
 end
 
-`ifdef DEBUG 
+`ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("MEMORY STAGE-------------");
     $display("status        : %d", state);

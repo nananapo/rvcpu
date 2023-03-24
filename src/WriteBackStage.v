@@ -89,7 +89,7 @@ always @(posedge clk) begin
     end    
 end
 
-`ifdef DEBUG 
+`ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("WB STAGE--------------");
     $display("reg_pc         : 0x%H", reg_pc);

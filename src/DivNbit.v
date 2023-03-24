@@ -63,7 +63,7 @@ always @(posedge clk) begin
 end
 
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 `ifdef PRINT_ALU_MODULE
 always @(posedge clk) begin
     $display("divNbit-------------------");

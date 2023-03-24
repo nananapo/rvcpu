@@ -40,9 +40,6 @@ always @(posedge clk) begin
                 txState     <= TX_STATE_START_BIT;
                 txCounter   <= 0;
                 dataCopy    <= data;
-                `ifdef DEBUG
-                    $display("UART_TX : %c(%d)", data, data);
-                `endif
             end
         end
         TX_STATE_START_BIT: begin

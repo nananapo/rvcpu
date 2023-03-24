@@ -150,7 +150,7 @@ always @(posedge clk) begin
     endcase
 end
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("UARTMem----------");
     $display("state         : %d", state);

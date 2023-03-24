@@ -81,7 +81,7 @@ reg state = STATE_IDLE;
 // バッファから読んだデータ
 reg [31:0] rdata = 0;
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("uart_tx queue: %d -> %d", queue_head, queue_tail);
     if (state == STATE_WAIT_READY && tx_ready) begin
@@ -103,13 +103,25 @@ always @(posedge clk) begin
             if (tx_ready) begin
                 tx_start    <= 1;
                 case (addr_mod)
-                    0: tx_data  <= rdata[7:0];
-                    1: tx_data  <= rdata[15:8];
-                    2: tx_data  <= rdata[23:16];
-                    3: tx_data  <= rdata[31:24];
+                    0: begin
+                        tx_data  <= rdata[7:0];
+                        $write("%c", rdata[7:0]);
+                    end
+                    1: begin 
+                        tx_data  <= rdata[15:8];
+                        $write("%c", rdata[15:8]);
+                    end
+                    2: begin 
+                        tx_data  <= rdata[23:16];
+                        $write("%c", rdata[23:16]);
+                    end
+                    3: begin 
+                        tx_data  <= rdata[31:24];
+                        $write("%c", rdata[31:24]);
+                    end
                 endcase
                 queue_head  <= queue_head + 1;
-                state <= STATE_IDLE;
+                state       <= STATE_IDLE;
             end
         end
     endcase

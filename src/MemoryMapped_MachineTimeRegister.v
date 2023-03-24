@@ -55,7 +55,7 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("DEBUGREG-------------------------");
     $display("isdebugreg    : %d", is_debugreg);

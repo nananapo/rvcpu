@@ -28,6 +28,10 @@ DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST
 DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
 
 d:
+	iverilog $(DEFINE_DEBUG) -DPRINT_DEBUGINFO -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	vvp debug.o
+
+dn:
 	iverilog $(DEFINE_DEBUG) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
 	vvp debug.o
 

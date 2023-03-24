@@ -83,7 +83,7 @@ reg [3:0]   state       = STATE_IDLE;
 reg [31:0]  save_rdata1 = 0;
 reg [31:0]  save_rdata2 = 0;
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("MEMAC---------");
     $display("state         : %d", state);

@@ -148,7 +148,7 @@ wire [31:0] mem_wdata       = input_wdata;
     );
 `endif
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("MemoryMapController--------");
     $display("addr              : 0x%h", input_addr);

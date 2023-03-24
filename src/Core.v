@@ -393,7 +393,7 @@ WriteBackStage #() wbstage(
     .exit(exit)
 );
 
-`ifdef DEBUG 
+`ifdef PRINT_DEBUGINFO
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
     $display("");

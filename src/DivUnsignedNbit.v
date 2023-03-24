@@ -71,7 +71,7 @@ always @(posedge clk) begin
     endcase
 end
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 `ifdef PRINT_ALU_MODULE
 always @(posedge clk) begin
     $display("DIV-------------------");

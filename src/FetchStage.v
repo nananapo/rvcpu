@@ -114,8 +114,8 @@ always @(posedge clk) begin
                     state <= STATE_WAIT_READY;
             end else begin
                 if (!is_fetched && mem_data_valid) begin
-`ifdef DEBUG 
-                    $display("Fetched");
+`ifdef PRINT_DEBUGINFO 
+                    $display("Instruction Fetched");
 `endif
                     inner_reg_pc <= inner_reg_pc + 4;
                     if (stall_flg) begin
@@ -141,7 +141,7 @@ always @(posedge clk) begin
     endcase
 end
 
-`ifdef DEBUG 
+`ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("FETCH -------------");
     $display("status        : %d", state);

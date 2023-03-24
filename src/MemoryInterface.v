@@ -291,7 +291,7 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("MEMINF -------------");
     $display("inst_start        : %d", inst_start);

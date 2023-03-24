@@ -148,7 +148,7 @@ always @(posedge clk) begin
 end
 
 
-`ifdef DEBUG
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("MEMMAP UART RX-----------------");
     $display("buffer    :%d (%d)", buffer_tail, buffer_count);

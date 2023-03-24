@@ -340,16 +340,16 @@ always @(posedge clk) begin
             end
         end
 
-        `ifdef DEBUG
-        $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
+        `ifdef PRINT_DEBUGINFO
+            $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
         `endif
     end else begin
         output_csr_cmd  <= csr_cmd;
 
         case (csr_cmd)
             CSR_ECALL: begin
-                `ifdef DEBUG
-                $display("MCAUSE : %d", mode);
+                `ifdef PRINT_DEBUGINFO
+                    $display("MCAUSE : %d", mode);
                 `endif
                 // environment call from x-Mode execeptionを起こす
                 trap_vector <= reg_mtvec;
@@ -362,8 +362,8 @@ always @(posedge clk) begin
                 mode        <= MODE_MACHINE; // TODO 適切なモードにする
             end
             CSR_MRET: begin
-                `ifdef DEBUG
-                $display("MPP %d", reg_mstatus_mpp);
+                `ifdef PRINT_DEBUGINFO
+                    $display("MPP %d", reg_mstatus_mpp);
                 `endif
                 // 現在のモードをチェックしてない...
                 trap_vector     <= reg_mepc;
@@ -718,7 +718,7 @@ always @(posedge clk) begin
     endcase
 end
 
-`ifdef DEBUG 
+`ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("CSR STAGE------------");
     $display("mode         : %d", mode);
