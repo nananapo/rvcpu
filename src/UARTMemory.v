@@ -12,8 +12,7 @@ module UARTMemory #(
     input  wire [31:0]  addr,
     output reg  [31:0]  rdata,
     output reg          rdata_valid,
-    input  wire [31:0]  wdata,
-    input  wire [31:0]  wmask
+    input  wire [31:0]  wdata
 );
 
 initial begin

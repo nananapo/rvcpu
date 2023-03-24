@@ -7,6 +7,8 @@ module MemoryUnalignedAccessController #(
     
     input  wire         uart_rx,
     output wire         uart_tx,
+    input  wire         mem_uart_rx,
+    output wire         mem_uart_tx,
 
     input  wire [63:0]  mtime,
     output wire [63:0]  mtimecmp,
@@ -38,6 +40,8 @@ MemoryMapController #(
 
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
+    .mem_uart_rx(mem_uart_rx),
+    .mem_uart_tx(mem_uart_tx),
 
     .mtime(mtime),
     .mtimecmp(mtimecmp),

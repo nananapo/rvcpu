@@ -3,10 +3,12 @@ module MemoryMapController #(
     parameter MEMORY_SIZE = 4096,
     parameter MEMORY_FILE = ""
 ) (
-    input  wire clk,
+    input  wire         clk,
 
-    input  wire uart_rx,
-    output wire uart_tx,
+    input  wire         uart_rx,
+    output wire         uart_tx,
+    input  wire         mem_uart_rx,
+    output wire         mem_uart_tx,
 
     input  wire [63:0]  mtime,
     output wire [63:0]  mtimecmp,
@@ -112,21 +114,39 @@ wire [31:0] mem_rdata;
 wire        mem_rdata_valid;
 wire [31:0] mem_wdata       = input_wdata;
 
-Memory
-#(
-    .MEMORY_SIZE(MEMORY_SIZE),
-    .MEMORY_FILE(MEMORY_FILE)
-) memory (
-    .clk(clk),
 
-    .input_cmd_start(mem_cmd_start),
-    .input_cmd_write(mem_cmd_write),
-    .output_cmd_ready(mem_cmd_ready),
-    .input_addr(mem_addr),
-    .output_rdata(mem_rdata),
-    .output_rdata_valid(mem_rdata_valid),
-    .input_wdata(mem_wdata)
-);
+`ifdef MEMORY_UART
+    UARTMemory #(
+        .FMAX_MHz(FMAX_MHz)
+    ) memory (
+        .clk(clk),
+        .uart_rx(mem_uart_rx),
+        .uart_tx(mem_uart_tx),
+        .cmd_start(mem_cmd_start),
+        .cmd_write(mem_cmd_write),
+        .cmd_ready(mem_cmd_ready),
+        .addr(mem_addr),
+        .rdata(mem_rdata),
+        .rdata_valid(mem_rdata_valid),
+        .wdata(mem_wdata)
+    );
+`else
+    Memory
+    #(
+        .MEMORY_SIZE(MEMORY_SIZE),
+        .MEMORY_FILE(MEMORY_FILE)
+    ) memory (
+        .clk(clk),
+
+        .input_cmd_start(mem_cmd_start),
+        .input_cmd_write(mem_cmd_write),
+        .output_cmd_ready(mem_cmd_ready),
+        .input_addr(mem_addr),
+        .output_rdata(mem_rdata),
+        .output_rdata_valid(mem_rdata_valid),
+        .input_wdata(mem_wdata)
+    );
+`endif
 
 `ifdef DEBUG
 always @(posedge clk) begin

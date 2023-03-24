@@ -3,11 +3,10 @@ module MemoryInterface #(
 )(
     input  wire         clk,
 
-    input  wire         mem_uart_rx,
-    output wire         mem_uart_tx,
-    
     input  wire         uart_rx,
     output wire         uart_tx,
+    input  wire         mem_uart_rx,
+    output wire         mem_uart_tx,
 
     input  wire [63:0]  mtime,
     output wire [63:0]  mtimecmp,
@@ -42,67 +41,48 @@ wire        mem_rdata_valid;
 wire [31:0] mem_wdata;
 wire [31:0] mem_wmask;
 
-`ifdef MEMORY_UART
-    UARTMemory #(
-        .FMAX_MHz(FMAX_MHz)
-    ) memory (
-        .clk(clk),
-
-        .cmd_start(mem_cmd_start),
-        .cmd_write(mem_cmd_write),
-        .cmd_ready(mem_cmd_ready),
-        .addr(mem_addr),
-        .rdata(mem_rdata),
-        .rdata_valid(mem_rdata_valid),
-        .wdata(mem_wdata),
-        .wmask(mem_wmask),
-
-        .uart_rx(mem_uart_rx),
-        .uart_tx(mem_uart_tx)
-    );
+`ifndef MEMORY_DISALLOW_UNALIGNED
+MemoryUnalignedAccessController 
 `else
-
-    `ifndef MEMORY_DISALLOW_UNALIGNED
-    MemoryUnalignedAccessController 
-    `else
-    MemoryMapController
-    `endif
-    #(
-        .FMAX_MHz(FMAX_MHz),
-        .MEMORY_SIZE(8192),
-    `ifdef RISCV_TEST
-        // make riscv-tests
-        .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
-    `elsif DEBUG
-        // make d
-        .MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    `else
-        // build
-        .MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    `endif
-    ) memory (
-        .clk(clk),
-
-        .uart_rx(uart_rx),
-        .uart_tx(uart_tx),
-
-        .mtime(mtime),
-        .mtimecmp(mtimecmp),
-
-        .input_cmd_start(mem_cmd_start),
-        .input_cmd_write(mem_cmd_write),
-        .output_cmd_ready(mem_cmd_ready),
-        .input_addr(mem_addr),
-        .output_rdata(mem_rdata),
-        .output_rdata_valid(mem_rdata_valid),
-        .input_wdata(mem_wdata)
-        
-        `ifndef DMEMORY_NO_UNALIGNED
-        ,
-        .input_wmask(mem_wmask)
-        `endif
-    );
+MemoryMapController
 `endif
+#(
+    .FMAX_MHz(FMAX_MHz),
+    .MEMORY_SIZE(8192),
+`ifdef RISCV_TEST
+    // make riscv-tests
+    .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+`elsif DEBUG
+    // make d
+    .MEMORY_FILE("../tinyos/kernel.bin.aligned")
+`else
+    // build
+    .MEMORY_FILE("../tinyos/kernel.bin.aligned")
+`endif
+) memory (
+    .clk(clk),
+
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx),
+    .mem_uart_rx(mem_uart_rx),
+    .mem_uart_tx(mem_uart_tx),
+
+    .mtime(mtime),
+    .mtimecmp(mtimecmp),
+
+    .input_cmd_start(mem_cmd_start),
+    .input_cmd_write(mem_cmd_write),
+    .output_cmd_ready(mem_cmd_ready),
+    .input_addr(mem_addr),
+    .output_rdata(mem_rdata),
+    .output_rdata_valid(mem_rdata_valid),
+    .input_wdata(mem_wdata)
+
+    `ifndef DMEMORY_NO_UNALIGNED
+    ,
+    .input_wmask(mem_wmask)
+    `endif
+);
 
 localparam STATE_WAIT_CMD           = 2'd0;
 localparam STATE_WAIT_MEMORY_READY  = 2'd1;
