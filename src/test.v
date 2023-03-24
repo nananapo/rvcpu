@@ -18,8 +18,11 @@ module test();
   always
     #1 clk = ~clk;
 
-  initial
-    #20001 $finish;
+  initial begin
+    `ifdef PRINT_DEBUGINFO
+        #20001 $finish;
+    `endif
+  end
 
   always @(posedge clk) begin
 	if (exit) begin
