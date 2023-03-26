@@ -8,8 +8,10 @@ SECTIONS
     *(.kernelEntry)
     . = 0x00001800;
     *(.text)
+    . = ALIGN(0x1000);
+    PROVIDE(etext = .);
   }
   .data : { *(.data) }
   .bss : { *(.bss) }
-  _end = .;
+  PROVIDE(kernel_endaddr = .);
 }
