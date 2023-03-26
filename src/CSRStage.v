@@ -257,8 +257,13 @@ wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大
                         reg_mstatus_mie == 1        // mieによってマスクされない
                     ) || (
                         mode == MODE_SUPERVISOR &&  // S-mode
-                        reg_mie_stie == 1 &&        // タイマ割込みが有効
-                        reg_mstatus_sie == 1        // sieによってマスクされない
+                        (
+                            reg_mie_mtie == 1 || 
+                            (
+                                reg_mie_stie == 1 &&    // タイマ割込みが有効
+                                reg_mstatus_sie == 1    // sieによってマスクされない
+                            )
+                        )
                     ));
 
 assign output_stall_flg_may_interrupt = timer_stall;
