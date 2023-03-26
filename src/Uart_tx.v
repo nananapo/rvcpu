@@ -12,6 +12,10 @@ module Uart_tx
     output wire         ready       // ready (1), busy (0)
 );
 
+`ifdef FAST_UART
+    assign ready = 1;
+`else
+
 localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
 
 reg [3:0]   txState     = 0;
@@ -78,4 +82,6 @@ always @(posedge clk) begin
         end
     endcase
 end
+`endif
+
 endmodule

@@ -11,7 +11,11 @@ module Uart_rx
     output wire         rdata_valid // rdata is valid(1)
 );
 
+`ifdef FAST_UART
+localparam [31:0] DELAY_FRAMES = 2;
+`else
 localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
+`endif
 
 /*
 initial begin

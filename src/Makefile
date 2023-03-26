@@ -32,7 +32,7 @@ d:
 	vvp debug.o
 
 dn:
-	iverilog $(DEFINE_DEBUG) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_DEBUG) -DFAST_UART -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
 	vvp debug.o
 
 riscv-tests:
