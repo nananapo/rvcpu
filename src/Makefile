@@ -43,6 +43,16 @@ dm:
 	iverilog $(DEFINE_MEMORY_UART) -g2005-sv -o debug.o -s test  $(FILES) $(UART_FILES)
 	vvp debug.o
 
+dv:
+	verilator --cc $(DEFINE_DEBUG) -DFAST_UART test_verilator.v --exe test_kenel_verilator_main.cpp
+	-rm obj_dir/Vtest_verilator
+	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
+	obj_dir/Vtest_verilator
+
+dk:
+	cd ../tinyos && ./build.sh
+	make dv
+
 v:
 	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M main.v
 	verilator --lint-only -DDEBUG -DEXCLUDE_RV32A main.v
