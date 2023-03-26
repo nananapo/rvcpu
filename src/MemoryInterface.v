@@ -78,7 +78,7 @@ MemoryMapController
     .output_rdata_valid(mem_rdata_valid),
     .input_wdata(mem_wdata)
 
-    `ifndef DMEMORY_NO_UNALIGNED
+    `ifndef MEMORY_DISALLOW_UNALIGNED
     ,
     .input_wmask(mem_wmask)
     `endif
