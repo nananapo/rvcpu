@@ -35,8 +35,10 @@ module test();
   end
 
  initial begin
-    $dumpfile("debug.vcd");
-    $dumpvars(0,test);
+    `ifdef PRINT_DEBUGINFO
+      $dumpfile("debug.vcd");
+      $dumpvars(0,test);
+    `endif
   end
 
 endmodule
