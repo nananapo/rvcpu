@@ -3,18 +3,21 @@
 #include "Vtest_verilator.h"
 
 int main(int argc, char** argv) {
+    Verilated::commandArgs(argc, argv);
+    
+    Vtest_verilator *dut = new Vtest_verilator();
+    dut->clk = 0;
 
-  Verilated::commandArgs(argc, argv);
+    int count = 0;
 
-  // Instantiate DUT
-  Vtest_verilator *dut = new Vtest_verilator();
+    while (1) {
+        dut->clk = !dut->clk;
+        dut->eval();
+        count++;
 
-  dut->clk = 0;
+        //if (count % 100000 == 0)
+        //    printf("%d\n", count);
+    }
 
-  while (1) {
-    dut->clk = !dut->clk;
-    dut->eval();
-  }
-
-  dut->final();
+    dut->final();
 }
