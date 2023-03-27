@@ -189,7 +189,7 @@ reg [31:0]  reg_mtval       = 0;
 
 reg         reg_mip_meip    = 0;
 reg         reg_mip_seip    = 0;
-reg         reg_mip_mtip    = 0;
+wire        wire_mip_mtip   = reg_mtime >= reg_mtimecmp;
 reg         reg_mip_stip    = 0;
 reg         reg_mip_msip    = 0;
 reg         reg_mip_ssip    = 0;
@@ -249,7 +249,7 @@ reg [31:0]  reg_scontext    = 0; // わからん
 
 
 // タイマ割りこみが起こりそうなのでストールするかどうか
-wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大きい
+wire timer_stall =  wire_mip_mtip == 1 &&    // mtimeがmtimecmpより大きい
                     ((
                         mode == MODE_MACHINE &&     // M-mode
                         reg_mie_mtie == 1 &&        // タイマ割込みが有効
@@ -258,8 +258,12 @@ wire timer_stall =  reg_mtime >= reg_mtimecmp &&    // mtimeがmtimecmpより大
                     ) || (
                         mode == MODE_SUPERVISOR &&  // S-mode
                         (
-                            reg_mie_mtie == 1 || 
                             (
+                                reg_mie_mtie == 1 &&    // M-modeへのタイマ割込みが有効
+                                reg_mideleg_mtie != 0   // S-modeに移譲されていない
+                            ) || 
+                            (
+                                reg_mideleg_mtie == 1 &&// S-modeに移譲されている
                                 reg_mie_stie == 1 &&    // タイマ割込みが有効
                                 reg_mstatus_sie == 1    // sieによってマスクされない
                             )
@@ -301,49 +305,22 @@ reg [31:0]save_op1_data = 0;
 wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
 
 always @(posedge clk) begin
+
     // タイマ割り込みを起こす
     if (timer_stall && input_interrupt_ready) begin
-        output_csr_cmd  <= CSR_ECALL;
+        output_csr_cmd      <= CSR_ECALL;
+        
+            $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
 
-        // トラップ先はxtvec
-        // 前のxieをxpieに保存して、xieは0にする
-        // これは処理を共通にしたい....
+        // M-modeに遷移！
+        mode                <= MODE_MACHINE;
+        reg_mstatus_mpp     <= mode;
+        reg_mcause          <= MCAUSE_MACHINE_TIMER_INTERRUPT;
 
-        if (mode == MODE_MACHINE) begin
-            // M-modeでタイマ割込みが起きたらM-modeにしか遷移しない
-            mode            <= MODE_MACHINE;
-            reg_mstatus_mpp <= mode;
-            reg_mcause      <= MCAUSE_MACHINE_TIMER_INTERRUPT;
-
-            trap_vector         <= reg_mtvec;
-            reg_mstatus_mpie    <= reg_mstatus_mie;
-            reg_mstatus_mie     <= 0;
-            reg_mepc            <= if_reg_pc;
-        end else begin
-            // S-modeなら、S-modeかM-modeに遷移する
-            // xppは、S-modeなら1、U-modeなら0になる
-            if (reg_mideleg_mtie == 0) begin
-                // M-modeに遷移
-                mode            <= MODE_MACHINE;
-                reg_mstatus_mpp <= mode;
-                reg_mcause      <= MCAUSE_MACHINE_TIMER_INTERRUPT;
-
-                trap_vector         <= reg_mtvec;
-                reg_mstatus_mpie    <= reg_mstatus_mie;
-                reg_mstatus_mie     <= 0;
-                reg_mepc            <= if_reg_pc;
-            end else begin
-                // S-modeに遷移
-                mode            <= MODE_SUPERVISOR;
-                reg_mstatus_spp <= mode[0];
-                reg_scause      <= SCAUSE_SUPERVISOR_TIMER_INTERRUPT;
-
-                trap_vector         <= reg_stvec;
-                reg_mstatus_spie    <= reg_mstatus_sie;
-                reg_mstatus_sie     <= 0;
-                reg_sepc            <= if_reg_pc;
-            end
-        end
+        trap_vector         <= reg_mtvec;
+        reg_mstatus_mpie    <= reg_mstatus_mie;
+        reg_mstatus_mie     <= 0;
+        reg_mepc            <= if_reg_pc;
 
         `ifdef PRINT_DEBUGINFO
             $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
@@ -505,7 +482,7 @@ always @(posedge clk) begin
             20'b0,
             reg_mip_meip, 1'b0,
             reg_mip_seip, 1'b0,
-            reg_mip_mtip, 1'b0,
+            wire_mip_mtip, 1'b0,
             reg_mip_stip, 1'b0,
             reg_mip_msip, 1'b0,
             reg_mip_ssip, 1'b0
