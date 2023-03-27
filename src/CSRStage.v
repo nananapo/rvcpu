@@ -635,11 +635,10 @@ always @(posedge clk) begin
                 CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
                 CSR_ADDR_MTVAL:     reg_mtval    <= wdata;
                 CSR_ADDR_MIP: begin
-                    reg_mip_meip    <= wdata[11];
+                    // reg_mip_meip    <= wdata[11]; // readonly
                     reg_mip_seip    <= wdata[9];
-                    reg_mip_mtip    <= wdata[7];
                     reg_mip_stip    <= wdata[5];
-                    reg_mip_msip    <= wdata[3];
+                    // reg_mip_msip    <= wdata[3]; // readonly
                     reg_mip_ssip    <= wdata[1];
                 end
                 // CSR_ADDR_MTINST:    0
