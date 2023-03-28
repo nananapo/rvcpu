@@ -336,35 +336,16 @@ reg [31:0]  reg_scontext    = 0; // わからん
 
 
 
-// タイマ割りこみが起こりそうなのでストールするかどうか
-wire timer_stall = 
-    wire_mip_mtip == 1 &&    // mtimeがmtimecmpより大きい
-    ((
-        mode == MODE_MACHINE &&     // M-mode
-        reg_mie_mtie == 1 &&        // タイマ割込みが有効
-        reg_mideleg_mtie == 0 &&    // S-modeに委譲されていない
-        reg_mstatus_mie == 1        // mieによってマスクされない
-    ) || (
-        mode == MODE_SUPERVISOR &&  // S-mode
-        (
-            (
-                reg_mie_mtie == 1 &&    // M-modeへのタイマ割込みが有効
-                reg_mideleg_mtie != 0   // S-modeに移譲されていない
-            ) || 
-            (
-                reg_mideleg_mtie == 1 &&// S-modeに移譲されている
-                reg_mie_stie == 1 &&    // タイマ割込みが有効
-                reg_mstatus_sie == 1    // sieによってマスクされない
-            )
-        )
-    ));
+// タイマ割りこみが起こりそうかどうか
+wire machine_timer_interrupt_active = reg_mstatus_mie && reg_mie_mtie;
 
-wire may_trap = timer_stall;
-assign output_stall_flg_may_interrupt = timer_stall;
+wire may_trap = machine_timer_interrupt_active;
+
+assign output_stall_flg_may_interrupt = may_trap;
 
 // 現在起きるinterruptのcause(とりあえず0)
 // priority : MEI, MSI, MTI, SEI, SSI, STI
-wire [31:0] interrupt_cause  = timer_stall ? MCAUSE_MACHINE_TIMER_INTERRUPT : 32'b0;
+wire [31:0] interrupt_cause  = machine_timer_interrupt_active ? MCAUSE_MACHINE_TIMER_INTERRUPT : 32'b0;
 
 // 現在起きるinterruptがM-modeへのトラップを起こすかのフラグ
 wire trap_to_machine_mode   = 1;
