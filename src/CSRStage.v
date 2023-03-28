@@ -190,7 +190,60 @@ localparam CSR_ADDR_MIP         = 12'h344; // 3.1.9
 localparam CSR_ADDR_MTINST      = 12'h34a; // 0でいい、 8.6.3に書いてある?
 localparam CSR_ADDR_MTVAL2      = 12'h34b; // 0でいい
 
-localparam MCAUSE_MACHINE_TIMER_INTERRUPT = 32'b10000000_00000000_00000000_10000000;
+/*
+Table 3.6
+I ECODE Description
+1 1     Supervisor software interrupt
+1 3     Machine software interrupt
+1 5     Supervisor timer interrupt
+1 7     Machine timer interrupt
+1 9     Supervisor external interrupt
+1 11    Machine external interrupt
+*/
+localparam MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT = 32'b10000000_00000000_00000000_00000001;
+localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT    = 32'b10000000_00000000_00000000_00000011;
+localparam MCAUSE_SUPERVISOR_TIMER_INTERRUPT    = 32'b10000000_00000000_00000000_00000101;
+localparam MCAUSE_MACHINE_TIMER_INTERRUPT       = 32'b10000000_00000000_00000000_00000111;
+localparam MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT = 32'b10000000_00000000_00000000_00001001;
+localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT    = 32'b10000000_00000000_00000000_00001011;
+/*
+Table 3.6
+I ECODE Description
+0 0     Instruction address misaligned
+0 1     Instruction access fault
+0 2     Illegal instruction
+0 3     Breakpoint
+0 4     Load address misaligned
+0 5     Load access fault
+0 6     Store/AMO address misaligned
+0 7     Store/AMO access fault
+0 8     Environment call from U-mode
+0 9     Environment call from S-mode
+0 11    Environment call from M-mode
+0 12    Instruction page fault
+0 13    Load page fault
+0 15    Store/AMO page fault
+*/
+localparam MCAUSE_INSTRUCTION_ADDRESS_MISALIGNED    = 32'b0000;
+localparam MCAUSE_INSTRUCTION_ACCESS_FAULT          = 32'b0001;
+localparam MCAUSE_ILLEGAL_INSTRUCTION               = 32'b0010;
+localparam MCAUSE_BREAKPOINT                        = 32'b0011;
+localparam MCAUSE_LOAD_ADDRESS_MISALIGNED           = 32'b0100;
+localparam MCAUSE_LOAD_ACCESS_FAULT                 = 32'b0101;
+localparam MCAUSE_STORE_AMO_ADDRESS_MISALIGNED      = 32'b0110;
+localparam MCAUSE_STORE_AMO_ACCESS_FAULT            = 32'b0111;
+localparam MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE      = 32'b1000;
+localparam MCAUSE_ENVIRONMENT_CALL_FROM_S_MODE      = 32'b1001;
+localparam MCAUSE_ENVIRONMENT_CALL_FROM_M_MODE      = 32'b1011;
+localparam MCAUSE_INSTRUCTION_PAGE_FAULT            = 32'b1100;
+localparam MCAUSE_LOAD_PAGE_FAULT                   = 32'b1101;
+localparam MCAUSE_STORE_AMO_PAGE_FAULT              = 32'b1111;
+
+
+
+
+
+
 
 reg [31:0]  reg_mscratch    = 0;
 reg [31:0]  reg_mepc        = 0;
