@@ -338,9 +338,17 @@ reg [31:0]  reg_scontext    = 0; // わからん
 wire may_trap = reg_mip_meip || reg_mip_seip || reg_mip_mtip || reg_mip_stip || reg_mip_msip || reg_mip_ssip;
 assign output_stall_flg_may_interrupt = may_trap;
 
-// 現在起きるinterruptのcause(とりあえず0)
+// 現在起きるinterruptのcause
 // priority : MEI, MSI, MTI, SEI, SSI, STI
-wire [31:0] interrupt_cause = reg_mip_mtip ? MCAUSE_MACHINE_TIMER_INTERRUPT : 32'b0;
+wire [31:0] interrupt_cause = (
+    reg_mip_meip ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
+    reg_mip_msip ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
+    reg_mip_mtip ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
+    reg_mip_seip ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
+    reg_mip_ssip ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
+    reg_mip_stip ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
+    32'b0
+);
 
 // 現在起きるinterruptがM-modeへのトラップを起こすかのフラグ
 wire trap_to_machine_mode   = reg_mip_mtip ? reg_mideleg_mtie == 0 : 1;
