@@ -360,7 +360,7 @@ always @(posedge clk) begin
                 // S-mode = 9
                 // U-mode = 8
                 reg_mcause  <= {28'b0, 4'd8 + {2'b0,mode}};
-                mode        <= MODE_MACHINE; // TODO 適切なモードにする
+                mode        <= mode == MODE_USER ? MODE_SUPERVISOR : MODE_MACHINE;
             end
             CSR_MRET: begin
                 `ifdef PRINT_DEBUGINFO
