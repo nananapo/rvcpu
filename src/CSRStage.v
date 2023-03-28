@@ -54,11 +54,14 @@ localparam CSR_ADDR_TIMEH       = 12'hc81;
 // Machine Information Registers
 localparam CSR_ADDR_MVENDORID   = 12'hf11;
 localparam CSR_ADDR_MARCHID     = 12'hf12;
-localparam CSR_ADDR_MIPID       = 12'hf13;
+localparam CSR_ADDR_MIMPID      = 12'hf13;
 localparam CSR_ADDR_MHARTID     = 12'hf14;
 localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
 
-reg [31:0] reg_mhartid = 32'b0;
+reg [31:0] reg_mvendorid    = 32'b0;
+reg [31:0] reg_marchid      = 32'b0;
+reg [31:0] reg_mimpid       = 32'b0;
+reg [31:0] reg_mhartid      = 32'b0;
 
 // Machine Trap Setup
 /*
@@ -387,9 +390,9 @@ always @(posedge clk) begin
             CSR_ADDR_TIMEH: csr_rdata <= reg_time[63:32];
 
             // Machine Information Registers
-            // CSR_ADDR_MVENDORID:  0
-            // CSR_ADDR_MARCHID:    0
-            // CSR_ADDR_MIPID:      0
+            CSR_ADDR_MVENDORID: csr_rdata <= reg_mvendorid;
+            CSR_ADDR_MARCHID:   csr_rdata <= reg_marchid;
+            CSR_ADDR_MIMPID:    csr_rdata <= reg_mimpid;
             CSR_ADDR_MHARTID:   csr_rdata <= reg_mhartid;
             // CSR_ADDR_MCONFIGPTR: 0
 
@@ -545,7 +548,7 @@ always @(posedge clk) begin
                     // READ ONLY
                     // CSR_ADDR_MVENDORID: 
                     // CSR_ADDR_MARCHID:
-                    // CSR_ADDR_MIPID:
+                    // CSR_ADDR_MIMPID:
                     // CSR_ADDR_MHARTID:
                     // CSR_ADDR_MCONFIGPTR:
 
