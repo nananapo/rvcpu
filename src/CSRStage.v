@@ -289,6 +289,18 @@ wire timer_stall =  wire_mip_mtip == 1 &&    // mtimeがmtimecmpより大きい
 
 assign output_stall_flg_may_interrupt = timer_stall;
 
+// 現在起きるinterruptのcause(とりあえず0)
+wire [3:0] interrupt_cause = 0;
+
+// mtvecのMODEを考慮した飛び先
+// 3.1.7
+// MODE = Direct(0)     : BASE
+// MODE = Vectored(1)   : BASE + cause * 4
+wire [31:0] mtvec_addr = mtvec[1:0] == 2'b00 ? mtvec : {mtvec[31:2], 2'b0} + {26'b0, interrupt_cause << 2};
+// stvecのMODEを考慮した飛び先
+wire [31:0] stvec_addr = stvec[1:0] == 2'b00 ? stvec : {stvec[31:2], 2'b0} + {26'b0, interrupt_cause << 2};
+
+
 /*---------CSR命令の実行----------*/
 initial begin
     output_csr_cmd  = CSR_X;
@@ -336,7 +348,7 @@ always @(posedge clk) begin
         reg_mstatus_mpp     <= mode;
         reg_mcause          <= MCAUSE_MACHINE_TIMER_INTERRUPT;
 
-        trap_vector         <= reg_mtvec;
+        trap_vector         <= mtvec_addr;
         reg_mstatus_mpie    <= reg_mstatus_mie;
         reg_mstatus_mie     <= 0;
         reg_mepc            <= if_reg_pc;
@@ -353,7 +365,7 @@ always @(posedge clk) begin
                     $display("MCAUSE : %d", mode);
                 `endif
                 // environment call from x-Mode execeptionを起こす
-                trap_vector <= mode == MODE_USER ? reg_stvec : reg_mtvec;
+                trap_vector <= mode == MODE_USER ? stvec_addr : mtvec_addr;
                 // 現在のモードに応じて書き込む値を変える
                 // M-mode = 11
                 // H-mode = 10
