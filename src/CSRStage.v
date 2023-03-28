@@ -151,7 +151,7 @@ reg [31:0]  reg_medeleg         = 0;
 // サポートしないtrapは0を保持する
 // machine-levelの割り込みに対して1のread-onlyなbitを作ってはいけない
 // それ以外はOK
-reg         reg_mideleg_mtie    = 0; // 7
+reg [31:0]  reg_mideleg         = 0;
 
 reg         reg_mie_meie        = 0; // external interrupt、つまり何～？
 reg         reg_mie_seie        = 0;
@@ -351,7 +351,7 @@ wire [31:0] interrupt_cause = (
 );
 
 // 現在起きるinterruptがM-modeへのトラップを起こすかのフラグ
-wire trap_to_machine_mode   = reg_mip_mtip ? reg_mideleg_mtie == 0 : 1;
+wire trap_to_machine_mode   = reg_mideleg[{1'b0,interrupt_cause[3:0]}] == 1;
 
 // mtvecのMODEを考慮した飛び先
 // 3.1.7
@@ -517,11 +517,7 @@ always @(posedge clk) begin
             };
             CSR_ADDR_MISA:      csr_rdata <= reg_misa;
             CSR_ADDR_MEDELEG:   csr_rdata <= reg_medeleg;
-            CSR_ADDR_MIDELEG:   csr_rdata <= {
-                24'b0,
-                reg_mideleg_mtie,
-                7'b0
-            };
+            CSR_ADDR_MIDELEG:   csr_rdata <= reg_mideleg;
             CSR_ADDR_MIE:       csr_rdata <= {
                 16'b0,
                 4'b0,
@@ -680,7 +676,7 @@ always @(posedge clk) begin
                     // CSR_ADDR_MISA: READ ONLY
                     CSR_ADDR_MEDELEG:   reg_medeleg <= wdata;
                     CSR_ADDR_MIDELEG: begin
-                        reg_mideleg_mtie <= wdata[7]; 
+                        reg_mideleg  <= wdata; 
                     end
                     CSR_ADDR_MIE: begin
                         reg_mie_meie <= wdata[11];
