@@ -353,7 +353,7 @@ always @(posedge clk) begin
                     $display("MCAUSE : %d", mode);
                 `endif
                 // environment call from x-Mode execeptionを起こす
-                trap_vector <= reg_mtvec;
+                trap_vector <= mode == MODE_USER ? reg_stvec : reg_mtvec;
                 // 現在のモードに応じて書き込む値を変える
                 // M-mode = 11
                 // H-mode = 10
