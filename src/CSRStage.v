@@ -157,9 +157,7 @@ reg         reg_mie_ssie        = 0;
 
 reg [31:0]  reg_mtvec           = 0;
 
-reg         reg_mcounteren_ir   = 0; // S-mode, U-modeがinstretにアクセスできるかどうか
-reg         reg_mcounteren_tm   = 0; // S-mode, U-modeがtimeにアクセスできるかどうか
-reg         reg_mcounteren_cy   = 0; // S-mode, U-modeがcycleにアクセスできるかどうか
+//reg         reg_mcounteren; // read-only zeroでよい
 
 //reg [25:0]  reg_mstatush_wpri   = 0;
 reg         reg_mstatush_mbe    = 0;
@@ -223,9 +221,7 @@ localparam CSR_ADDR_SCOUNTEREN  = 12'h106; // 4.1.5 cycle, time, instret, or hpm
 // reg [31:0]  reg_sstatus     = 0;
 // reg [31:0]  reg_sie         = 0;
 reg [31:0]  reg_stvec       = 0;
-reg reg_scounteren_ir       = 0; // U-modeがinstretにアクセスできるかどうか
-reg reg_scounteren_tm       = 0; // U-modeがtimeにアクセスできるかどうか
-reg reg_scounteren_cy       = 0; // U-modeがcycleにアクセスできるかどうか
+// reg reg_scounteren; // read-only zeroでよい
 
 // Supervisor Configuration
 localparam CSR_ADDR_SENVCFG     = 12'h10a; // 後で調べる
@@ -282,44 +278,6 @@ wire timer_stall =  wire_mip_mtip == 1 &&    // mtimeがmtimecmpより大きい
 
 assign output_stall_flg_may_interrupt = timer_stall;
 
-function can_access_func(
-    input [11:0]    addr,
-    input [1:0]     mode,
-    input           mcounteren_cy,
-    input           scounteren_cy,
-    input           mcounteren_tm,
-    input           scounteren_tm
-);
-    case (addr)
-        // Counters and Timers
-        CSR_ADDR_CYCLE, CSR_ADDR_CYCLEH:
-            // M-modeか、counterenで許可されているならアクセスできる
-            can_access_func = (
-                mode == MODE_MACHINE || 
-                (mcounteren_cy == 1 && 
-                    (mode == MODE_SUPERVISOR || 
-                    (mode == MODE_USER && scounteren_cy == 1)))
-            );
-        CSR_ADDR_TIME, CSR_ADDR_TIMEH:
-            // M-modeか、counterenで許可されているならアクセスできる
-            can_access_func = (mode == MODE_MACHINE || 
-                (mcounteren_tm == 1 && 
-                    (mode == MODE_SUPERVISOR || 
-                    (mode == MODE_USER && scounteren_tm == 1)))
-            );
-        default: can_access_func = 1;
-    endcase
-endfunction
-
-wire can_access = can_access_func(
-    addr,
-    mode, 
-    reg_mcounteren_cy,
-    reg_scounteren_cy,
-    reg_mcounteren_tm,
-    reg_scounteren_tm
-);
-
 /*---------CSR命令の実行----------*/
 initial begin
     output_csr_cmd  = CSR_X;
@@ -351,6 +309,10 @@ reg [11:0]save_csr_addr = 0;
 reg [31:0]save_op1_data = 0;
 
 wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
+
+wire can_access = addr[9:8] <= mode;
+wire can_read   = can_access && addr[11] == 0;
+wire can_write  = can_access && addr[10] == 0;
 
 always @(posedge clk) begin
 
@@ -413,7 +375,7 @@ always @(posedge clk) begin
         endcase 
     end
 
-    if (can_access) begin
+    if (can_read) begin
         case (addr)
             // Counters and Timers
             // TODO アクセス制御を共通化したい
@@ -471,12 +433,7 @@ always @(posedge clk) begin
                 reg_mie_ssie, 1'b0
             };
             CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
-            CSR_ADDR_MCOUNTEREN:csr_rdata <= {
-                29'b0,
-                reg_mcounteren_ir,
-                reg_mcounteren_tm,
-                reg_mcounteren_cy
-            };
+            // CSR_ADDR_MCOUNTEREN: 0
             CSR_ADDR_MSTATUSH:  csr_rdata <= {
                 26'b0,
                 reg_mstatush_mbe,
@@ -537,12 +494,7 @@ always @(posedge clk) begin
                 1'b0
             };
             CSR_ADDR_STVEC:         csr_rdata <= reg_stvec;
-            CSR_ADDR_SCOUNTEREN:    csr_rdata <= {
-                29'b0,
-                reg_scounteren_ir,
-                reg_scounteren_tm,
-                reg_scounteren_cy
-            };
+            // CSR_ADDR_SCOUNTEREN: 0
 
             // Supervisor Trap Handling
             CSR_ADDR_SSCRATCH:  csr_rdata <= reg_sscratch;
@@ -565,6 +517,7 @@ always @(posedge clk) begin
         endcase
     end else begin
         csr_rdata <= 32'b0;
+        // TODO trap
     end
 
     save_csr_cmd    <= csr_cmd;
@@ -577,138 +530,134 @@ always @(posedge clk) begin
         CSR_MRET: begin end
         CSR_SRET: begin end
         default: begin
-            case (save_csr_addr)
-                // Counters and Timers
-                // READ ONLY
-                // CSR_ADDR_CYCLE:
-                // CSR_ADDR_TIME:
-                // CSR_ADDR_CYCLEH:
-                // CSR_ADDR_TIMEH:
-                
-                // Machine Information Registers
-                // READ ONLY
-                // CSR_ADDR_MVENDORID: 
-                // CSR_ADDR_MARCHID:
-                // CSR_ADDR_MIPID:
-                // CSR_ADDR_MHARTID:
-                // CSR_ADDR_MCONFIGPTR:
+            if (can_write) begin
+                case (save_csr_addr)
+                    // Counters and Timers
+                    // READ ONLY
+                    // CSR_ADDR_CYCLE:
+                    // CSR_ADDR_TIME:
+                    // CSR_ADDR_CYCLEH:
+                    // CSR_ADDR_TIMEH:
+                    
+                    // Machine Information Registers
+                    // READ ONLY
+                    // CSR_ADDR_MVENDORID: 
+                    // CSR_ADDR_MARCHID:
+                    // CSR_ADDR_MIPID:
+                    // CSR_ADDR_MHARTID:
+                    // CSR_ADDR_MCONFIGPTR:
 
-                // Machine Trap Setup
-                CSR_ADDR_MSTATUS: begin
-                    reg_mstatus_sd      <= wdata[31];
-                    //reg_mstatus_wpri    <= wdata[30:23];
-                    reg_mstatus_tsr     <= wdata[22];
-                    reg_mstatus_tw      <= wdata[21];
-                    reg_mstatus_tvm     <= wdata[10];
-                    reg_mstatus_mxr     <= wdata[19];
-                    reg_mstatus_sum     <= wdata[18];
-                    reg_mstatus_mprv    <= wdata[17];
-                    reg_mstatus_xs      <= wdata[16:15];
-                    reg_mstatus_fs      <= wdata[14:13];
-                    reg_mstatus_mpp     <= wdata[12:11];
-                    reg_mstatus_vs      <= wdata[10:9];
-                    reg_mstatus_spp     <= wdata[8];
-                    reg_mstatus_mpie    <= wdata[7];
-                    reg_mstatus_ube     <= wdata[6];
-                    reg_mstatus_spie    <= wdata[5];
-                    //reg_mstatus_wpri    <= wdata[4];
-                    reg_mstatus_mie     <= wdata[3];
-                    //reg_mstatus_wpri    <= wdata[2];
-                    reg_mstatus_sie     <= wdata[1];
-                    //reg_mstatus_wpri    <= wdata[0];
-                end
-                // CSR_ADDR_MISA: READ ONLY
-                CSR_ADDR_MEDELEG:   reg_medeleg <= wdata;
-                CSR_ADDR_MIDELEG: begin
-                    reg_mideleg_mtie <= wdata[7]; 
-                end
-                CSR_ADDR_MIE: begin
-                    reg_mie_meie <= wdata[11];
-                    reg_mie_seie <= wdata[9];
-                    reg_mie_mtie <= wdata[7];
-                    reg_mie_stie <= wdata[5];
-                    reg_mie_msie <= wdata[3];
-                    reg_mie_ssie <= wdata[1];
-                end
-                CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
-                CSR_ADDR_MCOUNTEREN: begin
-                    reg_mcounteren_ir <= wdata[2];
-                    reg_mcounteren_tm <= wdata[1];
-                    reg_mcounteren_cy <= wdata[0];
-                end
-                CSR_ADDR_MSTATUSH: begin
-                    //reg_mstatush_wpri   <= wdata[31:6],
-                    reg_mstatush_mbe    <= wdata[5];
-                    reg_mstatush_sbe    <= wdata[4];
-                    //reg_mstatush_wpri   <= wdata[3:0];
-                end
+                    // Machine Trap Setup
+                    CSR_ADDR_MSTATUS: begin
+                        reg_mstatus_sd      <= wdata[31];
+                        //reg_mstatus_wpri    <= wdata[30:23];
+                        reg_mstatus_tsr     <= wdata[22];
+                        reg_mstatus_tw      <= wdata[21];
+                        reg_mstatus_tvm     <= wdata[10];
+                        reg_mstatus_mxr     <= wdata[19];
+                        reg_mstatus_sum     <= wdata[18];
+                        reg_mstatus_mprv    <= wdata[17];
+                        reg_mstatus_xs      <= wdata[16:15];
+                        reg_mstatus_fs      <= wdata[14:13];
+                        reg_mstatus_mpp     <= wdata[12:11];
+                        reg_mstatus_vs      <= wdata[10:9];
+                        reg_mstatus_spp     <= wdata[8];
+                        reg_mstatus_mpie    <= wdata[7];
+                        reg_mstatus_ube     <= wdata[6];
+                        reg_mstatus_spie    <= wdata[5];
+                        //reg_mstatus_wpri    <= wdata[4];
+                        reg_mstatus_mie     <= wdata[3];
+                        //reg_mstatus_wpri    <= wdata[2];
+                        reg_mstatus_sie     <= wdata[1];
+                        //reg_mstatus_wpri    <= wdata[0];
+                    end
+                    // CSR_ADDR_MISA: READ ONLY
+                    CSR_ADDR_MEDELEG:   reg_medeleg <= wdata;
+                    CSR_ADDR_MIDELEG: begin
+                        reg_mideleg_mtie <= wdata[7]; 
+                    end
+                    CSR_ADDR_MIE: begin
+                        reg_mie_meie <= wdata[11];
+                        reg_mie_seie <= wdata[9];
+                        reg_mie_mtie <= wdata[7];
+                        reg_mie_stie <= wdata[5];
+                        reg_mie_msie <= wdata[3];
+                        reg_mie_ssie <= wdata[1];
+                    end
+                    CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
+                    // CSR_ADDR_MCOUNTEREN:  READ ONLY
+                    CSR_ADDR_MSTATUSH: begin
+                        //reg_mstatush_wpri   <= wdata[31:6],
+                        reg_mstatush_mbe    <= wdata[5];
+                        reg_mstatush_sbe    <= wdata[4];
+                        //reg_mstatush_wpri   <= wdata[3:0];
+                    end
 
-                // Machine Trap Handling
-                CSR_ADDR_MSCRATCH:  reg_mscratch <= wdata;
-                CSR_ADDR_MEPC:      reg_mepc     <= wdata;
-                CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
-                CSR_ADDR_MTVAL:     reg_mtval    <= wdata;
-                CSR_ADDR_MIP: begin
-                    // reg_mip_meip    <= wdata[11]; // readonly
-                    reg_mip_seip    <= wdata[9];
-                    reg_mip_stip    <= wdata[5];
-                    // reg_mip_msip    <= wdata[3]; // readonly
-                    reg_mip_ssip    <= wdata[1];
-                end
-                // CSR_ADDR_MTINST:    0
-                // CSR_ADDR_MTVAL2:    0
-        
-                // Machine Memory Protection
-                CSR_ADDR_PMPADDR0:  reg_pmpaddr0 <= wdata;
-                CSR_ADDR_PMPCFG0:   reg_pmpcfg0 <= wdata;
+                    // Machine Trap Handling
+                    CSR_ADDR_MSCRATCH:  reg_mscratch <= wdata;
+                    CSR_ADDR_MEPC:      reg_mepc     <= wdata;
+                    CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
+                    CSR_ADDR_MTVAL:     reg_mtval    <= wdata;
+                    CSR_ADDR_MIP: begin
+                        // reg_mip_meip    <= wdata[11]; // readonly
+                        reg_mip_seip    <= wdata[9];
+                        reg_mip_stip    <= wdata[5];
+                        // reg_mip_msip    <= wdata[3]; // readonly
+                        reg_mip_ssip    <= wdata[1];
+                    end
+                    // CSR_ADDR_MTINST:    0
+                    // CSR_ADDR_MTVAL2:    0
+            
+                    // Machine Memory Protection
+                    CSR_ADDR_PMPADDR0:  reg_pmpaddr0 <= wdata;
+                    CSR_ADDR_PMPCFG0:   reg_pmpcfg0 <= wdata;
 
-                // Supervisor Trap Setup
-                CSR_ADDR_SSTATUS: begin
-                    reg_mstatus_sd      <= wdata[31];
-                    //reg_mstatus_wpri    <= wdata[30:20];
-                    reg_mstatus_mxr     <= wdata[19];
-                    reg_mstatus_sum     <= wdata[18];
-                    //reg_mstatus_wpri    <= wdata[17];
-                    reg_mstatus_xs      <= wdata[16:15];
-                    reg_mstatus_fs      <= wdata[14:13];
-                    //reg_mstatus_wpri    <= wdata[12:11];
-                    reg_mstatus_vs      <= wdata[10:9];
-                    reg_mstatus_spp     <= wdata[8];
-                    //reg_mstatus_wpri    <= wdata[7];
-                    reg_mstatus_ube     <= wdata[6];
-                    reg_mstatus_spie    <= wdata[5];
-                    //reg_mstatus_wpri    <= wdata[4:2];
-                    reg_mstatus_sie     <= wdata[1];
-                    //reg_mstatus_wpri    <= wdata[0];
-                end
-                CSR_ADDR_SIE: begin
-                    reg_mie_seie <= wdata[9];
-                    reg_mie_stie <= wdata[5];
-                    reg_mie_ssie <= wdata[1];
-                end
-                CSR_ADDR_STVEC:     reg_stvec   <= wdata;
-                CSR_ADDR_SCOUNTEREN: begin
-                    reg_scounteren_ir <= wdata[2];
-                    reg_scounteren_tm <= wdata[1];
-                    reg_scounteren_cy <= wdata[0];
-                end
+                    // Supervisor Trap Setup
+                    CSR_ADDR_SSTATUS: begin
+                        reg_mstatus_sd      <= wdata[31];
+                        //reg_mstatus_wpri    <= wdata[30:20];
+                        reg_mstatus_mxr     <= wdata[19];
+                        reg_mstatus_sum     <= wdata[18];
+                        //reg_mstatus_wpri    <= wdata[17];
+                        reg_mstatus_xs      <= wdata[16:15];
+                        reg_mstatus_fs      <= wdata[14:13];
+                        //reg_mstatus_wpri    <= wdata[12:11];
+                        reg_mstatus_vs      <= wdata[10:9];
+                        reg_mstatus_spp     <= wdata[8];
+                        //reg_mstatus_wpri    <= wdata[7];
+                        reg_mstatus_ube     <= wdata[6];
+                        reg_mstatus_spie    <= wdata[5];
+                        //reg_mstatus_wpri    <= wdata[4:2];
+                        reg_mstatus_sie     <= wdata[1];
+                        //reg_mstatus_wpri    <= wdata[0];
+                    end
+                    CSR_ADDR_SIE: begin
+                        reg_mie_seie <= wdata[9];
+                        reg_mie_stie <= wdata[5];
+                        reg_mie_ssie <= wdata[1];
+                    end
+                    CSR_ADDR_STVEC:     reg_stvec   <= wdata;
+                    //CSR_ADDR_SCOUNTEREN: READ ONLY
 
-                // Supervisor Trap Handling
-                CSR_ADDR_SSCRATCH:  reg_sscratch <= wdata;
-                CSR_ADDR_SEPC:      reg_sepc <= wdata;
-                CSR_ADDR_SCAUSE:    reg_scause <= wdata;
-                CSR_ADDR_STVAL:     reg_stval <= wdata;
-                CSR_ADDR_SIP: begin
-                    reg_mip_seip    <= wdata[9];
-                    reg_mip_stip    <= wdata[5];
-                    reg_mip_ssip    <= wdata[1];
-                end
+                    // Supervisor Trap Handling
+                    CSR_ADDR_SSCRATCH:  reg_sscratch <= wdata;
+                    CSR_ADDR_SEPC:      reg_sepc <= wdata;
+                    CSR_ADDR_SCAUSE:    reg_scause <= wdata;
+                    CSR_ADDR_STVAL:     reg_stval <= wdata;
+                    CSR_ADDR_SIP: begin
+                        reg_mip_seip    <= wdata[9];
+                        reg_mip_stip    <= wdata[5];
+                        reg_mip_ssip    <= wdata[1];
+                    end
 
-                // Supervisor Protection and Translation
-                CSR_ADDR_SATP:      reg_satp    <= wdata; 
+                    // Supervisor Protection and Translation
+                    CSR_ADDR_SATP:      reg_satp    <= wdata; 
 
-                default: begin end
-            endcase
+                    default: begin end
+                endcase
+            end else begin
+                // TODO trap
+            end
         end
     endcase
 end
