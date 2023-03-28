@@ -275,7 +275,7 @@ reg [31:0]  reg_mcause      = 0;
 // priority order: MEI, MSI, MTI, SEI, SSI, STI.
 reg         reg_mip_meip    = 0;
 reg         reg_mip_seip    = 0;
-wire        wire_mip_mtip   = reg_mtime >= reg_mtimecmp;
+reg         reg_mip_mtip    = 0;
 reg         reg_mip_stip    = 0;
 reg         reg_mip_msip    = 0;
 reg         reg_mip_ssip    = 0;
@@ -334,18 +334,13 @@ localparam CSR_ADDR_SCONTEXT    = 12'h5a8;
 
 reg [31:0]  reg_scontext    = 0; // わからん
 
-
-
-// タイマ割りこみが起こりそうかどうか
-wire machine_timer_interrupt_active = reg_mstatus_mie && reg_mie_mtie;
-
-wire may_trap = machine_timer_interrupt_active;
-
+// trapが起こりそうかどうか
+wire may_trap = reg_mip_meip || reg_mip_seip || reg_mip_mtip || reg_mip_stip || reg_mip_msip || reg_mip_ssip;
 assign output_stall_flg_may_interrupt = may_trap;
 
 // 現在起きるinterruptのcause(とりあえず0)
 // priority : MEI, MSI, MTI, SEI, SSI, STI
-wire [31:0] interrupt_cause  = machine_timer_interrupt_active ? MCAUSE_MACHINE_TIMER_INTERRUPT : 32'b0;
+wire [31:0] interrupt_cause = reg_mip_mtip ? MCAUSE_MACHINE_TIMER_INTERRUPT : 32'b0;
 
 // 現在起きるinterruptがM-modeへのトラップを起こすかのフラグ
 wire trap_to_machine_mode   = 1;
@@ -396,7 +391,6 @@ wire can_read   = can_access && addr[11] == 0;
 wire can_write  = can_access && addr[10] == 0;
 
 always @(posedge clk) begin
-
     // 割り込みを起こす
     if (may_trap && input_interrupt_ready) begin
         `ifdef PRINT_DEBUGINFO
@@ -432,6 +426,9 @@ always @(posedge clk) begin
         end
     end else begin
         output_csr_cmd  <= csr_cmd;
+
+        // pending registerを更新する
+        reg_mip_mtip <= reg_mstatus_mie && reg_mie_mtie && (reg_mtime >= reg_mtimecmp);
 
         // 例外、mret, sretを処理する
         case (csr_cmd)
@@ -543,7 +540,7 @@ always @(posedge clk) begin
                 20'b0,
                 reg_mip_meip, 1'b0,
                 reg_mip_seip, 1'b0,
-                wire_mip_mtip, 1'b0,
+                reg_mip_mtip, 1'b0,
                 reg_mip_stip, 1'b0,
                 reg_mip_msip, 1'b0,
                 reg_mip_ssip, 1'b0

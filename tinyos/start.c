@@ -85,10 +85,8 @@ timerinit()
     // トラップ先をtimervecに設定する
     w_mtvec((unsigned int)timervec);
 
-    // M-modeでの割り込みを有効にする
-    // 　これが必要な理由がわからない。
-    // 　タイマ割込みはS-modeで処理されるのでsieとstieが
-    // 　1ならいいのではと思うけれど、何か勘違いしてそうだ
+    // M-modeの割り込みを有効にする
+    // 有効にしないとタイマ割込みが起こらない
     w_mstatus(r_mstatus() | MSTATUS_MIE);
 
     // M-modeでのタイマ割込みを有効化
