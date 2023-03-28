@@ -446,20 +446,22 @@ always @(posedge clk) begin
                 mode        <= mode == MODE_USER ? MODE_SUPERVISOR : MODE_MACHINE;
             end
             CSR_MRET: begin
-                trap_vector     <= reg_mepc;
-                mode            <= reg_mstatus_mpp;
-                reg_mstatus_mpp <= MODE_USER;
                 reg_mstatus_mie <= reg_mstatus_mpie;
+                mode            <= reg_mstatus_mpp;
+                reg_mstatus_mpie<= 1;
+                reg_mstatus_mpp <= MODE_USER;
                 if (reg_mstatus_mpp != MODE_MACHINE) begin
                     reg_mstatus_mprv <= 0;
                 end
+                trap_vector     <= reg_mepc;
             end
             CSR_SRET: begin
-                trap_vector     <= reg_sepc;
-                mode            <= {1'b0, reg_mstatus_spp};
-                reg_mstatus_spp <= MODE_USER[0];
                 reg_mstatus_sie <= reg_mstatus_spie;
+                mode            <= {1'b0, reg_mstatus_spp};
+                reg_mstatus_spie<= 1;
+                reg_mstatus_spp <= MODE_USER[0];
                 reg_mstatus_mprv<= 0;
+                trap_vector     <= reg_sepc;
             end
             default: begin end
         endcase 
