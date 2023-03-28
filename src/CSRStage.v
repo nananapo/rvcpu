@@ -400,7 +400,7 @@ always @(posedge clk) begin
             CSR_ADDR_MARCHID:   csr_rdata <= reg_marchid;
             CSR_ADDR_MIMPID:    csr_rdata <= reg_mimpid;
             CSR_ADDR_MHARTID:   csr_rdata <= reg_mhartid;
-            // CSR_ADDR_MCONFIGPTR: 0
+            // CSR_ADDR_MCONFIGPTR: read-only zero
 
             // Machine Trap Setup
             CSR_ADDR_MSTATUS:   csr_rdata <= {
@@ -562,7 +562,7 @@ always @(posedge clk) begin
                     // CSR_ADDR_MARCHID:
                     // CSR_ADDR_MIMPID:
                     // CSR_ADDR_MHARTID:
-                    // CSR_ADDR_MCONFIGPTR:
+                    // CSR_ADDR_MCONFIGPTR: read-only zero
 
                     // Machine Trap Setup
                     CSR_ADDR_MSTATUS: begin
