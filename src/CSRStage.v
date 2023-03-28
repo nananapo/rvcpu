@@ -58,6 +58,8 @@ localparam CSR_ADDR_MIPID       = 12'hf13;
 localparam CSR_ADDR_MHARTID     = 12'hf14;
 localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
 
+reg [31:0] reg_mhartid = 32'b0;
+
 // Machine Trap Setup
 /*
 基本はマシンモードで処理
@@ -388,7 +390,7 @@ always @(posedge clk) begin
             // CSR_ADDR_MVENDORID:  0
             // CSR_ADDR_MARCHID:    0
             // CSR_ADDR_MIPID:      0
-            // CSR_ADDR_MHARTID:    0
+            CSR_ADDR_MHARTID:   csr_rdata <= reg_mhartid;
             // CSR_ADDR_MCONFIGPTR: 0
 
             // Machine Trap Setup
