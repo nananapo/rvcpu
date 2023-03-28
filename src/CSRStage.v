@@ -185,7 +185,7 @@ M-modeにトラップするとき、mepcにはtrapが発生した時の(仮想)�
 localparam CSR_ADDR_MSCRATCH    = 12'h340; // 自由
 localparam CSR_ADDR_MEPC        = 12'h341; // M-modeにトラップするとき、仮想アドレスに設定する
 localparam CSR_ADDR_MCAUSE      = 12'h342; // trapするときに書き込む。上位1bitでInterruptかを判断する
-localparam CSR_ADDR_MTVAL       = 12'h343; // exceptionなら実装によって書き込まれる?
+localparam CSR_ADDR_MTVAL       = 12'h343; // exceptionなら実装によって書き込まれる。だが、read-only zeroでもよい(そういう実装にできる)
 localparam CSR_ADDR_MIP         = 12'h344; // 3.1.9
 localparam CSR_ADDR_MTINST      = 12'h34a; // 0でいい、 8.6.3に書いてある?
 localparam CSR_ADDR_MTVAL2      = 12'h34b; // 0でいい
@@ -195,7 +195,7 @@ localparam MCAUSE_MACHINE_TIMER_INTERRUPT = 32'b10000000_00000000_00000000_10000
 reg [31:0]  reg_mscratch    = 0;
 reg [31:0]  reg_mepc        = 0;
 reg [31:0]  reg_mcause      = 0;
-reg [31:0]  reg_mtval       = 0;
+// reg [31:0]  reg_mtval       = 0;
 
 // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
@@ -208,7 +208,7 @@ reg         reg_mip_msip    = 0;
 reg         reg_mip_ssip    = 0;
 
 reg [31:0]  reg_mtinst      = 0;
-reg [31:0]  reg_mtval2      = 0;
+// reg [31:0]  reg_mtval2      = 0;
 
 // Machine Memory Protection
 localparam CSR_ADDR_PMPADDR0    = 12'h3B0;
@@ -456,7 +456,7 @@ always @(posedge clk) begin
             CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
             CSR_ADDR_MEPC:      csr_rdata <= reg_mepc;
             CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
-            CSR_ADDR_MTVAL:     csr_rdata <= reg_mtval;
+            // CSR_ADDR_MTVAL:  read-only zero
             CSR_ADDR_MIP:       csr_rdata <= {
                 20'b0,
                 reg_mip_meip, 1'b0,
@@ -614,7 +614,7 @@ always @(posedge clk) begin
                     CSR_ADDR_MSCRATCH:  reg_mscratch <= wdata;
                     CSR_ADDR_MEPC:      reg_mepc     <= wdata;
                     CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
-                    CSR_ADDR_MTVAL:     reg_mtval    <= wdata;
+                    // CSR_ADDR_MTVAL:  read-only zero
                     CSR_ADDR_MIP: begin
                         // reg_mip_meip    <= wdata[11]; // readonly
                         reg_mip_seip    <= wdata[9];
