@@ -131,6 +131,13 @@ reg         reg_mstatus_mie     = 0;
 reg         reg_mstatus_sie     = 0;
 //reg         reg_mstatus_wpri    = 0;
 
+// XLENや実装されている拡張を提供する
+// WARLなので、この実装ではwriteを実装しない(くていいはず?)
+// A, I, M拡張を実装しているのでそのbitを立てている
+//                                   |MXL|0 |Extensions                |
+//                                           ZYXWVUTSRQPONMLKJIHGFEDCBA
+reg [31:0]  reg_misa            = 32'b01_000_00000000000001000100000001;
+
 // サポートしないtrapは0を保持する
 // 1はreadonlyであってはならない。
 // デリゲートできるasynchronous trapはデリゲートされないことも必ずサポートしないといけない
@@ -446,7 +453,7 @@ always @(posedge clk) begin
                 reg_mstatus_sie,
                 1'b0
             };
-            // CSR_ADDR_MISA = 0
+            CSR_ADDR_MISA:      csr_rdata <= reg_misa;
             CSR_ADDR_MEDELEG:   csr_rdata <= reg_medeleg;
             CSR_ADDR_MIDELEG:   csr_rdata <= {
                 24'b0,
