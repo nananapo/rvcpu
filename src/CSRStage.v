@@ -296,9 +296,9 @@ wire [3:0] interrupt_cause = 0;
 // 3.1.7
 // MODE = Direct(0)     : BASE
 // MODE = Vectored(1)   : BASE + cause * 4
-wire [31:0] mtvec_addr = mtvec[1:0] == 2'b00 ? mtvec : {mtvec[31:2], 2'b0} + {26'b0, interrupt_cause << 2};
+wire [31:0] mtvec_addr = reg_mtvec[1:0] == 2'b00 ? reg_mtvec : {reg_mtvec[31:2], 2'b0} + {26'b0, interrupt_cause, 2'b0};
 // stvecのMODEを考慮した飛び先
-wire [31:0] stvec_addr = stvec[1:0] == 2'b00 ? stvec : {stvec[31:2], 2'b0} + {26'b0, interrupt_cause << 2};
+wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2], 2'b0} + {26'b0, interrupt_cause, 2'b0};
 
 
 /*---------CSR命令の実行----------*/
