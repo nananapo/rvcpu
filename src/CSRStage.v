@@ -612,7 +612,7 @@ always @(posedge clk) begin
 
                     // Machine Trap Handling
                     CSR_ADDR_MSCRATCH:  reg_mscratch <= wdata;
-                    CSR_ADDR_MEPC:      reg_mepc     <= wdata;
+                    CSR_ADDR_MEPC:      reg_mepc     <= {wdata[31:1], 1'b0};
                     CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
                     // CSR_ADDR_MTVAL:  read-only zero
                     CSR_ADDR_MIP: begin
