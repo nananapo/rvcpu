@@ -343,7 +343,7 @@ assign output_stall_flg_may_interrupt = may_trap;
 wire [31:0] interrupt_cause = reg_mip_mtip ? MCAUSE_MACHINE_TIMER_INTERRUPT : 32'b0;
 
 // 現在起きるinterruptがM-modeへのトラップを起こすかのフラグ
-wire trap_to_machine_mode   = 1;
+wire trap_to_machine_mode   = reg_mip_mtip ? reg_mideleg_mtie == 0 : 1;
 
 // mtvecのMODEを考慮した飛び先
 // 3.1.7
