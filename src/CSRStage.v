@@ -239,10 +239,30 @@ localparam MCAUSE_INSTRUCTION_PAGE_FAULT            = 32'b1100;
 localparam MCAUSE_LOAD_PAGE_FAULT                   = 32'b1101;
 localparam MCAUSE_STORE_AMO_PAGE_FAULT              = 32'b1111;
 
+/*
+Table43.7 
+Priority Exc. Code Description
 
-
-
-
+Highest
+3           Instruction address breakpoint
+---
+12, 1       First encountered page fault or access fault
+---
+1           Instruction access fault
+---
+2           Illegal instruction
+0           Instruction address misaligned
+8, 9, 11    Environment call
+3           Environment break
+3           Load/store/AMO address breakpoint
+---
+13,15,5,7   First encountered page fault or access fault
+---
+5, 7        Load/store/AMO access fault
+---
+4, 6        Load/store/AMO address misaligned
+Lowest
+*/
 
 
 reg [31:0]  reg_mscratch    = 0;
@@ -317,39 +337,45 @@ reg [31:0]  reg_scontext    = 0; // わからん
 
 
 // タイマ割りこみが起こりそうなのでストールするかどうか
-wire timer_stall =  wire_mip_mtip == 1 &&    // mtimeがmtimecmpより大きい
-                    ((
-                        mode == MODE_MACHINE &&     // M-mode
-                        reg_mie_mtie == 1 &&        // タイマ割込みが有効
-                        reg_mideleg_mtie == 0 &&    // S-modeに委譲されていない
-                        reg_mstatus_mie == 1        // mieによってマスクされない
-                    ) || (
-                        mode == MODE_SUPERVISOR &&  // S-mode
-                        (
-                            (
-                                reg_mie_mtie == 1 &&    // M-modeへのタイマ割込みが有効
-                                reg_mideleg_mtie != 0   // S-modeに移譲されていない
-                            ) || 
-                            (
-                                reg_mideleg_mtie == 1 &&// S-modeに移譲されている
-                                reg_mie_stie == 1 &&    // タイマ割込みが有効
-                                reg_mstatus_sie == 1    // sieによってマスクされない
-                            )
-                        )
-                    ));
+wire timer_stall = 
+    wire_mip_mtip == 1 &&    // mtimeがmtimecmpより大きい
+    ((
+        mode == MODE_MACHINE &&     // M-mode
+        reg_mie_mtie == 1 &&        // タイマ割込みが有効
+        reg_mideleg_mtie == 0 &&    // S-modeに委譲されていない
+        reg_mstatus_mie == 1        // mieによってマスクされない
+    ) || (
+        mode == MODE_SUPERVISOR &&  // S-mode
+        (
+            (
+                reg_mie_mtie == 1 &&    // M-modeへのタイマ割込みが有効
+                reg_mideleg_mtie != 0   // S-modeに移譲されていない
+            ) || 
+            (
+                reg_mideleg_mtie == 1 &&// S-modeに移譲されている
+                reg_mie_stie == 1 &&    // タイマ割込みが有効
+                reg_mstatus_sie == 1    // sieによってマスクされない
+            )
+        )
+    ));
 
+wire may_trap = timer_stall;
 assign output_stall_flg_may_interrupt = timer_stall;
 
 // 現在起きるinterruptのcause(とりあえず0)
-wire [3:0] interrupt_cause = 0;
+// priority : MEI, MSI, MTI, SEI, SSI, STI
+wire [31:0] interrupt_cause  = timer_stall ? MCAUSE_MACHINE_TIMER_INTERRUPT : 32'b0;
+
+// 現在起きるinterruptがM-modeへのトラップを起こすかのフラグ
+wire trap_to_machine_mode   = 1;
 
 // mtvecのMODEを考慮した飛び先
 // 3.1.7
 // MODE = Direct(0)     : BASE
 // MODE = Vectored(1)   : BASE + cause * 4
-wire [31:0] mtvec_addr = reg_mtvec[1:0] == 2'b00 ? reg_mtvec : {reg_mtvec[31:2], 2'b0} + {26'b0, interrupt_cause, 2'b0};
+wire [31:0] mtvec_addr = reg_mtvec[1:0] == 2'b00 ? reg_mtvec : {reg_mtvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 // stvecのMODEを考慮した飛び先
-wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2], 2'b0} + {26'b0, interrupt_cause, 2'b0};
+wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 
 
 /*---------CSR命令の実行----------*/
@@ -390,46 +416,58 @@ wire can_write  = can_access && addr[10] == 0;
 
 always @(posedge clk) begin
 
-    // タイマ割り込みを起こす
-    if (timer_stall && input_interrupt_ready) begin
+    // 割り込みを起こす
+    if (may_trap && input_interrupt_ready) begin
+        `ifdef PRINT_DEBUGINFO
+            $display("INTERRUPT pc : 0x%H", if_reg_pc);
+        `endif
+        // ECALLということにする
         output_csr_cmd      <= CSR_ECALL;
 
-        // M-modeに遷移！
-        mode                <= MODE_MACHINE;
-        reg_mstatus_mpp     <= mode;
-        reg_mcause          <= MCAUSE_MACHINE_TIMER_INTERRUPT;
+        if (trap_to_machine_mode) begin
+            // M-modeに遷移
+            mode                <= MODE_MACHINE;
 
-        trap_vector         <= mtvec_addr;
-        reg_mstatus_mpie    <= reg_mstatus_mie;
-        reg_mstatus_mie     <= 0;
-        reg_mepc            <= if_reg_pc;
+            reg_mcause          <= interrupt_cause;
+            reg_mepc            <= if_reg_pc;
+            //reg_mtval           <= 0;
+            reg_mstatus_mpp     <= mode;
+            reg_mstatus_mpie    <= reg_mstatus_mie;
+            reg_mstatus_mie     <= 0;
 
-        `ifdef PRINT_DEBUGINFO
-            $display("TIMER INTERRUPT pc : 0x%H", if_reg_pc);
-        `endif
+            trap_vector         <= mtvec_addr;
+        end else begin
+            // S-modeに遷移
+            mode                <= MODE_SUPERVISOR;
+
+            reg_scause          <= interrupt_cause;
+            reg_sepc            <= if_reg_pc;
+            // reg_stval           <= 0;
+            reg_mstatus_spp     <= mode[0];
+            reg_mstatus_spie    <= reg_mstatus_sie;
+            reg_mstatus_sie     <= 0;
+
+            trap_vector         <= stvec_addr;
+        end
     end else begin
         output_csr_cmd  <= csr_cmd;
 
+        // 例外、mret, sretを処理する
         case (csr_cmd)
             CSR_ECALL: begin
-                `ifdef PRINT_DEBUGINFO
-                    $display("MCAUSE : %d", mode);
-                `endif
                 // environment call from x-Mode execeptionを起こす
                 trap_vector <= mode == MODE_USER ? stvec_addr : mtvec_addr;
-                // 現在のモードに応じて書き込む値を変える
-                // M-mode = 11
-                // H-mode = 10
-                // S-mode = 9
-                // U-mode = 8
-                reg_mcause  <= {28'b0, 4'd8 + {2'b0,mode}};
+                // 現在のモードに応じた値を書き込む
+                case (mode)
+                    MODE_USER:          reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE; 
+                    MODE_SUPERVISOR:    reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_S_MODE; 
+                    MODE_MACHINE:       reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_M_MODE;
+                    default:            reg_mcause <= 0;// TODO
+                endcase
+                // 一つ上の特権レベルに遷移する
                 mode        <= mode == MODE_USER ? MODE_SUPERVISOR : MODE_MACHINE;
             end
             CSR_MRET: begin
-                `ifdef PRINT_DEBUGINFO
-                    $display("MPP %d", reg_mstatus_mpp);
-                `endif
-                // 現在のモードをチェックしてない...
                 trap_vector     <= reg_mepc;
                 mode            <= reg_mstatus_mpp;
                 reg_mstatus_mpp <= MODE_USER;
