@@ -217,6 +217,12 @@ localparam CSR_ADDR_PMPCFG0     = 12'h3A0;
 reg [31:0]  reg_pmpaddr0    = 0;
 reg [31:0]  reg_pmpcfg0     = 0;
 
+// Machine Counter/Timers
+localparam CSR_ADDR_MCYCLE      = 12'hb00;
+localparam CSR_ADDR_MINSTRET    = 12'hb02;
+localparam CSR_ADDR_MCYCLEH     = 12'hb80;
+localparam CSR_ADDR_MINSTRETH   = 12'hb82;
+
 // Supervisor Trap Setup
 localparam CSR_ADDR_SSTATUS     = 12'h100;
 localparam CSR_ADDR_SIE         = 12'h104;
@@ -466,6 +472,12 @@ always @(posedge clk) begin
             // Machine Memory Protection
             CSR_ADDR_PMPADDR0:  csr_rdata <= reg_pmpaddr0;
             CSR_ADDR_PMPCFG0:   csr_rdata <= reg_pmpcfg0;
+
+            // Machine Counter/Timers
+            CSR_ADDR_MCYCLE:    csr_rdata <= reg_cycle[31:0];
+            // CSR_ADDR_MINSTRET: not impl
+            CSR_ADDR_MCYCLEH:   csr_rdata <= reg_cycle[63:32];
+            // CSR_ADDR_MINSTRETH: not impl
 
             // Supervisor Trap Setup
             // sstatusはmstatusのサブセット
