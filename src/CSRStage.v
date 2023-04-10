@@ -334,8 +334,19 @@ localparam CSR_ADDR_SCONTEXT    = 12'h5a8;
 
 reg [31:0]  reg_scontext    = 0; // わからん
 
+// mtiが起こりそうかどうか
+wire machine_timer_interrupt_active = (reg_mip_mtip && reg_mstatus_mie && reg_mie_mtie);
+
 // trapが起こりそうかどうか
-wire may_trap = reg_mip_meip || reg_mip_seip || reg_mip_mtip || reg_mip_stip || reg_mip_msip || reg_mip_ssip;
+// TODO ここにトラップが起きる条件を書くよ
+wire may_trap = (
+    reg_mip_meip ||
+    reg_mip_seip ||
+    machine_timer_interrupt_active ||
+    reg_mip_stip ||
+    reg_mip_msip ||
+    reg_mip_ssip
+);
 assign output_stall_flg_may_interrupt = may_trap;
 
 // 現在起きるinterruptのcause
@@ -343,7 +354,7 @@ assign output_stall_flg_may_interrupt = may_trap;
 wire [31:0] interrupt_cause = (
     reg_mip_meip ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
     reg_mip_msip ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
-    reg_mip_mtip ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
+    machine_timer_interrupt_active ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
     reg_mip_seip ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
     reg_mip_ssip ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
     reg_mip_stip ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
@@ -436,7 +447,7 @@ always @(posedge clk) begin
         output_csr_cmd  <= csr_cmd;
 
         // pending registerを更新する
-        reg_mip_mtip <= reg_mstatus_mie && reg_mie_mtie && (reg_mtime >= reg_mtimecmp);
+        reg_mip_mtip <= (reg_mtime >= reg_mtimecmp);
 
         // 例外、mret, sretを処理する
         case (csr_cmd)
