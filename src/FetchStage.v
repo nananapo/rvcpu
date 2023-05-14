@@ -115,7 +115,7 @@ always @(posedge clk) begin
             end else begin
                 if (!is_fetched && mem_data_valid) begin
 `ifdef PRINT_DEBUGINFO 
-                    $display("Instruction Fetched");
+                    $display("info,fetchstage.instruction_fetched,Instruction Fetched");
 `endif
                     inner_reg_pc <= inner_reg_pc + 4;
                     if (stall_flg) begin
@@ -143,21 +143,20 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("FETCH -------------");
-    $display("status        : %d", state);
-    $display("fetched       : %d", is_fetched);
-    $display("reg_pc        : 0x%H", inner_reg_pc);
-    $display("out.reg_pc    : 0x%H", output_reg_pc);
-    $display("out.inst      : 0x%H", output_inst);
-    $display("id.reg_pc     : 0x%H", id_reg_pc);
-    $display("id.inst       : 0x%H", id_inst);
-    $display("mem.start     : %d", mem_start);
-    $display("mem.ready     : %d", mem_ready);
-    $display("mem.data      : 0x%H", mem_data);
-    $display("mem.valid     : %d", mem_data_valid);
-    $display("stall_flg     : %d", stall_flg);
-    $display("branch_haz    : %d", wb_branch_hazard);
-    $display("branch_adr    : 0x%H", wb_reg_pc);
+    $display("data,fetchstage.status,%b", state);
+    $display("data,fetchstage.fetched,%b", is_fetched);
+    $display("data,fetchstage.reg_pc,%b", inner_reg_pc);
+    $display("data,fetchstage.out.reg_pc,%b", output_reg_pc);
+    $display("data,fetchstage.out.inst,%b", output_inst);
+    $display("data,fetchstage.id.reg_pc,%b", id_reg_pc);
+    $display("data,fetchstage.id.inst,%b", id_inst);
+    $display("data,fetchstage.mem.start,%b", mem_start);
+    $display("data,fetchstage.mem.ready,%b", mem_ready);
+    $display("data,fetchstage.mem.data,%b", mem_data);
+    $display("data,fetchstage.mem.valid,%b", mem_data_valid);
+    $display("data,fetchstage.stall_flg,%b", stall_flg);
+    $display("data,fetchstage.branch_haz,%b", wb_branch_hazard);
+    $display("data,fetchstage.branch_adr,%b", wb_reg_pc);
 end
 `endif
 

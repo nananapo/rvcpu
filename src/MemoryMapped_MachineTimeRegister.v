@@ -57,9 +57,8 @@ end
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("DEBUGREG-------------------------");
-    $display("isdebugreg    : %d", is_debugreg);
-    $display("debugreg      : 0x%h", debugreg);
+    $display("data,debug.isdebugreg,%b", is_debugreg);
+    $display("data,debug.debugreg,%b", debugreg);
 end
 `endif
 

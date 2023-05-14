@@ -293,28 +293,27 @@ end
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("MEMINF -------------");
-    $display("inst_start        : %d", inst_start);
-    $display("inst_ready        : %d", inst_ready);
-    $display("i_addr            : 0x%H", i_addr);
-    $display("inst              : 0x%H", inst);
-    $display("inst_valid        : %d", inst_valid);
-    $display("d_cmd_start       : %d", d_cmd_start);
-    $display("d_cmd_write       : %d", d_cmd_write);
-    $display("d_cmd_ready       : %d", d_cmd_ready);
-    $display("d_addr            : 0x%H", d_addr);
-    $display("wdata             : 0x%H", wdata);
-    $display("wmask             : 0x%H", wmask);
-    $display("rdata             : 0x%H", rdata);
-    $display("rdata_valid       : %d", rdata_valid);
-    $display("status            : %d", status);
-    $display("cmd_is_inst       : %d", cmd_is_inst);
-    $display("mem_cmd_start     : %d", mem_cmd_start);
-    $display("mem_cmd_write     : %d", mem_cmd_write);
-    $display("mem_cmd_ready     : %d", mem_cmd_ready);
-    $display("mem_addr          : 0x%H", mem_addr);
-    $display("mem_rdata         : 0x%H", mem_rdata);
-    $display("mem_rdata_valid   : %d", mem_rdata_valid);
+    $display("data,memoryinterface.inst_start,%b", inst_start);
+    $display("data,memoryinterface.inst_ready,%b", inst_ready);
+    $display("data,memoryinterface.i_addr,%b", i_addr);
+    $display("data,memoryinterface.inst,%b", inst);
+    $display("data,memoryinterface.inst_valid,%b", inst_valid);
+    $display("data,memoryinterface.d_cmd_start,%b", d_cmd_start);
+    $display("data,memoryinterface.d_cmd_write,%b", d_cmd_write);
+    $display("data,memoryinterface.d_cmd_ready,%b", d_cmd_ready);
+    $display("data,memoryinterface.d_addr,%b", d_addr);
+    $display("data,memoryinterface.wdata,%b", wdata);
+    $display("data,memoryinterface.wmask,%b", wmask);
+    $display("data,memoryinterface.rdata,%b", rdata);
+    $display("data,memoryinterface.rdata_valid,%b", rdata_valid);
+    $display("data,memoryinterface.status,%b", status);
+    $display("data,memoryinterface.cmd_is_inst,%b", cmd_is_inst);
+    $display("data,memoryinterface.mem_cmd_start,%b", mem_cmd_start);
+    $display("data,memoryinterface.mem_cmd_write,%b", mem_cmd_write);
+    $display("data,memoryinterface.mem_cmd_ready,%b", mem_cmd_ready);
+    $display("data,memoryinterface.mem_addr,%b", mem_addr);
+    $display("data,memoryinterface.mem_rdata,%b", mem_rdata);
+    $display("data,memoryinterface.mem_rdata_valid,%b", mem_rdata_valid);
 end
 `endif
 

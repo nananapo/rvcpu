@@ -83,9 +83,9 @@ reg [31:0] rdata = 0;
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("uart_tx queue: %d -> %d", queue_head, queue_tail);
+    $display("info,memmapio.uart_tx.queue,queue: %d -> %d", queue_head, queue_tail);
     if (state == STATE_WAIT_READY && tx_ready) begin
-        $display("uart_tx send : 0x%h : %d", rdata, addr_mod);
+        $display("info,memmapio.uart_tx.send,send : 0x%h : %d", rdata, addr_mod);
     end
 end
 `endif

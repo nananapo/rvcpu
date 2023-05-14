@@ -401,21 +401,20 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("EXECUTE -------------");
-    $display("reg_pc    : 0x%H", reg_pc);
-    $display("exe_fun   : %d", exe_fun);
-    $display("op1_data  : 0x%H", op1_data);
-    $display("op2_data  : 0x%H", op2_data);
-    $display("out.stall : %d", output_stall_flg);
-    $display("ismulticyc: %d", is_multicycle_exe);
-    $display("lastismulc: %d", last_cycle_is_multicycle_exe);
+    $display("data,exestage.reg_pc,%b", reg_pc);
+    $display("data,exestage.exe_fun,%b", exe_fun);
+    $display("data,exestage.op1_data,%b", op1_data);
+    $display("data,exestage.op2_data,%b", op2_data);
+    $display("data,exestage.out.stall,%b", output_stall_flg);
+    $display("data,exestage.ismulticyc,%b", is_multicycle_exe);
+    $display("data,exestage.lastismulc,%b", last_cycle_is_multicycle_exe);
 `ifndef EXCLUDE_RV32M
-    $display("iscalcstrt: %d", is_calc_started);
-    $display("iscalculed: %d", is_calculated);
-    $display("isrv32mdiv: %d", is_rv32m_div_exe);
-    $display("div.valid : %d", divm_valid);
-    $display("isrv32mmul: %d", is_rv32m_mul_exe);
-    $display("mult.valid: %d", multm_valid);
+    $display("data,exestage.iscalcstrt,%b", is_calc_started);
+    $display("data,exestage.iscalculed,%b", is_calculated);
+    $display("data,exestage.isrv32mdiv,%b", is_rv32m_div_exe);
+    $display("data,exestage.div.valid,%b", divm_valid);
+    $display("data,exestage.isrv32mmul,%b", is_rv32m_mul_exe);
+    $display("data,exestage.mult.valid,%b", multm_valid);
 `endif
 
 end

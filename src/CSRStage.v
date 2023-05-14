@@ -413,7 +413,7 @@ always @(posedge clk) begin
     // 割り込みを起こす
     if (may_trap && input_interrupt_ready) begin
         `ifdef PRINT_DEBUGINFO
-            $display("INTERRUPT pc : 0x%H", if_reg_pc);
+            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", if_reg_pc);
         `endif
         // ECALLということにする
         output_csr_cmd      <= CSR_ECALL;
@@ -777,20 +777,19 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("CSR STAGE------------");
-    $display("mode         : %d", mode);
-    $display("cmd          : %d", csr_cmd);
-    $display("op1_data     : 0x%H", op1_data);
-    $display("imm_i        : 0x%H", imm_i);
-    $display("addr         : 0x%H", addr);
-    $display("rdata        : 0x%H", csr_rdata);
-    $display("wdata        : 0x%H", wdata);
-    $display("trap_vector  : 0x%H", trap_vector);
-    $display("mtvec        : 0x%H", reg_mtvec);
-    $display("mtime        : 0x%H", reg_mtime);
-    $display("mtimecmp     : 0x%H", reg_mtimecmp);
-    $display("time.stall   : %d", timer_stall);
-    $display("intr.ready   : %d", input_interrupt_ready);
+    $display("data,csrstage.mode,%b", mode);
+    $display("data,csrstage.cmd,%b", csr_cmd);
+    $display("data,csrstage.op1_data,%b", op1_data);
+    $display("data,csrstage.imm_i,%b", imm_i);
+    $display("data,csrstage.addr,%b", addr);
+    $display("data,csrstage.rdata,%b", csr_rdata);
+    $display("data,csrstage.wdata,%b", wdata);
+    $display("data,csrstage.trap_vector,%b", trap_vector);
+    $display("data,csrstage.mtvec,%b", reg_mtvec);
+    $display("data,csrstage.mtime,%b", reg_mtime);
+    $display("data,csrstage.mtimecmp,%b", reg_mtimecmp);
+    $display("data,csrstage.timer_stall,%d", machine_timer_interrupt_active);
+    $display("data,csrstage.intrrupt_ready,%d", input_interrupt_ready);
 end
 `endif
 

@@ -326,20 +326,19 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("DECODE STAGE-------------");
-    $display("reg_pc    : 0x%H", reg_pc);
-    $display("inst      : 0x%H", inst);
-    $display("rs1_addr  : %d", wire_rs1_addr);
-    $display("rs2_addr  : %d", wire_rs2_addr);
-    $display("wb_addr   : %d", wire_wb_addr);
-    $display("rs2_data  : 0x%H", (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr]);
-    $display("op1_data  : 0x%H", (
+    $display("data,decodestage.reg_pc,%b", reg_pc);
+    $display("data,decodestage.inst,%b", inst);
+    $display("data,decodestage.rs1_addr,%b", wire_rs1_addr);
+    $display("data,decodestage.rs2_addr,%b", wire_rs2_addr);
+    $display("data,decodestage.wb_addr,%b", wire_wb_addr);
+    $display("data,decodestage.rs2_data,%b", (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr]);
+    $display("data,decodestage.op1_data,%b", (
         wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
         wire_op1_sel == OP1_PC  ? reg_pc :
         wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
         0
     ));
-    $display("op2_data  : 0x%H", (
+    $display("data,decodestage.op2_data,%b", (
         wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
         wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
         wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :
@@ -347,26 +346,26 @@ always @(posedge clk) begin
         wire_op2_sel == OP2_IMU  ? wire_imm_u_shifted :
         0
     ));
-    $display("w.exe_fun : %d", wire_exe_fun);
-    $display("w.op1_sel : %d", wire_op1_sel);
-    $display("w.op2_sel : %d", wire_op2_sel);
-    $display("w.mem_wen : %d", wire_mem_wen);
-    $display("w.rf_wen  : %d", wire_rf_wen);
-    $display("w.wb_sel  : %d", wire_wb_sel);
-    $display("w.csr_cmd : %d", wire_csr_cmd);
-    $display("datahazard: %d", data_hazard_stall_flg);
-    $display("dh.wb.rf  : %d", data_hazard_wb_rf_wen);
-    $display("dh.wb.adr : %d", data_hazard_wb_wb_addr);
-    $display("dh.mem.rf : %d", data_hazard_mem_rf_wen);
-    $display("dh.mem.adr: %d", data_hazard_mem_wb_addr);
-    $display("dh.exe.rf : %d", data_hazard_exe_rf_wen);
-    $display("dh.exe.adr: %d", data_hazard_exe_wb_addr);
-    $display("is fence.i: %d", inst_is_fence_i);
-    $display("fence.i st: %d", zifencei_stall_flg);
-    $display("last.dh   : %d", last_data_hazard_stall_flg);
-    $display("save.regpc: 0x%h", save_reg_pc);
-    $display("save.inst : 0x%h", save_inst);
-    $display("mem.stall : %d", memory_stage_stall_flg);
+    $display("data,decodestage.w.exe_fun,%b", wire_exe_fun);
+    $display("data,decodestage.w.op1_sel,%b", wire_op1_sel);
+    $display("data,decodestage.w.op2_sel,%b", wire_op2_sel);
+    $display("data,decodestage.w.mem_wen,%b", wire_mem_wen);
+    $display("data,decodestage.w.rf_wen,%b", wire_rf_wen);
+    $display("data,decodestage.w.wb_sel,%b", wire_wb_sel);
+    $display("data,decodestage.w.csr_cmd,%b", wire_csr_cmd);
+    $display("data,decodestage.datahazard,%b", data_hazard_stall_flg);
+    $display("data,decodestage.datahazard.wb.rf,%b", data_hazard_wb_rf_wen);
+    $display("data,decodestage.datahazard.wb.addr,%b", data_hazard_wb_wb_addr);
+    $display("data,decodestage.datahazard.mem.rf,%b", data_hazard_mem_rf_wen);
+    $display("data,decodestage.datahazard.mem.addr,%b", data_hazard_mem_wb_addr);
+    $display("data,decodestage.datahazard.exe.rf,%b", data_hazard_exe_rf_wen);
+    $display("data,decodestage.datahazard.exe.addr,%b", data_hazard_exe_wb_addr);
+    $display("data,decodestage.is_fence_i,%b", inst_is_fence_i);
+    $display("data,decodestage.fence_i stall,%b", zifencei_stall_flg);
+    $display("data,decodestage.last.datahazard,%b", last_data_hazard_stall_flg);
+    $display("data,decodestage.save.regpc,%b", save_reg_pc);
+    $display("data,decodestage.save.inst,%b", save_inst);
+    $display("data,decodestage.mem.stall,%b", memory_stage_stall_flg);
 end
 `endif
 

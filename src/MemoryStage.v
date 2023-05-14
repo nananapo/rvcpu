@@ -319,32 +319,31 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("MEMORY STAGE-------------");
-    $display("status        : %d", state);
-    $display("reg_pc        : 0x%H", reg_pc);
-    $display("rs2_data      : 0x%H", rs2_data);
-    $display("alu_out       : 0x%H", alu_out);
-    $display("mem_wen       : %d", mem_wen);
-    $display("wb_sel        : %d", wb_sel);
-    $display("is_load       : %d", is_load);
-    $display("is_store      : %d", is_store);
-    $display("is_store.save : %d", is_store_save);
-    $display("out.read_data : 0x%H", output_read_data);
-    $display("out._reg_pc   : 0x%H", output_reg_pc);
-    $display("out._alu_out  : 0x%H", output_alu_out);
-    $display("out._wb_sel   : %d", output_wb_sel);
-    $display("next_flg      : %d", next_flg);
-    $display("stall_flg     : %d", output_is_stall);
-    $display("mem.cmd.s     : %d", mem_cmd_start);
-    $display("mem.cmd.w     : %d", mem_cmd_write);
-    $display("mem.cmd_ready : %d", mem_cmd_ready);
-    $display("mem.addr      : 0x%H", mem_addr);
-    $display("mem.wdata     : 0x%H", mem_wdata);
-    $display("mem.wmask     : 0x%H", mem_wmask);
-    $display("mem.rdata     : 0x%H", mem_rdata);
-    $display("mem.valid     : %d", mem_rdata_valid);
-    $display("save.mem_wen  : %d", save_mem_wen);
-    $display("wire.out.rdata: 0x%h", output_read_data_wire);
+    $display("data,memstage.status,%b", state);
+    $display("data,memstage.reg_pc,%b", reg_pc);
+    $display("data,memstage.rs2_data,%b", rs2_data);
+    $display("data,memstage.alu_out,%b", alu_out);
+    $display("data,memstage.mem_wen,%b", mem_wen);
+    $display("data,memstage.wb_sel,%b", wb_sel);
+    $display("data,memstage.is_load,%b", is_load);
+    $display("data,memstage.is_store,%b", is_store);
+    $display("data,memstage.is_store.save,%b", is_store_save);
+    $display("data,memstage.out.read_data,%b", output_read_data);
+    $display("data,memstage.out._reg_pc,%b", output_reg_pc);
+    $display("data,memstage.out._alu_out,%b", output_alu_out);
+    $display("data,memstage.out._wb_sel,%b", output_wb_sel);
+    $display("data,memstage.next_flg,%b", next_flg);
+    $display("data,memstage.stall_flg,%b", output_is_stall);
+    $display("data,memstage.mem.cmd.s,%b", mem_cmd_start);
+    $display("data,memstage.mem.cmd.w,%b", mem_cmd_write);
+    $display("data,memstage.mem.cmd_ready,%b", mem_cmd_ready);
+    $display("data,memstage.mem.addr,%b", mem_addr);
+    $display("data,memstage.mem.wdata,%b", mem_wdata);
+    $display("data,memstage.mem.wmask,%b", mem_wmask);
+    $display("data,memstage.mem.rdata,%b", mem_rdata);
+    $display("data,memstage.mem.valid,%b", mem_rdata_valid);
+    $display("data,memstage.save.mem_wen,%b", save_mem_wen);
+    $display("data,memstage.wire.out.rdata,%b", output_read_data_wire);
 end
 `endif
 

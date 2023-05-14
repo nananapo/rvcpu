@@ -394,24 +394,15 @@ WriteBackStage #() wbstage(
 );
 
 `ifdef PRINT_DEBUGINFO
+integer reg_i;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
-    $display("");
-    $display("CLK %d", clk_count);
-    $display("gp   : ", gp);
-    $display("exit : ", exit);
-end
-
-always @(posedge clk) begin
-    $display("Registers --------------");
-    $display("1: 0x%H   9: 0x%H  17: 0x%H  25: 0x%H", regfile[1], regfile[9] , regfile[17], regfile[25]);
-    $display("2: 0x%H  10: 0x%H  18: 0x%H  26: 0x%H", regfile[2], regfile[10], regfile[18], regfile[26]);
-    $display("3: 0x%H  11: 0x%H  19: 0x%H  27: 0x%H", regfile[3], regfile[11], regfile[19], regfile[27]);
-    $display("4: 0x%H  12: 0x%H  20: 0x%H  28: 0x%H", regfile[4], regfile[12], regfile[20], regfile[28]);
-    $display("5: 0x%H  13: 0x%H  21: 0x%H  29: 0x%H", regfile[5], regfile[13], regfile[21], regfile[29]);
-    $display("6: 0x%H  14: 0x%H  22: 0x%H  30: 0x%H", regfile[6], regfile[14], regfile[22], regfile[30]);
-    $display("7: 0x%H  15: 0x%H  23: 0x%H  31: 0x%H", regfile[7], regfile[15], regfile[23], regfile[31]);
-    $display("8: 0x%H  16: 0x%H  24: 0x%H  ",         regfile[8], regfile[16], regfile[24]);
+    $display("clock,%b", clk_count);
+    $display("data,core.gp,%b", gp);
+    $display("data,core.exit,%b", exit);
+    for (reg_i = 0; reg_i < 32; reg_i = reg_i + 1) begin
+        $display("data,core.regfile[%b],%b", reg_i, regfile[reg_i]);
+    end
 end
 `endif
 

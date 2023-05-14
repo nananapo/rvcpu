@@ -150,18 +150,19 @@ wire [31:0] mem_wdata       = input_wdata;
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("MemoryMapController--------");
-    $display("addr              : 0x%h", input_addr);
-    $display("is_uart_tx_addr   : %d", is_uart_tx_addr);
-    $display("uart_tx_addr      : 0x%h", uart_tx_addr);
-    $display("is_uart_rx_addr   : %d", is_uart_rx_addr);
-    $display("uart_rx_addr      : 0x%h", uart_rx_addr);
-    $display("is_mtimereg_addr  : %d", is_mtimereg_addr);
-    $display("mtimereg_addr     : 0x%h", mtimereg_addr);
-    $display("start             : %d", input_cmd_start);
-    $display("write             : %d", input_cmd_write);
-    $display("wdata             : 0x%h", input_wdata);
-    $display("rdata             : 0x%h, 0x%h, 0x%h", output_rdata, uart_tx_rdata, uart_rx_rdata);
+    $display("data,memorymapcontroller.addr,%b", input_addr);
+    $display("data,memorymapcontroller.is_uart_tx_addr,%b", is_uart_tx_addr);
+    $display("data,memorymapcontroller.uart_tx_addr,%b", uart_tx_addr);
+    $display("data,memorymapcontroller.is_uart_rx_addr,%b", is_uart_rx_addr);
+    $display("data,memorymapcontroller.uart_rx_addr,%b", uart_rx_addr);
+    $display("data,memorymapcontroller.is_mtimereg_addr,%b", is_mtimereg_addr);
+    $display("data,memorymapcontroller.mtimereg_addr,%b", mtimereg_addr);
+    $display("data,memorymapcontroller.start,%b", input_cmd_start);
+    $display("data,memorymapcontroller.write,%b", input_cmd_write);
+    $display("data,memorymapcontroller.wdata,%b", input_wdata);
+    $display("data,memorymapcontroller.rdata.output,%b", output_rdata);
+    $display("data,memorymapcontroller.rdata.uart_tx,%b", uart_tx_rdata);
+    $display("data,memorymapcontroller.rdata.uart_rx,%b", uart_rx_rdata);
 end
 `endif
 
