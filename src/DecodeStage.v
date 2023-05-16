@@ -333,7 +333,7 @@ end
 always @(posedge clk) begin
     $display("data,decodestage.reg_pc,%b", reg_pc);
     $display("data,decodestage.inst,%b", inst);
-    $display("data,decodestage.inst_id", inst_id);
+    $display("data,decodestage.inst_id,%b", inst_id);
     $display("data,decodestage.rs1_addr,%b", wire_rs1_addr);
     $display("data,decodestage.rs2_addr,%b", wire_rs2_addr);
     $display("data,decodestage.wb_addr,%b", wire_wb_addr);

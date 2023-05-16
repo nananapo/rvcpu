@@ -159,7 +159,7 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,fetchstage.inst_id", inst_id_now);
+    $display("data,fetchstage.inst_id,%b", inst_id_now);
     $display("data,fetchstage.status,%b", state);
     $display("data,fetchstage.fetched,%b", is_fetched);
     $display("data,fetchstage.reg_pc,%b", inner_reg_pc);
