@@ -3,13 +3,15 @@ module DecodeStage
 (
     input  wire         clk,
 
-    input  wire[31:0]   input_inst,
     input  wire[31:0]   input_reg_pc,
+    input  wire[31:0]   input_inst,
+    input  wire[63:0]   input_inst_id, 
     input  wire[31:0]   regfile[31:0],
 
     
     output reg [31:0]   output_reg_pc,
     output reg [31:0]   output_inst,
+    output reg [63:0]   output_inst_id,
     // 即値
     output reg [31:0]   imm_i_sext,
     output reg [31:0]   imm_s_sext,
@@ -75,8 +77,9 @@ initial begin
     jmp_flg     = 0;
 end
 
-reg  [31:0] save_inst   = INST_NOP;
 reg  [31:0] save_reg_pc = REGPC_NOP;
+reg  [31:0] save_inst   = INST_NOP;
+reg  [63:0] save_inst_id= INST_ID_NOP;
 
 assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
     (data_hazard_wb_rf_wen == REN_S  /*&& wire_op1_sel == OP1_RS1 */ && data_hazard_wb_wb_addr == wire_rs1_addr  && wire_rs1_addr != 0) ||
@@ -89,23 +92,26 @@ assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
     (data_hazard_exe_rf_wen == REN_S /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_exe_wb_addr == wire_rs2_addr && wire_rs2_addr != 0)
 );
 
-wire [31:0] inst = (
-    wb_branch_hazard ? INST_NOP :
-    (
-        last_memory_stage_stall_flg || 
-        last_clock_fence_i_stall_flg ||
-        last_data_hazard_stall_flg
-    ) ? save_inst : input_inst
+wire last_is_stall = (
+    last_memory_stage_stall_flg || 
+    last_clock_fence_i_stall_flg ||
+    last_data_hazard_stall_flg
 );
 
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
-    (
-        last_memory_stage_stall_flg || 
-        last_clock_fence_i_stall_flg ||
-        last_data_hazard_stall_flg
-    ) ? save_reg_pc : input_reg_pc
-); 
+    input_is_stall ? save_reg_pc : input_reg_pc
+);
+
+wire [31:0] inst = (
+    wb_branch_hazard ? INST_NOP :
+    input_is_stall ? save_inst : input_inst
+);
+
+wire [63:0] inst_id = (
+    wb_branch_hazard ? INST_ID_NOP :
+    input_is_stall ? save_inst_id : input_inst_id
+);
 
 wire [11:0] wire_imm_i  = inst[31:20];
 wire [11:0] wire_imm_s  = {inst[31:25], inst[11:7]};
@@ -242,9 +248,12 @@ wire [4:0] wire_rs2_addr    = inst[24:20];
 wire [4:0] wire_wb_addr     = inst[11:7];
 
 always @(posedge clk) begin
+    // TODO ストールで次のステージに値を使わせたくないとき、無効であることを示すレジスタに値を設定するようにする。
+    //      下にあるような0埋めをしたくない。冗長なので。
     if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
         output_reg_pc   <= REGPC_NOP;
         output_inst     <= INST_NOP;
+        output_inst_id  <= INST_ID_NOP;
 
         imm_i_sext      <= 32'hffffffff;
         imm_s_sext      <= 32'hffffffff;
@@ -267,6 +276,7 @@ always @(posedge clk) begin
     end else begin
         output_reg_pc   <= reg_pc;
         output_inst     <= inst;
+        output_inst_id  <= inst_id;
 
         imm_i_sext      <= wire_imm_i_sext;
         imm_s_sext      <= wire_imm_s_sext;
@@ -304,30 +314,26 @@ always @(posedge clk) begin
     end
 
     if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
-        save_inst       <= inst;
         save_reg_pc     <= reg_pc;
-        last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
-        last_data_hazard_stall_flg      <= data_hazard_stall_flg;
-        last_memory_stage_stall_flg     <= memory_stage_stall_flg;
-    end else if (wb_branch_hazard) begin
-        save_inst       <= INST_NOP;
+        save_inst       <= inst;
+        save_inst_id    <= inst_id;
+    end else begin
         save_reg_pc     <= REGPC_NOP;
-        last_clock_fence_i_stall_flg    <= 0;
-        last_data_hazard_stall_flg      <= 0;
-        last_memory_stage_stall_flg     <= 0;
-    end else begin 
         save_inst       <= INST_NOP;
-        save_reg_pc     <= REGPC_NOP;
-        last_clock_fence_i_stall_flg    <= zifencei_stall_flg;
-        last_data_hazard_stall_flg      <= data_hazard_stall_flg;
-        last_memory_stage_stall_flg     <= memory_stage_stall_flg;
+        save_inst_id    <= INST_ID_NOP;
     end
+
+    // 分岐するときは現在のストール状態は無視する
+    last_clock_fence_i_stall_flg    <= !wb_branch_hazard && zifencei_stall_flg;
+    last_data_hazard_stall_flg      <= !wb_branch_hazard && data_hazard_stall_flg;
+    last_memory_stage_stall_flg     <= !wb_branch_hazard && memory_stage_stall_flg;
 end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,decodestage.reg_pc,%b", reg_pc);
     $display("data,decodestage.inst,%b", inst);
+    $display("data,decodestage.inst_id", inst_id);
     $display("data,decodestage.rs1_addr,%b", wire_rs1_addr);
     $display("data,decodestage.rs2_addr,%b", wire_rs2_addr);
     $display("data,decodestage.wb_addr,%b", wire_wb_addr);

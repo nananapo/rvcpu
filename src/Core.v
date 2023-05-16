@@ -154,10 +154,15 @@ DecodeStage #() decodestage
 (
     .clk(clk),
 
-    .input_inst(id_inst),
     .input_reg_pc(id_reg_pc),
+    .input_inst_id(id_inst_id),
+    .input_inst(id_inst),
     .regfile(regfile),
 
+    .output_reg_pc(exe_reg_pc),
+    .output_inst(exe_inst),
+    .output_inst_id(exe_inst_id),
+    
     .imm_i_sext(exe_imm_i_sext),
     .imm_s_sext(exe_imm_s_sext),
     .imm_b_sext(exe_imm_b_sext),
@@ -165,8 +170,6 @@ DecodeStage #() decodestage
     .imm_u_shifted(exe_imm_u_shifted),
     .imm_z_uext(exe_imm_z_uext),
 
-    .output_reg_pc(exe_reg_pc),
-    .output_inst(exe_inst),
     .exe_fun(exe_exe_fun),
     .op1_data(exe_op1_data),
     .op2_data(exe_op2_data),
