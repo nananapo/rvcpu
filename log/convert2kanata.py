@@ -78,7 +78,11 @@ last_wb_id  = None
 print("Kanata", KANATA_VERSION, sep="\t")
 
 for (clock, numberData, textData) in readClockCycle():
-    print("C", clock - lastClock, sep="\t")
+    print("C", clock - lastClock, "# " + str(clock), sep="\t")
+
+    if IF_INST_ID not in numberData:
+        # とりあえず終了ということにする
+        break
 
     # idを取得
     if_id   = numberData[IF_INST_ID]
