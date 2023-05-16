@@ -82,7 +82,6 @@ wire [31:0] wb_inst;
 wire [63:0] id_inst_id;
 wire [63:0] exe_inst_id;
 wire [63:0] mem_inst_id;
-wire [63:0] csr_inst_id;
 wire [63:0] wb_inst_id;
 
 //**************************
@@ -355,6 +354,7 @@ CSRStage #(
 
     .wb_branch_hazard(wbstage_branch_hazard),
 
+    .input_inst_id(mem_inst_id),
     .input_csr_cmd(csr_csr_cmd),
     .input_op1_data(csr_op1_data),
     .input_imm_i(csr_imm_i),

@@ -12,6 +12,7 @@ module CSRStage #(
     input wire          wb_branch_hazard,
     
     // input
+    input wire [63:0]   input_inst_id,
     input wire [2:0]    input_csr_cmd,
     input wire [31:0]   input_op1_data,
     input wire [31:0]   input_imm_i,
@@ -778,6 +779,7 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,csrstage.mode,%b", mode);
+    $display("data,csrstage.inst_id,%b", csr_cmd == CSR_X ? INST_ID_NOP : input_inst_id);
     $display("data,csrstage.cmd,%b", csr_cmd);
     $display("data,csrstage.op1_data,%b", op1_data);
     $display("data,csrstage.imm_i,%b", imm_i);
