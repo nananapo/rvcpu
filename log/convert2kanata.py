@@ -113,7 +113,7 @@ for (clock, numberData, textData) in readClockCycle():
         # fetch end
         if IF_END_EVENT in textData:
             # label last id
-            print("L", last_if_id, 0, textData[IF_OUT_PC] + " : " + IF_OUT_INST, sep="\t")
+            print("L", last_if_id, 0, textData[IF_OUT_PC] + " : " + textData[IF_OUT_INST], sep="\t")
     else:
         if last_if_id is not None:
             print("E", last_if_id, 0, IFSTAGE_NAME, sep="\t")
