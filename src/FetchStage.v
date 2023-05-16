@@ -34,9 +34,14 @@ initial begin
     id_inst     = INST_NOP;
 end
 
+
+// 命令フェッチ試行ごとにユニークなID
+reg [63:0]  inst_id = 0;
+
 // フェッチ済みのデータ
 reg [31:0]  saved_reg_pc = REGPC_NOP;
 reg [31:0]  saved_inst   = INST_NOP;
+reg [63:0]  saved_inst_id= INST_ID_NOP;
 
 assign mem_start = (
     state == STATE_WAIT_READY ? mem_ready :
@@ -86,6 +91,15 @@ wire [31:0] output_inst = (
     ) : INST_NOP
 );
 
+wire [63:0] output_inst_id = (
+    stall_flg ? INST_ID_NOP :
+    wb_branch_hazard ? INST_ID_NOP :
+    state == STATE_WAIT_VALID ? (
+        (!is_fetched && mem_data_valid) ? inst_id :
+        is_fetched ? saved_inst_id : INST_ID_NOP
+    ) : INST_ID_NOP
+);
+
 assign if_reg_pc =  wb_branch_hazard ? wb_reg_pc :
                     (state == STATE_WAIT_VALID && is_fetched) ? saved_reg_pc :
                     inner_reg_pc;
@@ -94,6 +108,7 @@ always @(posedge clk) begin
 
     id_reg_pc   <= output_reg_pc;
     id_inst     <= output_inst;
+    id_inst_id  <= output_inst_id;
 
     if (wb_branch_hazard) begin
         inner_reg_pc <= wb_reg_pc;
@@ -119,9 +134,11 @@ always @(posedge clk) begin
                     $display("info,fetchstage.instruction_fetched,Instruction Fetched");
 `endif
                     inner_reg_pc <= inner_reg_pc + 4;
+                    inst_id <= inst_id + 1;
                     if (stall_flg) begin
                         saved_reg_pc    <= inner_reg_pc;
                         saved_inst      <= mem_data;
+                        saved_inst_id   <= inst_id;
                         is_fetched      <= 1;
                     end else begin
                         if (mem_ready) begin
@@ -142,24 +159,9 @@ always @(posedge clk) begin
     endcase
 end
 
-// 命令フェッチ試行ごとにユニークなID
-reg [63:0]  unique_inst_id_gen = 0;
-// 今のID
-wire inst_id_now = (state == STATE_WAIT_VALID && !is_fetched && mem_data_valid) ?
-                        unique_inst_id_gen + 1 : INST_ID_NOP;
-
-// 到底よい記述の仕方とは思えないのでどうにかしたい
-// 例えばinfo,fetchstage.instruction_end/startを追加するとか。idでフェッチの状態を見ようとしているのが間違っている
-always @(posedge clk) begin
-    if (state == STATE_WAIT_VALID && !is_fetched && mem_data_valid) begin
-        unique_inst_id_gen <= unique_inst_id_gen + 1;
-    end
-    id_inst_id <= inst_id_now;
-end
-
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,fetchstage.inst_id,%b", inst_id_now);
+    $display("data,fetchstage.inst_id,%b", inst_id);
     $display("data,fetchstage.status,%b", state);
     $display("data,fetchstage.fetched,%b", is_fetched);
     $display("data,fetchstage.reg_pc,%b", inner_reg_pc);
