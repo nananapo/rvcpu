@@ -162,7 +162,7 @@ DecodeStage #() decodestage
     .output_reg_pc(exe_reg_pc),
     .output_inst(exe_inst),
     .output_inst_id(exe_inst_id),
-    
+
     .imm_i_sext(exe_imm_i_sext),
     .imm_s_sext(exe_imm_s_sext),
     .imm_b_sext(exe_imm_b_sext),
@@ -236,6 +236,7 @@ ExecuteStage #() executestage
 
     .input_reg_pc(exe_reg_pc),
     .input_inst(exe_inst),
+    .input_inst_id(exe_inst_id),
     .input_exe_fun(exe_exe_fun),
     .input_op1_data(exe_op1_data),
     .input_op2_data(exe_op2_data),
@@ -255,6 +256,7 @@ ExecuteStage #() executestage
 
     .output_reg_pc(mem_reg_pc),
     .output_inst(mem_inst),
+    .output_inst_id(mem_inst_id),
     .output_mem_wen(mem_mem_wen),
     .output_rf_wen(mem_rf_wen),
     .output_rs2_data(mem_rs2_data),

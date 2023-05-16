@@ -6,6 +6,7 @@ module ExecuteStage
 
     input wire [31:0]   input_reg_pc,
     input wire [31:0]   input_inst,
+    input wire [63:0]   input_inst_id,
     input wire [4:0]    input_exe_fun,
     input wire [31:0]   input_op1_data,
     input wire [31:0]   input_op2_data,
@@ -25,6 +26,7 @@ module ExecuteStage
     
     output reg [31:0]   output_reg_pc,
     output reg [31:0]   output_inst,
+    output reg [63:0]   output_inst_id,
     output reg [3:0]    output_mem_wen,
     output reg          output_rf_wen,
     output reg [31:0]   output_rs2_data,
@@ -53,6 +55,7 @@ initial begin
 
     output_reg_pc   = REGPC_NOP;
     output_inst     = INST_NOP;
+    output_inst_id  = INST_ID_NOP;
 
     output_mem_wen  = 0;
     output_rf_wen   = 0;
@@ -67,6 +70,7 @@ end
 
 reg [31:0] save_reg_pc      = 0;
 reg [31:0] save_inst        = 0;
+reg [63:0] save_inst_id     = INST_ID_NOP;
 reg [4:0]  save_exe_fun     = 0;
 reg [31:0] save_op1_data    = 0;
 reg [31:0] save_op2_data    = 0;
@@ -91,6 +95,7 @@ wire use_saved_data     = last_cycle_is_multicycle_exe || last_is_memstage_stall
 
 wire [31:0] reg_pc      = use_saved_data ? save_reg_pc : input_reg_pc;
 wire [31:0] inst        = use_saved_data ? save_inst : input_inst;
+wire [63:0] inst_id     = use_saved_data ? save_inst_id : input_inst_id;
 wire [4:0]  exe_fun     = use_saved_data ? save_exe_fun : input_exe_fun;
 wire [31:0] op1_data    = use_saved_data ? save_op1_data : input_op1_data;
 wire [31:0] op2_data    = use_saved_data ? save_op2_data : input_op2_data;
@@ -342,6 +347,7 @@ always @(posedge clk) begin
     if (wb_branch_hazard || memory_stage_stall_flg || output_stall_flg) begin
         output_reg_pc   <= REGPC_NOP;
         output_inst     <= INST_NOP;
+        output_inst_id  <= INST_ID_NOP;
         output_mem_wen  <= MEN_X;
         output_rf_wen   <= REN_X;
         output_rs2_data <= 32'hffffffff;
@@ -354,6 +360,7 @@ always @(posedge clk) begin
     end else begin
         output_reg_pc   <= reg_pc;
         output_inst     <= inst;
+        output_inst_id  <= inst_id;
         output_mem_wen  <= mem_wen;
         output_rf_wen   <= rf_wen;
         output_rs2_data <= rs2_data;
@@ -367,8 +374,10 @@ always @(posedge clk) begin
     
     // save
     if (wb_branch_hazard) begin
+        // TODO フラグを導入したい
         save_reg_pc     <= REGPC_NOP;
         save_inst       <= INST_NOP;
+        save_inst_id    <= INST_ID_NOP;
         save_exe_fun    <= ALU_X;
         save_op1_data   <= 32'hffffffff;
         save_op2_data   <= 32'hffffffff;
@@ -384,6 +393,7 @@ always @(posedge clk) begin
     end else begin
         save_reg_pc     <= reg_pc;
         save_inst       <= inst;
+        save_inst_id    <= inst_id;
         save_exe_fun    <= exe_fun;
         save_op1_data   <= op1_data;
         save_op2_data   <= op2_data;
@@ -402,6 +412,7 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,exestage.reg_pc,%b", reg_pc);
+    $display("data,exestage.inst_id,%b", inst_id);
     $display("data,exestage.exe_fun,%b", exe_fun);
     $display("data,exestage.op1_data,%b", op1_data);
     $display("data,exestage.op2_data,%b", op2_data);
