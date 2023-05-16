@@ -100,17 +100,17 @@ wire last_is_stall = (
 
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
-    input_is_stall ? save_reg_pc : input_reg_pc
+    last_is_stall ? save_reg_pc : input_reg_pc
 );
 
 wire [31:0] inst = (
     wb_branch_hazard ? INST_NOP :
-    input_is_stall ? save_inst : input_inst
+    last_is_stall ? save_inst : input_inst
 );
 
 wire [63:0] inst_id = (
     wb_branch_hazard ? INST_ID_NOP :
-    input_is_stall ? save_inst_id : input_inst_id
+    last_is_stall ? save_inst_id : input_inst_id
 );
 
 wire [11:0] wire_imm_i  = inst[31:20];
