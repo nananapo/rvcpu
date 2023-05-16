@@ -5,6 +5,7 @@ module MemoryStage(
 
     input  wire[31:0]    input_reg_pc,
     input  wire[31:0]    input_inst,
+    input  wire[63:0]    input_inst_id,
     input  wire[31:0]    input_rs2_data,
     input  wire[31:0]    input_alu_out,
     input  wire          input_br_flg,
@@ -15,9 +16,10 @@ module MemoryStage(
     input  wire[4:0]     input_wb_addr,
     input  wire          input_jmp_flg,
 
-    output reg [31:0]    output_read_data,
     output reg [31:0]    output_reg_pc,
     output reg [31:0]    output_inst,
+    output reg [63:0]    output_inst_id,
+    output reg [31:0]    output_read_data,
     output reg [31:0]    output_alu_out,
     output reg           output_br_flg,
     output reg [31:0]    output_br_target,
@@ -49,6 +51,7 @@ initial begin
     output_read_data    = 32'hffffffff;
     output_reg_pc       = REGPC_NOP;
     output_inst         = INST_NOP;
+    output_inst_id      = INST_ID_NOP;
     output_alu_out      = 32'hffffffff;
     output_br_flg       = 0;
     output_br_target    = 0;
@@ -66,6 +69,7 @@ reg [1:0]   state       = STATE_WAIT;
 
 wire [31:0] reg_pc      = wb_branch_hazard ? REGPC_NOP      : input_reg_pc;
 wire [31:0] inst        = wb_branch_hazard ? INST_NOP       : input_inst;
+wire [63:0] inst_id     = wb_branch_hazard ? INST_ID_NOP    : input_inst_id;
 wire [31:0] rs2_data    = wb_branch_hazard ? 32'hffffffff   : input_rs2_data;
 wire [31:0] alu_out     = wb_branch_hazard ? 32'hffffffff   : input_alu_out;
 wire        br_flg      = wb_branch_hazard ? 0              : input_br_flg;
@@ -78,6 +82,7 @@ wire        jmp_flg     = wb_branch_hazard ? 0              : input_jmp_flg;
 
 reg [31:0]  save_reg_pc     = REGPC_NOP;
 reg [31:0]  save_inst       = INST_NOP;
+reg [63:0]  save_inst_id    = INST_ID_NOP;
 reg [31:0]  save_alu_out    = 0;
 reg         save_br_flg     = 0;
 reg [31:0]  save_br_target  = 0;
@@ -212,6 +217,12 @@ wire [31:0] output_inst_wire = (
     INST_NOP
 );
 
+wire [63:0] output_inst_id_wire = (
+    output_is_current ? inst_id :
+    output_is_save ? save_inst_id :
+    INST_ID_NOP
+);
+
 wire [31:0] output_alu_out_wire  = (
     output_is_current ? alu_out :
     output_is_save ? save_alu_out :
@@ -261,6 +272,7 @@ always @(posedge clk) begin
         STATE_WAIT: begin
             save_reg_pc     <= reg_pc;
             save_inst       <= inst;
+            save_inst_id    <= inst_id;
             save_alu_out    <= alu_out;
             save_br_flg     <= br_flg;
             save_br_target  <= br_target;
@@ -308,6 +320,7 @@ always @(posedge clk) begin
     output_read_data    <= output_read_data_wire;
     output_reg_pc       <= output_reg_pc_wire;
     output_inst         <= output_inst_wire;
+    output_inst_id      <= output_inst_id_wire;
     output_alu_out      <= output_alu_out_wire;
     output_br_flg       <= output_br_flg_wire;
     output_br_target    <= output_br_target_wire;
@@ -319,32 +332,36 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("MEMORY STAGE-------------");
-    $display("status        : %d", state);
-    $display("reg_pc        : 0x%H", reg_pc);
-    $display("rs2_data      : 0x%H", rs2_data);
-    $display("alu_out       : 0x%H", alu_out);
-    $display("mem_wen       : %d", mem_wen);
-    $display("wb_sel        : %d", wb_sel);
-    $display("is_load       : %d", is_load);
-    $display("is_store      : %d", is_store);
-    $display("is_store.save : %d", is_store_save);
-    $display("out.read_data : 0x%H", output_read_data);
-    $display("out._reg_pc   : 0x%H", output_reg_pc);
-    $display("out._alu_out  : 0x%H", output_alu_out);
-    $display("out._wb_sel   : %d", output_wb_sel);
-    $display("next_flg      : %d", next_flg);
-    $display("stall_flg     : %d", output_is_stall);
-    $display("mem.cmd.s     : %d", mem_cmd_start);
-    $display("mem.cmd.w     : %d", mem_cmd_write);
-    $display("mem.cmd_ready : %d", mem_cmd_ready);
-    $display("mem.addr      : 0x%H", mem_addr);
-    $display("mem.wdata     : 0x%H", mem_wdata);
-    $display("mem.wmask     : 0x%H", mem_wmask);
-    $display("mem.rdata     : 0x%H", mem_rdata);
-    $display("mem.valid     : %d", mem_rdata_valid);
-    $display("save.mem_wen  : %d", save_mem_wen);
-    $display("wire.out.rdata: 0x%h", output_read_data_wire);
+    $display("data,memstage.status,%b", state);
+    $display("data,memstage.reg_pc,%b", reg_pc);
+    $display("data,memstage.inst_id,%b", 
+        wb_branch_hazard ? INST_ID_NOP :
+        state == STATE_WAIT ? input_inst_id :
+        save_inst_id
+    );
+    $display("data,memstage.rs2_data,%b", rs2_data);
+    $display("data,memstage.alu_out,%b", alu_out);
+    $display("data,memstage.mem_wen,%b", mem_wen);
+    $display("data,memstage.wb_sel,%b", wb_sel);
+    $display("data,memstage.is_load,%b", is_load);
+    $display("data,memstage.is_store,%b", is_store);
+    $display("data,memstage.is_store.save,%b", is_store_save);
+    $display("data,memstage.out.read_data,%b", output_read_data);
+    $display("data,memstage.out._reg_pc,%b", output_reg_pc);
+    $display("data,memstage.out._alu_out,%b", output_alu_out);
+    $display("data,memstage.out._wb_sel,%b", output_wb_sel);
+    $display("data,memstage.next_flg,%b", next_flg);
+    $display("data,memstage.stall_flg,%b", output_is_stall);
+    $display("data,memstage.mem.cmd.s,%b", mem_cmd_start);
+    $display("data,memstage.mem.cmd.w,%b", mem_cmd_write);
+    $display("data,memstage.mem.cmd_ready,%b", mem_cmd_ready);
+    $display("data,memstage.mem.addr,%b", mem_addr);
+    $display("data,memstage.mem.wdata,%b", mem_wdata);
+    $display("data,memstage.mem.wmask,%b", mem_wmask);
+    $display("data,memstage.mem.rdata,%b", mem_rdata);
+    $display("data,memstage.mem.valid,%b", mem_rdata_valid);
+    $display("data,memstage.save.mem_wen,%b", save_mem_wen);
+    $display("data,memstage.wire.out.rdata,%b", output_read_data_wire);
 end
 `endif
 

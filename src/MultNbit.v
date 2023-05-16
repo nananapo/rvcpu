@@ -56,15 +56,14 @@ end
 `ifdef PRINT_DEBUGINFO
 `ifdef PRINT_ALU_MODULE
 always @(posedge clk) begin
-    $display("multNbit-------------------");
-    $display("state         : %d", state);
-    $display("start         : %d", start);
-    $display("ready         : %d", ready);
-    $display("valid         : %d", valid);
-    $display("multisminus   : %d", result_is_minus);
-    $display("m.mpc         : %d", mod_multiplicand);
-    $display("m.mpr         : %d", mod_multiplier);
-    $display("m.prd         : %d", mod_product);
+    $display("data,multnbit,state,%b", state);
+    $display("data,multnbit,start,%b", start);
+    $display("data,multnbit,ready,%b", ready);
+    $display("data,multnbit,valid,%b", valid);
+    $display("data,multnbit,multisminus,%b", result_is_minus);
+    $display("data,multnbit,m.mpc,%b", mod_multiplicand);
+    $display("data,multnbit,m.mpr,%b", mod_multiplier);
+    $display("data,multnbit,m.prd,%b", mod_product);
 end
 `endif
 `endif

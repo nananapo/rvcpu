@@ -79,3 +79,25 @@ DATA :  00000093
 
 下記をコメントアウトすると、[test/uart/hand.py](https://github.com/nananapo/rvcpu/blob/main/test/uart/hand.py) で試すことができます
 https://github.com/nananapo/rvcpu/blob/8ffd14d2b5fd7aa3b2b501a41bf194a244ea2803/src/include/memoryinterface.v#L1
+
+### ログの出力形式
+
+ログが始まることを示す
+```
+START_DEBUG_LOG
+```
+
+クロックが始まることを表す
+```txt
+clock,何クロック目か(10進数表現 {0,1,2,3,4,5,6,7,8,9})
+```
+
+数字
+```txt
+data,データ名,データ(2進数表現 {0,1,x,z})
+```
+
+テキスト
+```txt
+info,情報名,テキスト
+```

@@ -78,6 +78,12 @@ wire [3:0]  exe_zifencei_mem_wen;
 wire [31:0] mem_inst;
 wire [31:0] wb_inst;
 
+// stage inst id
+wire [63:0] id_inst_id;
+wire [63:0] exe_inst_id;
+wire [63:0] mem_inst_id;
+wire [63:0] wb_inst_id;
+
 //**************************
 // Fetch Stage
 //**************************
@@ -97,6 +103,7 @@ FetchStage #() fetchstage (
 
     .id_reg_pc(id_reg_pc),
     .id_inst(id_inst),
+    .id_inst_id(id_inst_id),
 
     .if_reg_pc(if_reg_pc),
 
@@ -146,9 +153,14 @@ DecodeStage #() decodestage
 (
     .clk(clk),
 
-    .input_inst(id_inst),
     .input_reg_pc(id_reg_pc),
+    .input_inst_id(id_inst_id),
+    .input_inst(id_inst),
     .regfile(regfile),
+
+    .output_reg_pc(exe_reg_pc),
+    .output_inst(exe_inst),
+    .output_inst_id(exe_inst_id),
 
     .imm_i_sext(exe_imm_i_sext),
     .imm_s_sext(exe_imm_s_sext),
@@ -157,8 +169,6 @@ DecodeStage #() decodestage
     .imm_u_shifted(exe_imm_u_shifted),
     .imm_z_uext(exe_imm_z_uext),
 
-    .output_reg_pc(exe_reg_pc),
-    .output_inst(exe_inst),
     .exe_fun(exe_exe_fun),
     .op1_data(exe_op1_data),
     .op2_data(exe_op2_data),
@@ -225,6 +235,7 @@ ExecuteStage #() executestage
 
     .input_reg_pc(exe_reg_pc),
     .input_inst(exe_inst),
+    .input_inst_id(exe_inst_id),
     .input_exe_fun(exe_exe_fun),
     .input_op1_data(exe_op1_data),
     .input_op2_data(exe_op2_data),
@@ -244,6 +255,7 @@ ExecuteStage #() executestage
 
     .output_reg_pc(mem_reg_pc),
     .output_inst(mem_inst),
+    .output_inst_id(mem_inst_id),
     .output_mem_wen(mem_mem_wen),
     .output_rf_wen(mem_rf_wen),
     .output_rs2_data(mem_rs2_data),
@@ -285,6 +297,7 @@ MemoryStage #() memorystage
 
     .input_reg_pc(mem_reg_pc),
     .input_inst(mem_inst),
+    .input_inst_id(mem_inst_id),
     .input_rs2_data(mem_rs2_data),
     .input_alu_out(mem_alu_out),
     .input_br_flg(mem_br_flg),
@@ -295,13 +308,14 @@ MemoryStage #() memorystage
     .input_wb_addr(mem_wb_addr),
     .input_jmp_flg(mem_jmp_flg),
 
-    .output_rf_wen(wb_rf_wen),
-    .output_read_data(wb_read_data),
     .output_reg_pc(wb_reg_pc),
     .output_inst(wb_inst),
+    .output_inst_id(wb_inst_id),
+    .output_read_data(wb_read_data),
     .output_alu_out(wb_alu_out),
     .output_br_flg(wb_br_flg),
     .output_br_target(wb_br_target),
+    .output_rf_wen(wb_rf_wen),
     .output_wb_sel(wb_wb_sel),
     .output_wb_addr(wb_wb_addr),
     .output_jmp_flg(wb_jmp_flg),
@@ -342,6 +356,7 @@ CSRStage #(
 
     .wb_branch_hazard(wbstage_branch_hazard),
 
+    .input_inst_id(mem_inst_id),
     .input_csr_cmd(csr_csr_cmd),
     .input_op1_data(csr_op1_data),
     .input_imm_i(csr_imm_i),
@@ -373,6 +388,7 @@ WriteBackStage #() wbstage(
     .clk(clk),
 
     .reg_pc(wb_reg_pc),
+    .inst_id(wb_inst_id),
     .wb_sel(wb_wb_sel),
     .csr_rdata(wb_csr_rdata),
     .memory_rdata(wb_read_data),
@@ -394,24 +410,15 @@ WriteBackStage #() wbstage(
 );
 
 `ifdef PRINT_DEBUGINFO
+integer reg_i;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
-    $display("");
-    $display("CLK %d", clk_count);
-    $display("gp   : ", gp);
-    $display("exit : ", exit);
-end
-
-always @(posedge clk) begin
-    $display("Registers --------------");
-    $display("1: 0x%H   9: 0x%H  17: 0x%H  25: 0x%H", regfile[1], regfile[9] , regfile[17], regfile[25]);
-    $display("2: 0x%H  10: 0x%H  18: 0x%H  26: 0x%H", regfile[2], regfile[10], regfile[18], regfile[26]);
-    $display("3: 0x%H  11: 0x%H  19: 0x%H  27: 0x%H", regfile[3], regfile[11], regfile[19], regfile[27]);
-    $display("4: 0x%H  12: 0x%H  20: 0x%H  28: 0x%H", regfile[4], regfile[12], regfile[20], regfile[28]);
-    $display("5: 0x%H  13: 0x%H  21: 0x%H  29: 0x%H", regfile[5], regfile[13], regfile[21], regfile[29]);
-    $display("6: 0x%H  14: 0x%H  22: 0x%H  30: 0x%H", regfile[6], regfile[14], regfile[22], regfile[30]);
-    $display("7: 0x%H  15: 0x%H  23: 0x%H  31: 0x%H", regfile[7], regfile[15], regfile[23], regfile[31]);
-    $display("8: 0x%H  16: 0x%H  24: 0x%H  ",         regfile[8], regfile[16], regfile[24]);
+    $display("clock,%d", clk_count);
+    $display("data,core.gp,%b", gp);
+    $display("data,core.exit,%b", exit);
+    for (reg_i = 0; reg_i < 32; reg_i = reg_i + 1) begin
+        $display("data,core.regfile[%d],%b", reg_i, regfile[reg_i]);
+    end
 end
 `endif
 

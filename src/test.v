@@ -19,6 +19,7 @@ module test();
     #1 clk = ~clk;
 
   initial begin
+    $display("START_DEBUG_LOG");
     `ifdef PRINT_DEBUGINFO
         #20001 $finish;
     `endif
@@ -27,9 +28,9 @@ module test();
   always @(posedge clk) begin
 	if (exit) begin
 		if (gp == 1)
-			$display("Test passed");
+			$display("info,coretest.result,Test passed");
 		else
-			$display("Test failed : gp(%d) is not 1", gp);
+			$display("info,coretest,result,Test failed : gp(%d) is not 1", gp);
     	$finish;
 	end 
   end

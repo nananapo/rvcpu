@@ -74,14 +74,13 @@ end
 `ifdef PRINT_DEBUGINFO
 `ifdef PRINT_ALU_MODULE
 always @(posedge clk) begin
-    $display("DIV-------------------");
-    $display("state             : %d", state);
-    $display("save_divisor      : 0b%b", save_divisor);
-    $display("shifted_divisor   : 0b%b", shifted_divisor);
-    $display("count             : 0b%b", count);
-    $display("quotient          : %d", quotient);
-    $display("remainder         : %d", remainder);
-    $display("remainder         : 0b%b", remainder);
+    $display("data,divunbit.state,%b", state);
+    $display("data,divunbit.save_divisor,%b", save_divisor);
+    $display("data,divunbit.shifted_divisor,%b", shifted_divisor);
+    $display("data,divunbit.count,%b", count);
+    $display("data,divunbit.quotient,%b", quotient);
+    $display("data,divunbit.remainder,%b", remainder);
+    $display("data,divunbit.remainder,%b", remainder);
 end
 `endif
 `endif

@@ -2,6 +2,7 @@ module WriteBackStage(
     input  wire         clk,
 
     input  wire [31:0]  reg_pc,
+    input  wire [63:0]  inst_id,
     input  wire [3:0]   wb_sel,
     input  wire [31:0]  csr_rdata,
     input  wire [31:0]  memory_rdata,
@@ -91,23 +92,23 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("WB STAGE--------------");
-    $display("reg_pc         : 0x%H", reg_pc);
-    $display("output_reg_pc  : 0x%H", output_reg_pc);
-    $display("wb_sel         : %d", wb_sel);
-    $display("csr_rdata      : 0x%H", csr_rdata);
-    $display("memory_rdata   : 0x%H", memory_rdata);
-    $display("wb_addr        : %d", wb_addr);
-    $display("jmp_flg        : %d", jmp_flg);
-    $display("rf_wen         : %d", rf_wen);
-    $display("br_flg         : %d", br_flg);
-    $display("br_target      : 0x%H", br_target);
-    $display("alu_out        : 0x%H", alu_out);
-    $display("is_trap        : %d", is_trap);
-    $display("trap_vector    : 0x%H", trap_vector);
-    $display("branch hazard  : %d", output_branch_hazard);
-    $display("wb_data        : 0x%H", wb_data);
-    $display("inst_count     : %d", inst_count);
+    $display("data,wbstage.reg_pc,%b", reg_pc);
+    $display("data,wbstage.inst_id,%b", inst_id);
+    $display("data,wbstage.output_reg_pc,%b", output_reg_pc);
+    $display("data,wbstage.wb_sel,%b", wb_sel);
+    $display("data,wbstage.csr_rdata,%b", csr_rdata);
+    $display("data,wbstage.memory_rdata,%b", memory_rdata);
+    $display("data,wbstage.wb_addr,%b", wb_addr);
+    $display("data,wbstage.jmp_flg,%b", jmp_flg);
+    $display("data,wbstage.rf_wen,%b", rf_wen);
+    $display("data,wbstage.br_flg,%b", br_flg);
+    $display("data,wbstage.br_target,%b", br_target);
+    $display("data,wbstage.alu_out,%b", alu_out);
+    $display("data,wbstage.is_trap,%b", is_trap);
+    $display("data,wbstage.trap_vector,%b", trap_vector);
+    $display("data,wbstage.branch_hazard,%b", output_branch_hazard);
+    $display("data,wbstage.wb_data,%b", wb_data);
+    $display("data,wbstage.inst_count,%b", inst_count);
 end
 `endif
 

@@ -66,17 +66,16 @@ end
 `ifdef PRINT_DEBUGINFO
 `ifdef PRINT_ALU_MODULE
 always @(posedge clk) begin
-    $display("divNbit-------------------");
-    $display("state         : %d", state);
-    $display("start         : %d", start);
-    $display("ready         : %d", ready);
-    $display("valid         : %d", valid);
-    $display("divismin      : %d", result_div_is_minus);
-    $display("remismin      : %d", result_rem_is_minus);
-    $display("m.dividend    : %d", mod_dividend);
-    $display("m.divisor     : %d", mod_divisor);
-    $display("m.quotient    : %d", mod_quotient);
-    $display("m.remainder   : %d", mod_remainder);
+    $display("data,divnbit.state,%b", state);
+    $display("data,divnbit.start,%b", start);
+    $display("data,divnbit.ready,%b", ready);
+    $display("data,divnbit.valid,%b", valid);
+    $display("data,divnbit.divismin,%b", result_div_is_minus);
+    $display("data,divnbit.remismin,%b", result_rem_is_minus);
+    $display("data,divnbit.m.dividend,%b", mod_dividend);
+    $display("data,divnbit.m.divisor,%b", mod_divisor);
+    $display("data,divnbit.m.quotient,%b", mod_quotient);
+    $display("data,divnbit.m.remainder,%b", mod_remainder);
 end
 `endif
 `endif
