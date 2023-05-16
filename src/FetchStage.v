@@ -145,12 +145,15 @@ end
 // 命令フェッチ試行ごとにユニークなID
 reg [63:0]  unique_inst_id_gen = 0;
 // 今のID
-wire inst_id_now = unique_inst_id_gen + (state == STATE_WAIT_VALID && !is_fetched && mem_data_valid);
+wire inst_id_now = (state == STATE_WAIT_VALID && !is_fetched && mem_data_valid) ?
+                        unique_inst_id_gen + 1 : INST_ID_NOP;
 
+// 到底よい記述の仕方とは思えないのでどうにかしたい
+// 例えばinfo,fetchstage.instruction_end/startを追加するとか。idでフェッチの状態を見ようとしているのが間違っている
 always @(posedge clk) begin
-    // 到底よい記述の仕方とは思えないのでどうにかしたい
-    // 例えばinfo,fetchstage.instruction_end/startを追加するとか。idでフェッチの状態を見ようとしているのが間違っている
-    unique_inst_id_gen <= inst_id_now;
+    if (state == STATE_WAIT_VALID && !is_fetched && mem_data_valid) begin
+        unique_inst_id_gen <= unique_inst_id_gen + 1;
+    end
     id_inst_id <= inst_id_now;
 end
 
