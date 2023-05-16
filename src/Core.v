@@ -78,6 +78,13 @@ wire [3:0]  exe_zifencei_mem_wen;
 wire [31:0] mem_inst;
 wire [31:0] wb_inst;
 
+// stage inst id
+wire [63:0] id_inst_id;
+wire [63:0] exe_inst_id;
+wire [63:0] mem_inst_id;
+wire [63:0] csr_inst_id;
+wire [63:0] wb_inst_id;
+
 //**************************
 // Fetch Stage
 //**************************
@@ -97,6 +104,7 @@ FetchStage #() fetchstage (
 
     .id_reg_pc(id_reg_pc),
     .id_inst(id_inst),
+    .id_inst_id(id_inst_id),
 
     .if_reg_pc(if_reg_pc),
 

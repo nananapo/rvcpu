@@ -6,6 +6,7 @@ module FetchStage(
 
     output reg [31:0]   id_reg_pc,
     output reg [31:0]   id_inst,
+    output reg [63:0]   id_inst_id,
 
     output wire [31:0]  if_reg_pc,
 
@@ -141,13 +142,26 @@ always @(posedge clk) begin
     endcase
 end
 
+// 命令フェッチ試行ごとにユニークなID
+reg [63:0]  unique_inst_id_gen = 0;
+// 今のID
+wire inst_id_now = unique_inst_id_gen + (state == STATE_WAIT_VALID && !is_fetched && mem_data_valid);
+
+always @(posedge clk) begin
+    // 到底よい記述の仕方とは思えないのでどうにかしたい
+    // 例えばinfo,fetchstage.instruction_end/startを追加するとか。idでフェッチの状態を見ようとしているのが間違っている
+    unique_inst_id_gen <= inst_id_now;
+    id_inst_id <= inst_id_now;
+end
+
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
+    $display("data,fetchstage.inst_id", inst_id_now);
     $display("data,fetchstage.status,%b", state);
     $display("data,fetchstage.fetched,%b", is_fetched);
     $display("data,fetchstage.reg_pc,%b", inner_reg_pc);
-    $display("data,fetchstage.out.reg_pc,%b", output_reg_pc);
-    $display("data,fetchstage.out.inst,%b", output_inst);
+    $display("info,fetchstage.out.reg_pc,%h", output_reg_pc);
+    $display("info,fetchstage.out.inst,%h", output_inst);
     $display("data,fetchstage.id.reg_pc,%b", id_reg_pc);
     $display("data,fetchstage.id.inst,%b", id_inst);
     $display("data,fetchstage.mem.start,%b", mem_start);
