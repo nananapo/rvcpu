@@ -388,6 +388,7 @@ WriteBackStage #() wbstage(
     .clk(clk),
 
     .reg_pc(wb_reg_pc),
+    .inst_id(wb_inst_id),
     .wb_sel(wb_wb_sel),
     .csr_rdata(wb_csr_rdata),
     .memory_rdata(wb_read_data),

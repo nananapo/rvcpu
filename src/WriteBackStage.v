@@ -2,6 +2,7 @@ module WriteBackStage(
     input  wire         clk,
 
     input  wire [31:0]  reg_pc,
+    input  wire [63:0]  inst_id,
     input  wire [3:0]   wb_sel,
     input  wire [31:0]  csr_rdata,
     input  wire [31:0]  memory_rdata,
@@ -92,6 +93,7 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,wbstage.reg_pc,%b", reg_pc);
+    $display("data,wbstage.inst_id,%b", inst_id);
     $display("data,wbstage.output_reg_pc,%b", output_reg_pc);
     $display("data,wbstage.wb_sel,%b", wb_sel);
     $display("data,wbstage.csr_rdata,%b", csr_rdata);
