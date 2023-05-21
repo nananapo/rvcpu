@@ -53,11 +53,17 @@ end
 `ifdef PRINT_DEBUGINFO
 `ifdef PRINT_ALU_MODULE
 always @(posedge clk) begin
+    $display("data,multunbit.input.start,%b", start);
+    $display("data,multunbit.input.ready,%b", ready);
+    $display("data,multunbit.input.valid,%b", valid);
+    $display("data,multunbit.input.multiplicand,%b", multiplicand);
+    $display("data,multunbit.input.multiplier,%b", multiplier);
+    $display("data,multunbit.output.product,%b", product);
+    
     $display("data,multunbit.state,%b", state);
     $display("data,multunbit.count,%b", count);
-    $display("data,multunbit.product,%b", product);
-    $display("data,multunbit.s.multiplicand,%b", multiplicand);
-    $display("data,multunbit.s.multiplier,%b", multiplier);
+    $display("data,multunbit.save_multiplicand,%b", save_multiplicand);
+    $display("data,multunbit.save_multiplier,%b", save_multiplier);
 end
 `endif
 `endif
