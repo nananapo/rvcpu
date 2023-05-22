@@ -59,7 +59,7 @@ def readClockCycle():
             data,name,value 
             """
             if len(lineData) < 3: continue # ignore error
-            num = lineData[2]
+            num = lineData[2].strip()
             if "x" not in num and "z" not in num:
                 num = int(num, 2)
             clockNumberData[lineData[1]] = num
