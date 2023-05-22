@@ -4,15 +4,15 @@ module DivNbit #(
     input wire  clk,
 
     input wire  start,
-    input wire  is_signed,
     output wire ready,
     output wire valid,
     output wire error,
 
-    input wire signed [SIZE-1:0] dividend,   // 被除数
-    input wire signed [SIZE-1:0] divisor,    // 除数
-    output reg signed [SIZE-1:0] quotient,   // 商
-    output reg signed [SIZE-1:0] remainder   // 余り
+    input wire                      is_signed,  // signedかどうか
+    input wire signed [SIZE-1:0]    dividend,   // 被除数
+    input wire signed [SIZE-1:0]    divisor,    // 除数
+    output reg signed [SIZE-1:0]    quotient,   // 商
+    output reg signed [SIZE-1:0]    remainder   // 余り
 );
 
 localparam STATE_IDLE   = 0;
@@ -23,6 +23,8 @@ reg state = STATE_IDLE;
 reg result_div_is_minus = 0;
 reg result_rem_is_minus = 0;
 
+// mod(ified)_*
+// unsignedで計算するために、signedでマイナスならマイナスをかけている
 wire [SIZE-1:0] mod_dividend    = is_signed ? (dividend > $signed({SIZE{1'b0}}) ? dividend : 0 - dividend) : dividend;
 wire [SIZE-1:0] mod_divisor     = is_signed ? (divisor  > $signed({SIZE{1'b0}}) ? divisor  : 0 - divisor)  : divisor;
 wire [SIZE-1:0] mod_quotient;
@@ -66,16 +68,23 @@ end
 `ifdef PRINT_DEBUGINFO
 `ifdef PRINT_ALU_MODULE
 always @(posedge clk) begin
+    $display("data,divnbit.output.ready,%b", ready);
+    $display("data,divnbit.output.valid,%b", valid);
+    $display("data,divnbit.output.error,%b", error);
+    $display("data,divnbit.input.start,%b", start);
+    $display("data,divnbit.input.is_signed,%b", is_signed);
+    $display("data,divnbit.input.dividend,%b", dividend);
+    $display("data,divnbit.input.divisor,%b", divisor);
+    $display("data,divnbit.output.quotient,%b", quotient);
+    $display("data,divnbit.output.remainder,%b", remainder);
+
     $display("data,divnbit.state,%b", state);
-    $display("data,divnbit.start,%b", start);
-    $display("data,divnbit.ready,%b", ready);
-    $display("data,divnbit.valid,%b", valid);
-    $display("data,divnbit.divismin,%b", result_div_is_minus);
-    $display("data,divnbit.remismin,%b", result_rem_is_minus);
-    $display("data,divnbit.m.dividend,%b", mod_dividend);
-    $display("data,divnbit.m.divisor,%b", mod_divisor);
-    $display("data,divnbit.m.quotient,%b", mod_quotient);
-    $display("data,divnbit.m.remainder,%b", mod_remainder);
+    $display("data,divnbit.div_is_minus,%b", result_div_is_minus);
+    $display("data,divnbit.rem_is_minus,%b", result_rem_is_minus);
+    $display("data,divnbit.mod.dividend,%b", mod_dividend);
+    $display("data,divnbit.mod.divisor,%b", mod_divisor);
+    $display("data,divnbit.mod.quotient,%b", mod_quotient);
+    $display("data,divnbit.mod.remainder,%b", mod_remainder);
 end
 `endif
 `endif

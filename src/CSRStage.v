@@ -23,7 +23,7 @@ module CSRStage #(
     input wire [31:0]   if_reg_pc,
 
     // output
-    output reg  [2:0]   output_csr_cmd,
+    output reg  [2:0]   output_csr_cmd, // TODO csr_cmdを外に出さない(br_targetをMEMではなくCSRにもってきたい。これはステージをCoreにまとめた後でやりたい)
     output reg  [31:0]  csr_rdata,
     output reg  [31:0]  trap_vector,
 
@@ -778,20 +778,26 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,csrstage.mode,%b", mode);
     $display("data,csrstage.inst_id,%b", csr_cmd == CSR_X ? INST_ID_NOP : input_inst_id);
-    $display("data,csrstage.cmd,%b", csr_cmd);
-    $display("data,csrstage.op1_data,%b", op1_data);
-    $display("data,csrstage.imm_i,%b", imm_i);
+
+    // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
+    // $display("data,csrstage.input.op1_data,%b", input_op1_data);
+    // $display("data,csrstage.input.imm_i,%b", input_imm_i);
+    $display("data,csrstage.input.intrrupt_ready,%b", input_interrupt_ready);
+    $display("data,csrstage.input.if_reg_pc,%b", if_reg_pc);
+
+    // $display("data,csrstage.output.csr_cmd,%b", output_csr_cmd);
+    $display("data,csrstage.output.csr_rdata,%b", csr_rdata);
+    $display("data,csrstage.output.trap_vector,%b", trap_vector);
+    $display("data,csrstage.output.stall_flg_may_interrupt,%b", output_stall_flg_may_interrupt);
+
+    $display("data,csrstage.mode,%b", mode);
+    $display("data,csrstage.csr_cmd,%b", csr_cmd);
+    // $display("data,csrstage.op1_data,%b", op1_data);
+    // $display("data,csrstage.imm_i,%b", imm_i);
     $display("data,csrstage.addr,%b", addr);
-    $display("data,csrstage.rdata,%b", csr_rdata);
     $display("data,csrstage.wdata,%b", wdata);
-    $display("data,csrstage.trap_vector,%b", trap_vector);
     $display("data,csrstage.mtvec,%b", reg_mtvec);
-    $display("data,csrstage.mtime,%b", reg_mtime);
-    $display("data,csrstage.mtimecmp,%b", reg_mtimecmp);
-    $display("data,csrstage.timer_stall,%d", machine_timer_interrupt_active);
-    $display("data,csrstage.intrrupt_ready,%d", input_interrupt_ready);
 end
 `endif
 

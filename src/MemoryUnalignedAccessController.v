@@ -83,31 +83,6 @@ reg [3:0]   state       = STATE_IDLE;
 reg [31:0]  save_rdata1 = 0;
 reg [31:0]  save_rdata2 = 0;
 
-`ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
-    $display("data,mem_unaligned_controller.state,%b", state);
-    $display("data,mem_unaligned_controller.input_start,%b", input_cmd_start);
-    $display("data,mem_unaligned_controller.input_write,%b", input_cmd_write);
-    $display("data,mem_unaligned_controller.input_addr,%b", input_addr);
-    $display("data,mem_unaligned_controller.input.wdata,%b", input_wdata);
-    $display("data,mem_unaligned_controller.ready,%b", output_cmd_ready);
-    $display("data,mem_unaligned_controller.rdata,%b", output_rdata);
-    $display("data,mem_unaligned_controller.valid,%b", output_rdata_valid);
-    $display("data,mem_unaligned_controller.save.addr,%b", save_addr);
-    $display("data,mem_unaligned_controller.save.wmask,%b", save_wmask);
-    $display("data,mem_unaligned_controller.save.wdata,%b", save_wdata);
-    $display("data,mem_unaligned_controller.save.read1,%b", save_rdata1);
-    $display("data,mem_unaligned_controller.save.read2,%b", save_rdata2);
-    $display("data,mem_unaligned_controller.mem_cmd_start,%b", mem_cmd_start);
-    $display("data,mem_unaligned_controller.mem_cmd_write,%b", mem_cmd_write);
-    $display("data,mem_unaligned_controller.mem_cmd_ready,%b", mem_cmd_ready);
-    $display("data,mem_unaligned_controller.mem_addr,%b", mem_addr);
-    $display("data,mem_unaligned_controller.mem_rdata,%b", mem_rdata);
-    $display("data,mem_unaligned_controller.mem_rdata_v,%b", mem_rdata_valid);
-    $display("data,mem_unaligned_controller.mem_wdata,%b", mem_wdata);
-end
-`endif
-
 function func_mem_cmd_start(
     input [3:0] state,
     input mem_cmd_ready,
@@ -383,6 +358,31 @@ always @(posedge clk) begin
         end
     endcase
 end
+
+`ifdef PRINT_DEBUGINFO
+always @(posedge clk) begin
+    // $display("data,mem_unaligned_controller.state,%b", state);
+    // $display("data,mem_unaligned_controller.input_start,%b", input_cmd_start);
+    // $display("data,mem_unaligned_controller.input_write,%b", input_cmd_write);
+    // $display("data,mem_unaligned_controller.input_addr,%b", input_addr);
+    // $display("data,mem_unaligned_controller.input.wdata,%b", input_wdata);
+    // $display("data,mem_unaligned_controller.ready,%b", output_cmd_ready);
+    // $display("data,mem_unaligned_controller.rdata,%b", output_rdata);
+    // $display("data,mem_unaligned_controller.valid,%b", output_rdata_valid);
+    // $display("data,mem_unaligned_controller.save.addr,%b", save_addr);
+    // $display("data,mem_unaligned_controller.save.wmask,%b", save_wmask);
+    // $display("data,mem_unaligned_controller.save.wdata,%b", save_wdata);
+    // $display("data,mem_unaligned_controller.save.read1,%b", save_rdata1);
+    // $display("data,mem_unaligned_controller.save.read2,%b", save_rdata2);
+    // $display("data,mem_unaligned_controller.mem_cmd_start,%b", mem_cmd_start);
+    // $display("data,mem_unaligned_controller.mem_cmd_write,%b", mem_cmd_write);
+    // $display("data,mem_unaligned_controller.mem_cmd_ready,%b", mem_cmd_ready);
+    // $display("data,mem_unaligned_controller.mem_addr,%b", mem_addr);
+    // $display("data,mem_unaligned_controller.mem_rdata,%b", mem_rdata);
+    // $display("data,mem_unaligned_controller.mem_rdata_v,%b", mem_rdata_valid);
+    // $display("data,mem_unaligned_controller.mem_wdata,%b", mem_wdata);
+end
+`endif
 
 endmodule
 

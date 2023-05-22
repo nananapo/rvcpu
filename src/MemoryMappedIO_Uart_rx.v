@@ -150,11 +150,11 @@ end
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("info,memmapio.uart_rx.buffer,Buffer : %d (%d)", buffer_tail, buffer_count);
-    $display("info,memmapio.uart_rx.buffer_data,BufferData : %d 0x%h %d %h", read_addr, buffer[read_addr], output_rdata_valid, output_rdata);
-    if (state == STATE_IDLE && rx_rdata_valid) begin
-         $display("info,memmapio.uart_rx.rvalid, rvalid 0x%h : %d", rx_rdata, buffer_tail[1:0]);
-    end
+    // $display("info,memmapio.uart_rx.buffer,Buffer : %d (%d)", buffer_tail, buffer_count);
+    // $display("info,memmapio.uart_rx.buffer_data,BufferData : %d 0x%h %d %h", read_addr, buffer[read_addr], output_rdata_valid, output_rdata);
+    // if (state == STATE_IDLE && rx_rdata_valid) begin
+    //      $display("info,memmapio.uart_rx.rvalid, rvalid 0x%h : %d", rx_rdata, buffer_tail[1:0]);
+    // end
 end
 `endif
 

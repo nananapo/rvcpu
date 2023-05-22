@@ -92,11 +92,7 @@ assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
     (data_hazard_exe_rf_wen == REN_S /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_exe_wb_addr == wire_rs2_addr && wire_rs2_addr != 0)
 );
 
-wire last_is_stall = (
-    last_memory_stage_stall_flg || 
-    last_clock_fence_i_stall_flg ||
-    last_data_hazard_stall_flg
-);
+reg last_is_stall = 0;
 
 wire [31:0] reg_pc = (
     wb_branch_hazard ? REGPC_NOP :
@@ -144,14 +140,6 @@ wire inst_is_fence_i = (funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode == INST_
 // fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
 assign zifencei_stall_flg = inst_is_fence_i && (zifencei_exe_mem_wen || zifencei_mem_mem_wen);
 
-// 前のクロックでfence_iでストールしたかどうか
-reg last_clock_fence_i_stall_flg = 0;
-
-
-// 前のクロックでデータハザードでストールしたかどうか
-reg last_data_hazard_stall_flg = 0;
-// 前のクロックでメモリステージがストールしたかどうか
-reg last_memory_stage_stall_flg = 0;
 // トラップ可能かどうか
 assign output_trappable = inst == INST_NOP;
 
@@ -324,27 +312,53 @@ always @(posedge clk) begin
     end
 
     // 分岐するときは現在のストール状態は無視する
-    last_clock_fence_i_stall_flg    <= !wb_branch_hazard && zifencei_stall_flg;
-    last_data_hazard_stall_flg      <= !wb_branch_hazard && data_hazard_stall_flg;
-    last_memory_stage_stall_flg     <= !wb_branch_hazard && memory_stage_stall_flg;
+    last_is_stall   <= !wb_branch_hazard && (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg);
 end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
+    // $display("data,decodestage.input.reg_pc,%b", input_reg_pc);
+    // $display("data,decodestage.input.inst,%b", input_inst);
+    // $display("data,decodestage.input.inst_id,%b", input_inst_id);
+
     $display("data,decodestage.reg_pc,%b", reg_pc);
     $display("data,decodestage.inst,%b", inst);
     $display("data,decodestage.inst_id,%b", inst_id);
-    $display("data,decodestage.rs1_addr,%b", wire_rs1_addr);
-    $display("data,decodestage.rs2_addr,%b", wire_rs2_addr);
-    $display("data,decodestage.wb_addr,%b", wire_wb_addr);
-    $display("data,decodestage.rs2_data,%b", (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr]);
-    $display("data,decodestage.op1_data,%b", (
+
+    // $display("data,decodestage.output.reg_pc,%b", output_reg_pc);
+    // $display("data,decodestage.output.inst,%b", output_inst);
+    // $display("data,decodestage.output.inst_id,%b", output_inst_id);
+
+    // $display("data,decodestage.output.imm_i_sext,%b", imm_i_sext);
+    // $display("data,decodestage.output.imm_s_sext,%b", imm_s_sext);
+    // $display("data,decodestage.output.imm_b_sext,%b", imm_b_sext);
+    // $display("data,decodestage.output.imm_j_sext,%b", imm_j_sext);
+    // $display("data,decodestage.output.imm_u_shifted,%b", imm_u_shifted);
+    // $display("data,decodestage.output.imm_z_uext,%b", imm_z_uext);
+    
+    // $display("data,decodestage.output.exe_fun,%b", exe_fun);
+    // $display("data,decodestage.output.op1_sel,%b", op1_sel);
+    // $display("data,decodestage.output.op2_sel,%b", op2_sel);
+    // $display("data,decodestage.output.rs2_data,%b", rs2_data);
+    // $display("data,decodestage.output.mem_wen,%b", mem_wen);
+    // $display("data,decodestage.output.rf_wen,%b", rf_wen);
+    // $display("data,decodestage.output.wb_sel,%b", wb_sel);
+    // $display("data,decodestage.output.wb_addr,%b", wb_addr);
+    // $display("data,decodestage.output.csr_cmd,%b", csr_cmd);
+    // $display("data,decodestage.output.jmp_flg,%b", jmp_flg);
+    $display("data,decodestage.output.trappable,%b", output_trappable);
+
+    $display("data,decodestage.decode.rs1_addr,%b", wire_rs1_addr);
+    $display("data,decodestage.decode.rs2_addr,%b", wire_rs2_addr);
+    $display("data,decodestage.decode.rs2_data,%b", (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr]);
+    $display("data,decodestage.decode.rs2_data,%b", (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr]);
+    $display("data,decodestage.decode.op1_data,%b", (
         wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
         wire_op1_sel == OP1_PC  ? reg_pc :
         wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
         0
     ));
-    $display("data,decodestage.op2_data,%b", (
+    $display("data,decodestage.decode.op2_data,%b", (
         wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
         wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
         wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :
@@ -352,26 +366,29 @@ always @(posedge clk) begin
         wire_op2_sel == OP2_IMU  ? wire_imm_u_shifted :
         0
     ));
-    $display("data,decodestage.w.exe_fun,%b", wire_exe_fun);
-    $display("data,decodestage.w.op1_sel,%b", wire_op1_sel);
-    $display("data,decodestage.w.op2_sel,%b", wire_op2_sel);
-    $display("data,decodestage.w.mem_wen,%b", wire_mem_wen);
-    $display("data,decodestage.w.rf_wen,%b", wire_rf_wen);
-    $display("data,decodestage.w.wb_sel,%b", wire_wb_sel);
-    $display("data,decodestage.w.csr_cmd,%b", wire_csr_cmd);
+
+    $display("data,decodestage.decode.exe_fun,%b", wire_exe_fun);
+    $display("data,decodestage.decode.op1_sel,%b", wire_op1_sel);
+    $display("data,decodestage.decode.op2_sel,%b", wire_op2_sel);
+    $display("data,decodestage.decode.mem_wen,%b", wire_mem_wen);
+    $display("data,decodestage.decode.rf_wen,%b", wire_rf_wen);
+    $display("data,decodestage.decode.wb_sel,%b", wire_wb_sel);
+    $display("data,decodestage.decode.wb_addr,%b", wire_wb_addr);
+    $display("data,decodestage.decode.csr_cmd,%b", wire_csr_cmd);
+    $display("data,decodestage.decode.is_fence_i,%b", inst_is_fence_i);
+
     $display("data,decodestage.datahazard,%b", data_hazard_stall_flg);
-    $display("data,decodestage.datahazard.wb.rf,%b", data_hazard_wb_rf_wen);
-    $display("data,decodestage.datahazard.wb.addr,%b", data_hazard_wb_wb_addr);
-    $display("data,decodestage.datahazard.mem.rf,%b", data_hazard_mem_rf_wen);
-    $display("data,decodestage.datahazard.mem.addr,%b", data_hazard_mem_wb_addr);
-    $display("data,decodestage.datahazard.exe.rf,%b", data_hazard_exe_rf_wen);
-    $display("data,decodestage.datahazard.exe.addr,%b", data_hazard_exe_wb_addr);
-    $display("data,decodestage.is_fence_i,%b", inst_is_fence_i);
-    $display("data,decodestage.fence_i stall,%b", zifencei_stall_flg);
-    $display("data,decodestage.last.datahazard,%b", last_data_hazard_stall_flg);
-    $display("data,decodestage.save.regpc,%b", save_reg_pc);
-    $display("data,decodestage.save.inst,%b", save_inst);
-    $display("data,decodestage.mem.stall,%b", memory_stage_stall_flg);
+    // $display("data,decodestage.datahazard.wb_rf_wen,%b", data_hazard_wb_rf_wen);
+    // $display("data,decodestage.datahazard.wb_wb_addr,%b", data_hazard_wb_wb_addr);
+    // $display("data,decodestage.datahazard.mem_rf_wen,%b", data_hazard_mem_rf_wen);
+    // $display("data,decodestage.datahazard.mem_wb_addr,%b", data_hazard_mem_wb_addr);
+    // $display("data,decodestage.datahazard.exe_rf_wen,%b", data_hazard_exe_rf_wen);
+    // $display("data,decodestage.datahazard.exe_wb_addr,%b", data_hazard_exe_wb_addr);
+    $display("data,decodestage.datahazard.fence_i_stall,%b", zifencei_stall_flg);
+    $display("data,decodestage.last_is_stall,%b", last_is_stall);
+
+    // $display("data,decodestage.save.regpc,%b", save_reg_pc);
+    // $display("data,decodestage.save.inst,%b", save_inst);
 end
 `endif
 
