@@ -783,8 +783,8 @@ always @(posedge clk) begin
     // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
     // $display("data,csrstage.input.op1_data,%b", input_op1_data);
     // $display("data,csrstage.input.imm_i,%b", input_imm_i);
-    $display("data,csrstage.input.intrrupt_ready,%d", input_interrupt_ready);
-    $display("data,csrstage.input.if_reg_pc,%d", if_reg_pc);
+    $display("data,csrstage.input.intrrupt_ready,%b", input_interrupt_ready);
+    $display("data,csrstage.input.if_reg_pc,%b", if_reg_pc);
 
     // $display("data,csrstage.output.csr_cmd,%b", output_csr_cmd);
     $display("data,csrstage.output.csr_rdata,%b", csr_rdata);
