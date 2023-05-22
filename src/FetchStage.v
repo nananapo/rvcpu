@@ -1,22 +1,20 @@
 module FetchStage(
     input  wire         clk,
 
-    input  wire [31:0]  wb_reg_pc,
-    input  wire         wb_branch_hazard,
-
-    output reg [31:0]   id_reg_pc,
-    output reg [31:0]   id_inst,
-    output reg [63:0]   id_inst_id,
-
-    output wire [31:0]  if_reg_pc,
-
     output wire         mem_start,
     input  wire         mem_ready,
     output wire [31:0]  mem_addr,
     input  wire [31:0]  mem_data,
     input  wire         mem_data_valid,
 
-    input  wire         stall_flg
+    input  wire [31:0]  wb_reg_pc,
+    input  wire         wb_branch_hazard,
+    input  wire         stall_flg,
+
+    output wire [31:0]  if_reg_pc
+    output reg [31:0]   id_reg_pc,
+    output reg [31:0]   id_inst,
+    output reg [63:0]   id_inst_id,
 );
 
 `include "include/core.v"
@@ -161,21 +159,28 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
+    $display("data,fetchstage.output.memory.start,%b", mem_start);
+    $display("data,fetchstage.input.memory.ready,%b", mem_ready);
+    $display("data,fetchstage.output.memory.addr,%b", mem_addr);
+    $display("data,fetchstage.input.memory.data,%b", mem_data);
+    $display("data,fetchstage.input.memory.data_valid,%b", mem_data_valid);
+
+    // $display("data,fetchstage.input.wb_reg_pc,%b", wb_reg_pc);
+    // $display("data,fetchstage.input.wb_branch_hazard,%b", wb_branch_hazard);
+    // $display("data,fetchstage.input.stall_flg,%b", stall_flg);
+
+    // $display("data,fetchstage.output.if_reg_pc,%b", if_reg_pc);
+    // $display("data,fetchstage.output.id_reg_pc,%b", id_reg_pc);
+    // $display("data,fetchstage.output.id_inst,%b", id_inst);
+    // $display("data,fetchstage.output.id_inst_id,%b", id_inst_id);
+
     $display("data,fetchstage.inst_id,%b", inst_id);
-    $display("data,fetchstage.status,%b", state);
-    $display("data,fetchstage.fetched,%b", is_fetched);
-    $display("data,fetchstage.reg_pc,%b", inner_reg_pc);
-    $display("info,fetchstage.out.reg_pc,%h", output_reg_pc);
-    $display("info,fetchstage.out.inst,%h", output_inst);
-    $display("data,fetchstage.id.reg_pc,%b", id_reg_pc);
-    $display("data,fetchstage.id.inst,%b", id_inst);
-    $display("data,fetchstage.mem.start,%b", mem_start);
-    $display("data,fetchstage.mem.ready,%b", mem_ready);
-    $display("data,fetchstage.mem.data,%b", mem_data);
-    $display("data,fetchstage.mem.valid,%b", mem_data_valid);
-    $display("data,fetchstage.stall_flg,%b", stall_flg);
-    $display("data,fetchstage.branch_haz,%b", wb_branch_hazard);
-    $display("data,fetchstage.branch_adr,%b", wb_reg_pc);
+    $display("data,fetchstage.state,%b", state);
+
+    $display("data,fetchstage.is_fetched,%b", is_fetched);
+    // $display("data,fetchstage.reg_pc,%b", inner_reg_pc);
+    $display("info,fetchstage.output_reg_pc,%b", output_reg_pc);
+    $display("info,fetchstage.output_inst,%b", output_inst);
 end
 `endif
 
