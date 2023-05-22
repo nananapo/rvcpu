@@ -92,23 +92,28 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,wbstage.reg_pc,%b", reg_pc);
     $display("data,wbstage.inst_id,%b", inst_id);
-    $display("data,wbstage.output_reg_pc,%b", output_reg_pc);
-    $display("data,wbstage.wb_sel,%b", wb_sel);
-    $display("data,wbstage.csr_rdata,%b", csr_rdata);
-    $display("data,wbstage.memory_rdata,%b", memory_rdata);
-    $display("data,wbstage.wb_addr,%b", wb_addr);
-    $display("data,wbstage.jmp_flg,%b", jmp_flg);
-    $display("data,wbstage.rf_wen,%b", rf_wen);
-    $display("data,wbstage.br_flg,%b", br_flg);
-    $display("data,wbstage.br_target,%b", br_target);
-    $display("data,wbstage.alu_out,%b", alu_out);
+
+    $display("data,wbstage.input.reg_pc,%b", reg_pc);
+    $display("data,wbstage.input.wb_sel,%b", wb_sel);
+    // $display("data,wbstage.input.csr_rdata,%b", csr_rdata);
+    // $display("data,wbstage.input.memory_rdata,%b", memory_rdata);
+    $display("data,wbstage.input.wb_addr,%b", wb_addr);
+    // $display("data,wbstage.input.csr_cmd,%b", csr_cmd);
+    // $display("data,wbstage.input.jmp_flg,%b", jmp_flg);
+    $display("data,wbstage.input.rf_wen,%b", rf_wen);
+    // $display("data,wbstage.input.br_flg,%b", br_flg);
+    // $display("data,wbstage.input.br_target,%b", br_target);
+    // $display("data,wbstage.input.alu_out,%b", alu_out);
+    // $display("data,wbstage.input.trap_vector,%b", trap_vector);
+
+    $display("data,wbstage.output.reg_pc,%b", output_reg_pc);
+    $display("data,wbstage.output.branch_hazard,%b", output_branch_hazard);
+
     $display("data,wbstage.is_trap,%b", is_trap);
-    $display("data,wbstage.trap_vector,%b", trap_vector);
-    $display("data,wbstage.branch_hazard,%b", output_branch_hazard);
     $display("data,wbstage.wb_data,%b", wb_data);
     $display("data,wbstage.inst_count,%b", inst_count);
+    // $display("data,wbstage.exit,%b", exit);
 end
 `endif
 
