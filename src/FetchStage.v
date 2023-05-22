@@ -11,10 +11,10 @@ module FetchStage(
     input  wire         wb_branch_hazard,
     input  wire         stall_flg,
 
-    output wire [31:0]  if_reg_pc
+    output wire [31:0]  if_reg_pc,
     output reg [31:0]   id_reg_pc,
     output reg [31:0]   id_inst,
-    output reg [63:0]   id_inst_id,
+    output reg [63:0]   id_inst_id
 );
 
 `include "include/core.v"
