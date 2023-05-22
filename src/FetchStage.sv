@@ -17,7 +17,7 @@ module FetchStage(
     output reg [63:0]   id_inst_id
 );
 
-`include "include/core.v"
+`include "include/core.sv"
 
 localparam STATE_WAIT_READY = 0;
 localparam STATE_WAIT_VALID = 1;

@@ -23,7 +23,7 @@ module WriteBackStage(
     output wire         exit
 );
 
-`include "include/core.v"
+`include "include/core.sv"
 
 `ifdef RISCV_TEST
     integer loop_i;

@@ -23,7 +23,7 @@ module MemoryMapController #(
     input  wire [31:0]  input_wdata
 );
 
-`include "include/memorymap.v"
+`include "include/memorymap.sv"
 
 wire is_uart_tx_addr    = UART_TX_OFFSET <= input_addr && input_addr <= UART_TX_END;
 wire is_uart_rx_addr    = UART_RX_OFFSET <= input_addr && input_addr <= UART_RX_END;

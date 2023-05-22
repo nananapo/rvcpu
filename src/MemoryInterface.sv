@@ -29,7 +29,7 @@ module MemoryInterface #(
     input  wire         exited  
 );
 
-`include "include/memoryinterface.v"
+`include "include/memoryinterface.sv"
 
 // メモリ
 wire        mem_cmd_start;

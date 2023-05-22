@@ -46,7 +46,7 @@ module ExecuteStage
     output wire [3:0]   output_zifencei_mem_wen
 );
 
-`include "include/core.v"
+`include "include/core.sv"
 
 initial begin
     alu_out         = 0;

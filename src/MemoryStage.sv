@@ -44,8 +44,8 @@ module MemoryStage(
     output wire [3:0]    output_zifencei_mem_wen
 );
 
-`include "include/core.v"
-`include "include/memoryinterface.v"
+`include "include/core.sv"
+`include "include/memoryinterface.sv"
 
 initial begin
     output_read_data    = 32'hffffffff;

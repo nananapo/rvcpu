@@ -16,7 +16,7 @@ module MemoryMapped_MachineTimeRegister #(
     output reg  [63:0]  mtimecmp
 );
 
-`include "include/memorymap.v"
+`include "include/memorymap.sv"
 
 initial begin
     mtimecmp = 64'hffff_ffff_ffff_ffff;

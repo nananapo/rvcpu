@@ -1,6 +1,6 @@
 import sys
 
-MEMORY_V_FILENAME = "../src/MemoryInterface.v"
+MEMORY_V_FILENAME = "../src/MemoryInterface.sv"
 REPLACE_WORD = "MEMORY_FILE_NAME"
 
 # backup

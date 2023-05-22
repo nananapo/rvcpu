@@ -14,7 +14,7 @@ module MemoryMappedIO_Uart_tx #(
     input  wire [31:0]  input_wdata
 );
 
-`include "include/memorymap.v"
+`include "include/memorymap.sv"
 
 reg [31:0]  buffer[63:0];
 reg  [7:0]  queue_tail  = 0;

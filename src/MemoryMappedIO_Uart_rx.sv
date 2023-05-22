@@ -14,7 +14,7 @@ module MemoryMappedIO_Uart_rx #(
     input  wire [31:0]  input_wdata
 );
 
-`include "include/memorymap.v"
+`include "include/memorymap.sv"
 
 localparam STATE_IDLE                       = 0;
 localparam STATE_WRITE_MEM                  = 1;

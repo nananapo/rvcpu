@@ -30,7 +30,7 @@ module Core #(
     input wire          exited
 );
 
-`include "include/core.v"
+`include "include/core.sv"
 
 // 何クロック目かのカウント
 reg [31:0] clk_count = 0;

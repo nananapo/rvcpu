@@ -1,27 +1,27 @@
-FILES = test.v \
-		main.v \
-		Core.v \
-		DivNbit.v \
-		DivUnsignedNbit.v \
-		Memory.v \
-		FetchStage.v \
-		DecodeStage.v \
-		ExecuteStage.v \
-		MemoryStage.v \
-		MemoryInterface.v \
-		MemoryMapController.v \
-		MemoryMapped_MachineTimeRegister.v \
-		MemoryMappedIO_Uart_rx.v \
-		MemoryMappedIO_Uart_tx.v \
-		MemoryUnalignedAccessController.v \
-		MultNbit.v \
-		MultUnsignedNbit.v \
-		CSRStage.v \
-		WriteBackStage.v
+FILES = test.sv \
+		main.sv \
+		Core.sv \
+		DivNbit.sv \
+		DivUnsignedNbit.sv \
+		Memory.sv \
+		FetchStage.sv \
+		DecodeStage.sv \
+		ExecuteStage.sv \
+		MemoryStage.sv \
+		MemoryInterface.sv \
+		MemoryMapController.sv \
+		MemoryMapped_MachineTimeRegister.sv \
+		MemoryMappedIO_Uart_rx.sv \
+		MemoryMappedIO_Uart_tx.sv \
+		MemoryUnalignedAccessController.sv \
+		MultNbit.sv \
+		MultUnsignedNbit.sv \
+		CSRStage.sv \
+		WriteBackStage.sv
 
-UART_FILES = Uart_rx.v \
-			Uart_tx.v \
-			UARTMemory.v
+UART_FILES = Uart_rx.sv \
+			Uart_tx.sv \
+			UARTMemory.sv
 
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST
@@ -45,7 +45,7 @@ dm:
 
 dv:
 	rm -rf obj_dir
-	verilator --cc $(DEFINE_DEBUG) -DFAST_UART test_verilator.v --exe test_kenel_verilator_main.cpp
+	verilator --cc $(DEFINE_DEBUG) -DFAST_UART test_verilator.sv --exe test_kenel_verilator_main.cpp
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
 	obj_dir/Vtest_verilator
 
@@ -54,19 +54,19 @@ dk:
 	make dv
 
 v:
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M main.v
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32A main.v
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.v
-	verilator --lint-only $(DEFINE_DEBUG) main.v
-	verilator --lint-only $(DEFINE_RISCV_TESTS) main.v
-	verilator --lint-only $(DEFINE_MEMORY_UART) main.v
+	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M main.sv
+	verilator --lint-only -DDEBUG -DEXCLUDE_RV32A main.sv
+	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
+	verilator --lint-only $(DEFINE_DEBUG) main.sv
+	verilator --lint-only $(DEFINE_RISCV_TESTS) main.sv
+	verilator --lint-only $(DEFINE_MEMORY_UART) main.sv
 
 test_div:
-	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.v DivUnsignedNbit.v DivNbit.v
+	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.sv DivUnsignedNbit.sv DivNbit.sv
 	vvp debug.o
 
 test_mult:
-	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_mult test_mult.v MultUnsignedNbit.v MultNbit.v
+	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_mult test_mult.sv MultUnsignedNbit.sv MultNbit.sv
 	vvp debug.o
 
 .PHONY: d v

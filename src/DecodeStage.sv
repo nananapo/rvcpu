@@ -51,8 +51,8 @@ module DecodeStage
     output wire         output_trappable
 );
 
-`include "include/core.v"
-`include "include/inst.v"
+`include "include/core.sv"
+`include "include/inst.sv"
 
 initial begin
     output_reg_pc   = REGPC_NOP;

@@ -31,7 +31,7 @@ module CSRStage #(
     output wire         output_stall_flg_may_interrupt
 );
 
-`include "include/core.v"
+`include "include/core.sv"
 
 // モード
 localparam MODE_MACHINE     = 2'b11;
