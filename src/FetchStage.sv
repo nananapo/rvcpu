@@ -19,11 +19,11 @@ module FetchStage(
 
 `include "include/core.sv"
 
-typedef enum [1:0] {  
+typedef enum {  
     WAIT_READY, WAIT_VALID, FETCHED_WAIT_MOVE
 } statetype;
 
-statetype reg state = WAIT_READY;
+reg statetype state = WAIT_READY;
 
 wire        stall_flg = if_stall_flg;
 
@@ -51,22 +51,23 @@ function [1 + 32 - 1:0] sig_mem_ctrl(
     logic [31:0]    mem_data,
     logic           mem_data_valid,
     statetype       state,
-    logic [31:0]    reg_pc
+    logic [31:0]    reg_pc,
     logic           stall_flg,
     logic           branch_hazard,
     logic [31:0]    branch_target
 );
 if (branch_hazard)
-    sig_mem_ctrl = {1, branch_target};
+    sig_mem_ctrl = {1'b1, branch_target};
 else
     case (state)
-    WAIT_READY:         sig_mem_ctrl = {1, reg_pc};
+    WAIT_READY:         sig_mem_ctrl = {1'b1, reg_pc};
     // ストールしていない必要がある
-    WAIT_VALID:         sig_mem_ctrl = {mem_data_valid && !stall_flg, reg_pc + 4};
+    WAIT_VALID:         sig_mem_ctrl = {mem_data_valid && !stall_flg, reg_pc + 32'd4};
     FETCHED_WAIT_MOVE:  sig_mem_ctrl = {!stall_flg, reg_pc};
     endcase
 endfunction
-assign {mem_start, mem_addr} = sig_mem_ctrl(mem_ready, mem_data, mem_data_valid, state, reg_pc stall_flg, branch_hazard, branch_target);
+
+assign {mem_start, mem_addr} = sig_mem_ctrl(mem_ready, mem_data, mem_data_valid, state, reg_pc, stall_flg, branch_hazard, branch_target);
 
 /*
  TODO

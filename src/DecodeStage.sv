@@ -1,4 +1,6 @@
 /* verilator lint_off CASEX */
+`include "include/core.sv"
+
 module DecodeStage
 (
     input  wire         clk,
@@ -14,7 +16,7 @@ module DecodeStage
     output wire [31:0]      id_exe_reg_pc,
     output wire [31:0]      id_exe_inst,
     output wire [63:0]      id_exe_inst_id,
-    output ctrltype wire    id_exe_ctrl,
+    output wire ctrltype    id_exe_ctrl,
 
     output wire         dh_stall_flg,
     input  wire         dh_wb_valid,
@@ -28,10 +30,9 @@ module DecodeStage
     input  wire [4:0]   dh_exe_wb_addr,
 
     output wire         zifencei_stall_flg,
-    input  wire         zifencei_mem_wen,
+    input  wire         zifencei_mem_wen
 );
 
-`include "include/core.sv"
 `include "include/inst.sv"
 
 wire [31:0] reg_pc  = id_reg_pc;
@@ -160,13 +161,11 @@ assign dh_stall_flg =
     (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs2_addr && rs2_addr != 0);
 
 function [31:0] gen_op1data(
-    input [31:0]    regfile[31:0],
     input [3:0]     op1_sel,
     input [31:0]    rs1_addr,
     input [31:0]    imm_z_uext
 );
 case(op1_sel) 
-    OP1_RS1 : gen_op1data = (rs1_addr == 0) ? 0 : regfile[rs1_addr];
     OP1_PC  : gen_op1data = reg_pc;
     OP1_IMZ : gen_op1data = imm_z_uext;
     default : gen_op1data = 0;
@@ -174,7 +173,6 @@ endcase
 endfunction
 
 function [31:0] gen_op2data(
-    input [31:0]    regfile[31:0],
     input [3:0]     op2_sel,
     input [31:0]    rs2_addr,
     input [31:0]    imm_i_sext,
@@ -183,7 +181,6 @@ function [31:0] gen_op2data(
     input [31:0]    imm_u_shifted
 );
 case(op2_sel) 
-    OP2_RS2W: gen_op2data = (rs2_addr == 0) ? 0 : regfile[rs2_addr];
     OP2_IMI : gen_op2data = imm_i_sext;
     OP2_IMS : gen_op2data = imm_s_sext;
     OP2_IMJ : gen_op2data = imm_j_sext;
@@ -200,8 +197,12 @@ assign id_exe_inst              = inst;
 assign id_exe_inst_id           = inst_id;
 
 assign id_exe_ctrl.exe_fun      = exe_fun;
-assign id_exe_ctrl.op1_data     = gen_op1data(regfile,op1_sel,rs1_addr,imm_z_uext);
-assign id_exe_ctrl.op2_data     = gen_op1data(regfile,op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted,;
+assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ? 
+                                    (rs1_addr == 0 ? 0 : regfile[rs1_addr]) :
+                                    gen_op1data(op1_sel,rs1_addr,imm_z_uext);
+assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ?
+                                    (rs2_addr == 0 ? 0 : regfile[rs2_addr]) :
+                                    gen_op2data(op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted);
 assign id_exe_ctrl.rs2_data     = rs2_addr == 0 ? 0 : regfile[rs2_addr];
 assign id_exe_ctrl.mem_wen      = mem_wen;
 assign id_exe_ctrl.rf_wen       = rf_wen;

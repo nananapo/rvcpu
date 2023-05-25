@@ -5,18 +5,18 @@ module MemoryStage(
     input wire [31:0]   mem_reg_pc,
     input wire [31:0]   mem_inst,
     input wire [63:0]   mem_inst_id,
-    input ctrltype wire mem_ctrl,
+    input wire ctrltype mem_ctrl,
     input wire [31:0]   mem_alu_out,
 
-    output wire             mem_wb_valid;
+    output wire             mem_wb_valid,
     output wire [31:0]      mem_wb_reg_pc,
     output wire [31:0]      mem_wb_inst,
     output wire [63:0]      mem_wb_inst_id,
-    output ctrltype wire    mem_wb_ctrl,
+    output wire ctrltype    mem_wb_ctrl,
     output wire [31:0]      mem_wb_alu_out,
     output wire [31:0]      mem_wb_mem_data,
 
-    input wire          pepeline_flush, // TODO killする
+    input wire          pipeline_flush, // TODO killする
     output reg          memory_unit_stall,
 
     output wire         memu_cmd_start,
@@ -43,7 +43,7 @@ wire [31:0] reg_pc      = mem_reg_pc;
 wire [31:0] inst        = mem_inst;
 wire [63:0] inst_id     = mem_inst_id;
 wire [63:0] ctrl        = mem_ctrl;
-wire [31:0] rs2_data    = mem_rs2_data;
+wire [31:0] rs2_data    = mem_ctrl.rs2_data;
 wire [31:0] alu_out     = mem_alu_out;
 
 reg         is_cmd_executed = 0;
@@ -78,11 +78,11 @@ function [31:0] gen_memdata(
     input [31:0]    mem_rdata
 );
     case(mem_wen)
-    MEN_LB : gen_memdata <= {{24{mem_rdata[7]}}, mem_rdata[7:0]};
-    MEN_LBU: gen_memdata <= {24'b0, mem_rdata[7:0]};
-    MEN_LH : gen_memdata <= {16'b0, mem_rdata[15:0]};
-    MEN_LHU: gen_memdata <= {{16{mem_rdata[15]}}, mem_rdata[15:0]};
-    default: gen_memdata <= mem_rdata; // amoswapを含む
+    MEN_LB : gen_memdata = {{24{mem_rdata[7]}}, mem_rdata[7:0]};
+    MEN_LBU: gen_memdata = {24'b0, mem_rdata[7:0]};
+    MEN_LH : gen_memdata = {16'b0, mem_rdata[15:0]};
+    MEN_LHU: gen_memdata = {{16{mem_rdata[15]}}, mem_rdata[15:0]};
+    default: gen_memdata = mem_rdata; // amoswapを含む
     endcase
 endfunction
 

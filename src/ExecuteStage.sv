@@ -6,13 +6,13 @@ module ExecuteStage
     input wire [31:0]   exe_reg_pc,
     input wire [31:0]   exe_inst,
     input wire [63:0]   exe_inst_id,
-    input ctrltype wire exe_ctrl,
+    input wire ctrltype exe_ctrl,
 
     output wire             exe_mem_valid,
     output wire [31:0]      exe_mem_reg_pc,
     output wire [31:0]      exe_mem_inst,
     output wire [63:0]      exe_mem_inst_id,
-    output ctrltype wire    exe_mem_ctrl,
+    output wire ctrltype    exe_mem_ctrl,
     output wire [31:0]      exe_mem_alu_out,
     
     output wire         branch_hazard,
@@ -27,7 +27,7 @@ module ExecuteStage
 wire [31:0] reg_pc      = exe_reg_pc;
 wire [31:0] inst        = exe_inst;
 wire [63:0] inst_id     = exe_inst_id;
-ctrltype wire ctrl      = exe_ctrl;
+wire ctrltype ctrl      = exe_ctrl;
 
 wire [4:0]  exe_fun     = exe_ctrl.exe_fun;
 wire [31:0] op1_data    = exe_ctrl.op1_data;
@@ -93,9 +93,9 @@ wire [65:0] multm_product;
 
 reg [31:0]  saved_result        = 0; // 複数サイクルかかる計算の結果
 wire        calc_valid          = (is_div && divm_valid) || (is_mul && multm_valid); // 複数サイクルかかる計算が今クロックで終了したか
-wire        is_multicycle       = is_div || is_mul; // 現在のexe_funが複数サイクルかかる計算かどうか
+wire        is_multicycle_exe   = is_div || is_mul; // 現在のexe_funが複数サイクルかかる計算かどうか
 
-assign calc_stall_flg   = exe_valid && is_multicycle && 
+assign calc_stall_flg   = exe_valid && is_multicycle_exe && 
                           (divm_start || multm_start || !is_calculated); // モジュールで計算を始める = 未計算
 
 function gen_alu_out(
@@ -105,19 +105,19 @@ function gen_alu_out(
     input [31:0] saved_result
 );
     case (exe_fun) 
-    ALU_ADD     : gen_alu_out <= op1_data + op2_data;
-    ALU_SUB     : gen_alu_out <= op1_data - op2_data;
-    ALU_AND     : gen_alu_out <= op1_data & op2_data;
-    ALU_OR      : gen_alu_out <= op1_data | op2_data;
-    ALU_XOR     : gen_alu_out <= op1_data ^ op2_data;
-    ALU_SLL     : gen_alu_out <= op1_data << op2_data[4:0];
-    ALU_SRL     : gen_alu_out <= op1_data >> op2_data[4:0];
-    ALU_SRA     : gen_alu_out <= $signed($signed(op1_data) >>> op2_data[4:0]);
-    ALU_SLT     : gen_alu_out <= {31'b0, ($signed(op1_data) < $signed(op2_data))};
-    ALU_SLTU    : gen_alu_out <= {31'b0, op1_data < op2_data};
-    ALU_JALR    : gen_alu_out <= (op1_data + op2_data) & (~1);
-    ALU_COPY1   : gen_alu_out <= op1_data;
-    default     : gen_alu_out <= saved_result;
+    ALU_ADD     : gen_alu_out = op1_data + op2_data;
+    ALU_SUB     : gen_alu_out = op1_data - op2_data;
+    ALU_AND     : gen_alu_out = op1_data & op2_data;
+    ALU_OR      : gen_alu_out = op1_data | op2_data;
+    ALU_XOR     : gen_alu_out = op1_data ^ op2_data;
+    ALU_SLL     : gen_alu_out = op1_data << op2_data[4:0];
+    ALU_SRL     : gen_alu_out = op1_data >> op2_data[4:0];
+    ALU_SRA     : gen_alu_out = $signed($signed(op1_data) >>> op2_data[4:0]);
+    ALU_SLT     : gen_alu_out = {31'b0, ($signed(op1_data) < $signed(op2_data))};
+    ALU_SLTU    : gen_alu_out = {31'b0, op1_data < op2_data};
+    ALU_JALR    : gen_alu_out = (op1_data + op2_data) & (~1);
+    ALU_COPY1   : gen_alu_out = op1_data;
+    default     : gen_alu_out = saved_result;
     endcase
 endfunction
 
@@ -127,27 +127,26 @@ function gen_br_flg(
     input [31:0] op2_data
 );
     case(exe_fun) 
-    BR_BEQ  : gen_br_flg <= (op1_data == op2_data);
-    BR_BNE  : gen_br_flg <= !(op1_data == op2_data);
-    BR_BLT  : gen_br_flg <= ($signed(op1_data) < $signed(op2_data));
-    BR_BGE  : gen_br_flg <= !($signed(op1_data) < $signed(op2_data));
-    BR_BLTU : gen_br_flg <= (op1_data < op2_data);
-    BR_BGEU : gen_br_flg <= !(op1_data < op2_data);
-    default : gen_br_flg <= 0;
+    BR_BEQ  : gen_br_flg = (op1_data == op2_data);
+    BR_BNE  : gen_br_flg = !(op1_data == op2_data);
+    BR_BLT  : gen_br_flg = ($signed(op1_data) < $signed(op2_data));
+    BR_BGE  : gen_br_flg = !($signed(op1_data) < $signed(op2_data));
+    BR_BLTU : gen_br_flg = (op1_data < op2_data);
+    BR_BGEU : gen_br_flg = !(op1_data < op2_data);
+    default : gen_br_flg = 0;
     endcase
 endfunction
 
+assign exe_mem_valid    = exe_valid && !calc_stall_flg;
+assign exe_mem_reg_pc   = exe_reg_pc;
+assign exe_mem_inst     = exe_inst;
+assign exe_mem_inst_id  = exe_inst;
+assign exe_mem_ctrl     = exe_ctrl;
 
-assign exe_mem_valid    <= exe_valid && !calc_stall_flg;
-assign exe_mem_reg_pc   <= exe_reg_pc;
-assign exe_mem_inst     <= exe_inst;
-assign exe_mem_inst_id  <= exe_inst;
-assign exe_mem_ctrl     <= exe_ctrl;
+assign exe_mem_alu_out  = gen_alu_out(exe_fun, op1_data, op2_data, saved_result);
 
-assign exe_mem_alu_out  <= gen_alu_out(exe_fun, op1_data, op2_data, saved_result);
-
-assign branch_hazard    <= gen_br_flg(exe_fun, op1_data, op2_data);
-assign branch_target    <= reg_pc + imm_b_sext;
+assign branch_hazard    = gen_br_flg(exe_fun, op1_data, op2_data);
+assign branch_target    = reg_pc + imm_b_sext;
 
 
 always @(posedge clk)
@@ -155,7 +154,7 @@ always @(posedge clk)
 
 always @(posedge clk) begin
     // EX STAGE
-    if (pipeline_flush || !exe_valid || !is_multicycle) begin
+    if (pipeline_flush || !exe_valid || !is_multicycle_exe) begin
         // TODO kill muldiv
         calc_started    <= 0;
         is_calculated   <= 0;

@@ -45,16 +45,6 @@ wire csr_stall_flg;         // csrステージが止まってる
 wire mem_memory_unit_stall; // メモリステージでメモリがreadyではないストール
 
 // IF -> ID -> EXE (CSR) -> MEM -> WB
-
-// inst
-wire [31:0] mem_inst;
-wire [31:0] wb_inst;
-
-// stage inst id
-wire [63:0] exe_inst_id;
-wire [63:0] mem_inst_id;
-wire [63:0] wb_inst_id;
-
 wire pipeline_flush = exited;
 
 // if -> id wire
@@ -88,7 +78,7 @@ wire            id_exe_valid;
 wire [31:0]     id_exe_reg_pc;
 wire [31:0]     id_exe_inst;
 wire [63:0]     id_exe_inst_id;
-ctrltype wire   id_exe_ctrl;
+wire ctrltype   id_exe_ctrl;
 
 wire            id_stall = exe_stall ||
                            id_zifencei_stall_flg || id_dh_stall;
@@ -98,7 +88,7 @@ reg             exe_valid = 0;
 reg [31:0]      exe_reg_pc;
 reg [31:0]      exe_inst;
 reg [63:0]      exe_inst_id;
-ctrltype reg    exe_ctrl;
+wire ctrltype   exe_ctrl;
 
 // id -> exe logic
 always @(posedge clk) begin
@@ -118,7 +108,7 @@ wire            exe_mem_valid;
 wire [31:0]     exe_mem_reg_pc;
 wire [31:0]     exe_mem_inst;
 wire [63:0]     exe_mem_inst_id;
-ctrltype wire   exe_mem_ctrl;
+wire ctrltype   exe_mem_ctrl;
 wire [31:0]     exe_mem_alu_out;
 
 wire            exe_stall = mem_stall ||
@@ -143,7 +133,7 @@ reg             mem_valid = 0;
 reg [31:0]      mem_reg_pc;
 reg [31:0]      mem_inst;
 reg [63:0]      mem_inst_id;
-ctrltype reg    mem_ctrl;
+reg ctrltype    mem_ctrl;
 reg [31:0]      mem_alu_out;
 reg [31:0]      mem_csr_rdata;
 
@@ -167,7 +157,7 @@ wire            mem_wb_valid;
 wire [31:0]     mem_wb_reg_pc;
 wire [31:0]     mem_wb_inst;
 wire [63:0]     mem_wb_inst_id;
-ctrltype wire   mem_wb_ctrl;
+wire ctrltype   mem_wb_ctrl;
 wire [31:0]     mem_wb_alu_out;
 wire [31:0]     mem_wb_mem_data;
 wire [31:0]     mem_wb_csr_rdata;
@@ -179,7 +169,7 @@ reg             wb_valid    = 0;
 reg [31:0]      wb_reg_pc;
 reg [31:0]      wb_inst;
 reg [63:0]      wb_inst_id;
-// ctrltype reg    wb_ctrl;
+reg ctrltype    wb_ctrl;
 reg [31:0]      wb_alu_out;
 reg [31:0]      wb_mem_data;
 reg [31:0]      wb_csr_rdata;
@@ -200,7 +190,7 @@ always @(posedge clk) begin
         wb_reg_pc       <= mem_wb_reg_pc;
         wb_inst         <= mem_wb_inst;
         wb_inst_id      <= mem_wb_inst_id;
-        // wb_ctrl         <= mem_wb_ctrl;
+        wb_ctrl         <= mem_wb_ctrl;
         wb_alu_out      <= mem_wb_alu_out;
         wb_mem_data     <= mem_wb_mem_data;
         wb_csr_rdata    <= mem_wb_csr_rdata;
@@ -335,11 +325,11 @@ MemoryStage #() memorystage
     .memu_cmd_start(memory_d_cmd_start),
     .memu_cmd_write(memory_d_cmd_write),
     .memu_cmd_ready(memory_d_cmd_ready),
+    .memu_valid(memory_rdata_valid),
     .memu_addr(memory_d_addr),
     .memu_wdata(memory_wdata),
     .memu_wmask(memory_wmask),
-    .memu_rdata(memory_rdata),
-    .memu_rdata_valid(memory_rdata_valid)
+    .memu_rdata(memory_rdata)
 );
 
 WriteBackStage #() wbstage(
@@ -351,7 +341,7 @@ WriteBackStage #() wbstage(
     .wb_reg_pc(wb_reg_pc),
     .wb_inst(wb_inst),
     .inst_id(wb_inst_id),
-    // .wb_ctrl(wb_ctrl),
+    .wb_ctrl(wb_ctrl),
     .wb_alu_out(wb_alu_out),
     .wb_mem_data(wb_mem_data),
     .wb_csr_rdata(wb_csr_rdata),

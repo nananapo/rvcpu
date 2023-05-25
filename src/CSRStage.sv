@@ -7,7 +7,7 @@ module CSRStage #(
     input wire [31:0]   csr_reg_pc,
     input wire [31:0]   csr_inst,
     input wire [63:0]   csr_inst_id,
-    input ctrltype wire csr_ctrl,
+    input wire ctrltype csr_ctrl,
 
     output wire [31:0]  csr_mem_csr_rdata,
 
@@ -22,6 +22,12 @@ module CSRStage #(
 );
 
 `include "include/core.sv"
+
+wire [31:0] reg_pc      = csr_reg_pc;
+wire [31:0] inst_id     = csr_inst_id;
+wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
+wire [31:0] op1_data    = csr_ctrl.op1_data;
+wire [31:0] imm_i       = csr_ctrl.imm_i_sext;
 
 reg [31:0] rdata;
 reg [31:0] trap_vector;
@@ -340,7 +346,6 @@ wire may_trap = (
     reg_mip_msip ||
     reg_mip_ssip
 );
-assign output_stall_flg_may_interrupt = may_trap;
 
 // 現在起きるinterruptのcause
 // priority : MEI, MSI, MTI, SEI, SSI, STI
@@ -364,11 +369,6 @@ wire trap_to_machine_mode   = reg_mideleg[{1'b0,interrupt_cause[3:0]}] == 1;
 wire [31:0] mtvec_addr = reg_mtvec[1:0] == 2'b00 ? reg_mtvec : {reg_mtvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 // stvecのMODEを考慮した飛び先
 wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
-
-
-wire [2:0] csr_cmd  = input_csr_cmd;
-wire [31:0]op1_data = input_op1_data;
-wire [31:0]imm_i    = input_imm_i;
 
 // ecallなら0x342を読む
 wire [11:0] addr = imm_i[11:0];
@@ -418,14 +418,14 @@ if (csr_valid) begin
     // 割り込みを起こす
     if (may_trap && stage_interrupt_ready) begin
         `ifdef PRINT_DEBUGINFO
-            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", mem_reg_pc);
+            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", reg_pc);
         `endif
         if (trap_to_machine_mode) begin
             // M-modeに遷移
             mode                <= MODE_MACHINE;
 
             reg_mcause          <= interrupt_cause;
-            reg_mepc            <= mem_reg_pc;
+            reg_mepc            <= reg_pc;
             //reg_mtval           <= 0;
             reg_mstatus_mpp     <= mode;
             reg_mstatus_mpie    <= reg_mstatus_mie;
@@ -437,7 +437,7 @@ if (csr_valid) begin
             mode                <= MODE_SUPERVISOR;
 
             reg_scause          <= interrupt_cause;
-            reg_sepc            <= mem_reg_pc;
+            reg_sepc            <= reg_pc;
             // reg_stval           <= 0;
             reg_mstatus_spp     <= mode[0];
             reg_mstatus_spie    <= reg_mstatus_sie;
@@ -773,17 +773,16 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,csrstage.inst_id,%b", csr_cmd == CSR_X ? INST_ID_NOP : input_inst_id);
+    $display("data,csrstage.inst_id,%b", csr_cmd == CSR_X ? INST_ID_NOP : inst_id);
 
     // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
     // $display("data,csrstage.input.op1_data,%b", input_op1_data);
     // $display("data,csrstage.input.imm_i,%b", input_imm_i);
     $display("data,csrstage.input.intrrupt_ready,%b", stage_interrupt_ready);
-    $display("data,csrstage.input.mem_reg_pc,%b", mem_reg_pc);
+    $display("data,csrstage.input.reg_pc,%b", reg_pc);
 
     $display("data,csrstage.output.rdata,%b", rdata);
     $display("data,csrstage.output.trap_vector,%b", trap_vector);
-    $display("data,csrstage.output.stall_flg_may_interrupt,%b", output_stall_flg_may_interrupt);
 
     $display("data,csrstage.mode,%b", mode);
     $display("data,csrstage.csr_cmd,%b", csr_cmd);
