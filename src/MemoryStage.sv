@@ -14,7 +14,7 @@ module MemoryStage(
     output wire [63:0]      mem_wb_inst_id,
     output wire ctrltype    mem_wb_ctrl,
     output wire [31:0]      mem_wb_alu_out,
-    output wire [31:0]      mem_wb_mem_data,
+    output wire [31:0]      mem_wb_mem_rdata,
 
     input wire          pipeline_flush, // TODO killする
     output reg          memory_unit_stall,
@@ -92,7 +92,7 @@ assign mem_wb_inst      = mem_inst;
 assign mem_wb_inst_id   = mem_inst_id;
 assign mem_wb_ctrl      = mem_ctrl;
 assign mem_wb_alu_out   = mem_alu_out;
-assign mem_wb_mem_data  = gen_memdata(ctrl.mem_wen, mem_valid, saved_mem_rdata);
+assign mem_wb_mem_rdata  = gen_memdata(ctrl.mem_wen, mem_valid, saved_mem_rdata);
 
 always @(posedge clk)
     saved_inst_id <= inst_id;
@@ -109,7 +109,7 @@ always @(posedge clk) begin
                 state <= STATE_WAIT_READY; // ready待ちへ
         end
         STATE_WAIT_READY: begin
-            if (mem_cmd_ready) begin
+            if (memu_cmd_ready) begin
                 if (is_store) begin
                     state           <= STATE_WAIT;
                     replace_mem_wen <= MEN_X;
@@ -121,8 +121,8 @@ always @(posedge clk) begin
         end
         STATE_WAIT_READ_VALID: begin
             if (memu_valid) begin
-                saved_mem_rdata <= mem_rdata;
-                if (is_amoswap_w_aqrl_save) begin
+                saved_mem_rdata <= memu_rdata;
+                if (mem_wen == MEN_AMOSWAP_W_AQRL) begin
                     state           <= STATE_WAIT_READY;
                     is_cmd_executed <= 0;
                     replace_mem_wen <= MEN_SW;
@@ -146,7 +146,7 @@ always @(posedge clk) begin
     $display("data,memstage.mem_wen,%b", mem_wen);
     
     // $display("data,memstage.output.reg_pc,%b", mem_wb_reg_pc);
-    $display("data,memstage.output.read_data,%b", mem_wb_mem_data);
+    $display("data,memstage.output.read_data,%b", mem_wb_mem_rdata);
 
     $display("data,memstage.is_load,%b", is_load);
     $display("data,memstage.is_store,%b", is_store);

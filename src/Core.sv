@@ -88,7 +88,7 @@ reg             exe_valid = 0;
 reg [31:0]      exe_reg_pc;
 reg [31:0]      exe_inst;
 reg [63:0]      exe_inst_id;
-wire ctrltype   exe_ctrl;
+reg ctrltype    exe_ctrl;
 
 // id -> exe logic
 always @(posedge clk) begin
@@ -159,7 +159,7 @@ wire [31:0]     mem_wb_inst;
 wire [63:0]     mem_wb_inst_id;
 wire ctrltype   mem_wb_ctrl;
 wire [31:0]     mem_wb_alu_out;
-wire [31:0]     mem_wb_mem_data;
+wire [31:0]     mem_wb_mem_rdata;
 wire [31:0]     mem_wb_csr_rdata;
 
 wire            mem_stall   = mem_memory_unit_stall;
@@ -171,9 +171,8 @@ reg [31:0]      wb_inst;
 reg [63:0]      wb_inst_id;
 reg ctrltype    wb_ctrl;
 reg [31:0]      wb_alu_out;
-reg [31:0]      wb_mem_data;
+reg [31:0]      wb_mem_rdata;
 reg [31:0]      wb_csr_rdata;
-reg [31:0]      wb_trap_vector;
 
 // TODO メモリアクセスの例外はどう処理しようか....
 //
@@ -192,9 +191,8 @@ always @(posedge clk) begin
         wb_inst_id      <= mem_wb_inst_id;
         wb_ctrl         <= mem_wb_ctrl;
         wb_alu_out      <= mem_wb_alu_out;
-        wb_mem_data     <= mem_wb_mem_data;
+        wb_mem_rdata    <= mem_wb_mem_rdata;
         wb_csr_rdata    <= mem_wb_csr_rdata;
-        wb_trap_vector  <= mem_wb_trap_vector;
     end
 end
 
@@ -317,7 +315,7 @@ MemoryStage #() memorystage
     .mem_wb_inst_id(mem_wb_inst_id),
     .mem_wb_ctrl(mem_wb_ctrl),
     .mem_wb_alu_out(mem_wb_alu_out),
-    .mem_wb_mem_data(mem_wb_mem_data),
+    .mem_wb_mem_rdata(mem_wb_mem_rdata),
 
     .pipeline_flush(pipeline_flush),
     .memory_unit_stall(mem_memory_unit_stall),
@@ -340,10 +338,10 @@ WriteBackStage #() wbstage(
     .wb_valid(wb_valid),
     .wb_reg_pc(wb_reg_pc),
     .wb_inst(wb_inst),
-    .inst_id(wb_inst_id),
+    .wb_inst_id(wb_inst_id),
     .wb_ctrl(wb_ctrl),
     .wb_alu_out(wb_alu_out),
-    .wb_mem_data(wb_mem_data),
+    .wb_mem_rdata(wb_mem_rdata),
     .wb_csr_rdata(wb_csr_rdata),
 
     .exit(exit)
