@@ -39,12 +39,12 @@ localparam STATE_WAIT_READ_VALID    = 2;
 
 reg [1:0]   state       = STATE_WAIT;
 
-wire [31:0] reg_pc      = mem_reg_pc;
-wire [31:0] inst        = mem_inst;
-wire [63:0] inst_id     = mem_inst_id;
-wire [63:0] ctrl        = mem_ctrl;
-wire [31:0] rs2_data    = mem_ctrl.rs2_data;
-wire [31:0] alu_out     = mem_alu_out;
+wire [31:0]     reg_pc      = mem_reg_pc;
+wire [31:0]     inst        = mem_inst;
+wire [63:0]     inst_id     = mem_inst_id;
+wire ctrltype   ctrl        = mem_ctrl;
+wire [31:0]     rs2_data    = mem_ctrl.rs2_data;
+wire [31:0]     alu_out     = mem_alu_out;
 
 reg         is_cmd_executed = 0;
 reg [63:0]  saved_inst_id   = 0;
