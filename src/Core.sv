@@ -32,80 +32,184 @@ module Core #(
 
 `include "include/core.sv"
 
+wire [31:0] regfile[31:0];
+assign gp   = regfile[3];
+
 // 何クロック目かのカウント
 reg [31:0] clk_count = 0;
 
-// メモリステージのストールフラグ
-wire memory_stage_is_stall;
+wire id_dh_stall;           // データハザードによるストール
+wire id_zifencei_stall_flg; // fence.i命令でストールするかのフラグ
+wire exe_calc_stall;        // exeステージでストールしているかどうかのフラグ
+wire csr_stall_flg;         // csrステージが止まってる
+wire mem_memory_unit_stall; // メモリステージでメモリがreadyではないストール
 
-// データハザードによるストールフラグ
-wire data_hazard_stall;
-
-// データハザードが起きるかどうか判定するためのワイヤ
-wire        exestage_datahazard_rf_wen;
-wire [4:0]  exestage_datahazard_wb_addr;
-wire        memstage_datahazard_rf_wen;
-wire [4:0]  memstage_datahazard_wb_addr;
-wire        wbstage_datahazard_rf_wen;
-wire [4:0]  wbstage_datahazard_wb_addr;
-
-// トラップ可能かどうかのフラグ
-wire mem_trappable;
-wire exe_trappable;
-wire id_trappable;
-
-// レジスタ
-wire [31:0] regfile[31:0];
-
-assign gp   = regfile[3];
-
-// wbstageからfetchへのライトバック
-wire [31:0] wb_to_fetch_reg_pc;
-// 分岐ハザードが起きてしまいましたフラグ
-wire        wbstage_branch_hazard;
-// fence.i命令でストールするかのフラグ
-wire        id_zifencei_stall_flg;
-// exeステージでストールしているかどうかのフラグ
-wire        exe_stage_alu_stall_flg;
-// 割り込みが起こりそうで、ifステージをストールさせているかのフラグ
-wire        stall_flg_may_interrupt;
-
-// zifenceiでstallが起きるかどうかを判断するためのワイヤ
-wire [3:0]  mem_zifencei_mem_wen;
-wire [3:0]  exe_zifencei_mem_wen;
+// IF -> ID -> EXE (CSR) -> MEM -> WB
 
 // inst
 wire [31:0] mem_inst;
 wire [31:0] wb_inst;
 
 // stage inst id
-wire [63:0] id_inst_id;
 wire [63:0] exe_inst_id;
 wire [63:0] mem_inst_id;
 wire [63:0] wb_inst_id;
 
-//**************************
-// Fetch Stage
-//**************************
+wire pipeline_flush = exited;
 
-// fetch -> decode 用のwire
-wire [31:0] id_reg_pc;
-wire [31:0] id_inst;
-
-// fetch -> csr
+// if -> id wire
+wire        if_valid = 0;
 wire [31:0] if_reg_pc;
+wire [31:0] if_inst;
+wire [63:0] if_inst_id;
+
+wire        if_stall =  id_stall;
+
+// id reg
+reg         id_valid = 0;
+reg [31:0]  id_reg_pc;
+reg [31:0]  id_inst;
+reg [63:0]  id_inst_id;
+
+// if -> id logic
+always @(posedge clk) begin
+    if (pipeline_flush) begin
+        id_valid    <= 0;
+    end else if (!if_stall) begin
+        id_valid    <= if_valid;
+        id_reg_pc   <= if_reg_pc;
+        id_inst     <= if_inst;
+        id_inst_id  <= if_inst_id;
+    end
+end
+
+// id -> exe wire
+wire            id_exe_valid;
+wire [31:0]     id_exe_reg_pc;
+wire [31:0]     id_exe_inst;
+wire [63:0]     id_exe_inst_id;
+ctrltype wire   id_exe_ctrl;
+
+wire            id_stall = exe_stall ||
+                           id_zifencei_stall_flg || id_dh_stall;
+
+// exe, csr reg
+reg             exe_valid = 0;
+reg [31:0]      exe_reg_pc;
+reg [31:0]      exe_inst;
+reg [63:0]      exe_inst_id;
+ctrltype reg    exe_ctrl;
+
+// id -> exe logic
+always @(posedge clk) begin
+    if (pipeline_flush) begin
+        exe_valid   <= 0;
+    end else if (!id_stall) begin
+        exe_valid   <= id_exe_valid;
+        exe_reg_pc  <= id_exe_reg_pc;
+        exe_inst    <= id_exe_inst;
+        exe_inst_id <= id_exe_inst_id;
+        exe_ctrl    <= id_exe_ctrl;
+    end
+end
+
+// exe -> mem wire
+wire            exe_mem_valid;
+wire [31:0]     exe_mem_reg_pc;
+wire [31:0]     exe_mem_inst;
+wire [63:0]     exe_mem_inst_id;
+ctrltype wire   exe_mem_ctrl;
+wire [31:0]     exe_mem_alu_out;
+
+wire            exe_stall = mem_stall ||
+                            exe_calc_stall ||
+                            csr_stall_flg;
+
+// csr -> mem wire
+wire [31:0]     csr_mem_csr_rdata;
+
+// exe, csr -> if wire
+wire            branch_hazard = !csr_stall_flg && (csr_trap_flg || exe_branch_hazard);
+wire [31:0]     branch_target = csr_trap_flg ? csr_trap_vector : exe_branch_target;
+
+wire            exe_branch_hazard;
+wire [31:0]     exe_branch_target;
+
+wire            csr_trap_flg;
+wire [31:0]     csr_trap_vector;
+
+// mem reg
+reg             mem_valid = 0;
+reg [31:0]      mem_reg_pc;
+reg [31:0]      mem_inst;
+reg [63:0]      mem_inst_id;
+ctrltype reg    mem_ctrl;
+reg [31:0]      mem_alu_out;
+reg [31:0]      mem_csr_rdata;
+
+// exe -> mem logic
+always @(posedge clk) begin
+    if (pipeline_flush) begin
+        mem_valid   <= 0;
+    end else if (!exe_stall) begin
+        mem_valid       <= exe_mem_valid;
+        mem_reg_pc      <= exe_mem_reg_pc;
+        mem_inst        <= exe_mem_inst;
+        mem_inst_id     <= exe_mem_inst_id;
+        mem_ctrl        <= exe_mem_ctrl;
+        mem_alu_out     <= exe_mem_alu_out;
+        mem_csr_rdata   <= csr_mem_csr_rdata; 
+    end
+end
+
+// mem -> wb wire
+wire            mem_wb_valid;
+wire [31:0]     mem_wb_reg_pc;
+wire [31:0]     mem_wb_inst;
+wire [63:0]     mem_wb_inst_id;
+ctrltype wire   mem_wb_ctrl;
+wire [31:0]     mem_wb_alu_out;
+wire [31:0]     mem_wb_mem_data;
+wire [31:0]     mem_wb_csr_rdata;
+
+wire            mem_stall   = mem_memory_unit_stall;
+
+// wb reg
+reg             wb_valid    = 0;
+reg [31:0]      wb_reg_pc;
+reg [31:0]      wb_inst;
+reg [63:0]      wb_inst_id;
+// ctrltype reg    wb_ctrl;
+reg [31:0]      wb_alu_out;
+reg [31:0]      wb_mem_data;
+reg [31:0]      wb_csr_rdata;
+reg [31:0]      wb_trap_vector;
+
+// TODO メモリアクセスの例外はどう処理しようか....
+//
+// トラップ先を求めるためにCSRステージからワイヤを生やす。
+// mem以前をinvalidにする。
+// で、trapか...
+
+// mem -> wb logic
+always @(posedge clk) begin
+    if (pipeline_flush) begin
+        wb_valid   <= 0;
+    end else if (!mem_stall) begin
+        wb_valid        <= mem_wb_valid;
+        wb_reg_pc       <= mem_wb_reg_pc;
+        wb_inst         <= mem_wb_inst;
+        wb_inst_id      <= mem_wb_inst_id;
+        // wb_ctrl         <= mem_wb_ctrl;
+        wb_alu_out      <= mem_wb_alu_out;
+        wb_mem_data     <= mem_wb_mem_data;
+        wb_csr_rdata    <= mem_wb_csr_rdata;
+        wb_trap_vector  <= mem_wb_trap_vector;
+    end
+end
 
 FetchStage #() fetchstage (
     .clk(clk),
-
-    .wb_reg_pc(wbstage_branch_hazard ? wb_to_fetch_reg_pc : 32'h00000000),
-    .wb_branch_hazard(wbstage_branch_hazard || exited),
-
-    .id_reg_pc(id_reg_pc),
-    .id_inst(id_inst),
-    .id_inst_id(id_inst_id),
-
-    .if_reg_pc(if_reg_pc),
 
     .mem_start(memory_inst_start),
     .mem_ready(memory_inst_ready),
@@ -113,298 +217,144 @@ FetchStage #() fetchstage (
     .mem_data(memory_inst),
     .mem_data_valid(memory_inst_valid),
 
-    .stall_flg(
-        memory_stage_is_stall || 
-        data_hazard_stall || 
-        id_zifencei_stall_flg || 
-        exe_stage_alu_stall_flg ||
-        stall_flg_may_interrupt
-    )
+    .if_valid(if_valid),
+    .if_reg_pc(if_reg_pc),
+    .if_inst(if_inst),
+    .if_inst_id(if_inst_id),
+
+    .branch_hazard(branch_hazard || exited),
+    .branch_target(branch_target),
+
+    .if_stall_flg(if_stall)
 );
-
-
-
-// **************************
-// Decode Stage
-// **************************
-
-// decode -> exe 用のwire
-wire [31:0] exe_imm_i_sext;
-wire [31:0] exe_imm_s_sext;
-wire [31:0] exe_imm_b_sext;
-wire [31:0] exe_imm_j_sext;
-wire [31:0] exe_imm_u_shifted;
-wire [31:0] exe_imm_z_uext;
-
-wire [31:0] exe_reg_pc;
-wire [31:0] exe_inst;
-wire [4:0]  exe_exe_fun; // TODO bitwise
-wire [31:0] exe_op1_data;
-wire [31:0] exe_op2_data;
-wire [31:0] exe_rs2_data;
-wire [3:0]  exe_mem_wen;
-wire        exe_rf_wen;
-wire [3:0]  exe_wb_sel;
-wire [4:0]  exe_wb_addr;
-wire [2:0]  exe_csr_cmd;
-wire        exe_jmp_flg;
 
 DecodeStage #() decodestage
 (
     .clk(clk),
 
-    .input_reg_pc(id_reg_pc),
-    .input_inst_id(id_inst_id),
-    .input_inst(id_inst),
     .regfile(regfile),
 
-    .output_reg_pc(exe_reg_pc),
-    .output_inst(exe_inst),
-    .output_inst_id(exe_inst_id),
+    .id_valid(id_valid),
+    .id_reg_pc(id_reg_pc),
+    .id_inst(id_inst),
+    .id_inst_id(id_inst_id),
 
-    .imm_i_sext(exe_imm_i_sext),
-    .imm_s_sext(exe_imm_s_sext),
-    .imm_b_sext(exe_imm_b_sext),
-    .imm_j_sext(exe_imm_j_sext),
-    .imm_u_shifted(exe_imm_u_shifted),
-    .imm_z_uext(exe_imm_z_uext),
+    .id_exe_valid(id_exe_valid),
+    .id_exe_reg_pc(id_exe_reg_pc),
+    .id_exe_inst(id_exe_inst),
+    .id_exe_inst_id(id_exe_inst_id),
+    .id_exe_ctrl(id_exe_ctrl),
 
-    .exe_fun(exe_exe_fun),
-    .op1_data(exe_op1_data),
-    .op2_data(exe_op2_data),
-    .rs2_data(exe_rs2_data),
-    .mem_wen(exe_mem_wen),
-    .rf_wen(exe_rf_wen),
-    .wb_sel(exe_wb_sel),
-    .wb_addr(exe_wb_addr),
-    .csr_cmd(exe_csr_cmd),
-    .jmp_flg(exe_jmp_flg),
+    .dh_stall_flg(id_dh_stall),
+    .dh_wb_valid(wb_valid),
+    .dh_wb_rf_wen(wb_ctrl.rf_wen),
+    .dh_wb_wb_addr(wb_ctrl.wb_addr),
+    .dh_mem_valid(mem_valid),
+    .dh_mem_rf_wen(mem_ctrl.rf_wen),
+    .dh_mem_wb_addr(mem_ctrl.wb_addr),
+    .dh_exe_valid(exe_valid),
+    .dh_exe_rf_wen(exe_ctrl.rf_wen),
+    .dh_exe_wb_addr(exe_ctrl.wb_addr),
 
-    .memory_stage_stall_flg(memory_stage_is_stall || exe_stage_alu_stall_flg),
-
-    .wb_branch_hazard(wbstage_branch_hazard),
-
-    .data_hazard_stall_flg(data_hazard_stall),
-    .data_hazard_wb_rf_wen(wbstage_datahazard_rf_wen),
-    .data_hazard_wb_wb_addr(wbstage_datahazard_wb_addr),
-    .data_hazard_mem_rf_wen(memstage_datahazard_rf_wen),
-    .data_hazard_mem_wb_addr(memstage_datahazard_wb_addr),
-    .data_hazard_exe_rf_wen(exestage_datahazard_rf_wen),
-    .data_hazard_exe_wb_addr(exestage_datahazard_wb_addr),
-    
     .zifencei_stall_flg(id_zifencei_stall_flg),
-    .zifencei_mem_mem_wen(
-        mem_zifencei_mem_wen == MEN_SB || 
-        mem_zifencei_mem_wen == MEN_SH || 
-        mem_zifencei_mem_wen == MEN_SW
-    ),
-    .zifencei_exe_mem_wen(
-        exe_zifencei_mem_wen == MEN_SB || 
-        exe_zifencei_mem_wen == MEN_SH || 
-        exe_zifencei_mem_wen == MEN_SW
-    ),
-    .output_trappable(id_trappable)
+    .zifencei_mem_wen(
+        (mem_valid && (mem_ctrl.mem_wen == MEN_SB || mem_ctrl.mem_wen == MEN_SH || mem_ctrl.mem_wen == MEN_SW)) || 
+        (exe_valid && (exe_ctrl.mem_wen == MEN_SB || exe_ctrl.mem_wen == MEN_SH || exe_ctrl.mem_wen == MEN_SW)))
 );
-
-
-// **************************
-// Execute Stage
-// **************************
-
-wire [31:0] mem_alu_out;
-wire        mem_br_flg;
-wire [31:0] mem_br_target;
-
-wire [31:0] mem_reg_pc;
-wire [3:0]  mem_mem_wen;
-wire        mem_rf_wen;
-wire [3:0]  mem_wb_sel;
-wire [31:0] mem_rs2_data;
-wire [31:0] csr_op1_data;
-wire [2:0]  csr_csr_cmd;
-wire        mem_jmp_flg;
-wire        mem_csr_cmd;
-wire [4:0]  mem_wb_addr;
-wire [31:0] csr_imm_i;
 
 ExecuteStage #() executestage
 (
     .clk(clk),
 
-    .wb_branch_hazard(wbstage_branch_hazard),
+    .exe_valid(exe_valid),
+    .exe_reg_pc(exe_reg_pc),
+    .exe_inst(exe_inst),
+    .exe_inst_id(exe_inst_id),
+    .exe_ctrl(exe_ctrl),
 
-    .input_reg_pc(exe_reg_pc),
-    .input_inst(exe_inst),
-    .input_inst_id(exe_inst_id),
-    .input_exe_fun(exe_exe_fun),
-    .input_op1_data(exe_op1_data),
-    .input_op2_data(exe_op2_data),
-    .input_rs2_data(exe_rs2_data),
-    .input_mem_wen(exe_mem_wen),
-    .input_rf_wen(exe_rf_wen),
-    .input_wb_sel(exe_wb_sel),
-    .input_wb_addr(exe_wb_addr),
-    .input_csr_cmd(exe_csr_cmd),
-    .input_jmp_flg(exe_jmp_flg),
-    .input_imm_i_sext(exe_imm_i_sext),
-    .input_imm_b_sext(exe_imm_b_sext),
+    .exe_mem_valid(exe_mem_valid),
+    .exe_mem_reg_pc(exe_mem_reg_pc),
+    .exe_mem_inst(exe_mem_inst),
+    .exe_mem_inst_id(exe_mem_inst_id),
+    .exe_mem_ctrl(exe_mem_ctrl),
+    .exe_mem_alu_out(exe_mem_alu_out),
 
-    .alu_out(mem_alu_out),
-    .br_flg(mem_br_flg),
-    .br_target(mem_br_target),
+    .branch_hazard(exe_branch_hazard),
+    .branch_target(exe_branch_target),
 
-    .output_reg_pc(mem_reg_pc),
-    .output_inst(mem_inst),
-    .output_inst_id(mem_inst_id),
-    .output_mem_wen(mem_mem_wen),
-    .output_rf_wen(mem_rf_wen),
-    .output_rs2_data(mem_rs2_data),
-    .output_op1_data(csr_op1_data),
-    .output_wb_sel(mem_wb_sel),
-    .output_wb_addr(mem_wb_addr),
-    .output_csr_cmd(csr_csr_cmd),
-    .output_jmp_flg(mem_jmp_flg),
-    .output_imm_i(csr_imm_i),
-
-    .memory_stage_stall_flg(memory_stage_is_stall),
-    .output_stall_flg(exe_stage_alu_stall_flg),
-
-    .output_datahazard_rf_wen(exestage_datahazard_rf_wen),
-    .output_datahazard_wb_addr(exestage_datahazard_wb_addr),
-    .output_trappable(exe_trappable),
-    .output_zifencei_mem_wen(exe_zifencei_mem_wen)
+    .pipeline_flush(pipeline_flush),
+    .calc_stall_flg(exe_calc_stall)
 );
-
-// **************************
-// Memory Stage
-// **************************
-
-wire        wb_rf_wen;
-wire [31:0] wb_read_data;
-wire [31:0] wb_reg_pc;
-wire [31:0] wb_alu_out;
-wire        wb_br_flg;
-wire [31:0] wb_br_target;
-wire [3:0]  wb_wb_sel;
-wire [4:0]  wb_wb_addr;
-wire        wb_jmp_flg;
-
-MemoryStage #() memorystage
-(
-    .clk(clk),
-
-    .wb_branch_hazard(wbstage_branch_hazard),
-
-    .input_reg_pc(mem_reg_pc),
-    .input_inst(mem_inst),
-    .input_inst_id(mem_inst_id),
-    .input_rs2_data(mem_rs2_data),
-    .input_alu_out(mem_alu_out),
-    .input_br_flg(mem_br_flg),
-    .input_br_target(mem_br_target),
-    .input_mem_wen(mem_mem_wen),
-    .input_rf_wen(mem_rf_wen),
-    .input_wb_sel(mem_wb_sel),
-    .input_wb_addr(mem_wb_addr),
-    .input_jmp_flg(mem_jmp_flg),
-
-    .output_reg_pc(wb_reg_pc),
-    .output_inst(wb_inst),
-    .output_inst_id(wb_inst_id),
-    .output_read_data(wb_read_data),
-    .output_alu_out(wb_alu_out),
-    .output_br_flg(wb_br_flg),
-    .output_br_target(wb_br_target),
-    .output_rf_wen(wb_rf_wen),
-    .output_wb_sel(wb_wb_sel),
-    .output_wb_addr(wb_wb_addr),
-    .output_jmp_flg(wb_jmp_flg),
-    .output_is_stall(memory_stage_is_stall),
-
-    .mem_cmd_start(memory_d_cmd_start),
-    .mem_cmd_write(memory_d_cmd_write),
-    .mem_cmd_ready(memory_d_cmd_ready),
-    .mem_addr(memory_d_addr),
-    .mem_wdata(memory_wdata),
-    .mem_wmask(memory_wmask),
-    .mem_rdata(memory_rdata),
-    .mem_rdata_valid(memory_rdata_valid),
-
-    .output_datahazard_rf_wen(memstage_datahazard_rf_wen),
-    .output_datahazard_wb_addr(memstage_datahazard_wb_addr),
-    .output_trappable(mem_trappable),
-    .output_zifencei_mem_wen(mem_zifencei_mem_wen)
-);
-
-// **************************
-// CSR Stage
-// **************************
-wire [2:0]  wb_csr_cmd;
-wire [31:0] wb_csr_rdata;
-wire [31:0] wb_trap_vector;
 
 CSRStage #(
     .FMAX_MHz(FMAX_MHz)
 ) csrstage
 (
     .clk(clk),
+
+    .csr_valid(mem_valid),
+    .csr_reg_pc(mem_reg_pc),
+    .csr_inst(mem_inst),
+    .csr_inst_id(mem_inst_id),
+    .csr_ctrl(mem_ctrl),
+
+    .csr_mem_csr_rdata(csr_mem_csr_rdata),
     
+    .csr_stall_flg(csr_stall_flg),
+    .csr_trap_flg(csr_trap_flg),
+    .csr_trap_vector(csr_trap_vector),
+
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
     .reg_mtime(reg_mtime),
-    .reg_mtimecmp(reg_mtimecmp),
-
-    .wb_branch_hazard(wbstage_branch_hazard),
-
-    .input_inst_id(mem_inst_id),
-    .input_csr_cmd(csr_csr_cmd),
-    .input_op1_data(csr_op1_data),
-    .input_imm_i(csr_imm_i),
-
-    .input_interrupt_ready(
-        //wb_inst == INST_NOP && 
-        mem_trappable &&
-        exe_trappable &&
-        id_trappable
-    ),
-
-    .if_reg_pc(if_reg_pc),
-
-    .output_csr_cmd(wb_csr_cmd),
-    .csr_rdata(wb_csr_rdata),
-    .trap_vector(wb_trap_vector),
-    .output_stall_flg_may_interrupt(stall_flg_may_interrupt)
+    .reg_mtimecmp(reg_mtimecmp)
 );
 
+MemoryStage #() memorystage
+(
+    .clk(clk),
 
-// **************************
-// WriteBack Stage
-// **************************
+    .mem_valid(mem_valid),
+    .mem_reg_pc(mem_reg_pc),
+    .mem_inst(mem_inst),
+    .mem_inst_id(mem_inst_id),
+    .mem_ctrl(mem_ctrl),
+    .mem_alu_out(mem_alu_out),
 
-assign wbstage_datahazard_rf_wen    = wb_rf_wen;
-assign wbstage_datahazard_wb_addr   = wb_wb_addr;
+    .mem_wb_valid(mem_wb_valid),
+    .mem_wb_reg_pc(mem_wb_reg_pc),
+    .mem_wb_inst(mem_wb_inst),
+    .mem_wb_inst_id(mem_wb_inst_id),
+    .mem_wb_ctrl(mem_wb_ctrl),
+    .mem_wb_alu_out(mem_wb_alu_out),
+    .mem_wb_mem_data(mem_wb_mem_data),
+
+    .pipeline_flush(pipeline_flush),
+    .memory_unit_stall(mem_memory_unit_stall),
+
+    .memu_cmd_start(memory_d_cmd_start),
+    .memu_cmd_write(memory_d_cmd_write),
+    .memu_cmd_ready(memory_d_cmd_ready),
+    .memu_addr(memory_d_addr),
+    .memu_wdata(memory_wdata),
+    .memu_wmask(memory_wmask),
+    .memu_rdata(memory_rdata),
+    .memu_rdata_valid(memory_rdata_valid)
+);
 
 WriteBackStage #() wbstage(
     .clk(clk),
 
-    .reg_pc(wb_reg_pc),
-    .inst_id(wb_inst_id),
-    .wb_sel(wb_wb_sel),
-    .csr_rdata(wb_csr_rdata),
-    .memory_rdata(wb_read_data),
-    .wb_addr(wb_wb_addr),
-    .csr_cmd(wb_csr_cmd),
-    .jmp_flg(wb_jmp_flg),
-    .rf_wen(wb_rf_wen),
-    .br_flg(wb_br_flg),
-    .br_target(wb_br_target),
-    .alu_out(wb_alu_out),
-    .trap_vector(wb_trap_vector),
-
-    .output_reg_pc(wb_to_fetch_reg_pc),
-    .output_branch_hazard(wbstage_branch_hazard),
-
     .regfile(regfile),
+
+    .wb_valid(wb_valid),
+    .wb_reg_pc(wb_reg_pc),
+    .wb_inst(wb_inst),
+    .inst_id(wb_inst_id),
+    // .wb_ctrl(wb_ctrl),
+    .wb_alu_out(wb_alu_out),
+    .wb_mem_data(wb_mem_data),
+    .wb_csr_rdata(wb_csr_rdata),
 
     .exit(exit)
 );
