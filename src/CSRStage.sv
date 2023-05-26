@@ -392,7 +392,7 @@ wire can_access = addr[9:8] <= mode;
 wire can_read   = can_access && addr[11] == 0;
 wire can_write  = can_access && addr[10] == 0;
 
-wire stage_interrupt_ready = csr_valid && csr_ctrl.mem_wen == MEN_X;
+wire stage_interrupt_ready = csr_valid;
 
 assign csr_trap_flg     = csr_valid && (
                             (may_trap && stage_interrupt_ready) ||
@@ -783,7 +783,8 @@ always @(posedge clk) begin
     $display("data,csrstage.output.rdata,h,%b", rdata);
     $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
     $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
-    //$display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);
+    $display("data,csrstage.input.may_trap,b,%b", may_trap);
+    $display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);
 
     $display("data,csrstage.mode,d,%b", mode);
     $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
