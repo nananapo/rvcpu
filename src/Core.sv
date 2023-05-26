@@ -55,7 +55,7 @@ wire [31:0] if_reg_pc;
 wire [31:0] if_inst;
 wire [63:0] if_inst_id;
 
-wire        if_stall =  id_stall;
+wire        if_stall =  id_stall || id_dh_stall;
 
 // id reg
 reg         id_valid = 0;
@@ -83,7 +83,7 @@ wire [63:0]     id_exe_inst_id;
 wire ctrltype   id_exe_ctrl;
 
 wire            id_stall = exe_stall ||
-                           id_zifencei_stall_flg || id_dh_stall;
+                           id_zifencei_stall_flg;
 
 // exe, csr reg
 reg             exe_valid = 0;
@@ -96,8 +96,8 @@ ctrltype        exe_ctrl;
 always @(posedge clk) begin
     if (pipeline_flush) begin
         exe_valid   <= 0;
-    end else if (!id_stall) begin
-        exe_valid   <= id_exe_valid;
+    end else if (!id_stall) begin // データハザードではid -> exeを止めない。ただし、データハザードが起きていたらinvalidにする
+        exe_valid   <= id_exe_valid && !id_dh_stall;
         exe_reg_pc  <= id_exe_reg_pc;
         exe_inst    <= id_exe_inst;
         exe_inst_id <= id_exe_inst_id;
