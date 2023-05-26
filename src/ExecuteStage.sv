@@ -140,7 +140,7 @@ endfunction
 assign exe_mem_valid    = exe_valid && !calc_stall_flg;
 assign exe_mem_reg_pc   = exe_reg_pc;
 assign exe_mem_inst     = exe_inst;
-assign exe_mem_inst_id  = exe_inst;
+assign exe_mem_inst_id  = exe_inst_id;
 assign exe_mem_ctrl     = exe_ctrl;
 
 assign exe_mem_alu_out  = gen_alu_out(exe_fun, op1_data, op2_data, saved_result);
