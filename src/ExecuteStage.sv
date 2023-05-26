@@ -98,7 +98,7 @@ wire        is_multicycle_exe   = is_div || is_mul; // 現在のexe_funが複数
 assign calc_stall_flg   = exe_valid && is_multicycle_exe && 
                           (divm_start || multm_start || !is_calculated); // モジュールで計算を始める = 未計算
 
-function gen_alu_out(
+function [31:0] gen_alu_out(
     input [4:0 ] exe_fun,
     input [31:0] op1_data,
     input [31:0] op2_data,

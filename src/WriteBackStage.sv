@@ -17,13 +17,13 @@ module WriteBackStage(
 
 `include "include/core.sv"
 
-wire reg_pc         = wb_reg_pc;
-wire inst           = wb_inst;
-wire inst_id        = wb_inst_id;
-// wire ctrl           = wb_ctrl;
-wire alu_out        = wb_alu_out;
-wire memory_rdata   = wb_mem_rdata;
-wire csr_rdata      = wb_csr_rdata;
+wire [31:0] reg_pc         = wb_reg_pc;
+wire [31:0] inst           = wb_inst;
+wire [63:0] inst_id        = wb_inst_id;
+// ctrltype ctrl           = wb_ctrl;
+wire [31:0] alu_out        = wb_alu_out;
+wire [31:0] memory_rdata   = wb_mem_rdata;
+wire [31:0] csr_rdata      = wb_csr_rdata;
 
 `ifdef RISCV_TEST
     integer loop_i;

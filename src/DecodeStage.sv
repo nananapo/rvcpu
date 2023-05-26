@@ -37,7 +37,7 @@ module DecodeStage
 
 wire [31:0] reg_pc  = id_reg_pc;
 wire [31:0] inst    = id_inst;
-wire [31:0] inst_id = id_inst_id;
+wire [63:0] inst_id = id_inst_id;
 
 function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
     casex (inst)
@@ -162,7 +162,7 @@ assign dh_stall_flg =
 
 function [31:0] gen_op1data(
     input [3:0]     op1_sel,
-    input [31:0]    rs1_addr,
+    input [4:0]     rs1_addr,
     input [31:0]    imm_z_uext
 );
 case(op1_sel) 
@@ -174,7 +174,7 @@ endfunction
 
 function [31:0] gen_op2data(
     input [3:0]     op2_sel,
-    input [31:0]    rs2_addr,
+    input [4:0]     rs2_addr,
     input [31:0]    imm_i_sext,
     input [31:0]    imm_s_sext,
     input [31:0]    imm_j_sext,
