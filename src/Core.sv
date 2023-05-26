@@ -282,11 +282,11 @@ CSRStage #(
 (
     .clk(clk),
 
-    .csr_valid(mem_valid),
-    .csr_reg_pc(mem_reg_pc),
-    .csr_inst(mem_inst),
-    .csr_inst_id(mem_inst_id),
-    .csr_ctrl(mem_ctrl),
+    .csr_valid(exe_valid),
+    .csr_reg_pc(exe_reg_pc),
+    .csr_inst(exe_inst),
+    .csr_inst_id(exe_inst_id),
+    .csr_ctrl(exe_ctrl),
 
     .csr_mem_csr_rdata(csr_mem_csr_rdata),
     
