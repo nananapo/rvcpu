@@ -308,6 +308,7 @@ MemoryStage #() memorystage
     .mem_inst_id(mem_inst_id),
     .mem_ctrl(mem_ctrl),
     .mem_alu_out(mem_alu_out),
+    .mem_csr_rdata(mem_csr_rdata),
 
     .mem_wb_valid(mem_wb_valid),
     .mem_wb_reg_pc(mem_wb_reg_pc),
@@ -316,6 +317,7 @@ MemoryStage #() memorystage
     .mem_wb_ctrl(mem_wb_ctrl),
     .mem_wb_alu_out(mem_wb_alu_out),
     .mem_wb_mem_rdata(mem_wb_mem_rdata),
+    .mem_wb_csr_rdata(mem_wb_csr_rdata),
 
     .pipeline_flush(pipeline_flush),
     .memory_unit_stall(mem_memory_unit_stall),

@@ -7,6 +7,7 @@ module MemoryStage(
     input wire [63:0]   mem_inst_id,
     input wire ctrltype mem_ctrl,
     input wire [31:0]   mem_alu_out,
+    input wire [31:0]   mem_csr_rdata,
 
     output wire             mem_wb_valid,
     output wire [31:0]      mem_wb_reg_pc,
@@ -15,6 +16,7 @@ module MemoryStage(
     output wire ctrltype    mem_wb_ctrl,
     output wire [31:0]      mem_wb_alu_out,
     output wire [31:0]      mem_wb_mem_rdata,
+    output wire [31:0]      mem_wb_csr_rdata,
 
     input wire          pipeline_flush, // TODO killする
     output reg          memory_unit_stall,
@@ -92,7 +94,8 @@ assign mem_wb_inst      = mem_inst;
 assign mem_wb_inst_id   = mem_inst_id;
 assign mem_wb_ctrl      = mem_ctrl;
 assign mem_wb_alu_out   = mem_alu_out;
-assign mem_wb_mem_rdata  = gen_memdata(ctrl.mem_wen, mem_valid, saved_mem_rdata);
+assign mem_wb_mem_rdata = gen_memdata(ctrl.mem_wen, mem_valid, saved_mem_rdata);
+assign mem_wb_csr_rdata = mem_csr_rdata;
 
 always @(posedge clk)
     saved_inst_id <= inst_id;
