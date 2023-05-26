@@ -402,7 +402,7 @@ assign csr_trap_flg     = csr_valid && (
                           );
 
 assign csr_stall_flg    = csr_valid && 
-                          (csr_cmd == CSR_X || (may_trap && stage_interrupt_ready)) &&
+                          (csr_cmd != CSR_X || (may_trap && stage_interrupt_ready)) &&
                           csr_inst_id != saved_inst_id;
 
 reg [63:0] saved_inst_id = 0;
