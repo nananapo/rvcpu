@@ -67,8 +67,8 @@ reg [63:0]  id_inst_id;
 always @(posedge clk) begin
     if (pipeline_flush) begin
         id_valid    <= 0;
-    end else if (!if_stall) begin
-        id_valid    <= if_valid;
+    end else if (!if_stall) begin // TODO || !id_valid
+        id_valid    <= if_valid && !branch_hazard; // TODO prediction
         id_reg_pc   <= if_reg_pc;
         id_inst     <= if_inst;
         id_inst_id  <= if_inst_id;
@@ -97,7 +97,7 @@ always @(posedge clk) begin
     if (pipeline_flush) begin
         exe_valid   <= 0;
     end else if (!id_stall) begin // データハザードではid -> exeを止めない。ただし、データハザードが起きていたらinvalidにする
-        exe_valid   <= id_exe_valid && !id_dh_stall;
+        exe_valid   <= id_exe_valid && !id_dh_stall && !branch_hazard;
         exe_reg_pc  <= id_exe_reg_pc;
         exe_inst    <= id_exe_inst;
         exe_inst_id <= id_exe_inst_id;
