@@ -90,7 +90,7 @@ reg             exe_valid = 0;
 reg [31:0]      exe_reg_pc;
 reg [31:0]      exe_inst;
 reg [63:0]      exe_inst_id;
-reg ctrltype    exe_ctrl;
+ctrltype        exe_ctrl;
 
 // id -> exe logic
 always @(posedge clk) begin
@@ -135,7 +135,7 @@ reg             mem_valid = 0;
 reg [31:0]      mem_reg_pc;
 reg [31:0]      mem_inst;
 reg [63:0]      mem_inst_id;
-reg ctrltype    mem_ctrl;
+ctrltype        mem_ctrl;
 reg [31:0]      mem_alu_out;
 reg [31:0]      mem_csr_rdata;
 
@@ -171,7 +171,7 @@ reg             wb_valid    = 0;
 reg [31:0]      wb_reg_pc;
 reg [31:0]      wb_inst;
 reg [63:0]      wb_inst_id;
-reg ctrltype    wb_ctrl;
+ctrltype        wb_ctrl;
 reg [31:0]      wb_alu_out;
 reg [31:0]      wb_mem_rdata;
 reg [31:0]      wb_csr_rdata;
