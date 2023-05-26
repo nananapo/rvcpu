@@ -451,7 +451,8 @@ if (csr_valid) begin
         case (csr_cmd)
             CSR_ECALL: begin
                 // environment call from x-Mode execeptionを起こす
-                trap_vector <= mode == MODE_USER ? stvec_addr : mtvec_addr;
+                //trap_vector <= mode == MODE_USER ? stvec_addr : mtvec_addr;
+                trap_vector <= mtvec_addr; // riscv-testsを動かすためにmtvecにしている
                 // 現在のモードに応じた値を書き込む
                 case (mode)
                     MODE_USER:          reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE; 
