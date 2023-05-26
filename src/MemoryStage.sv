@@ -70,7 +70,8 @@ assign memu_wdata        = rs2_data;
 assign memu_wmask        = mem_wen == MEN_SB ? 32'h000000ff :
                           mem_wen == MEN_SH ? 32'h0000ffff : 32'hffffffff;
 
-assign memory_unit_stall = mem_valid || state != STATE_WAIT || (may_start_m && mem_wen != MEN_X);
+assign memory_unit_stall = mem_valid && 
+                            (state != STATE_WAIT || (may_start_m && mem_wen != MEN_X));
 
 reg [31:0]  saved_mem_rdata;
 
