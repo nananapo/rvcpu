@@ -28,12 +28,12 @@ for (clock, numberData, textData) in readClockCycle():
     wb_id_valid, wb_id, _   = numberData[WB_INST_ID]
 
     # intではないならNoneにする
-    if_id   = if_id[2:]  if if_id_valid else None
-    id_id   = id_id[2:]  if id_id_valid else None
-    exe_id  = exe_id[2:] if exe_id_valid else None
-    mem_id  = mem_id[2:] if mem_id_valid else None
-    csr_id  = csr_id[2:] if csr_id_valid else None
-    wb_id   = wb_id[2:]  if wb_id_valid else None
+    if_id   = int(if_id[2:], 16)  if if_id_valid else None
+    id_id   = int(id_id[2:], 16)  if id_id_valid else None
+    exe_id  = int(exe_id[2:], 16) if exe_id_valid else None
+    mem_id  = int(mem_id[2:], 16) if mem_id_valid else None
+    csr_id  = int(csr_id[2:], 16) if csr_id_valid else None
+    wb_id   = int(wb_id[2:], 16)  if wb_id_valid else None
 
     if if_id is not None:
         # 新しいidになったらフェッチを開始したことにする
@@ -52,8 +52,8 @@ for (clock, numberData, textData) in readClockCycle():
         # fetch end
         if IF_END_EVENT in textData:
             # label last id
-            rpc = numberData[IF_OUT_PC][1] 
-            inst = numberData[IF_OUT_INST][1]
+            rpc = numberData[IF_OUT_PC][1][2:]
+            inst = numberData[IF_OUT_INST][1][2:]
             print("L", last_if_id, 0, rpc + " : " + inst, sep="\t")
     else:
         if last_if_id is not None:
