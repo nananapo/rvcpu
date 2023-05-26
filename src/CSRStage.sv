@@ -57,10 +57,10 @@ localparam CSR_ADDR_MIMPID      = 12'hf13;
 localparam CSR_ADDR_MHARTID     = 12'hf14;
 localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
 
-reg [31:0] reg_mvendorid    = 32'b0;
-reg [31:0] reg_marchid      = 32'b0;
-reg [31:0] reg_mimpid       = 32'b0;
-reg [31:0] reg_mhartid      = 32'b0;
+wire [31:0] reg_mvendorid   = 32'b0;
+wire [31:0] reg_marchid     = 32'b0;
+wire [31:0] reg_mimpid      = 32'b0;
+wire [31:0] reg_mhartid     = 32'b0;
 
 // Machine Trap Setup
 /*
@@ -140,7 +140,7 @@ reg         reg_mstatus_sie     = 0;
 // A, I, M拡張を実装しているのでそのbitを立てている
 //                                   |MXL|0 |Extensions                |
 //                                           ZYXWVUTSRQPONMLKJIHGFEDCBA
-reg [31:0]  reg_misa            = 32'b01_000_00000000000001000100000001;
+wire [31:0]  reg_misa           = 32'b01_000_00000000000001000100000001;
 
 // サポートしないtrapは0を保持する
 // 1はreadonlyであってはならない。
