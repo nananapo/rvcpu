@@ -20,20 +20,20 @@ for (clock, numberData, textData) in readClockCycle():
         break
 
     # idを取得
-    if_id   = numberData[IF_INST_ID]
-    id_id   = numberData[ID_INST_ID]
-    exe_id  = numberData[EXE_INST_ID]
-    mem_id  = numberData[MEM_INST_ID]
-    csr_id  = numberData[CSR_INST_ID]
-    wb_id   = numberData[WB_INST_ID]
+    if_id_valid, if_id, _   = numberData[IF_INST_ID]
+    id_id_valid, id_id, _   = numberData[ID_INST_ID]
+    exe_id_valid, exe_id, _ = numberData[EXE_INST_ID]
+    mem_id_valid, mem_id, _ = numberData[MEM_INST_ID]
+    csr_id_valid, csr_id, _ = numberData[CSR_INST_ID]
+    wb_id_valid, wb_id, _   = numberData[WB_INST_ID]
 
     # intではないならNoneにする
-    if_id   = if_id  if type(if_id ) is int else None
-    id_id   = id_id  if type(id_id ) is int else None
-    exe_id  = exe_id if type(exe_id) is int else None
-    mem_id  = mem_id if type(mem_id) is int else None
-    csr_id  = csr_id if type(csr_id) is int else None
-    wb_id   = wb_id  if type(wb_id ) is int else None
+    if_id   = if_id[2:]  if if_id_valid else None
+    id_id   = id_id[2:]  if id_id_valid else None
+    exe_id  = exe_id[2:] if exe_id_valid else None
+    mem_id  = mem_id[2:] if mem_id_valid else None
+    csr_id  = csr_id[2:] if csr_id_valid else None
+    wb_id   = wb_id[2:]  if wb_id_valid else None
 
     if if_id is not None:
         # 新しいidになったらフェッチを開始したことにする
@@ -52,7 +52,9 @@ for (clock, numberData, textData) in readClockCycle():
         # fetch end
         if IF_END_EVENT in textData:
             # label last id
-            print("L", last_if_id, 0, textData[IF_OUT_PC] + " : " + textData[IF_OUT_INST], sep="\t")
+            rpc = numberData[IF_OUT_PC][1] 
+            inst = numberData[IF_OUT_INST][1]
+            print("L", last_if_id, 0, rpc + " : " + inst, sep="\t")
     else:
         if last_if_id is not None:
             print("E", last_if_id, 0, IFSTAGE_NAME, sep="\t")

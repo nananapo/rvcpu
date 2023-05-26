@@ -25,7 +25,7 @@ try:
 
 
             stripped_nums = dict()
-            for key, value in numberData.items():
+            for key, (validnum, value, f) in numberData.items():
                 if key.startswith(prefix):
                     del num_others[key]
                     stripped = key.removeprefix(prefix)
@@ -42,7 +42,7 @@ try:
             
             stageDataList.append((name, stripped_nums, stripped_texts))
 
-        for key, value in num_others.items():
+        for key, (validnum, value, f) in num_others.items():
             maxlen = max(maxlen, len(key))
         for key, value in text_others.items():
             maxlen = max(maxlen, len(key))
@@ -56,7 +56,7 @@ try:
                 print(key, " " * (maxlen - len(key)), ":", value)
 
         print("other", "-" * 20)
-        for key, value in num_others.items():
+        for key, (validnum, value, f) in num_others.items():
             print(key, " " * (maxlen - len(key)), ":", value)
         for key, value in text_others.items():
             print(key, " " * (maxlen - len(key)), ":", value)

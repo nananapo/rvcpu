@@ -20,8 +20,8 @@ CSRSTAGE_NAME   = "CSR"
 WBSTAGE_NAME    = "WB"
 
 IF_END_EVENT    = "fetchstage.instruction_fetched"
-IF_OUT_PC       = "fetchstage.out.reg_pc"
-IF_OUT_INST     = "fetchstage.out.inst"
+IF_OUT_PC       = "fetchstage.output.if_reg_pc"
+IF_OUT_INST     = "fetchstage.output.if_inst"
 
 # ログを1クロックサイクルごとのデータにまとめる
 def readClockCycle():
@@ -62,7 +62,6 @@ def readClockCycle():
             f = lineData[2]
             num = lineData[3].strip()
             if "x" not in num and "z" not in num:
-                # TODO　何進数がいいかも保存する
                 if f == "b":
                     num = str(num)
                 elif f == "d":
@@ -72,6 +71,9 @@ def readClockCycle():
                     num = "0x" + "0" * max(0, len(num) // 4 - len(hhh)) + hhh
                 else:
                     continue # TODO 報告
+                num = (True, num, f)
+            else:
+                num = (False, num, f)
             clockNumberData[lineData[1]] = num
         elif lineData[0] == "info":
             """
