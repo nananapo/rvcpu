@@ -19,11 +19,11 @@ module FetchStage(
 
 `include "include/core.sv"
 
-typedef enum {  
+typedef enum reg [1:0] {  
     WAIT_READY, WAIT_VALID, FETCHED_WAIT_MOVE
 } statetype;
 
-reg statetype state = WAIT_READY;
+statetype state = WAIT_READY;
 
 wire        stall_flg = if_stall_flg;
 
@@ -64,6 +64,7 @@ else
     // ストールしていない必要がある
     WAIT_VALID:         sig_mem_ctrl = {mem_data_valid && !stall_flg, reg_pc + 32'd4};
     FETCHED_WAIT_MOVE:  sig_mem_ctrl = {!stall_flg, reg_pc};
+    default:            sig_mem_ctrl = {1'b0, 32'b0};
     endcase
 endfunction
 
@@ -110,6 +111,8 @@ always @(posedge clk) begin
             // ストール終了を待つ
             if (!stall_flg)
                 state <= mem_ready ? WAIT_VALID : WAIT_READY;// メモリがreadyなら次のフェッチへ
+        default:
+            state <= WAIT_VALID;
         endcase
     end
 end
