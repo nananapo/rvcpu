@@ -386,11 +386,7 @@ function [31:0] wdata_fun(
     endcase
 endfunction
 
-reg [2:0] save_csr_cmd  = CSR_X;
-reg [11:0]save_csr_addr = 0;
-reg [31:0]save_op1_data = 0;
-
-wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, rdata);
+wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
 
 wire can_access = addr[9:8] <= mode;
 wire can_read   = can_access && addr[11] == 0;
@@ -632,14 +628,14 @@ if (csr_valid) begin
         rdata <= 32'b0;
     end
 
-    case (save_csr_cmd)
+    case (csr_cmd)
         CSR_X: begin end
         CSR_ECALL: begin end
         CSR_MRET: begin end
         CSR_SRET: begin end
         default: begin
             if (can_write) begin
-                case (save_csr_addr)
+                case (addr)
                     // Counters and Timers
                     // READ ONLY
                     // CSR_ADDR_CYCLE:
