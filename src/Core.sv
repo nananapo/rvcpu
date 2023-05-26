@@ -356,6 +356,10 @@ integer reg_i;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
     $display("clock,%d", clk_count);
+    $display("data,core.if_stall,b,%b", if_stall);
+    $display("data,core.id_stall,b,%b", id_stall);
+    $display("data,core.exe_stall,b,%b", exe_stall);
+    $display("data,core.mem_stall,b,%b", mem_stall);
     $display("data,core.gp,h,%b", gp);
     $display("data,core.exit,b,%b", exit);
     for (reg_i = 0; reg_i < 32; reg_i = reg_i + 1) begin
