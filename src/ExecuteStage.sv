@@ -146,7 +146,8 @@ assign exe_mem_ctrl     = exe_ctrl;
 
 assign exe_mem_alu_out  = gen_alu_out(exe_fun, op1_data, op2_data, saved_result);
 
-assign branch_hazard    = exe_valid && exe_ctrl.jmp_flg || gen_br_flg(exe_fun, op1_data, op2_data);
+assign branch_hazard    = exe_valid && 
+                          (exe_ctrl.jmp_flg || gen_br_flg(exe_fun, op1_data, op2_data));
 assign branch_target    = exe_ctrl.jmp_flg ? reg_pc + imm_j_sext : reg_pc + imm_b_sext;
 
 
