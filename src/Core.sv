@@ -50,7 +50,7 @@ wire mem_memory_unit_stall; // メモリステージでメモリがreadyでは�
 wire pipeline_flush = exited;
 
 // if -> id wire
-wire        if_valid = 0;
+wire        if_valid;
 wire [31:0] if_reg_pc;
 wire [31:0] if_inst;
 wire [63:0] if_inst_id;
