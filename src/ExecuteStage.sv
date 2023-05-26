@@ -34,6 +34,7 @@ wire [31:0] op1_data    = exe_ctrl.op1_data;
 wire [31:0] op2_data    = exe_ctrl.op2_data;
 wire [31:0] rs2_data    = exe_ctrl.rs2_data;
 wire [31:0] imm_b_sext  = exe_ctrl.imm_b_sext;
+wire [31:0] imm_j_sext  = exe_ctrl.imm_j_sext;
 
 `ifndef EXCLUDE_RV32M
 DivNbit #(
@@ -145,8 +146,8 @@ assign exe_mem_ctrl     = exe_ctrl;
 
 assign exe_mem_alu_out  = gen_alu_out(exe_fun, op1_data, op2_data, saved_result);
 
-assign branch_hazard    = gen_br_flg(exe_fun, op1_data, op2_data);
-assign branch_target    = reg_pc + imm_b_sext;
+assign branch_hazard    = exe_valid && exe_ctrl.jmp_flg || gen_br_flg(exe_fun, op1_data, op2_data);
+assign branch_target    = exe_ctrl.jmp_flg ? reg_pc + imm_j_sext : reg_pc + imm_b_sext;
 
 
 always @(posedge clk)

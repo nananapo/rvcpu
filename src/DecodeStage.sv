@@ -237,6 +237,7 @@ always @(posedge clk) begin
     $display("data,decodestage.decode.wb_sel,d,%b", wb_sel);
     $display("data,decodestage.decode.wb_addr,d,%b", wb_addr);
     $display("data,decodestage.decode.csr_cmd,d,%b", csr_cmd);
+    $display("data,decodestage.decode.jmp_flg,d,%b", id_exe_ctrl.jmp_flg);
     $display("data,decodestage.decode.imm_i,h,%b", imm_i_sext);
     $display("data,decodestage.decode.imm_s,h,%b", imm_s_sext);
     $display("data,decodestage.decode.imm_b,h,%b", imm_b_sext);
