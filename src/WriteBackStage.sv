@@ -66,13 +66,16 @@ endfunction
 wire [31:0] wb_data = wb_data_func(reg_pc, wb_ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
 
 reg [31:0] inst_count = 0;
-reg [63:0] last_inst_id = INST_ID_NOP;
+reg [63:0] saved_inst_id = 64'hffff000000000000;
+
+wire is_new_inst = wb_valid && saved_inst_id != inst_id;
 
 always @(posedge clk) begin
-    last_inst_id <= inst_id;
-    if (wb_valid && last_inst_id != inst_id)
+    if (wb_valid)
+        saved_inst_id <= inst_id;
+    if (is_new_inst)
         inst_count += 1;
-    if (wb_ctrl.rf_wen == REN_S) begin
+    if (is_new_inst && wb_ctrl.rf_wen == REN_S) begin
         regfile[wb_ctrl.wb_addr] <= wb_data;
     end    
 end
@@ -82,7 +85,7 @@ always @(posedge clk) begin
     $display("data,wbstage.valid,b,%b", wb_valid);
     $display("data,wbstage.reg_pc,h,%b", reg_pc);
     $display("data,wbstage.inst,h,%b", inst);
-    $display("data,wbstage.inst_id,h,%b", wb_valid ? inst_id : INST_ID_NOP);
+    $display("data,wbstage.inst_id,h,%b", is_new_inst ? inst_id : INST_ID_NOP);
     $display("data,wbstage.wb_sel,d,%b", wb_ctrl.wb_sel);
     $display("data,wbstage.wb_addr,d,%b", wb_ctrl.wb_addr);
     $display("data,wbstage.wb_data,h,%b", wb_data);
