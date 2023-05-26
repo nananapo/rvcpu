@@ -54,7 +54,7 @@ for (clock, numberData, textData) in readClockCycle():
             # label last id
             rpc = numberData[IF_OUT_PC][1][2:]
             inst = numberData[IF_OUT_INST][1][2:]
-            print("L", last_if_id, 0, rpc + " : " + inst, sep="\t")
+            print("L", last_if_id, 0, "(" + hex(last_if_id) + ") " + rpc + " : " + inst, sep="\t")
     else:
         if last_if_id is not None:
             print("E", last_if_id, 0, IFSTAGE_NAME, sep="\t")
