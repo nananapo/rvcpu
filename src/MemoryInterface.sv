@@ -55,7 +55,8 @@ MemoryMapController
 `elsif DEBUG
     // make d
     .MEMORY_SIZE(2097152), // 8MiB
-    .MEMORY_FILE("../tinyos/kernel.bin.aligned")
+    //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
+    .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
 `else
     // build
     .MEMORY_SIZE(1024 * 8), // 8MiB

@@ -218,6 +218,7 @@ assign id_exe_ctrl.imm_z_uext   = imm_z_uext;
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
+    $display("data,decodestage.valid,b,%b", id_valid);
     $display("data,decodestage.reg_pc,h,%b", reg_pc);
     $display("data,decodestage.inst,h,%b", inst);
     $display("data,decodestage.inst_id,h,%b", inst_id);

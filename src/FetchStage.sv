@@ -119,24 +119,23 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,fetchstage.output.memory.start,b,%b", mem_start);
-    $display("data,fetchstage.input.memory.ready,b,%b", mem_ready);
-    $display("data,fetchstage.output.memory.addr,h,%b", mem_addr);
-    $display("data,fetchstage.input.memory.data,h,%b", mem_data);
-    $display("data,fetchstage.input.memory.data_valid,b,%b", mem_data_valid);
+    $display("data,fetchstage.state,d,%b", state);
+    $display("data,fetchstage.inst_id,h,%b", inst_id);
+
+    $display("data,fetchstage.output.if_valid,b,%b", if_valid);
+    $display("data,fetchstage.output.if_reg_pc,h,%b", if_reg_pc);
+    $display("data,fetchstage.output.if_inst,h,%b", if_inst);
+    $display("data,fetchstage.output.if_inst_id,h,%b", if_inst_id);
 
     $display("data,fetchstage.input.branch_hazard,b,%b", branch_hazard);
     $display("data,fetchstage.input.branch_target,h,%b", branch_target);
     $display("data,fetchstage.input.stall_flg,b,%b", stall_flg);
 
-    $display("data,fetchstage.output.if_valid,b,%b", if_valid);
-    $display("data,fetchstage.output.if_reg_pc,h,%b", if_reg_pc);
-    $display("data,fetchstage.output.if_inst,h,%b", if_inst);
-    // $display("data,fetchstage.output.if_inst_id,%b", if_inst_id);
-
-    $display("data,fetchstage.inst_id,h,%b", inst_id);
-    $display("data,fetchstage.state,d,%b", state);
-
+    $display("data,fetchstage.output.memory.start,b,%b", mem_start);
+    $display("data,fetchstage.input.memory.ready,b,%b", mem_ready);
+    $display("data,fetchstage.output.memory.addr,h,%b", mem_addr);
+    $display("data,fetchstage.input.memory.data,h,%b", mem_data);
+    $display("data,fetchstage.input.memory.data_valid,b,%b", mem_data_valid);
 end
 `endif
 

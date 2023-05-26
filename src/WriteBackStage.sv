@@ -79,10 +79,12 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
+    $display("data,wbstage.valid,b,%b", wb_valid);
+    $display("data,wbstage.reg_pc,h,%b", reg_pc);
+    $display("data,wbstage.inst,h,%b", inst);
     $display("data,wbstage.inst_id,h,%b", inst_id);
-    $display("data,wbstage.input.reg_pc,h,%b", reg_pc);
-    $display("data,wbstage.input.wb_sel,d,%b", wb_ctrl.wb_sel);
-    $display("data,wbstage.input.wb_addr,d,%b", wb_ctrl.wb_addr);
+    $display("data,wbstage.wb_sel,d,%b", wb_ctrl.wb_sel);
+    $display("data,wbstage.wb_addr,d,%b", wb_ctrl.wb_addr);
     $display("data,wbstage.wb_data,h,%b", wb_data);
     $display("data,wbstage.inst_count,d,%b", inst_count);
     // $display("data,wbstage.exit,%b", exit);

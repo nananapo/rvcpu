@@ -19,8 +19,8 @@ try:
             (IF_INST_PREFIX, IFSTAGE_NAME),
             (ID_INST_PREFIX, IDSTAGE_NAME),
             (EXE_INST_PREFIX, EXESTAGE_NAME),
-            (MEM_INST_PREFIX, MEMSTAGE_NAME),
             (CSR_INST_PREFIX, CSRSTAGE_NAME),
+            (MEM_INST_PREFIX, MEMSTAGE_NAME),
             (WB_INST_PREFIX, WBSTAGE_NAME)]:
 
 

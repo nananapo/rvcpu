@@ -188,6 +188,7 @@ end
 always @(posedge clk) begin
     $display("data,exestage.valid,b,%b", exe_valid);
     $display("data,exestage.reg_pc,h,%b", exe_reg_pc);
+    $display("data,exestage.inst,h,%b", exe_inst);
     $display("data,exestage.inst_id,h,%b", exe_inst_id);
     $display("data,exestage.exe_fun,d,%b", exe_fun);
     $display("data,exestage.op1_data,h,%b", op1_data);

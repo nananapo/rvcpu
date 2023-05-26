@@ -769,12 +769,14 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
+    $display("data,csrstage.valid,b,%b", csr_valid);
+    $display("data,csrstage.reg_pc,h,%b", reg_pc);
+    $display("data,csrstage.inst,h,%b", csr_inst);
     $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X ? INST_ID_NOP : inst_id);
 
     // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
     // $display("data,csrstage.input.op1_data,%b", input_op1_data);
     // $display("data,csrstage.input.imm_i,%b", input_imm_i);
-    $display("data,csrstage.input.reg_pc,h,%b", reg_pc);
 
     $display("data,csrstage.output.rdata,h,%b", rdata);
     $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
