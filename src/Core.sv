@@ -1,5 +1,7 @@
 `default_nettype none
 
+`include "include/ctrltype.sv"
+
 module Core #(
     parameter FMAX_MHz = 27
 )(

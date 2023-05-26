@@ -1,6 +1,4 @@
 /* verilator lint_off CASEX */
-`include "include/core.sv"
-
 module DecodeStage
 (
     input  wire         clk,
@@ -33,6 +31,7 @@ module DecodeStage
     input  wire         zifencei_mem_wen
 );
 
+`include "include/core.sv"
 `include "include/inst.sv"
 
 wire [31:0] reg_pc  = id_reg_pc;
