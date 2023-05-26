@@ -24,7 +24,7 @@ module CSRStage #(
 `include "include/core.sv"
 
 wire [31:0] reg_pc      = csr_reg_pc;
-wire [31:0] inst_id     = csr_inst_id;
+wire [63:0] inst_id     = csr_inst_id;
 wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
 wire [31:0] op1_data    = csr_ctrl.op1_data;
 wire [31:0] imm_i       = csr_ctrl.imm_i_sext;
