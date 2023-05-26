@@ -48,15 +48,17 @@ MemoryMapController
 `endif
 #(
     .FMAX_MHz(FMAX_MHz),
-    .MEMORY_SIZE(2097152), // 8MiB
 `ifdef RISCV_TEST
     // make riscv-tests
+    .MEMORY_SIZE(2097152), // 8MiB
     .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
 `elsif DEBUG
     // make d
+    .MEMORY_SIZE(2097152), // 8MiB
     .MEMORY_FILE("../tinyos/kernel.bin.aligned")
 `else
     // build
+    .MEMORY_SIZE(1024 * 8), // 8MiB
     .MEMORY_FILE("../tinyos/kernel.bin.aligned")
 `endif
 ) memory (
