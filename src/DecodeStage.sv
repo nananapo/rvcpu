@@ -221,7 +221,7 @@ always @(posedge clk) begin
     $display("data,decodestage.valid,b,%b", id_valid);
     $display("data,decodestage.reg_pc,h,%b", reg_pc);
     $display("data,decodestage.inst,h,%b", inst);
-    $display("data,decodestage.inst_id,h,%b", inst_id);
+    $display("data,decodestage.inst_id,h,%b", id_valid ? inst_id : INST_ID_NOP);
 
     $display("data,decodestage.decode.exe_fun,d,%b", exe_fun);
     $display("data,decodestage.decode.op1_sel,d,%b", op1_sel);

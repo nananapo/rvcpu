@@ -82,7 +82,7 @@ always @(posedge clk) begin
     $display("data,wbstage.valid,b,%b", wb_valid);
     $display("data,wbstage.reg_pc,h,%b", reg_pc);
     $display("data,wbstage.inst,h,%b", inst);
-    $display("data,wbstage.inst_id,h,%b", inst_id);
+    $display("data,wbstage.inst_id,h,%b", wb_valid ? inst_id : INST_ID_NOP);
     $display("data,wbstage.wb_sel,d,%b", wb_ctrl.wb_sel);
     $display("data,wbstage.wb_addr,d,%b", wb_ctrl.wb_addr);
     $display("data,wbstage.wb_data,h,%b", wb_data);

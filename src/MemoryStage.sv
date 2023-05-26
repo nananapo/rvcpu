@@ -142,9 +142,10 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.valid,h,%b", reg_pc);
+    $display("data,memstage.valid,b,%b", mem_valid);
     $display("data,memstage.reg_pc,h,%b", reg_pc);
-    $display("data,memstage.inst_id,h,%b", inst_id);
+    $display("data,memstage.inst,h,%b", inst);
+    $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : INST_ID_NOP);
     $display("data,memstage.rs2_data,h,%b", rs2_data);
     $display("data,memstage.alu_out,h,%b", alu_out);
     $display("data,memstage.mem_wen,d,%b", mem_wen);

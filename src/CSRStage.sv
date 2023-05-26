@@ -772,7 +772,7 @@ always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", csr_valid);
     $display("data,csrstage.reg_pc,h,%b", reg_pc);
     $display("data,csrstage.inst,h,%b", csr_inst);
-    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X ? INST_ID_NOP : inst_id);
+    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? INST_ID_NOP : inst_id);
 
     // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
     // $display("data,csrstage.input.op1_data,%b", input_op1_data);
@@ -780,6 +780,7 @@ always @(posedge clk) begin
 
     $display("data,csrstage.output.rdata,h,%b", rdata);
     $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
+    $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
     //$display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);
 
     $display("data,csrstage.mode,d,%b", mode);
