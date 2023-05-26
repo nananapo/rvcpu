@@ -66,9 +66,11 @@ endfunction
 wire [31:0] wb_data = wb_data_func(reg_pc, wb_ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
 
 reg [31:0] inst_count = 0;
+reg [63:0] last_inst_id = INST_ID_NOP;
 
 always @(posedge clk) begin
-    if (reg_pc != 32'hffffffff)
+    last_inst_id <= inst_id;
+    if (wb_valid && last_inst_id != inst_id)
         inst_count += 1;
     if (wb_ctrl.rf_wen == REN_S) begin
         regfile[wb_ctrl.wb_addr] <= wb_data;
@@ -77,12 +79,12 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,wbstage.inst_id,%b", inst_id);
-    $display("data,wbstage.input.reg_pc,%b", reg_pc);
-    $display("data,wbstage.input.wb_sel,%b", wb_ctrl.wb_sel);
-    $display("data,wbstage.input.wb_addr,%b", wb_ctrl.wb_addr);
-    $display("data,wbstage.wb_data,%b", wb_data);
-    $display("data,wbstage.inst_count,%b", inst_count);
+    $display("data,wbstage.inst_id,h,%b", inst_id);
+    $display("data,wbstage.input.reg_pc,h,%b", reg_pc);
+    $display("data,wbstage.input.wb_sel,d,%b", wb_ctrl.wb_sel);
+    $display("data,wbstage.input.wb_addr,d,%b", wb_ctrl.wb_addr);
+    $display("data,wbstage.wb_data,h,%b", wb_data);
+    $display("data,wbstage.inst_count,d,%b", inst_count);
     // $display("data,wbstage.exit,%b", exit);
 end
 `endif

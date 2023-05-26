@@ -28,13 +28,13 @@ module test_mult();
 
   always @(posedge clk) begin
     if (valid) begin
-    $display("data,test_mult.start,%b", start);
-    $display("data,test_mult.issigned,%b", is_signed);
-    $display("data,test_mult.ready,%b", ready);
-    $display("data,test_mult.valid,%b", valid);
-    $display("data,test_mult.multiplicand,%b", multiplicand);
-    $display("data,test_mult.multiplier,%b", multiplier);
-    $display("data,test_mult.product,%b", product);
+    $display("data,test_mult.start,b,%b", start);
+    $display("data,test_mult.issigned,b,%b", is_signed);
+    $display("data,test_mult.ready,b,%b", ready);
+    $display("data,test_mult.valid,b,%b", valid);
+    $display("data,test_mult.multiplicand,d,%b", multiplicand);
+    $display("data,test_mult.multiplier,d,%b", multiplier);
+    $display("data,test_mult.product,d,%b", product);
     $finish();
     end
   end

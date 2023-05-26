@@ -186,14 +186,14 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,exestage.valid,%b", exe_valid);
-    $display("data,exestage.reg_pc,%b", exe_reg_pc);
-    $display("data,exestage.inst_id,%b", exe_inst_id);
-    $display("data,exestage.exe_fun,%b", exe_fun);
-    $display("data,exestage.op1_data,%b", op1_data);
-    $display("data,exestage.op2_data,%b", op2_data);
-    $display("data,exestage.calc_stall,%b", calc_stall_flg);
-    $display("data,exestage.ismulticyc,%b", is_multicycle_exe);
+    $display("data,exestage.valid,b,%b", exe_valid);
+    $display("data,exestage.reg_pc,h,%b", exe_reg_pc);
+    $display("data,exestage.inst_id,h,%b", exe_inst_id);
+    $display("data,exestage.exe_fun,d,%b", exe_fun);
+    $display("data,exestage.op1_data,h,%b", op1_data);
+    $display("data,exestage.op2_data,h,%b", op2_data);
+    $display("data,exestage.calc_stall,b,%b", calc_stall_flg);
+    $display("data,exestage.ismulticyc,b,%b", is_multicycle_exe);
 end
 `endif
 

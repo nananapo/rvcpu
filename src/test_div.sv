@@ -31,13 +31,13 @@ module test_div();
 
   always @(posedge clk) begin
     if (valid) begin
-    $display("data,test_div.start,%b", start);
-    $display("data,test_div.ready,%b", ready);
-    $display("data,test_div.valid,%b", valid);
-    $display("data,test_div.dividend,%b", dividend);
-    $display("data,test_div.divisor,%b", divisor);
-    $display("data,test_div.quotient,%b", quotient);
-    $display("data,test_div.remainder,%b", remainder);
+    $display("data,test_div.start,b,%b", start);
+    $display("data,test_div.ready,b,%b", ready);
+    $display("data,test_div.valid,b,%b", valid);
+    $display("data,test_div.dividend,d,%b", dividend);
+    $display("data,test_div.divisor,d,%b", divisor);
+    $display("data,test_div.quotient,d,%b", quotient);
+    $display("data,test_div.remainder,d,%b", remainder);
     $finish();
     end
   end

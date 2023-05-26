@@ -356,10 +356,10 @@ integer reg_i;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
     $display("clock,%d", clk_count);
-    $display("data,core.gp,%b", gp);
-    $display("data,core.exit,%b", exit);
+    $display("data,core.gp,h,%b", gp);
+    $display("data,core.exit,b,%b", exit);
     for (reg_i = 0; reg_i < 32; reg_i = reg_i + 1) begin
-        $display("data,core.regfile[%d],%b", reg_i, regfile[reg_i]);
+        $display("data,core.regfile[%d],h,%b", reg_i, regfile[reg_i]);
     end
 end
 `endif
