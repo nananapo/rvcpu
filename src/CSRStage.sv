@@ -405,9 +405,11 @@ assign csr_stall_flg    = csr_valid &&
                           (csr_cmd != CSR_X || (may_trap && stage_interrupt_ready)) &&
                           csr_inst_id != saved_inst_id;
 
-reg [63:0] saved_inst_id = 0;
-always @(posedge clk)
-    saved_inst_id <= csr_inst_id;
+reg [63:0] saved_inst_id = 64'hffff000000000000;
+always @(posedge clk) begin
+    if (csr_valid)
+        saved_inst_id <= csr_inst_id;
+end
 
 always @(posedge clk) begin
 if (csr_valid) begin

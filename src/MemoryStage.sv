@@ -49,7 +49,7 @@ wire [31:0]     rs2_data    = mem_ctrl.rs2_data;
 wire [31:0]     alu_out     = mem_alu_out;
 
 reg         is_cmd_executed = 0;
-reg [63:0]  saved_inst_id   = 0;
+reg [63:0]  saved_inst_id   = 64'hffff000000000000;
 wire        may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 
 // amoswapはload -> writeするのでmem_wenを置き換える
@@ -98,8 +98,10 @@ assign mem_wb_alu_out   = mem_alu_out;
 assign mem_wb_mem_rdata = gen_memdata(ctrl.mem_wen, mem_valid, saved_mem_rdata);
 assign mem_wb_csr_rdata = mem_csr_rdata;
 
-always @(posedge clk)
-    saved_inst_id <= inst_id;
+always @(posedge clk) begin
+    if (mem_valid)
+        saved_inst_id <= inst_id;
+end
 
 always @(posedge clk) begin
     if (pipeline_flush || !mem_valid || mem_wen == MEN_X) begin

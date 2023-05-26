@@ -71,7 +71,7 @@ wire        is_mul              = exe_fun == ALU_MUL || exe_fun == ALU_MULH || e
 reg         calc_started        = 0; // 複数サイクルかかる計算を開始済みか
 reg         is_calculated       = 0; // 複数サイクルかかる計算が終了しているか
 
-reg [63:0]  saved_inst_id       = 0;
+reg [63:0]  saved_inst_id       = 64'hffff000000000000;
 wire        may_start_m         = !is_calculated || saved_inst_id != inst_id; // 複数サイクルかかる計算を始める可能性があるか
 
 wire        divm_start          = exe_valid && is_div && may_start_m && divm_ready;
@@ -150,8 +150,10 @@ assign branch_hazard    = exe_valid && exe_ctrl.jmp_flg || gen_br_flg(exe_fun, o
 assign branch_target    = exe_ctrl.jmp_flg ? reg_pc + imm_j_sext : reg_pc + imm_b_sext;
 
 
-always @(posedge clk)
-    saved_inst_id <= inst_id;
+always @(posedge clk) begin
+    if (exe_valid)
+        saved_inst_id <= inst_id;
+end
 
 always @(posedge clk) begin
     // EX STAGE
