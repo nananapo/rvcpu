@@ -87,7 +87,7 @@ wire        multm_start         = exe_valid && is_mul && may_start_m && multm_re
 wire        multm_signed        = exe_fun == ALU_MUL || exe_fun == ALU_MULH || exe_fun == ALU_MULHSU;
 wire        multm_ready;
 wire        multm_valid;
-wire [32:0] multm_multiplicand  = multm_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};;
+wire [32:0] multm_multiplicand  = multm_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};
 wire [32:0] multm_multiplier    = multm_signed && exe_fun != ALU_MULHSU ? {op2_data[31], op2_data} : {1'b0, op2_data};
 wire [65:0] multm_product;
 
