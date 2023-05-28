@@ -6,30 +6,20 @@ module Core #(
     parameter FMAX_MHz = 27
 )(
     input  wire         clk,
+    input wire          exited,
 
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
     input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
-    
-    output reg          memory_inst_start,
-    input  wire         memory_inst_ready,
-    output reg  [31:0]  memory_i_addr,
-    input  wire [31:0]  memory_inst,
-    input  wire         memory_inst_valid,
-    output reg          memory_d_cmd_start,
-    output reg          memory_d_cmd_write,
-    input  wire         memory_d_cmd_ready,
-    output reg  [31:0]  memory_d_addr,
-    output reg  [31:0]  memory_wdata,
-    output reg  [31:0]  memory_wmask,
-    input  wire [31:0]  memory_rdata,
-    input  wire         memory_rdata_valid,
+
+    output IRequest     ireq,
+    input IResponse     iresp,
+    output DRequest     dreq,
+    input DResponse     dresp,
 
     output reg          exit,
-    output reg [31:0]   gp,
-    
-    input wire          exited
+    output reg [31:0]   gp
 );
 
 `include "include/core.sv"
@@ -201,11 +191,8 @@ end
 FetchStage #() fetchstage (
     .clk(clk),
 
-    .mem_start(memory_inst_start),
-    .mem_ready(memory_inst_ready),
-    .mem_addr(memory_i_addr),
-    .mem_data(memory_inst),
-    .mem_data_valid(memory_inst_valid),
+    .ireq(ireq),
+    .iresp(iresp),
 
     .if_valid(if_valid),
     .if_reg_pc(if_reg_pc),
@@ -304,6 +291,9 @@ MemoryStage #() memorystage
 (
     .clk(clk),
 
+    .dreq(dreq),
+    .dresp(dresp),
+
     .mem_valid(mem_valid),
     .mem_reg_pc(mem_reg_pc),
     .mem_inst(mem_inst),
@@ -322,16 +312,7 @@ MemoryStage #() memorystage
     .mem_wb_csr_rdata(mem_wb_csr_rdata),
 
     .pipeline_flush(pipeline_flush),
-    .memory_unit_stall(mem_memory_unit_stall),
-
-    .memu_cmd_start(memory_d_cmd_start),
-    .memu_cmd_write(memory_d_cmd_write),
-    .memu_cmd_ready(memory_d_cmd_ready),
-    .memu_valid(memory_rdata_valid),
-    .memu_addr(memory_d_addr),
-    .memu_wdata(memory_wdata),
-    .memu_wmask(memory_wmask),
-    .memu_rdata(memory_rdata)
+    .memory_unit_stall(mem_memory_unit_stall)
 );
 
 WriteBackStage #() wbstage(
