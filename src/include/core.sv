@@ -23,7 +23,7 @@ localparam ALU_COPY1= 5'd17; // op1をそのまま
 localparam ALU_X    = 5'd18; // 何もしない
 
 // RV32M
-`ifndef EXCLUDE_RV32M
+//`ifndef EXCLUDE_RV32M
 localparam ALU_MUL      = 5'd19;
 localparam ALU_MULH     = 5'd20;
 localparam ALU_MULHSU   = 5'd21;
@@ -32,7 +32,7 @@ localparam ALU_DIV      = 5'd23;
 localparam ALU_DIVU     = 5'd24;
 localparam ALU_REM      = 5'd25;
 localparam ALU_REMU     = 5'd26;
-`endif
+//`endif
 
 localparam OP1_X    = 4'd0;
 localparam OP1_RS1  = 4'd1;
@@ -57,9 +57,9 @@ localparam MEN_LH   = 4'd6;
 localparam MEN_LHU  = 4'd7;
 localparam MEN_LW   = 4'd8;
 // RV32A
-`ifndef EXCLUDE_RV32A
+//`ifndef EXCLUDE_RV32A
 localparam MEN_AMOSWAP_W_AQRL = 4'd9;
-`endif
+//`endif
 
 localparam REN_X    = 1'b0;
 localparam REN_S    = 1'b1;

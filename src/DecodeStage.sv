@@ -3,146 +3,40 @@ module DecodeStage
 (
     input  wire         clk,
 
-    input  wire[31:0]   input_reg_pc,
-    input  wire[31:0]   input_inst,
-    input  wire[63:0]   input_inst_id, 
     input  wire[31:0]   regfile[31:0],
 
+    input  wire         id_valid,
+    input  wire[31:0]   id_reg_pc,
+    input  wire[31:0]   id_inst,
+    input  wire[63:0]   id_inst_id, 
     
-    output reg [31:0]   output_reg_pc,
-    output reg [31:0]   output_inst,
-    output reg [63:0]   output_inst_id,
-    // 即値
-    output reg [31:0]   imm_i_sext,
-    output reg [31:0]   imm_s_sext,
-    output reg [31:0]   imm_b_sext,
-    output reg [31:0]   imm_j_sext,
-    output reg [31:0]   imm_u_shifted,
-    output reg [31:0]   imm_z_uext,
+    output wire             id_exe_valid,
+    output wire [31:0]      id_exe_reg_pc,
+    output wire [31:0]      id_exe_inst,
+    output wire [63:0]      id_exe_inst_id,
+    output wire ctrltype    id_exe_ctrl,
 
-    // csignals
-    output reg [4:0]    exe_fun,    // ALUの計算の種類
-    output reg [31:0]   op1_data,   // ALU
-    output reg [31:0]   op2_data,   // ALU
-    output reg [31:0]   rs2_data,   // rs2で指定されたレジスタの値
-    output reg [3:0]    mem_wen,    // メモリに書き込むか否か
-    output reg [0:0]    rf_wen,     // レジスタに書き込むか否か
-    output reg [3:0]    wb_sel,     // ライトバック先
-    output reg [4:0]    wb_addr,    // ライトバック先レジスタ番号
-    output reg [2:0]    csr_cmd,    // CSR
-    output reg          jmp_flg,    // ジャンプ命令かのフラグ
-
-    input  wire         memory_stage_stall_flg, // メモリステージでストールしているかどうか
-
-    input  wire         wb_branch_hazard,
-
-    output wire         data_hazard_stall_flg,  // データハザードでストールするかどうか
-    input  wire         data_hazard_wb_rf_wen,
-    input  wire [4:0]   data_hazard_wb_wb_addr,
-    input  wire         data_hazard_mem_rf_wen,
-    input  wire [4:0]   data_hazard_mem_wb_addr,
-    input  wire         data_hazard_exe_rf_wen,
-    input  wire [4:0]   data_hazard_exe_wb_addr,
+    output wire         dh_stall_flg,
+    input  wire         dh_wb_valid,
+    input  wire         dh_wb_rf_wen,
+    input  wire [4:0]   dh_wb_wb_addr,
+    input  wire         dh_mem_valid,
+    input  wire         dh_mem_rf_wen,
+    input  wire [4:0]   dh_mem_wb_addr,
+    input  wire         dh_exe_valid,
+    input  wire         dh_exe_rf_wen,
+    input  wire [4:0]   dh_exe_wb_addr,
 
     output wire         zifencei_stall_flg,
-    input  wire         zifencei_mem_mem_wen,
-    input  wire         zifencei_exe_mem_wen,
-
-    output wire         output_trappable
+    input  wire         zifencei_mem_wen
 );
 
 `include "include/core.sv"
 `include "include/inst.sv"
 
-initial begin
-    output_reg_pc   = REGPC_NOP;
-    output_inst     = INST_NOP;
-    
-    imm_i_sext      = 0;
-    imm_s_sext      = 0;
-    imm_b_sext      = 0;
-    imm_j_sext      = 0;
-    imm_u_shifted   = 0;
-    imm_z_uext      = 0;
-    
-    exe_fun     = 0;
-    op1_data    = 0;
-    op2_data    = 0;
-    rs2_data    = 0;
-    mem_wen     = 0;
-    rf_wen      = 0;
-    wb_sel      = 0;
-    wb_addr     = 0;
-    csr_cmd     = 0;
-    jmp_flg     = 0;
-end
-
-reg  [31:0] save_reg_pc = REGPC_NOP;
-reg  [31:0] save_inst   = INST_NOP;
-reg  [63:0] save_inst_id= INST_ID_NOP;
-
-assign data_hazard_stall_flg = wb_branch_hazard ? 0 : (
-    (data_hazard_wb_rf_wen == REN_S  /*&& wire_op1_sel == OP1_RS1 */ && data_hazard_wb_wb_addr == wire_rs1_addr  && wire_rs1_addr != 0) ||
-    (data_hazard_wb_rf_wen == REN_S  /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_wb_wb_addr == wire_rs2_addr  && wire_rs2_addr != 0) ||
-
-    (data_hazard_mem_rf_wen == REN_S /*&& wire_op1_sel == OP1_RS1 */ && data_hazard_mem_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
-    (data_hazard_mem_rf_wen == REN_S /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_mem_wb_addr == wire_rs2_addr && wire_rs2_addr != 0) ||
-
-    (data_hazard_exe_rf_wen == REN_S /*&& wire_op1_sel == OP1_RS1 */ && data_hazard_exe_wb_addr == wire_rs1_addr && wire_rs1_addr != 0) ||
-    (data_hazard_exe_rf_wen == REN_S /*&& wire_op2_sel == OP2_RS2W*/ && data_hazard_exe_wb_addr == wire_rs2_addr && wire_rs2_addr != 0)
-);
-
-reg last_is_stall = 0;
-
-wire [31:0] reg_pc = (
-    wb_branch_hazard ? REGPC_NOP :
-    last_is_stall ? save_reg_pc : input_reg_pc
-);
-
-wire [31:0] inst = (
-    wb_branch_hazard ? INST_NOP :
-    last_is_stall ? save_inst : input_inst
-);
-
-wire [63:0] inst_id = (
-    wb_branch_hazard ? INST_ID_NOP :
-    last_is_stall ? save_inst_id : input_inst_id
-);
-
-wire [11:0] wire_imm_i  = inst[31:20];
-wire [11:0] wire_imm_s  = {inst[31:25], inst[11:7]};
-wire [11:0] wire_imm_b  = {inst[31], inst[7], inst[30:25], inst[11:8]};
-wire [19:0] wire_imm_j  = {inst[31], inst[19:12], inst[20], inst[30:21]};
-wire [19:0] wire_imm_u  = inst[31:12];
-wire [4:0]  wire_imm_z  = inst[19:15];
-
-
-wire [31:0] wire_imm_i_sext     = {{20{wire_imm_i[11]}}, wire_imm_i};
-wire [31:0] wire_imm_s_sext     = {{20{wire_imm_s[11]}}, wire_imm_s};
-wire [31:0] wire_imm_b_sext     = {{19{wire_imm_b[11]}}, wire_imm_b, 1'b0};
-wire [31:0] wire_imm_j_sext     = {{11{wire_imm_j[19]}}, wire_imm_j, 1'b0};
-wire [31:0] wire_imm_u_shifted  = {wire_imm_u, 12'b0};
-wire [31:0] wire_imm_z_uext     = {27'd0, wire_imm_z};
-
-wire [2:0] funct3   = inst[14:12];
-wire [6:0] funct7   = inst[31:25];
-wire [6:0] opcode   = inst[6:0];
-
-wire inst_is_jal    = (opcode == INST_JAL_OPCODE);
-wire inst_is_jalr   = (funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE);
-
-
-
-
-/*------------Zifencei----------------*/
-wire inst_is_fence_i = (funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode == INST_ZIFENCEI_FENCEI_OPCODE);
-
-// fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
-assign zifencei_stall_flg = inst_is_fence_i && (zifencei_exe_mem_wen || zifencei_mem_mem_wen);
-
-// トラップ可能かどうか
-assign output_trappable = inst == INST_NOP;
-
+wire [31:0] reg_pc  = id_reg_pc;
+wire [31:0] inst    = id_inst;
+wire [63:0] inst_id = id_inst_id;
 
 function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
     casex (inst)
@@ -193,11 +87,6 @@ function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
         INST_ECALL                                                                                : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_ECALL};
         INST_SRET                                                                                 : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_SRET};
         INST_MRET                                                                                 : decode = {ALU_X    , OP1_X  , OP2_X   , MEN_X , REN_X, WB_X    , CSR_MRET};
-        
-        /* Zifencei
-        {7'bxxxxxxx , 10'bxxxxxxxxxx, INST_ZIFENCEI_FENCEI_FUNCT3, 5'bxxxxx, INST_ZIFENCEI_FENCEI_OPCODE } :
-            decode = {ALU_ADD, OP1_X, OP2_X, MEN_X, REN_X, WB_X, CSR_X};
-        */
 
 `ifndef EXCLUDE_RV32M
         {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MUL_FUNCT3   , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALU_MUL      , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU, CSR_X};
@@ -210,7 +99,6 @@ function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
         {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_REMU_FUNCT3  , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALU_REMU     , OP1_RS1, OP2_RS2W, MEN_X, REN_S, WB_ALU, CSR_X};
 `endif
 
-
 `ifndef EXCLUDE_RV32A
         {INST_RV32A_AMOSWAP_W_FUNCT5, 2'bxx, 10'bxxxxxxxxxx, INST_RV32A_AMOSWAP_W_FUNCT3, 5'bxxxxx, INST_RV32A_OPCODE} :
             decode = {ALU_COPY1, OP1_RS1, OP2_X, MEN_AMOSWAP_W_AQRL, REN_S, WB_MEMW, CSR_X};
@@ -222,173 +110,147 @@ function [5 + 4 + 4 + 4 + 1 + 4 + 3 - 1:0] decode(input [31:0] inst);
     endcase
 endfunction
 
-wire [4:0] wire_exe_fun;
-wire [3:0] wire_op1_sel;
-wire [3:0] wire_op2_sel;
-wire [3:0] wire_mem_wen;
-wire [0:0] wire_rf_wen;
-wire [3:0] wire_wb_sel;
-wire [2:0] wire_csr_cmd;
-assign {wire_exe_fun, wire_op1_sel, wire_op2_sel, wire_mem_wen, wire_rf_wen, wire_wb_sel, wire_csr_cmd} = decode(inst);
+wire [4:0] exe_fun;
+wire [3:0] op1_sel;
+wire [3:0] op2_sel;
+wire [3:0] mem_wen;
+wire [0:0] rf_wen;
+wire [3:0] wb_sel;
+wire [2:0] csr_cmd;
+assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd} = decode(inst);
 
-wire [4:0] wire_rs1_addr    = inst[19:15];
-wire [4:0] wire_rs2_addr    = inst[24:20];
-wire [4:0] wire_wb_addr     = inst[11:7];
+wire [4:0] rs1_addr         = inst[19:15];
+wire [4:0] rs2_addr         = inst[24:20];
+wire [4:0] wb_addr          = inst[11:7];
 
-always @(posedge clk) begin
-    // TODO ストールで次のステージに値を使わせたくないとき、無効であることを示すレジスタに値を設定するようにする。
-    //      下にあるような0埋めをしたくない。冗長なので。
-    if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
-        output_reg_pc   <= REGPC_NOP;
-        output_inst     <= INST_NOP;
-        output_inst_id  <= INST_ID_NOP;
+wire [11:0] imm_i           = inst[31:20];
+wire [11:0] imm_s           = {inst[31:25], inst[11:7]};
+wire [11:0] imm_b           = {inst[31], inst[7], inst[30:25], inst[11:8]};
+wire [19:0] imm_j           = {inst[31], inst[19:12], inst[20], inst[30:21]};
+wire [19:0] imm_u           = inst[31:12];
+wire [4:0]  imm_z           = inst[19:15];
 
-        imm_i_sext      <= 32'hffffffff;
-        imm_s_sext      <= 32'hffffffff;
-        imm_b_sext      <= 32'hffffffff;
-        imm_j_sext      <= 32'hffffffff;
-        imm_u_shifted   <= 32'hffffffff;
-        imm_z_uext      <= 32'hffffffff;
+wire [31:0] imm_i_sext      = {{20{imm_i[11]}}, imm_i};
+wire [31:0] imm_s_sext      = {{20{imm_s[11]}}, imm_s};
+wire [31:0] imm_b_sext      = {{19{imm_b[11]}}, imm_b, 1'b0};
+wire [31:0] imm_j_sext      = {{11{imm_j[19]}}, imm_j, 1'b0};
+wire [31:0] imm_u_shifted   = {imm_u, 12'b0};
+wire [31:0] imm_z_uext      = {27'd0, imm_z};
 
-        op1_data        <= 32'hffffffff;
-        op2_data        <= 32'hffffffff;
-        rs2_data        <= 32'hffffffff;
-        jmp_flg         <= 0;
+wire [2:0] funct3           = inst[14:12];
+wire [6:0] funct7           = inst[31:25];
+wire [6:0] opcode           = inst[6:0];
 
-        exe_fun         <= ALU_ADD;
-        mem_wen         <= MEN_X;
-        rf_wen          <= REN_X;
-        wb_sel          <= WB_X;
-        wb_addr         <= 0;
-        csr_cmd         <= CSR_X;
-    end else begin
-        output_reg_pc   <= reg_pc;
-        output_inst     <= inst;
-        output_inst_id  <= inst_id;
+wire inst_is_jal            = opcode == INST_JAL_OPCODE;
+wire inst_is_jalr           = funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE;
+// Zifencei
+wire inst_is_fence_i        = funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode == INST_ZIFENCEI_FENCEI_OPCODE;
 
-        imm_i_sext      <= wire_imm_i_sext;
-        imm_s_sext      <= wire_imm_s_sext;
-        imm_b_sext      <= wire_imm_b_sext;
-        imm_j_sext      <= wire_imm_j_sext;
-        imm_u_shifted   <= wire_imm_u_shifted;
-        imm_z_uext      <= wire_imm_z_uext;
+// fence.iのストール判定
+// fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
+// TODO これでは書き込みが保証されない
+assign zifencei_stall_flg   = inst_is_fence_i && zifencei_mem_wen;
+// データハザード判定
+assign dh_stall_flg =
+    (dh_wb_valid  && dh_wb_rf_wen  == REN_S && dh_wb_wb_addr  == rs1_addr && rs1_addr != 0) ||
+    (dh_wb_valid  && dh_wb_rf_wen  == REN_S && dh_wb_wb_addr  == rs2_addr && rs2_addr != 0) ||
+    (dh_mem_valid && dh_mem_rf_wen == REN_S && dh_mem_wb_addr == rs1_addr && rs1_addr != 0) ||
+    (dh_mem_valid && dh_mem_rf_wen == REN_S && dh_mem_wb_addr == rs2_addr && rs2_addr != 0) ||
+    (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs1_addr && rs1_addr != 0) ||
+    (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs2_addr && rs2_addr != 0);
 
-        case(wire_op1_sel) 
-            OP1_RS1 : op1_data <= (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr];
-            OP1_PC  : op1_data <= reg_pc;
-            OP1_IMZ : op1_data <= wire_imm_z_uext;
-            default : op1_data <= 0;
-        endcase
+function [31:0] gen_op1data(
+    input [3:0]     op1_sel,
+    input [4:0]     rs1_addr,
+    input [31:0]    imm_z_uext
+);
+case(op1_sel) 
+    OP1_PC  : gen_op1data = reg_pc;
+    OP1_IMZ : gen_op1data = imm_z_uext;
+    default : gen_op1data = 0;
+endcase
+endfunction
 
-        case(wire_op2_sel) 
-            OP2_RS2W : op2_data <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
-            OP2_IMI  : op2_data <= wire_imm_i_sext;
-            OP2_IMS  : op2_data <= wire_imm_s_sext;
-            OP2_IMJ  : op2_data <= wire_imm_j_sext;
-            OP2_IMU  : op2_data <= wire_imm_u_shifted;
-            default  : op2_data <= 0;
-        endcase
+function [31:0] gen_op2data(
+    input [3:0]     op2_sel,
+    input [4:0]     rs2_addr,
+    input [31:0]    imm_i_sext,
+    input [31:0]    imm_s_sext,
+    input [31:0]    imm_j_sext,
+    input [31:0]    imm_u_shifted
+);
+case(op2_sel) 
+    OP2_IMI : gen_op2data = imm_i_sext;
+    OP2_IMS : gen_op2data = imm_s_sext;
+    OP2_IMJ : gen_op2data = imm_j_sext;
+    OP2_IMU : gen_op2data = imm_u_shifted;
+    default : gen_op2data = 0;
+endcase
+endfunction
 
-        rs2_data        <= (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr];
-        jmp_flg         <= inst_is_jal || inst_is_jalr;
+assign id_exe_valid             = !dh_stall_flg &&
+                                  !zifencei_stall_flg &&
+                                  id_valid;
+assign id_exe_reg_pc            = reg_pc;
+assign id_exe_inst              = inst;
+assign id_exe_inst_id           = inst_id;
 
-        exe_fun         <= wire_exe_fun;
-        mem_wen         <= wire_mem_wen;
-        rf_wen          <= wire_rf_wen;
-        wb_sel          <= wire_wb_sel;
-        wb_addr         <= wire_wb_addr;
-        csr_cmd         <= wire_csr_cmd;
-
-    end
-
-    if (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg) begin
-        save_reg_pc     <= reg_pc;
-        save_inst       <= inst;
-        save_inst_id    <= inst_id;
-    end else begin
-        save_reg_pc     <= REGPC_NOP;
-        save_inst       <= INST_NOP;
-        save_inst_id    <= INST_ID_NOP;
-    end
-
-    // 分岐するときは現在のストール状態は無視する
-    last_is_stall   <= !wb_branch_hazard && (memory_stage_stall_flg || data_hazard_stall_flg || zifencei_stall_flg);
-end
+assign id_exe_ctrl.exe_fun      = exe_fun;
+assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ? 
+                                    (rs1_addr == 0 ? 0 : regfile[rs1_addr]) :
+                                    gen_op1data(op1_sel,rs1_addr,imm_z_uext);
+assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ?
+                                    (rs2_addr == 0 ? 0 : regfile[rs2_addr]) :
+                                    gen_op2data(op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted);
+assign id_exe_ctrl.rs2_data     = rs2_addr == 0 ? 0 : regfile[rs2_addr];
+assign id_exe_ctrl.mem_wen      = mem_wen;
+assign id_exe_ctrl.rf_wen       = rf_wen;
+assign id_exe_ctrl.wb_sel       = wb_sel;
+assign id_exe_ctrl.wb_addr      = wb_addr;
+assign id_exe_ctrl.csr_cmd      = csr_cmd;
+assign id_exe_ctrl.jmp_pc_flg   = inst_is_jal;
+assign id_exe_ctrl.jmp_reg_flg  = inst_is_jalr;
+assign id_exe_ctrl.imm_i_sext   = imm_i_sext;
+assign id_exe_ctrl.imm_s_sext   = imm_s_sext;
+assign id_exe_ctrl.imm_b_sext   = imm_b_sext;
+assign id_exe_ctrl.imm_j_sext   = imm_j_sext;
+assign id_exe_ctrl.imm_u_shifted= imm_u_shifted;
+assign id_exe_ctrl.imm_z_uext   = imm_z_uext;
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    // $display("data,decodestage.input.reg_pc,%b", input_reg_pc);
-    // $display("data,decodestage.input.inst,%b", input_inst);
-    // $display("data,decodestage.input.inst_id,%b", input_inst_id);
+    $display("data,decodestage.valid,b,%b", id_valid);
+    $display("data,decodestage.reg_pc,h,%b", reg_pc);
+    $display("data,decodestage.inst,h,%b", inst);
+    $display("data,decodestage.inst_id,h,%b", id_valid ? inst_id : INST_ID_NOP);
 
-    $display("data,decodestage.reg_pc,%b", reg_pc);
-    $display("data,decodestage.inst,%b", inst);
-    $display("data,decodestage.inst_id,%b", inst_id);
+    $display("data,decodestage.decode.exe_fun,d,%b", exe_fun);
+    $display("data,decodestage.decode.op1_sel,d,%b", op1_sel);
+    $display("data,decodestage.decode.op2_sel,d,%b", op2_sel);
+    $display("data,decodestage.decode.op1_data,h,%b", id_exe_ctrl.op1_data);
+    $display("data,decodestage.decode.op2_data,h,%b", id_exe_ctrl.op2_data);
+    $display("data,decodestage.decode.rs1_addr,d,%b", rs1_addr);
+    $display("data,decodestage.decode.rs2_addr,d,%b", rs2_addr);
+    $display("data,decodestage.decode.rs1_data,h,%b", (rs1_addr == 0) ? 0 : regfile[rs1_addr]);
+    $display("data,decodestage.decode.rs2_data,h,%b", (rs2_addr == 0) ? 0 : regfile[rs2_addr]);
+    $display("data,decodestage.decode.mem_wen,d,%b", mem_wen);
+    $display("data,decodestage.decode.rf_wen,d,%b", rf_wen);
+    $display("data,decodestage.decode.wb_sel,d,%b", wb_sel);
+    $display("data,decodestage.decode.wb_addr,d,%b", wb_addr);
+    $display("data,decodestage.decode.csr_cmd,d,%b", csr_cmd);
+    $display("data,decodestage.decode.jmp_pc,d,%b", id_exe_ctrl.jmp_pc_flg);
+    $display("data,decodestage.decode.jmp_reg,d,%b", id_exe_ctrl.jmp_reg_flg);
+    $display("data,decodestage.decode.imm_i,h,%b", imm_i_sext);
+    $display("data,decodestage.decode.imm_s,h,%b", imm_s_sext);
+    $display("data,decodestage.decode.imm_b,h,%b", imm_b_sext);
+    $display("data,decodestage.decode.imm_j,h,%b", imm_j_sext);
+    $display("data,decodestage.decode.imm_u,h,%b", imm_u_shifted);
+    $display("data,decodestage.decode.imm_z,h,%b", imm_z_uext);
 
-    // $display("data,decodestage.output.reg_pc,%b", output_reg_pc);
-    // $display("data,decodestage.output.inst,%b", output_inst);
-    // $display("data,decodestage.output.inst_id,%b", output_inst_id);
-
-    // $display("data,decodestage.output.imm_i_sext,%b", imm_i_sext);
-    // $display("data,decodestage.output.imm_s_sext,%b", imm_s_sext);
-    // $display("data,decodestage.output.imm_b_sext,%b", imm_b_sext);
-    // $display("data,decodestage.output.imm_j_sext,%b", imm_j_sext);
-    // $display("data,decodestage.output.imm_u_shifted,%b", imm_u_shifted);
-    // $display("data,decodestage.output.imm_z_uext,%b", imm_z_uext);
+    $display("data,decodestage.decode.is_fence_i,b,%b", inst_is_fence_i);
     
-    // $display("data,decodestage.output.exe_fun,%b", exe_fun);
-    // $display("data,decodestage.output.op1_sel,%b", op1_sel);
-    // $display("data,decodestage.output.op2_sel,%b", op2_sel);
-    // $display("data,decodestage.output.rs2_data,%b", rs2_data);
-    // $display("data,decodestage.output.mem_wen,%b", mem_wen);
-    // $display("data,decodestage.output.rf_wen,%b", rf_wen);
-    // $display("data,decodestage.output.wb_sel,%b", wb_sel);
-    // $display("data,decodestage.output.wb_addr,%b", wb_addr);
-    // $display("data,decodestage.output.csr_cmd,%b", csr_cmd);
-    // $display("data,decodestage.output.jmp_flg,%b", jmp_flg);
-    $display("data,decodestage.output.trappable,%b", output_trappable);
-
-    $display("data,decodestage.decode.rs1_addr,%b", wire_rs1_addr);
-    $display("data,decodestage.decode.rs2_addr,%b", wire_rs2_addr);
-    $display("data,decodestage.decode.rs2_data,%b", (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr]);
-    $display("data,decodestage.decode.rs2_data,%b", (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr]);
-    $display("data,decodestage.decode.op1_data,%b", (
-        wire_op1_sel == OP1_RS1 ? (wire_rs1_addr == 0) ? 0 : regfile[wire_rs1_addr] :
-        wire_op1_sel == OP1_PC  ? reg_pc :
-        wire_op1_sel == OP1_IMZ ? wire_imm_z_uext :
-        0
-    ));
-    $display("data,decodestage.decode.op2_data,%b", (
-        wire_op2_sel == OP2_RS2W ? (wire_rs2_addr == 0) ? 0 : regfile[wire_rs2_addr] :
-        wire_op2_sel == OP2_IMI  ? wire_imm_i_sext :
-        wire_op2_sel == OP2_IMS  ? wire_imm_s_sext :
-        wire_op2_sel == OP2_IMJ  ? wire_imm_j_sext :
-        wire_op2_sel == OP2_IMU  ? wire_imm_u_shifted :
-        0
-    ));
-
-    $display("data,decodestage.decode.exe_fun,%b", wire_exe_fun);
-    $display("data,decodestage.decode.op1_sel,%b", wire_op1_sel);
-    $display("data,decodestage.decode.op2_sel,%b", wire_op2_sel);
-    $display("data,decodestage.decode.mem_wen,%b", wire_mem_wen);
-    $display("data,decodestage.decode.rf_wen,%b", wire_rf_wen);
-    $display("data,decodestage.decode.wb_sel,%b", wire_wb_sel);
-    $display("data,decodestage.decode.wb_addr,%b", wire_wb_addr);
-    $display("data,decodestage.decode.csr_cmd,%b", wire_csr_cmd);
-    $display("data,decodestage.decode.is_fence_i,%b", inst_is_fence_i);
-
-    $display("data,decodestage.datahazard,%b", data_hazard_stall_flg);
-    // $display("data,decodestage.datahazard.wb_rf_wen,%b", data_hazard_wb_rf_wen);
-    // $display("data,decodestage.datahazard.wb_wb_addr,%b", data_hazard_wb_wb_addr);
-    // $display("data,decodestage.datahazard.mem_rf_wen,%b", data_hazard_mem_rf_wen);
-    // $display("data,decodestage.datahazard.mem_wb_addr,%b", data_hazard_mem_wb_addr);
-    // $display("data,decodestage.datahazard.exe_rf_wen,%b", data_hazard_exe_rf_wen);
-    // $display("data,decodestage.datahazard.exe_wb_addr,%b", data_hazard_exe_wb_addr);
-    $display("data,decodestage.datahazard.fence_i_stall,%b", zifencei_stall_flg);
-    $display("data,decodestage.last_is_stall,%b", last_is_stall);
-
-    // $display("data,decodestage.save.regpc,%b", save_reg_pc);
-    // $display("data,decodestage.save.inst,%b", save_inst);
+    $display("data,decodestage.datahazard,b,%b", dh_stall_flg);
+    $display("data,decodestage.fence_i_stall,b,%b", zifencei_stall_flg);
 end
 `endif
 

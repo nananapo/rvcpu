@@ -152,10 +152,10 @@ end
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("data,uart_mem.state,%b", state);
-    $display("data,uart_mem.cmd_start,%b", cmd_start);
-    $display("data,uart_mem.cmd_write,%b", cmd_write);
-    $display("data,uart_mem.cmd_ready,%b", cmd_ready);
+    $display("data,uart_mem.state,d,%b", state);
+    $display("data,uart_mem.cmd_start,b,%b", cmd_start);
+    $display("data,uart_mem.cmd_write,b,%b", cmd_write);
+    $display("data,uart_mem.cmd_ready,b,%b", cmd_ready);
 end
 `endif
 

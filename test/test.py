@@ -22,7 +22,7 @@ def test(filename):
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
     system("cd ../src/ && make riscv-tests > " + resultFileName)
 
-    with open(resultFileName, "r", encoding='utf-8') as f:
+    with open(resultFileName, "r") as f:
         result = "".join(f.readlines())
         if "Test passed" in result:
             results.append("PASS : "+ filename)

@@ -1,37 +1,38 @@
 module CSRStage #(
     parameter FMAX_MHz = 27
-)
-(
+) (
     input  wire         clk,
-    
+
+    input wire          csr_valid,
+    input wire [31:0]   csr_reg_pc,
+    input wire [31:0]   csr_inst,
+    input wire [63:0]   csr_inst_id,
+    input wire ctrltype csr_ctrl,
+
+    output wire [31:0]  csr_mem_csr_rdata,
+
+    output wire         csr_stall_flg,
+    output wire         csr_trap_flg,
+    output wire [31:0]  csr_trap_vector,
+
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
     input wire [63:0]   reg_mtime,
-    input wire [63:0]   reg_mtimecmp,
-
-    input wire          wb_branch_hazard,
-    
-    // input
-    input wire [63:0]   input_inst_id,
-    input wire [2:0]    input_csr_cmd,
-    input wire [31:0]   input_op1_data,
-    input wire [31:0]   input_imm_i,
-
-    // interruptができる状態(ほかのステージがnopか)どうか
-    input wire          input_interrupt_ready,
-    // Fetchステージのpc
-    input wire [31:0]   if_reg_pc,
-
-    // output
-    output reg  [2:0]   output_csr_cmd, // TODO csr_cmdを外に出さない(br_targetをMEMではなくCSRにもってきたい。これはステージをCoreにまとめた後でやりたい)
-    output reg  [31:0]  csr_rdata,
-    output reg  [31:0]  trap_vector,
-
-    // trapを起こしたいときにEXE以前を止めるために使う
-    output wire         output_stall_flg_may_interrupt
+    input wire [63:0]   reg_mtimecmp
 );
 
 `include "include/core.sv"
+
+wire [31:0] reg_pc      = csr_reg_pc;
+wire [63:0] inst_id     = csr_inst_id;
+wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
+wire [31:0] op1_data    = csr_ctrl.op1_data;
+wire [31:0] imm_i       = csr_ctrl.imm_i_sext;
+
+reg [31:0] rdata;
+reg [31:0] trap_vector;
+assign csr_mem_csr_rdata = rdata;
+assign csr_trap_vector   = trap_vector;
 
 // モード
 localparam MODE_MACHINE     = 2'b11;
@@ -41,9 +42,6 @@ localparam MODE_USER        = 2'b00;
 
 // 現在のモード
 reg [1:0]   mode = MODE_MACHINE;
-
-
-/*-------実装済みのCSRたち--------*/
 
 // Counters and Timers
 localparam CSR_ADDR_CYCLE       = 12'hc00;
@@ -59,10 +57,10 @@ localparam CSR_ADDR_MIMPID      = 12'hf13;
 localparam CSR_ADDR_MHARTID     = 12'hf14;
 localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
 
-reg [31:0] reg_mvendorid    = 32'b0;
-reg [31:0] reg_marchid      = 32'b0;
-reg [31:0] reg_mimpid       = 32'b0;
-reg [31:0] reg_mhartid      = 32'b0;
+wire [31:0] reg_mvendorid   = 32'b0;
+wire [31:0] reg_marchid     = 32'b0;
+wire [31:0] reg_mimpid      = 32'b0;
+wire [31:0] reg_mhartid     = 32'b0;
 
 // Machine Trap Setup
 /*
@@ -142,7 +140,7 @@ reg         reg_mstatus_sie     = 0;
 // A, I, M拡張を実装しているのでそのbitを立てている
 //                                   |MXL|0 |Extensions                |
 //                                           ZYXWVUTSRQPONMLKJIHGFEDCBA
-reg [31:0]  reg_misa            = 32'b01_000_00000000000001000100000001;
+wire [31:0]  reg_misa           = 32'b01_000_00000000000001000100000001;
 
 // サポートしないtrapは0を保持する
 // 1はreadonlyであってはならない。
@@ -348,7 +346,6 @@ wire may_trap = (
     reg_mip_msip ||
     reg_mip_ssip
 );
-assign output_stall_flg_may_interrupt = may_trap;
 
 // 現在起きるinterruptのcause
 // priority : MEI, MSI, MTI, SEI, SSI, STI
@@ -373,58 +370,60 @@ wire [31:0] mtvec_addr = reg_mtvec[1:0] == 2'b00 ? reg_mtvec : {reg_mtvec[31:2],
 // stvecのMODEを考慮した飛び先
 wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 
-
-/*---------CSR命令の実行----------*/
-initial begin
-    output_csr_cmd  = CSR_X;
-    csr_rdata       = 0;
-end
-
-wire [2:0] csr_cmd  = wb_branch_hazard ? CSR_X : input_csr_cmd;
-wire [31:0]op1_data = wb_branch_hazard ? 32'hffffffff : input_op1_data;
-wire [31:0]imm_i    = wb_branch_hazard ? 32'hffffffff : input_imm_i;
-
 // ecallなら0x342を読む
 wire [11:0] addr = imm_i[11:0];
 
 function [31:0] wdata_fun(
     input [2:0] csr_cmd,
     input [31:0]op1_data,
-    input [31:0]csr_rdata
+    input [31:0]rdata
 );
     case (csr_cmd)
         CSR_W       : wdata_fun = op1_data;
-        CSR_S       : wdata_fun = csr_rdata | op1_data;
-        CSR_C       : wdata_fun = csr_rdata & ~op1_data;
+        CSR_S       : wdata_fun = rdata | op1_data;
+        CSR_C       : wdata_fun = rdata & ~op1_data;
         default     : wdata_fun = 0;
     endcase
 endfunction
 
-reg [2:0] save_csr_cmd  = CSR_X;
-reg [11:0]save_csr_addr = 0;
-reg [31:0]save_op1_data = 0;
-
-wire [31:0] wdata = wdata_fun(save_csr_cmd, save_op1_data, csr_rdata);
+wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
 
 wire can_access = addr[9:8] <= mode;
 wire can_read   = can_access && addr[11] == 0;
 wire can_write  = can_access && addr[10] == 0;
 
-always @(posedge clk) begin
-    // 割り込みを起こす
-    if (may_trap && input_interrupt_ready) begin
-        `ifdef PRINT_DEBUGINFO
-            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", if_reg_pc);
-        `endif
-        // ECALLということにする
-        output_csr_cmd      <= CSR_ECALL;
+wire stage_interrupt_ready = csr_valid;
 
+assign csr_trap_flg     = csr_valid && (
+                            (may_trap && stage_interrupt_ready) ||
+                            csr_cmd == CSR_ECALL ||
+                            csr_cmd == CSR_MRET ||
+                            csr_cmd == CSR_SRET
+                          );
+
+assign csr_stall_flg    = csr_valid && 
+                          (csr_cmd != CSR_X || (may_trap && stage_interrupt_ready)) &&
+                          csr_inst_id != saved_inst_id;
+
+reg [63:0] saved_inst_id = 64'hffff000000000000;
+always @(posedge clk) begin
+    if (csr_valid)
+        saved_inst_id <= csr_inst_id;
+end
+
+always @(posedge clk) begin
+if (csr_valid) begin
+    // 割り込みを起こす
+    if (may_trap && stage_interrupt_ready) begin
+        `ifdef PRINT_DEBUGINFO
+            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", reg_pc);
+        `endif
         if (trap_to_machine_mode) begin
             // M-modeに遷移
             mode                <= MODE_MACHINE;
 
             reg_mcause          <= interrupt_cause;
-            reg_mepc            <= if_reg_pc;
+            reg_mepc            <= reg_pc;
             //reg_mtval           <= 0;
             reg_mstatus_mpp     <= mode;
             reg_mstatus_mpie    <= reg_mstatus_mie;
@@ -436,7 +435,7 @@ always @(posedge clk) begin
             mode                <= MODE_SUPERVISOR;
 
             reg_scause          <= interrupt_cause;
-            reg_sepc            <= if_reg_pc;
+            reg_sepc            <= reg_pc;
             // reg_stval           <= 0;
             reg_mstatus_spp     <= mode[0];
             reg_mstatus_spie    <= reg_mstatus_sie;
@@ -445,8 +444,6 @@ always @(posedge clk) begin
             trap_vector         <= stvec_addr;
         end
     end else begin
-        output_csr_cmd  <= csr_cmd;
-
         // pending registerを更新する
         reg_mip_mtip <= (reg_mtime >= reg_mtimecmp);
 
@@ -454,7 +451,8 @@ always @(posedge clk) begin
         case (csr_cmd)
             CSR_ECALL: begin
                 // environment call from x-Mode execeptionを起こす
-                trap_vector <= mode == MODE_USER ? stvec_addr : mtvec_addr;
+                //trap_vector <= mode == MODE_USER ? stvec_addr : mtvec_addr;
+                trap_vector <= mtvec_addr; // riscv-testsを動かすためにmtvecにしている
                 // 現在のモードに応じた値を書き込む
                 case (mode)
                     MODE_USER:          reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE; 
@@ -491,20 +489,20 @@ always @(posedge clk) begin
         case (addr)
             // Counters and Timers
             // TODO アクセス制御を共通化したい
-            CSR_ADDR_CYCLE: csr_rdata <= reg_cycle[31:0];
-            CSR_ADDR_TIME:  csr_rdata <= reg_time[31:0];
-            CSR_ADDR_CYCLEH:csr_rdata <= reg_cycle[63:32];
-            CSR_ADDR_TIMEH: csr_rdata <= reg_time[63:32];
+            CSR_ADDR_CYCLE: rdata <= reg_cycle[31:0];
+            CSR_ADDR_TIME:  rdata <= reg_time[31:0];
+            CSR_ADDR_CYCLEH:rdata <= reg_cycle[63:32];
+            CSR_ADDR_TIMEH: rdata <= reg_time[63:32];
 
             // Machine Information Registers
-            CSR_ADDR_MVENDORID: csr_rdata <= reg_mvendorid;
-            CSR_ADDR_MARCHID:   csr_rdata <= reg_marchid;
-            CSR_ADDR_MIMPID:    csr_rdata <= reg_mimpid;
-            CSR_ADDR_MHARTID:   csr_rdata <= reg_mhartid;
+            CSR_ADDR_MVENDORID: rdata <= reg_mvendorid;
+            CSR_ADDR_MARCHID:   rdata <= reg_marchid;
+            CSR_ADDR_MIMPID:    rdata <= reg_mimpid;
+            CSR_ADDR_MHARTID:   rdata <= reg_mhartid;
             // CSR_ADDR_MCONFIGPTR: read-only zero
 
             // Machine Trap Setup
-            CSR_ADDR_MSTATUS:   csr_rdata <= {
+            CSR_ADDR_MSTATUS:   rdata <= {
                 reg_mstatus_sd,
                 8'b0,
                 reg_mstatus_tsr,
@@ -527,10 +525,10 @@ always @(posedge clk) begin
                 reg_mstatus_sie,
                 1'b0
             };
-            CSR_ADDR_MISA:      csr_rdata <= reg_misa;
-            CSR_ADDR_MEDELEG:   csr_rdata <= reg_medeleg;
-            CSR_ADDR_MIDELEG:   csr_rdata <= reg_mideleg;
-            CSR_ADDR_MIE:       csr_rdata <= {
+            CSR_ADDR_MISA:      rdata <= reg_misa;
+            CSR_ADDR_MEDELEG:   rdata <= reg_medeleg;
+            CSR_ADDR_MIDELEG:   rdata <= reg_mideleg;
+            CSR_ADDR_MIE:       rdata <= {
                 16'b0,
                 4'b0,
                 reg_mie_meie, 1'b0,
@@ -540,9 +538,9 @@ always @(posedge clk) begin
                 reg_mie_msie, 1'b0,
                 reg_mie_ssie, 1'b0
             };
-            CSR_ADDR_MTVEC:     csr_rdata <= reg_mtvec;
+            CSR_ADDR_MTVEC:     rdata <= reg_mtvec;
             // CSR_ADDR_MCOUNTEREN: 0
-            CSR_ADDR_MSTATUSH:  csr_rdata <= {
+            CSR_ADDR_MSTATUSH:  rdata <= {
                 26'b0,
                 reg_mstatush_mbe,
                 reg_mstatush_sbe,
@@ -550,11 +548,11 @@ always @(posedge clk) begin
             };
 
             // Machine Trap Handling
-            CSR_ADDR_MSCRATCH:  csr_rdata <= reg_mscratch;
-            CSR_ADDR_MEPC:      csr_rdata <= reg_mepc;
-            CSR_ADDR_MCAUSE:    csr_rdata <= reg_mcause;
+            CSR_ADDR_MSCRATCH:  rdata <= reg_mscratch;
+            CSR_ADDR_MEPC:      rdata <= reg_mepc;
+            CSR_ADDR_MCAUSE:    rdata <= reg_mcause;
             // CSR_ADDR_MTVAL:  read-only zero
-            CSR_ADDR_MIP:       csr_rdata <= {
+            CSR_ADDR_MIP:       rdata <= {
                 20'b0,
                 reg_mip_meip, 1'b0,
                 reg_mip_seip, 1'b0,
@@ -567,18 +565,18 @@ always @(posedge clk) begin
             // CSR_ADDR_MTVAL2:    0
 
             // Machine Memory Protection
-            CSR_ADDR_PMPADDR0:  csr_rdata <= reg_pmpaddr0;
-            CSR_ADDR_PMPCFG0:   csr_rdata <= reg_pmpcfg0;
+            CSR_ADDR_PMPADDR0:  rdata <= reg_pmpaddr0;
+            CSR_ADDR_PMPCFG0:   rdata <= reg_pmpcfg0;
 
             // Machine Counter/Timers
-            CSR_ADDR_MCYCLE:    csr_rdata <= reg_cycle[31:0];
+            CSR_ADDR_MCYCLE:    rdata <= reg_cycle[31:0];
             // CSR_ADDR_MINSTRET: not impl
-            CSR_ADDR_MCYCLEH:   csr_rdata <= reg_cycle[63:32];
+            CSR_ADDR_MCYCLEH:   rdata <= reg_cycle[63:32];
             // CSR_ADDR_MINSTRETH: not impl
 
             // Supervisor Trap Setup
             // sstatusはmstatusのサブセット
-            CSR_ADDR_SSTATUS:       csr_rdata <= {
+            CSR_ADDR_SSTATUS:       rdata <= {
                 reg_mstatus_sd,
                 11'b0,
                 reg_mstatus_mxr,
@@ -597,7 +595,7 @@ always @(posedge clk) begin
                 1'b0
             };
             // sieはmieのサブセット
-            CSR_ADDR_SIE:           csr_rdata <= {
+            CSR_ADDR_SIE:           rdata <= {
                 16'b0,
                 6'b0,
                 reg_mie_seie,
@@ -607,15 +605,15 @@ always @(posedge clk) begin
                 reg_mie_ssie,
                 1'b0
             };
-            CSR_ADDR_STVEC:         csr_rdata <= reg_stvec;
+            CSR_ADDR_STVEC:         rdata <= reg_stvec;
             // CSR_ADDR_SCOUNTEREN: 0
 
             // Supervisor Trap Handling
-            CSR_ADDR_SSCRATCH:  csr_rdata <= reg_sscratch;
-            CSR_ADDR_SEPC:      csr_rdata <= reg_sepc;
-            CSR_ADDR_SCAUSE:    csr_rdata <= reg_scause;
-            // CSR_ADDR_STVAL:     csr_rdata <= reg_stval;
-            CSR_ADDR_SIP:       csr_rdata <= {
+            CSR_ADDR_SSCRATCH:  rdata <= reg_sscratch;
+            CSR_ADDR_SEPC:      rdata <= reg_sepc;
+            CSR_ADDR_SCAUSE:    rdata <= reg_scause;
+            // CSR_ADDR_STVAL:     rdata <= reg_stval;
+            CSR_ADDR_SIP:       rdata <= {
                 22'b0,
                 reg_mip_seip, 1'b0,
                 2'b0,
@@ -625,27 +623,22 @@ always @(posedge clk) begin
             };
 
             // Supervisor Protection and Translation
-            CSR_ADDR_SATP:      csr_rdata <= reg_satp; 
+            CSR_ADDR_SATP:      rdata <= reg_satp; 
 
-            default:            csr_rdata <= 32'b0;
+            default:            rdata <= 32'b0;
         endcase
     end else begin
-        csr_rdata <= 32'b0;
-        // TODO trap
+        rdata <= 32'b0;
     end
 
-    save_csr_cmd    <= csr_cmd;
-    save_csr_addr   <= addr;
-    save_op1_data   <= op1_data;
-
-    case (save_csr_cmd)
+    case (csr_cmd)
         CSR_X: begin end
         CSR_ECALL: begin end
         CSR_MRET: begin end
         CSR_SRET: begin end
         default: begin
             if (can_write) begin
-                case (save_csr_addr)
+                case (addr)
                     // Counters and Timers
                     // READ ONLY
                     // CSR_ADDR_CYCLE:
@@ -775,29 +768,32 @@ always @(posedge clk) begin
         end
     endcase
 end
+end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,csrstage.inst_id,%b", csr_cmd == CSR_X ? INST_ID_NOP : input_inst_id);
+    $display("data,csrstage.valid,b,%b", csr_valid);
+    $display("data,csrstage.reg_pc,h,%b", reg_pc);
+    $display("data,csrstage.inst,h,%b", csr_inst);
+    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? INST_ID_NOP : inst_id);
 
     // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
     // $display("data,csrstage.input.op1_data,%b", input_op1_data);
     // $display("data,csrstage.input.imm_i,%b", input_imm_i);
-    $display("data,csrstage.input.intrrupt_ready,%b", input_interrupt_ready);
-    $display("data,csrstage.input.if_reg_pc,%b", if_reg_pc);
 
-    // $display("data,csrstage.output.csr_cmd,%b", output_csr_cmd);
-    $display("data,csrstage.output.csr_rdata,%b", csr_rdata);
-    $display("data,csrstage.output.trap_vector,%b", trap_vector);
-    $display("data,csrstage.output.stall_flg_may_interrupt,%b", output_stall_flg_may_interrupt);
+    $display("data,csrstage.output.rdata,h,%b", rdata);
+    $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
+    $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
+    $display("data,csrstage.input.may_trap,b,%b", may_trap);
+    $display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);
 
-    $display("data,csrstage.mode,%b", mode);
-    $display("data,csrstage.csr_cmd,%b", csr_cmd);
+    $display("data,csrstage.mode,d,%b", mode);
+    $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
     // $display("data,csrstage.op1_data,%b", op1_data);
     // $display("data,csrstage.imm_i,%b", imm_i);
-    $display("data,csrstage.addr,%b", addr);
-    $display("data,csrstage.wdata,%b", wdata);
-    $display("data,csrstage.mtvec,%b", reg_mtvec);
+    $display("data,csrstage.addr,h,%b", addr);
+    $display("data,csrstage.wdata,h,%b", wdata);
+    $display("data,csrstage.mtvec,h,%b", reg_mtvec);
 end
 `endif
 
