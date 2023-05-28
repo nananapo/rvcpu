@@ -1,26 +1,9 @@
-module MemoryUnalignedAccessController #(
-    parameter FMAX_MHz = 27,
-    parameter MEMORY_SIZE = 4096,
-    parameter MEMORY_FILE = ""
-) (
+module DUnalignedAccessController #() (
     input  wire         clk,
-    
-    input  wire         uart_rx,
-    output wire         uart_tx,
-    input  wire         mem_uart_rx,
-    output wire         mem_uart_tx,
-
-    input  wire [63:0]  mtime,
-    output wire [63:0]  mtimecmp,
-
-    input  wire         input_cmd_start,
-    input  wire         input_cmd_write,
-    output wire         output_cmd_ready,
-    input  wire [31:0]  input_addr,
-    output wire [31:0]  output_rdata,
-    output wire         output_rdata_valid,
-    input  wire [31:0]  input_wdata,
-    input  wire [31:0]  input_wmask
+    input  DRequest     dreq,
+    output DResponse    dresp,
+    output DRequest     memreq,
+    input  DResponse    memresp
 );
 
 wire        mem_cmd_start;
@@ -31,29 +14,32 @@ wire [31:0] mem_rdata;
 wire        mem_rdata_valid;
 wire [31:0] mem_wdata;
 
-MemoryMapController #(
-    .FMAX_MHz(FMAX_MHz),
-    .MEMORY_SIZE(MEMORY_SIZE),
-    .MEMORY_FILE(MEMORY_FILE)
-) memory (
-    .clk(clk),
+assign          memreq.valid    = mem_cmd_start;
+assign          memreq.wen      = mem_cmd_write;
+assign          mem_cmd_ready   = memreq.ready;
+assign          memreq.addr     = mem_addr;
+assign          mem_rdata       = memresp.rdata;
+assign          mem_rdata_valid = memresp.valid;
+assign          memreq.wdata    = mem_wdata;
+assign          memreq.wmask    = 32'hffffffff;
 
-    .uart_rx(uart_rx),
-    .uart_tx(uart_tx),
-    .mem_uart_rx(mem_uart_rx),
-    .mem_uart_tx(mem_uart_tx),
+wire         input_cmd_start;
+wire         input_cmd_write;
+wire         output_cmd_ready;
+wire [31:0]  input_addr;
+wire [31:0]  output_rdata;
+wire         output_rdata_valid;
+wire [31:0]  input_wdata;
+wire [31:0]  input_wmask;
 
-    .mtime(mtime),
-    .mtimecmp(mtimecmp),
-
-    .input_cmd_start(mem_cmd_start),
-    .input_cmd_write(mem_cmd_write),
-    .output_cmd_ready(mem_cmd_ready),
-    .input_addr(mem_addr),
-    .output_rdata(mem_rdata),
-    .output_rdata_valid(mem_rdata_valid),
-    .input_wdata(mem_wdata)
-);
+assign input_cmd_start  = dreq.valid;
+assign input_cmd_write  = dreq.wen;
+assign dreq.ready       = output_cmd_ready;
+assign input_addr       = dreq.addr;
+assign dresp.rdata      = output_rdata;
+assign dresp.valid      = output_rdata_valid;
+assign input_wdata      = dreq.wdata;
+assign input_wmask      = dreq.wmask;
 
 reg         save_cmd_write  = 0;
 reg [31:0]  save_addr       = 0;
