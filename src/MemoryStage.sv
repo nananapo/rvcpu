@@ -18,17 +18,11 @@ module MemoryStage(
     output wire [31:0]      mem_wb_mem_rdata,
     output wire [31:0]      mem_wb_csr_rdata,
 
-    input wire          pipeline_flush, // TODO killする
+    input wire          pipeline_flush,
     output reg          memory_unit_stall,
 
-    output wire         memu_cmd_start,
-    output wire         memu_cmd_write,
-    input  wire         memu_cmd_ready,
-    input  wire         memu_valid,
-    output wire [31:0]  memu_addr,
-    output wire [31:0]  memu_wdata,
-    output wire [31:0]  memu_wmask,
-    input  wire [31:0]  memu_rdata
+    output DRequest     dreq, // TODO kill
+    input DResponse     dresp
 );
 
 `include "include/core.sv"
@@ -60,15 +54,25 @@ wire [3:0]  mem_wen         = !mem_valid ? MEN_X :
 wire is_store   = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
 wire is_load    = mem_wen == MEN_LB || mem_wen == MEN_LBU || mem_wen == MEN_LH || mem_wen == MEN_LHU || mem_wen == MEN_LW || mem_wen == MEN_AMOSWAP_W_AQRL;
 
-// ***************
-// MEMORY WIRE
-// ***************
-assign memu_cmd_start    = state == STATE_WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
-assign memu_cmd_write    = is_store;
-assign memu_addr         = alu_out;
-assign memu_wdata        = rs2_data;
-assign memu_wmask        = mem_wen == MEN_SB ? 32'h000000ff :
-                          mem_wen == MEN_SH ? 32'h0000ffff : 32'hffffffff;
+// TODO いずれwireではなくdreq, drespに置き換える
+wire        memu_cmd_start  = state == STATE_WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
+wire        memu_cmd_write  = is_store;
+wire        memu_cmd_ready;
+wire        memu_valid;
+wire [31:0] memu_addr       = alu_out;
+wire [31:0] memu_wdata      = rs2_data;
+wire [31:0] memu_wmask      = mem_wen == MEN_SB ? 32'h000000ff :
+                              mem_wen == MEN_SH ? 32'h0000ffff : 32'hffffffff;
+wire [31:0] memu_rdata;
+
+assign dreq.valid       = memu_cmd_start;
+assign dreq.wen         = memu_cmd_write;
+assign memu_cmd_ready   = dreq.ready;
+assign memu_valid       = dresp.valid;
+assign dreq.addr        = memu_addr;
+assign dreq.wdata       = memu_wdata;    
+assign dreq.wmask       = memu_wmask;
+assign memu_rdata       = dresp.rdata;
 
 assign memory_unit_stall = mem_valid && 
                             (state != STATE_WAIT || (may_start_m && mem_wen != MEN_X));
