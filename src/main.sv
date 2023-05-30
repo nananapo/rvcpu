@@ -40,15 +40,7 @@ wire clkConstrained;
     );
 `endif
 
-wire IRequest   ireq;
-wire IResponse  iresp;
-wire DRequest   dreq_mem;
-wire DResponse  dresp_mem;
-wire DRequest   dreq_unaligned;
-wire DResponse  dresp_unaligned;
-
 reg exited = 0;
-
 always @(posedge clkConstrained) begin
     if (exit) begin
         exited <= 1;
@@ -74,6 +66,16 @@ always @(posedge clkConstrained) begin
     end
 end
 
+wire IRequest   ireq_mem;
+wire IResponse  iresp_mem;
+wire IRequest   ireq_core;
+wire IResponse  iresp_core;
+
+wire DRequest   dreq_mem;
+wire DResponse  dresp_mem;
+wire DRequest   dreq_unaligned;
+wire DResponse  dresp_unaligned;
+
 MemoryInterface #(
     .FMAX_MHz(FMAX_MHz)
 ) memory (
@@ -93,6 +95,17 @@ MemoryInterface #(
     .iresp(iresp),
     .dreq(dreq_mem),
     .dresp(dresp_mem)
+);
+
+// IF/ID Stage <-> InstQueue <-> MemoryInterface
+InstQueue #(
+    .FMAX_MHz(FMAX_MHz)
+) instqueue (
+    .clk(clkConstrained),
+    .ireq(ireq_core),
+    .iresp(iresp_core),
+    .memireq(ireq_mem),
+    .memiresp(iresp_mem)
 );
 
 // MEM Stage <-> DUnalignedAccessController <-> MemoryInterface
@@ -116,8 +129,8 @@ Core #(
     .reg_mtime(reg_time),
     .reg_mtimecmp(reg_mtimecmp),
 
-    .ireq(ireq),
-    .iresp(iresp),
+    .ireq(ireq_core),
+    .iresp(iresp_core),
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),
 
