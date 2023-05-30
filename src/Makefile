@@ -4,6 +4,7 @@ FILES = test.sv \
 		DivNbit.sv \
 		DivUnsignedNbit.sv \
 		Memory.sv \
+		InstQueue.sv \
 		DecodeStage.sv \
 		ExecuteStage.sv \
 		MemoryStage.sv \
