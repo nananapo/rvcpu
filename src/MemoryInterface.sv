@@ -12,10 +12,10 @@ module MemoryInterface #(
     input  wire [63:0]  mtime,
     output wire [63:0]  mtimecmp,
     
-    input IRequest      ireq,
-    output IResponse    iresp,
-    input DRequest      dreq,
-    output DResponse    dresp
+    inout wire IRequest      ireq,
+    inout wire IResponse     iresp,
+    inout wire DRequest      dreq,
+    inout wire DResponse     dresp
 );
 
 typedef enum reg [1:0] {
@@ -24,8 +24,13 @@ typedef enum reg [1:0] {
 
 statetype state = WAIT_CMD;
 
-wire IRequest   saved_ireq;
-wire DRequest   saved_dreq;
+IRequest saved_ireq;
+DRequest saved_dreq;
+
+initial begin
+    saved_dreq.valid = 0;
+    saved_ireq.valid = 0;
+end
 
 MemoryMapController #(
     .FMAX_MHz(FMAX_MHz),

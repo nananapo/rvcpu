@@ -6,7 +6,7 @@
 module Core #(
     parameter FMAX_MHz = 27
 )(
-    input  wire         clk,
+    input wire          clk,
     input wire          exited,
 
     input wire [63:0]   reg_cycle,
@@ -14,10 +14,10 @@ module Core #(
     input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
 
-    output IRequest     ireq,
-    input IResponse     iresp,
-    output DRequest     dreq,
-    input DResponse     dresp,
+    inout wire IRequest     ireq,
+    inout wire IResponse    iresp,
+    inout wire DRequest     dreq,
+    inout wire DResponse    dresp,
 
     output reg          exit,
     output reg [31:0]   gp

@@ -1,9 +1,9 @@
-module DUnalignedAccessController #() (
-    input  wire         clk,
-    input  DRequest     dreq,
-    output DResponse    dresp,
-    output DRequest     memreq,
-    input  DResponse    memresp
+module DUnalignedAccessController (
+    input wire          clk,
+    inout wire DRequest     dreq,
+    inout wire DResponse    dresp,
+    inout wire DRequest     memreq,
+    inout wire DResponse    memresp
 );
 
 wire        mem_cmd_start;

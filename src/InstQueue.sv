@@ -1,12 +1,12 @@
-module InstIssuer #(
-    parameter QUEUE_SIZE = 16
+module InstQueue #(
+    parameter QUEUE_SIZE = 5'd16
 ) (
     input wire          clk,
 
-    input IRequest      ireq,
-    output IResponse    iresp,
-    output IRequest     memreq,
-    input IResponse     memresp
+    inout wire IRequest     ireq,
+    inout wire IResponse    iresp,
+    inout wire IRequest     memreq,
+    inout wire IResponse    memresp
 );
 
 reg [4:0]   queue_head  = 0;
