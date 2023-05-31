@@ -1,5 +1,4 @@
 `default_nettype none
-
 `include "include/memoryinterface.sv"
 
 module main #(
@@ -80,7 +79,7 @@ MemoryInterface #(
     .FMAX_MHz(FMAX_MHz)
 ) memory (
     .clk(clkConstrained),
-    .exit(exited)
+    .exit(exited),
 
     .mem_uart_rx(mem_uart_rx),
     .mem_uart_tx(mem_uart_tx),
@@ -91,21 +90,19 @@ MemoryInterface #(
     .mtime(reg_time),
     .mtimecmp(reg_mtimecmp),
 
-    .ireq(ireq),
-    .iresp(iresp),
+    .ireq(ireq_mem),
+    .iresp(iresp_mem),
     .dreq(dreq_mem),
     .dresp(dresp_mem)
 );
 
 // IF/ID Stage <-> InstQueue <-> MemoryInterface
-InstQueue #(
-    .FMAX_MHz(FMAX_MHz)
-) instqueue (
+InstQueue #() instqueue (
     .clk(clkConstrained),
     .ireq(ireq_core),
     .iresp(iresp_core),
-    .memireq(ireq_mem),
-    .memiresp(iresp_mem)
+    .memreq(ireq_mem),
+    .memresp(iresp_mem)
 );
 
 // MEM Stage <-> DUnalignedAccessController <-> MemoryInterface
