@@ -54,12 +54,12 @@ dk:
 	make dv
 
 v:
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M main.sv
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32A main.sv
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
-	verilator --lint-only $(DEFINE_DEBUG) main.sv
-	verilator --lint-only $(DEFINE_RISCV_TESTS) main.sv
-	verilator --lint-only $(DEFINE_MEMORY_UART) main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main $(DEFINE_DEBUG) main.sv
+	verilator --lint-only --top-module main $(DEFINE_RISCV_TESTS) main.sv
+	verilator --lint-only --top-module main $(DEFINE_MEMORY_UART) main.sv
 
 test_div:
 	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.sv DivUnsignedNbit.sv DivNbit.sv
