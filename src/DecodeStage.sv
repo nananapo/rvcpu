@@ -149,15 +149,15 @@ wire inst_is_fence_i        = funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode ==
 // fence.iのストール判定
 // fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
 // TODO これでは書き込みが保証されない
-assign zifencei_stall_flg   = inst_is_fence_i && zifencei_mem_wen;
+assign zifencei_stall_flg   = id_valid && inst_is_fence_i && zifencei_mem_wen;
 // データハザード判定
-assign dh_stall_flg =
+assign dh_stall_flg = id_valid && (
     (dh_wb_valid  && dh_wb_rf_wen  == REN_S && dh_wb_wb_addr  == rs1_addr && rs1_addr != 0) ||
     (dh_wb_valid  && dh_wb_rf_wen  == REN_S && dh_wb_wb_addr  == rs2_addr && rs2_addr != 0) ||
     (dh_mem_valid && dh_mem_rf_wen == REN_S && dh_mem_wb_addr == rs1_addr && rs1_addr != 0) ||
     (dh_mem_valid && dh_mem_rf_wen == REN_S && dh_mem_wb_addr == rs2_addr && rs2_addr != 0) ||
     (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs1_addr && rs1_addr != 0) ||
-    (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs2_addr && rs2_addr != 0);
+    (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs2_addr && rs2_addr != 0));
 
 function [31:0] gen_op1data(
     input [3:0]     op1_sel,
