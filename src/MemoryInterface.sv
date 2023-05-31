@@ -68,7 +68,7 @@ MemoryMapController #(
     .input_wdata(mem_wdata)
 );
 
-wire        mem_cmd_start   = state == WAIT_MEM_READY && (ireq.valid || dreq.valid);
+wire        mem_cmd_start   = state == WAIT_MEM_READY && (saved_ireq.valid || saved_dreq.valid);
 wire        mem_cmd_write   = !saved_ireq.valid && saved_dreq.valid && saved_dreq.wen;
 wire        mem_cmd_ready;
 wire [31:0] mem_addr        = saved_ireq.valid ? saved_ireq.addr : saved_dreq.addr;
