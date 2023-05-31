@@ -5,10 +5,6 @@ try:
     for (clock, numberData, textData) in readClockCycle():
         print("#", clock, "clock", "-" * 24)
 
-        if IF_INST_ID not in numberData:
-            # とりあえず終了ということにする
-            break
-
         num_others = deepcopy(numberData)
         text_others = deepcopy(textData)
 
