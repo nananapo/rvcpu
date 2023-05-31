@@ -13,7 +13,7 @@ FILES = test.sv \
 		MemoryMapped_MachineTimeRegister.sv \
 		MemoryMappedIO_Uart_rx.sv \
 		MemoryMappedIO_Uart_tx.sv \
-		MemoryUnalignedAccessController.sv \
+		DUnalignedAccessController.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
 		CSRStage.sv \

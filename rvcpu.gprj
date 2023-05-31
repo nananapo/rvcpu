@@ -11,7 +11,7 @@
         <File path="src/MemoryMapped_MachineTimeRegister.sv" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_rx.sv" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_tx.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryUnalignedAccessController.sv" type="file.verilog" enable="1"/>
+        <File path="src/DUnalignedAccessController.sv" type="file.verilog" enable="1"/>
         <File path="src/MultNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/MultUnsignedNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/UARTMemory.sv" type="file.verilog" enable="1"/>
