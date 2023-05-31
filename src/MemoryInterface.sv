@@ -116,4 +116,10 @@ always @(posedge clk) begin
     endcase end
 end
 
+`ifdef PRINT_DEBUGINFO
+always @(posedge clk) begin
+    $display("data,meminterface.state,d,%b", state);
+end
+`endif
+
 endmodule
