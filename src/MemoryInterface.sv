@@ -89,19 +89,21 @@ assign dresp.inst   = mem_rdata;
 
 always @(posedge clk) begin
     if (!exit) begin case (state) 
-        WAIT_CMD:
+        WAIT_CMD: begin
             saved_ireq  <= ireq;
             saved_dreq  <= dreq;
             if (ireq.valid || dreq.valid)
                 state <= WAIT_MEM_READY;
-        WAIT_MEM_READY:
-            if (!mem_cmd_ready) begin
+        end
+        WAIT_MEM_READY: begin
+            if (mem_cmd_ready) begin
                 if (saved_ireq.valid)
                     state <= WAIT_MEM_READ_VALID;
                 else if(saved_dreq.valid)
                     state <= saved_dreq.wen ? WAIT_CMD : WAIT_MEM_READ_VALID;
             end
-        WAIT_MEM_READ_VALID:
+        end
+        WAIT_MEM_READ_VALID: begin
             if (mem_rdata_valid) begin
                 if (saved_ireq.valid) begin
                     saved_ireq.valid    <= 0;
@@ -109,6 +111,7 @@ always @(posedge clk) begin
                 end else if (saved_dreq.valid)
                     state <= WAIT_CMD;
             end
+        end
         default: begin end
     endcase end
 end
