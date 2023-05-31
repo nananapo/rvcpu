@@ -105,16 +105,18 @@ InstQueue #() instqueue (
     .memresp(iresp_mem)
 );
 
+assign dreq_mem = dreq_unaligned;
+assign dresp_unaligned = dresp_mem;
+/* いったんスキップ
 // MEM Stage <-> DUnalignedAccessController <-> MemoryInterface
-DUnalignedAccessController #(
-    .FMAX_MHz(FMAX_MHz)
-) dunalignedaccesscontroller (
+DUnalignedAccessController #() dunalignedaccesscontroller (
     .clk(clkConstrained),
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),
     .memreq(dreq_mem),
     .memresp(dresp_mem)
 );
+*/
 
 Core #(
     .FMAX_MHz(FMAX_MHz)
