@@ -85,7 +85,7 @@ assign iresp.inst   = mem_rdata;
 assign dreq.ready   = state == WAIT_CMD;
 assign dresp.valid  = state == WAIT_MEM_READ_VALID && mem_rdata_valid && !saved_ireq.valid;
 assign dresp.addr   = saved_dreq.addr;
-assign dresp.inst   = mem_rdata;
+assign dresp.rdata  = mem_rdata;
 
 always @(posedge clk) begin
     if (!exit) begin case (state) 
