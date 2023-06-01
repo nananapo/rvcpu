@@ -37,7 +37,7 @@ MemoryMapController #(
 `ifdef RISCV_TEST
     // make riscv-tests
     .MEMORY_SIZE(2097152), // 8MiB
-    .MEMORY_FILE("../test/riscv-tests/rv32ui-p-bltu.bin.aligned")
+    .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
 `elsif DEBUG
     // make d
     .MEMORY_SIZE(2097152), // 8MiB

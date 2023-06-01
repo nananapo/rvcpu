@@ -59,7 +59,7 @@ reg [63:0]  id_inst_id;
 
 // if -> id logic
 always @(posedge clk) begin
-    if (!if_stall) begin
+    if (!if_stall || branch_hazard) begin
         if (!iresp.valid || branch_hazard)
             id_valid    <= 0;
         else begin
@@ -91,7 +91,7 @@ ctrltype        exe_ctrl;
 // id -> exe logic
 always @(posedge clk) begin
     if (!id_stall) begin
-        // データハザードか分岐ハザードなら、invalidとして流す。進めたい
+        // データハザードか分岐ハザードで、かつストールしてないなら、invalidとして流す。
         if (id_dh_stall || branch_hazard)
             exe_valid   <= 0;
         else begin 
