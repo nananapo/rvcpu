@@ -87,13 +87,22 @@ end
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
+    $display("data,fetchstage.pc,h,%b", pc);
+    $display("data,fetchstage.branch_hazard,b,%b", branch_hazard);
     $display("data,fetchstage.ireq.valid,b,%b", ireq.valid);
+    $display("data,fetchstage.ireq.addr,h,%b", ireq.addr);
     $display("data,fetchstage.iresp.valid,b,%b", iresp.valid);
     $display("data,fetchstage.iresp.ready,b,%b", iresp.ready);
-    $display("data,fetchstage.requested,b,%b", requested);
-    $display("data,fetchstage.request_pc,h,%b", request_pc);
+    $display("data,fetchstage.iresp.addr,h,%b", iresp.addr);
+    $display("data,fetchstage.iresp.inst,h,%b", iresp.inst);
+    $display("data,fetchstage.memreq.ready,b,%b", memreq.ready);
+    $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
+    $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
     $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
     $display("data,fetchstage.memresp.addr,h,%b", memresp.addr);
+    $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
+    $display("data,fetchstage.requested,b,%b", requested);
+    $display("data,fetchstage.request_pc,h,%b", request_pc);
     $display("data,fetchstage.queue_is_full,b,%b", queue_is_full);
     $display("data,fetchstage.queue_head,h,%b", queue_head);
     $display("data,fetchstage.queue_tail,h,%b", queue_tail);

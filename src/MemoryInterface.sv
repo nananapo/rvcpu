@@ -119,6 +119,12 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,meminterface.state,d,%b", state);
+    $display("data,meminterface.dreq.ready,b,%b", dreq.ready);
+    $display("data,meminterface.dreq.valid,b,%b", dreq.valid);
+    $display("data,meminterface.dresp.valid,b,%b", dresp.valid);
+    $display("data,meminterface.ireq.ready,b,%b", ireq.ready);
+    $display("data,meminterface.ireq.valid,b,%b", ireq.valid);
+    $display("data,meminterface.iresp.valid,b,%b", iresp.valid);
 end
 `endif
 
