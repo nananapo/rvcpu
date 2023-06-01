@@ -20,8 +20,13 @@ reg [63:0]  inst_id     = 64'd0;
 reg         requested   = 0;
 reg [31:0]  request_pc  = 32'd0;
 
+wire branch_hazard      = ireq.valid &&
+                          // フェッチをリクエスト済みなら、リクエスト済みのアドレスと比べて、同じかつキューのサイズが0なら分岐ハザードは起こさない(フェッチが遅いだけと判断する)
+                          // キューのサイズが0ではない場合は必ず分岐ハザードと判定する。
+                          (requested ? request_pc != ireq.addr || queue_head != queue_tail: 1);
+
 wire [31:0] next_pc     = pc + 4; // ここで分岐予測したい
-wire queue_is_full      = ireq.valid || //分岐ハザードなら空
+wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
                           queue_tail + 1 == queue_head; // キューがフル
 
 assign memreq.valid     = !queue_is_full;
@@ -33,8 +38,8 @@ assign iresp.inst       = inst_queue[queue_head];
 assign iresp.inst_id    = inst_id;
 
 always @(posedge clk) begin
-    // ireq.valid -> 分岐予測に失敗
-    if (ireq.valid) begin
+    // 分岐予測に失敗
+    if (branch_hazard) begin
         // pcにireq.addrを設定する。
         inst_id     <= inst_id + 1;
         queue_head  <= queue_tail; // キューのサイズを0にする
