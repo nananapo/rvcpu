@@ -41,7 +41,7 @@ wire mem_memory_unit_stall; // メモリステージでメモリがreadyでは�
 wire pipeline_kill = exited;
 
 // if -> id wire
-wire if_stall = id_stall || id_dh_stall;
+wire if_stall = (id_valid && id_stall) || id_dh_stall;
 
 assign iresp.ready  = !pipeline_kill &&
                       !if_stall &&
@@ -79,7 +79,7 @@ wire [31:0]     id_exe_inst;
 wire [63:0]     id_exe_inst_id;
 wire ctrltype   id_exe_ctrl;
 
-wire            id_stall = exe_stall ||
+wire            id_stall = (exe_valid && exe_stall) ||
                            id_zifencei_stall_flg;
 
 // exe, csr reg
@@ -113,7 +113,7 @@ wire [63:0]     exe_mem_inst_id;
 wire ctrltype   exe_mem_ctrl;
 wire [31:0]     exe_mem_alu_out;
 
-wire            exe_stall = mem_stall ||
+wire            exe_stall = (mem_valid && mem_stall) ||
                             exe_calc_stall ||
                             csr_stall_flg;
 
