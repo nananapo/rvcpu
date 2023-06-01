@@ -36,14 +36,21 @@ always @(posedge clk) begin
     // ireq.valid -> 分岐予測に失敗
     if (ireq.valid) begin
         // pcにireq.addrを設定する。
-        pc          <= ireq.addr;
         inst_id     <= inst_id + 1;
         queue_head  <= queue_tail; // キューのサイズを0にする
 
-        // リクエスト状態を設定
-        requested   <= memreq.ready;
-        request_pc  <= ireq.addr;
+        $display("info,fetchstage.prediction_failed,branch hazard");
 
+        // リクエストする
+        if (memreq.ready) begin
+            pc          <= ireq.addr + 4; //ここでも分岐予測をしたい、もしくは分岐失敗時は1クロック消費して次のクロックでリクエストする
+            requested   <= 1;
+            request_pc  <= ireq.addr;
+            $display("info,fetchstage.fetch_requested,Request : 0x%h", ireq.addr);
+        end else begin
+            pc          <= ireq.addr;
+            requested   <= 0;
+        end
         // TODO $display(予測失敗)
     end else begin
         if (requested) begin
