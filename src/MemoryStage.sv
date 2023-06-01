@@ -21,8 +21,8 @@ module MemoryStage(
     input wire          pipeline_flush,
     output reg          memory_unit_stall,
 
-    output DRequest     dreq, // TODO kill
-    input DResponse     dresp
+    inout wire DRequest     dreq, // TODO kill
+    inout wire DResponse    dresp
 );
 
 `include "include/core.sv"
