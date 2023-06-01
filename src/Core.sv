@@ -44,8 +44,7 @@ wire pipeline_kill = exited;
 wire if_stall = (id_valid && id_stall) || id_dh_stall;
 
 assign iresp.ready  = !pipeline_kill &&
-                      !if_stall &&
-                      !branch_hazard;
+                      !if_stall;
 
 // branchするとき(分岐予測に失敗したとき)はireq経由でリクエストする
 // ireq.validをtrueにすると、キューがリセットされる。
@@ -113,8 +112,10 @@ wire [63:0]     exe_mem_inst_id;
 wire ctrltype   exe_mem_ctrl;
 wire [31:0]     exe_mem_alu_out;
 
+// exeで分岐が発生した場合、idがvalidになるのを待って判定する。
 wire            exe_stall = (mem_valid && mem_stall) ||
                             exe_calc_stall ||
+                            (exe_branch_hazard && !id_valid) || 
                             csr_stall_flg;
 
 // csr -> mem wire
@@ -122,8 +123,8 @@ wire [31:0]     csr_mem_csr_rdata;
 
 // exe, csr -> if wire
 
-// TODO 分岐予測判定を、iresp.validになるまで遅延する
-wire            branch_fail = exe_branch_hazard && id_valid ? id_reg_pc == exe_branch_target : 0;
+// 分岐予測判定のため && 簡単のために、id_validになるまでストールしている
+wire            branch_fail   = exe_branch_hazard && (id_valid ? id_reg_pc != exe_branch_target : 0);
 
 wire            branch_hazard = !csr_stall_flg && (csr_trap_flg || branch_fail);
 wire [31:0]     branch_target = csr_trap_flg ? csr_trap_vector : exe_branch_target;
@@ -145,8 +146,7 @@ reg [31:0]      mem_csr_rdata;
 
 // exe -> mem logic
 always @(posedge clk) begin
-    // exeで分岐が発生した場合、idがvalidになるのを待って判定する。
-    if (!exe_stall && !(exe_branch_hazard && !id_valid)) begin
+    if (!exe_stall) begin
         mem_valid       <= exe_mem_valid;
         mem_reg_pc      <= exe_mem_reg_pc;
         mem_inst        <= exe_mem_inst;
