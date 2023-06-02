@@ -49,8 +49,8 @@ always @(posedge clk) begin
         $display("info,fetchstage.prediction_failed,branch hazard");
         `endif
 
-        // リクエストする
-        if (memreq.ready) begin
+        // メモリがreadyかつmemreq.validならリクエストしてる
+        if (memreq.ready && memreq.valid) begin
             pc          <= ireq.addr + 4; //ここでも分岐予測をしたい、もしくは分岐失敗時は1クロック消費して次のクロックでリクエストする
             requested   <= 1;
             request_pc  <= ireq.addr;
