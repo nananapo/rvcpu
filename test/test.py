@@ -41,10 +41,15 @@ for fileName in os.listdir("riscv-tests/"):
 
 results = sorted(results)
 
+successCount = str(sum(resultstatus))
+statusText = "Test Result : " + successCount + " / " + str(len(resultstatus))
+
 with open("results/result.txt", "w", encoding='utf-8') as f:
-    f.write("STATUS : " + str(sum(resultstatus)) + " / " + str(len(resultstatus)) + "\n")
+    f.write(statusText + "\n")
     f.write("\n".join(results))
 
 # rollback
 with open(MEMORY_V_FILENAME, "w", encoding='utf-8') as f:
     f.write(memory_backup)
+
+print(statusText)
