@@ -220,37 +220,39 @@ assign id_exe_ctrl.imm_z_uext   = imm_z_uext;
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,decodestage.valid,b,%b", id_valid);
-    $display("data,decodestage.reg_pc,h,%b", reg_pc);
-    $display("data,decodestage.inst,h,%b", inst);
     $display("data,decodestage.inst_id,h,%b", id_valid ? inst_id : INST_ID_NOP);
+    if (id_valid) begin
+        $display("data,decodestage.reg_pc,h,%b", reg_pc);
+        $display("data,decodestage.inst,h,%b", inst);
 
-    $display("data,decodestage.decode.exe_fun,d,%b", exe_fun);
-    $display("data,decodestage.decode.op1_sel,d,%b", op1_sel);
-    $display("data,decodestage.decode.op2_sel,d,%b", op2_sel);
-    $display("data,decodestage.decode.op1_data,h,%b", id_exe_ctrl.op1_data);
-    $display("data,decodestage.decode.op2_data,h,%b", id_exe_ctrl.op2_data);
-    $display("data,decodestage.decode.rs1_addr,d,%b", rs1_addr);
-    $display("data,decodestage.decode.rs2_addr,d,%b", rs2_addr);
-    $display("data,decodestage.decode.rs1_data,h,%b", (rs1_addr == 0) ? 0 : regfile[rs1_addr]);
-    $display("data,decodestage.decode.rs2_data,h,%b", (rs2_addr == 0) ? 0 : regfile[rs2_addr]);
-    $display("data,decodestage.decode.mem_wen,d,%b", mem_wen);
-    $display("data,decodestage.decode.rf_wen,d,%b", rf_wen);
-    $display("data,decodestage.decode.wb_sel,d,%b", wb_sel);
-    $display("data,decodestage.decode.wb_addr,d,%b", wb_addr);
-    $display("data,decodestage.decode.csr_cmd,d,%b", csr_cmd);
-    $display("data,decodestage.decode.jmp_pc,d,%b", id_exe_ctrl.jmp_pc_flg);
-    $display("data,decodestage.decode.jmp_reg,d,%b", id_exe_ctrl.jmp_reg_flg);
-    $display("data,decodestage.decode.imm_i,h,%b", imm_i_sext);
-    $display("data,decodestage.decode.imm_s,h,%b", imm_s_sext);
-    $display("data,decodestage.decode.imm_b,h,%b", imm_b_sext);
-    $display("data,decodestage.decode.imm_j,h,%b", imm_j_sext);
-    $display("data,decodestage.decode.imm_u,h,%b", imm_u_shifted);
-    $display("data,decodestage.decode.imm_z,h,%b", imm_z_uext);
+        $display("data,decodestage.decode.exe_fun,d,%b", exe_fun);
+        $display("data,decodestage.decode.op1_sel,d,%b", op1_sel);
+        $display("data,decodestage.decode.op2_sel,d,%b", op2_sel);
+        $display("data,decodestage.decode.op1_data,h,%b", id_exe_ctrl.op1_data);
+        $display("data,decodestage.decode.op2_data,h,%b", id_exe_ctrl.op2_data);
+        $display("data,decodestage.decode.rs1_addr,d,%b", rs1_addr);
+        $display("data,decodestage.decode.rs2_addr,d,%b", rs2_addr);
+        $display("data,decodestage.decode.rs1_data,h,%b", (rs1_addr == 0) ? 0 : regfile[rs1_addr]);
+        $display("data,decodestage.decode.rs2_data,h,%b", (rs2_addr == 0) ? 0 : regfile[rs2_addr]);
+        $display("data,decodestage.decode.mem_wen,d,%b", mem_wen);
+        $display("data,decodestage.decode.rf_wen,d,%b", rf_wen);
+        $display("data,decodestage.decode.wb_sel,d,%b", wb_sel);
+        $display("data,decodestage.decode.wb_addr,d,%b", wb_addr);
+        $display("data,decodestage.decode.csr_cmd,d,%b", csr_cmd);
+        $display("data,decodestage.decode.jmp_pc,d,%b", id_exe_ctrl.jmp_pc_flg);
+        $display("data,decodestage.decode.jmp_reg,d,%b", id_exe_ctrl.jmp_reg_flg);
+        $display("data,decodestage.decode.imm_i,h,%b", imm_i_sext);
+        $display("data,decodestage.decode.imm_s,h,%b", imm_s_sext);
+        $display("data,decodestage.decode.imm_b,h,%b", imm_b_sext);
+        $display("data,decodestage.decode.imm_j,h,%b", imm_j_sext);
+        $display("data,decodestage.decode.imm_u,h,%b", imm_u_shifted);
+        $display("data,decodestage.decode.imm_z,h,%b", imm_z_uext);
 
-    $display("data,decodestage.decode.is_fence_i,b,%b", inst_is_fence_i);
-    
-    $display("data,decodestage.datahazard,b,%b", dh_stall_flg);
-    $display("data,decodestage.fence_i_stall,b,%b", zifencei_stall_flg);
+        $display("data,decodestage.decode.is_fence_i,b,%b", inst_is_fence_i);
+        
+        $display("data,decodestage.datahazard,b,%b", dh_stall_flg);
+        $display("data,decodestage.fence_i_stall,b,%b", zifencei_stall_flg);
+    end
 end
 `endif
 

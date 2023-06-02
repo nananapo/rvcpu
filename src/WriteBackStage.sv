@@ -83,14 +83,16 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,wbstage.valid,b,%b", wb_valid);
-    $display("data,wbstage.reg_pc,h,%b", reg_pc);
-    $display("data,wbstage.inst,h,%b", inst);
     $display("data,wbstage.inst_id,h,%b", is_new_inst ? inst_id : INST_ID_NOP);
-    $display("data,wbstage.wb_sel,d,%b", wb_ctrl.wb_sel);
-    $display("data,wbstage.wb_addr,d,%b", wb_ctrl.wb_addr);
-    $display("data,wbstage.wb_data,h,%b", wb_data);
-    $display("data,wbstage.inst_count,d,%b", inst_count);
-    // $display("data,wbstage.exit,%b", exit);
+    if (wb_valid) begin
+        $display("data,wbstage.reg_pc,h,%b", reg_pc);
+        $display("data,wbstage.inst,h,%b", inst);
+        $display("data,wbstage.wb_sel,d,%b", wb_ctrl.wb_sel);
+        $display("data,wbstage.wb_addr,d,%b", wb_ctrl.wb_addr);
+        $display("data,wbstage.wb_data,h,%b", wb_data);
+        $display("data,wbstage.inst_count,d,%b", inst_count);
+        // $display("data,wbstage.exit,%b", exit);
+    end
 end
 `endif
 

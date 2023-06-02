@@ -150,28 +150,30 @@ end
 always @(posedge clk) begin
     $display("data,memstage.valid,b,%b", mem_valid);
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.reg_pc,h,%b", reg_pc);
-    $display("data,memstage.inst,h,%b", inst);
     $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : INST_ID_NOP);
-    $display("data,memstage.rs2_data,h,%b", rs2_data);
-    $display("data,memstage.alu_out,h,%b", alu_out);
-    $display("data,memstage.mem_wen,d,%b", mem_wen);
-    
-    // $display("data,memstage.output.reg_pc,h,%b", mem_wb_reg_pc);
-    $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
+    if (mem_valid) begin
+        $display("data,memstage.reg_pc,h,%b", reg_pc);
+        $display("data,memstage.inst,h,%b", inst);
+        $display("data,memstage.rs2_data,h,%b", rs2_data);
+        $display("data,memstage.alu_out,h,%b", alu_out);
+        $display("data,memstage.mem_wen,d,%b", mem_wen);
+        
+        // $display("data,memstage.output.reg_pc,h,%b", mem_wb_reg_pc);
+        $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
 
-    $display("data,memstage.is_load,b,%b", is_load);
-    $display("data,memstage.is_store,b,%b", is_store);
-    $display("data,memstage.memory_unit_stall,b,%b", memory_unit_stall);
+        $display("data,memstage.is_load,b,%b", is_load);
+        $display("data,memstage.is_store,b,%b", is_store);
+        $display("data,memstage.memory_unit_stall,b,%b", memory_unit_stall);
 
-    // $display("data,memstage.memu.cmd.s,b,%b", memu_cmd_start);
-    // $display("data,memstage.memu.cmd.w,b,%b", memu_cmd_write);
-    // $display("data,memstage.memu.cmd_ready,b,%b", memu_cmd_ready);
-    // $display("data,memstage.memu.addr,h,%b", memu_addr);
-    // $display("data,memstage.memu.wdata,h,%b", memu_wdata);
-    // $display("data,memstage.memu.wmask,h,%b", memu_wmask);
-    // $display("data,memstage.memu.rdata,h,%b", memu_rdata);
-    // $display("data,memstage.memu.valid,b,%b", memu_valid);
+        // $display("data,memstage.memu.cmd.s,b,%b", memu_cmd_start);
+        // $display("data,memstage.memu.cmd.w,b,%b", memu_cmd_write);
+        // $display("data,memstage.memu.cmd_ready,b,%b", memu_cmd_ready);
+        // $display("data,memstage.memu.addr,h,%b", memu_addr);
+        // $display("data,memstage.memu.wdata,h,%b", memu_wdata);
+        // $display("data,memstage.memu.wmask,h,%b", memu_wmask);
+        // $display("data,memstage.memu.rdata,h,%b", memu_rdata);
+        // $display("data,memstage.memu.valid,b,%b", memu_valid);
+    end
 end
 `endif
 

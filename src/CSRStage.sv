@@ -773,28 +773,30 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", csr_valid);
-    $display("data,csrstage.reg_pc,h,%b", reg_pc);
-    $display("data,csrstage.inst,h,%b", csr_inst);
     $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? INST_ID_NOP : inst_id);
+    if (csr_valid) begin
+        $display("data,csrstage.reg_pc,h,%b", reg_pc);
+        $display("data,csrstage.inst,h,%b", csr_inst);
 
-    // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
-    // $display("data,csrstage.input.op1_data,%b", input_op1_data);
-    // $display("data,csrstage.input.imm_i,%b", input_imm_i);
+        // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
+        // $display("data,csrstage.input.op1_data,%b", input_op1_data);
+        // $display("data,csrstage.input.imm_i,%b", input_imm_i);
 
-    $display("data,csrstage.output.rdata,h,%b", rdata);
-    $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
-    $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
-    $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
-    $display("data,csrstage.input.may_trap,b,%b", may_trap);
-    $display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);
+        $display("data,csrstage.output.rdata,h,%b", rdata);
+        $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
+        $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
+        $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
+        $display("data,csrstage.input.may_trap,b,%b", may_trap);
+        $display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);
 
-    $display("data,csrstage.mode,d,%b", mode);
-    $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
-    // $display("data,csrstage.op1_data,%b", op1_data);
-    // $display("data,csrstage.imm_i,%b", imm_i);
-    $display("data,csrstage.addr,h,%b", addr);
-    $display("data,csrstage.wdata,h,%b", wdata);
-    $display("data,csrstage.mtvec,h,%b", reg_mtvec);
+        $display("data,csrstage.mode,d,%b", mode);
+        $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
+        // $display("data,csrstage.op1_data,%b", op1_data);
+        // $display("data,csrstage.imm_i,%b", imm_i);
+        $display("data,csrstage.addr,h,%b", addr);
+        $display("data,csrstage.wdata,h,%b", wdata);
+        $display("data,csrstage.mtvec,h,%b", reg_mtvec);
+    end
 end
 `endif
 
