@@ -74,8 +74,7 @@ wire        mem_cmd_ready;
 wire [31:0] mem_addr        = saved_ireq.valid ? saved_ireq.addr : saved_dreq.addr;
 wire [31:0] mem_rdata;
 wire        mem_rdata_valid;
-wire [31:0] mem_wdata       = dreq.wdata;
-wire [31:0] mem_wmask       = dreq.wmask;
+wire [31:0] mem_wdata       = saved_dreq.wdata;
 
 assign ireq.ready   = state == WAIT_CMD;
 assign iresp.valid  = state == WAIT_MEM_READ_VALID && mem_rdata_valid && saved_ireq.valid;
