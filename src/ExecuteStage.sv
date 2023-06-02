@@ -193,17 +193,19 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,exestage.valid,b,%b", exe_valid);
-    $display("data,exestage.reg_pc,h,%b", exe_reg_pc);
-    $display("data,exestage.inst,h,%b", exe_inst);
     $display("data,exestage.inst_id,h,%b", exe_valid ? exe_inst_id : INST_ID_NOP);
-    $display("data,exestage.exe_fun,d,%b", exe_fun);
-    $display("data,exestage.op1_data,h,%b", op1_data);
-    $display("data,exestage.op2_data,h,%b", op2_data);
-    $display("data,exestage.calc_stall,b,%b", calc_stall_flg);
-    $display("data,exestage.ismulticyc,b,%b", is_multicycle_exe);
-    $display("data,exestage.jmp_flg,d,%b", exe_ctrl.jmp_reg_flg || exe_ctrl.jmp_pc_flg);
-    $display("data,exestage.branch_hazard,b,%b", branch_hazard);
-    $display("data,exestage.branch_target,h,%b", branch_target);
+    if (exe_valid) begin
+        $display("data,exestage.reg_pc,h,%b", exe_reg_pc);
+        $display("data,exestage.inst,h,%b", exe_inst);
+        $display("data,exestage.exe_fun,d,%b", exe_fun);
+        $display("data,exestage.op1_data,h,%b", op1_data);
+        $display("data,exestage.op2_data,h,%b", op2_data);
+        $display("data,exestage.calc_stall,b,%b", calc_stall_flg);
+        $display("data,exestage.ismulticyc,b,%b", is_multicycle_exe);
+        $display("data,exestage.jmp_flg,d,%b", exe_ctrl.jmp_reg_flg || exe_ctrl.jmp_pc_flg);
+        $display("data,exestage.branch_hazard,b,%b", branch_hazard);
+        $display("data,exestage.branch_target,h,%b", branch_target);
+    end
 end
 `endif
 

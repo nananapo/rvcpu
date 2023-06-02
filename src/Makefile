@@ -4,7 +4,7 @@ FILES = test.sv \
 		DivNbit.sv \
 		DivUnsignedNbit.sv \
 		Memory.sv \
-		FetchStage.sv \
+		InstQueue.sv \
 		DecodeStage.sv \
 		ExecuteStage.sv \
 		MemoryStage.sv \
@@ -13,7 +13,7 @@ FILES = test.sv \
 		MemoryMapped_MachineTimeRegister.sv \
 		MemoryMappedIO_Uart_rx.sv \
 		MemoryMappedIO_Uart_tx.sv \
-		MemoryUnalignedAccessController.sv \
+		DUnalignedAccessController.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
 		CSRStage.sv \
@@ -54,12 +54,12 @@ dk:
 	make dv
 
 v:
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M main.sv
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32A main.sv
-	verilator --lint-only -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
-	verilator --lint-only $(DEFINE_DEBUG) main.sv
-	verilator --lint-only $(DEFINE_RISCV_TESTS) main.sv
-	verilator --lint-only $(DEFINE_MEMORY_UART) main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main $(DEFINE_DEBUG) main.sv
+	verilator --lint-only --top-module main $(DEFINE_RISCV_TESTS) main.sv
+	verilator --lint-only --top-module main $(DEFINE_MEMORY_UART) main.sv
 
 test_div:
 	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.sv DivUnsignedNbit.sv DivNbit.sv

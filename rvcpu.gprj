@@ -11,7 +11,7 @@
         <File path="src/MemoryMapped_MachineTimeRegister.sv" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_rx.sv" type="file.verilog" enable="1"/>
         <File path="src/MemoryMappedIO_Uart_tx.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryUnalignedAccessController.sv" type="file.verilog" enable="1"/>
+        <File path="src/DUnalignedAccessController.sv" type="file.verilog" enable="1"/>
         <File path="src/MultNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/MultUnsignedNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/UARTMemory.sv" type="file.verilog" enable="1"/>
@@ -21,7 +21,7 @@
         <File path="src/csrstage.sv" type="file.verilog" enable="1"/>
         <File path="src/decodestage.sv" type="file.verilog" enable="1"/>
         <File path="src/executestage.sv" type="file.verilog" enable="1"/>
-        <File path="src/fetchstage.sv" type="file.verilog" enable="1"/>
+        <File path="src/InstQueue.sv" type="file.verilog" enable="1"/>
         <File path="src/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
         <File path="src/include/ctrltype.sv" type="file.verilog" enable="1"/>
         <File path="src/include/core.sv" type="file.verilog" enable="1"/>

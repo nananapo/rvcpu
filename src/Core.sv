@@ -2,34 +2,25 @@
 
 `include "include/ctrltype.sv"
 
+// TODO reg_pcをpcにする
 module Core #(
     parameter FMAX_MHz = 27
 )(
-    input  wire         clk,
+    input wire          clk,
+    input wire          exited,
 
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
     input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
-    
-    output reg          memory_inst_start,
-    input  wire         memory_inst_ready,
-    output reg  [31:0]  memory_i_addr,
-    input  wire [31:0]  memory_inst,
-    input  wire         memory_inst_valid,
-    output reg          memory_d_cmd_start,
-    output reg          memory_d_cmd_write,
-    input  wire         memory_d_cmd_ready,
-    output reg  [31:0]  memory_d_addr,
-    output reg  [31:0]  memory_wdata,
-    output reg  [31:0]  memory_wmask,
-    input  wire [31:0]  memory_rdata,
-    input  wire         memory_rdata_valid,
+
+    inout wire IRequest     ireq,
+    inout wire IResponse    iresp,
+    inout wire DRequest     dreq,
+    inout wire DResponse    dresp,
 
     output reg          exit,
-    output reg [31:0]   gp,
-    
-    input wire          exited
+    output reg [31:0]   gp
 );
 
 `include "include/core.sv"
@@ -47,15 +38,18 @@ wire csr_stall_flg;         // csrステージが止まってる
 wire mem_memory_unit_stall; // メモリステージでメモリがreadyではないストール
 
 // IF -> ID -> EXE (CSR) -> MEM -> WB
-wire pipeline_flush = exited;
+wire pipeline_kill = exited;
 
 // if -> id wire
-wire        if_valid;
-wire [31:0] if_reg_pc;
-wire [31:0] if_inst;
-wire [63:0] if_inst_id;
+wire if_stall = (id_valid && id_stall) || id_dh_stall;
 
-wire        if_stall =  id_stall || id_dh_stall;
+assign iresp.ready  = !pipeline_kill &&
+                      !if_stall;
+
+// branchするとき(分岐予測に失敗したとき)はireq経由でリクエストする
+// ireq.validをtrueにすると、キューがリセットされる。
+assign ireq.valid   = branch_hazard;
+assign ireq.addr    = branch_target;
 
 // id reg
 reg         id_valid = 0;
@@ -65,13 +59,15 @@ reg [63:0]  id_inst_id;
 
 // if -> id logic
 always @(posedge clk) begin
-    if (pipeline_flush) begin
-        id_valid    <= 0;
-    end else if (!if_stall) begin // TODO || !id_valid
-        id_valid    <= if_valid && !branch_hazard; // TODO prediction
-        id_reg_pc   <= if_reg_pc;
-        id_inst     <= if_inst;
-        id_inst_id  <= if_inst_id;
+    if (!if_stall || branch_hazard) begin
+        if (!iresp.valid || branch_hazard)
+            id_valid    <= 0;
+        else begin
+            id_valid    <= 1;
+            id_reg_pc   <= iresp.addr;
+            id_inst     <= iresp.inst;
+            id_inst_id  <= iresp.inst_id;
+        end
     end
 end
 
@@ -82,7 +78,7 @@ wire [31:0]     id_exe_inst;
 wire [63:0]     id_exe_inst_id;
 wire ctrltype   id_exe_ctrl;
 
-wire            id_stall = exe_stall ||
+wire            id_stall = (exe_valid && exe_stall) ||
                            id_zifencei_stall_flg;
 
 // exe, csr reg
@@ -94,14 +90,17 @@ ctrltype        exe_ctrl;
 
 // id -> exe logic
 always @(posedge clk) begin
-    if (pipeline_flush) begin
-        exe_valid   <= 0;
-    end else if (!id_stall) begin // データハザードではid -> exeを止めない。ただし、データハザードが起きていたらinvalidにする
-        exe_valid   <= id_exe_valid && !id_dh_stall && !branch_hazard;
-        exe_reg_pc  <= id_exe_reg_pc;
-        exe_inst    <= id_exe_inst;
-        exe_inst_id <= id_exe_inst_id;
-        exe_ctrl    <= id_exe_ctrl;
+    if (!id_stall) begin
+        // データハザードか分岐ハザードで、かつストールしてないなら、invalidとして流す。
+        if (id_dh_stall || branch_hazard)
+            exe_valid   <= 0;
+        else begin 
+            exe_valid   <= id_exe_valid;
+            exe_reg_pc  <= id_exe_reg_pc;
+            exe_inst    <= id_exe_inst;
+            exe_inst_id <= id_exe_inst_id;
+            exe_ctrl    <= id_exe_ctrl;
+        end
     end
 end
 
@@ -113,21 +112,35 @@ wire [63:0]     exe_mem_inst_id;
 wire ctrltype   exe_mem_ctrl;
 wire [31:0]     exe_mem_alu_out;
 
-wire            exe_stall = mem_stall ||
+// exeで分岐が発生した場合、idがvalidになるのを待って判定する。
+wire            exe_stall = (mem_valid && mem_stall) ||
                             exe_calc_stall ||
+                            (exe_branch_hazard && !id_valid) || 
                             csr_stall_flg;
 
 // csr -> mem wire
 wire [31:0]     csr_mem_csr_rdata;
 
 // exe, csr -> if wire
-wire            branch_hazard = !csr_stall_flg && (csr_trap_flg || exe_branch_hazard);
-wire [31:0]     branch_target = csr_trap_flg ? csr_trap_vector : exe_branch_target;
+
+// 分岐予測判定のため && 簡単のために、id_validになるまでストールしている
+wire            branch_fail   = exe_branch_hazard &&
+                                (id_valid ? id_reg_pc != exe_branch_target :
+                                0);
+                                 // iresp.valid ? iresp.addr != exe_branch_target : 0);// 0なのはストールするから
+
+wire            csr_trap_fail = csr_csr_trap_flg &&
+                                (id_valid ? id_reg_pc != csr_trap_vector :
+                                1);
+                                // iresp.valid ? iresp.addr != csr_trap_vector : 1);// 1なのはストールしないから
+
+wire            branch_hazard = !csr_stall_flg && (csr_trap_fail || branch_fail);
+wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : exe_branch_target;
 
 wire            exe_branch_hazard;
 wire [31:0]     exe_branch_target;
 
-wire            csr_trap_flg;
+wire            csr_csr_trap_flg;
 wire [31:0]     csr_trap_vector;
 
 // mem reg
@@ -141,9 +154,7 @@ reg [31:0]      mem_csr_rdata;
 
 // exe -> mem logic
 always @(posedge clk) begin
-    if (pipeline_flush) begin
-        mem_valid   <= 0;
-    end else if (!exe_stall) begin
+    if (!exe_stall) begin
         mem_valid       <= exe_mem_valid;
         mem_reg_pc      <= exe_mem_reg_pc;
         mem_inst        <= exe_mem_inst;
@@ -184,9 +195,7 @@ reg [31:0]      wb_csr_rdata;
 
 // mem -> wb logic
 always @(posedge clk) begin
-    if (pipeline_flush) begin
-        wb_valid   <= 0;
-    end else if (!mem_stall) begin
+    if (!mem_stall) begin
         wb_valid        <= mem_wb_valid;
         wb_reg_pc       <= mem_wb_reg_pc;
         wb_inst         <= mem_wb_inst;
@@ -197,26 +206,6 @@ always @(posedge clk) begin
         wb_csr_rdata    <= mem_wb_csr_rdata;
     end
 end
-
-FetchStage #() fetchstage (
-    .clk(clk),
-
-    .mem_start(memory_inst_start),
-    .mem_ready(memory_inst_ready),
-    .mem_addr(memory_i_addr),
-    .mem_data(memory_inst),
-    .mem_data_valid(memory_inst_valid),
-
-    .if_valid(if_valid),
-    .if_reg_pc(if_reg_pc),
-    .if_inst(if_inst),
-    .if_inst_id(if_inst_id),
-
-    .branch_hazard(branch_hazard || exited),
-    .branch_target(branch_target),
-
-    .if_stall_flg(if_stall)
-);
 
 DecodeStage #() decodestage
 (
@@ -272,7 +261,7 @@ ExecuteStage #() executestage
     .branch_hazard(exe_branch_hazard),
     .branch_target(exe_branch_target),
 
-    .pipeline_flush(pipeline_flush),
+    .pipeline_flush(pipeline_kill),
     .calc_stall_flg(exe_calc_stall)
 );
 
@@ -291,7 +280,7 @@ CSRStage #(
     .csr_mem_csr_rdata(csr_mem_csr_rdata),
     
     .csr_stall_flg(csr_stall_flg),
-    .csr_trap_flg(csr_trap_flg),
+    .csr_trap_flg(csr_csr_trap_flg),
     .csr_trap_vector(csr_trap_vector),
 
     .reg_cycle(reg_cycle),
@@ -303,6 +292,9 @@ CSRStage #(
 MemoryStage #() memorystage
 (
     .clk(clk),
+
+    .dreq(dreq),
+    .dresp(dresp),
 
     .mem_valid(mem_valid),
     .mem_reg_pc(mem_reg_pc),
@@ -321,17 +313,8 @@ MemoryStage #() memorystage
     .mem_wb_mem_rdata(mem_wb_mem_rdata),
     .mem_wb_csr_rdata(mem_wb_csr_rdata),
 
-    .pipeline_flush(pipeline_flush),
-    .memory_unit_stall(mem_memory_unit_stall),
-
-    .memu_cmd_start(memory_d_cmd_start),
-    .memu_cmd_write(memory_d_cmd_write),
-    .memu_cmd_ready(memory_d_cmd_ready),
-    .memu_valid(memory_rdata_valid),
-    .memu_addr(memory_d_addr),
-    .memu_wdata(memory_wdata),
-    .memu_wmask(memory_wmask),
-    .memu_rdata(memory_rdata)
+    .pipeline_flush(pipeline_kill),
+    .memory_unit_stall(mem_memory_unit_stall)
 );
 
 WriteBackStage #() wbstage(

@@ -5,7 +5,6 @@ MEM_INST_PREFIX     = "memstage."
 CSR_INST_PREFIX     = "csrstage."
 WB_INST_PREFIX      = "wbstage."
 
-IF_INST_ID      = "fetchstage.inst_id"
 ID_INST_ID      = "decodestage.inst_id"
 EXE_INST_ID     = "exestage.inst_id"
 MEM_INST_ID     = "memstage.inst_id"
@@ -19,9 +18,10 @@ MEMSTAGE_NAME   = "MEM"
 CSRSTAGE_NAME   = "CSR"
 WBSTAGE_NAME    = "WB"
 
-IF_END_EVENT    = "fetchstage.instruction_fetched"
-IF_OUT_PC       = "fetchstage.output.if_reg_pc"
-IF_OUT_INST     = "fetchstage.output.if_inst"
+IF_FETCH_START  = "fetchstage.event.fetch_start"
+IF_FETCH_END    = "fetchstage.event.fetch_end"
+IF_INFO_PC      = "fetchstage.event.pc"
+IF_INFO_INST    = "fetchstage.event.inst"
 
 # ログを1クロックサイクルごとのデータにまとめる
 def readClockCycle():

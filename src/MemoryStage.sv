@@ -18,17 +18,11 @@ module MemoryStage(
     output wire [31:0]      mem_wb_mem_rdata,
     output wire [31:0]      mem_wb_csr_rdata,
 
-    input wire          pipeline_flush, // TODO killする
+    input wire          pipeline_flush,
     output reg          memory_unit_stall,
 
-    output wire         memu_cmd_start,
-    output wire         memu_cmd_write,
-    input  wire         memu_cmd_ready,
-    input  wire         memu_valid,
-    output wire [31:0]  memu_addr,
-    output wire [31:0]  memu_wdata,
-    output wire [31:0]  memu_wmask,
-    input  wire [31:0]  memu_rdata
+    inout wire DRequest     dreq, // TODO kill
+    inout wire DResponse    dresp
 );
 
 `include "include/core.sv"
@@ -60,15 +54,25 @@ wire [3:0]  mem_wen         = !mem_valid ? MEN_X :
 wire is_store   = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
 wire is_load    = mem_wen == MEN_LB || mem_wen == MEN_LBU || mem_wen == MEN_LH || mem_wen == MEN_LHU || mem_wen == MEN_LW || mem_wen == MEN_AMOSWAP_W_AQRL;
 
-// ***************
-// MEMORY WIRE
-// ***************
-assign memu_cmd_start    = state == STATE_WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
-assign memu_cmd_write    = is_store;
-assign memu_addr         = alu_out;
-assign memu_wdata        = rs2_data;
-assign memu_wmask        = mem_wen == MEN_SB ? 32'h000000ff :
-                          mem_wen == MEN_SH ? 32'h0000ffff : 32'hffffffff;
+// TODO いずれwireではなくdreq, drespに置き換える
+wire        memu_cmd_start  = state == STATE_WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
+wire        memu_cmd_write  = is_store;
+wire        memu_cmd_ready;
+wire        memu_valid;
+wire [31:0] memu_addr       = alu_out;
+wire [31:0] memu_wdata      = rs2_data;
+wire [31:0] memu_wmask      = mem_wen == MEN_SB ? 32'h000000ff :
+                              mem_wen == MEN_SH ? 32'h0000ffff : 32'hffffffff;
+wire [31:0] memu_rdata;
+
+assign dreq.valid       = memu_cmd_start;
+assign dreq.wen         = memu_cmd_write;
+assign memu_cmd_ready   = dreq.ready;
+assign memu_valid       = dresp.valid;
+assign dreq.addr        = memu_addr;
+assign dreq.wdata       = memu_wdata;    
+assign dreq.wmask       = memu_wmask;
+assign memu_rdata       = dresp.rdata;
 
 assign memory_unit_stall = mem_valid && 
                             (state != STATE_WAIT || (may_start_m && mem_wen != MEN_X));
@@ -144,30 +148,32 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,memstage.state,d,%b", state);
     $display("data,memstage.valid,b,%b", mem_valid);
-    $display("data,memstage.reg_pc,h,%b", reg_pc);
-    $display("data,memstage.inst,h,%b", inst);
+    $display("data,memstage.state,d,%b", state);
     $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : INST_ID_NOP);
-    $display("data,memstage.rs2_data,h,%b", rs2_data);
-    $display("data,memstage.alu_out,h,%b", alu_out);
-    $display("data,memstage.mem_wen,d,%b", mem_wen);
-    
-    // $display("data,memstage.output.reg_pc,h,%b", mem_wb_reg_pc);
-    $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
+    if (mem_valid) begin
+        $display("data,memstage.reg_pc,h,%b", reg_pc);
+        $display("data,memstage.inst,h,%b", inst);
+        $display("data,memstage.rs2_data,h,%b", rs2_data);
+        $display("data,memstage.alu_out,h,%b", alu_out);
+        $display("data,memstage.mem_wen,d,%b", mem_wen);
+        
+        // $display("data,memstage.output.reg_pc,h,%b", mem_wb_reg_pc);
+        $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
 
-    $display("data,memstage.is_load,b,%b", is_load);
-    $display("data,memstage.is_store,b,%b", is_store);
-    $display("data,memstage.memory_unit_stall,b,%b", memory_unit_stall);
+        $display("data,memstage.is_load,b,%b", is_load);
+        $display("data,memstage.is_store,b,%b", is_store);
+        $display("data,memstage.memory_unit_stall,b,%b", memory_unit_stall);
 
-    // $display("data,memstage.memu.cmd.s,b,%b", memu_cmd_start);
-    // $display("data,memstage.memu.cmd.w,b,%b", memu_cmd_write);
-    // $display("data,memstage.memu.cmd_ready,b,%b", memu_cmd_ready);
-    // $display("data,memstage.memu.addr,h,%b", memu_addr);
-    // $display("data,memstage.memu.wdata,h,%b", memu_wdata);
-    // $display("data,memstage.memu.wmask,h,%b", memu_wmask);
-    // $display("data,memstage.memu.rdata,h,%b", memu_rdata);
-    // $display("data,memstage.memu.valid,b,%b", memu_valid);
+        // $display("data,memstage.memu.cmd.s,b,%b", memu_cmd_start);
+        // $display("data,memstage.memu.cmd.w,b,%b", memu_cmd_write);
+        // $display("data,memstage.memu.cmd_ready,b,%b", memu_cmd_ready);
+        // $display("data,memstage.memu.addr,h,%b", memu_addr);
+        // $display("data,memstage.memu.wdata,h,%b", memu_wdata);
+        // $display("data,memstage.memu.wmask,h,%b", memu_wmask);
+        // $display("data,memstage.memu.rdata,h,%b", memu_rdata);
+        // $display("data,memstage.memu.valid,b,%b", memu_valid);
+    end
 end
 `endif
 
