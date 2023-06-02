@@ -27,7 +27,13 @@ wire branch_hazard      = ireq.valid &&
 
 wire [31:0] next_pc     = pc + 4; // ここで分岐予測したい
 wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
-                          (queue_tail + 3'd1) == queue_head; // キューがフル
+                          (
+                            (queue_tail + 3'd1 == queue_head) || // キューが埋まっている
+                            // circular logicを避けるために、memresp.validのときにさらに+1するのをなくして、
+                            // +2にと常に比較するようにしている。サイズ一個の損だが許容)
+                            (queue_tail + 3'd2 == queue_head)
+                          );  
+                          
 
 assign memreq.valid     = !queue_is_full;
 assign memreq.addr      = ireq.valid ? ireq.addr : pc;
