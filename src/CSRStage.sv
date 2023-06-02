@@ -783,6 +783,7 @@ always @(posedge clk) begin
 
     $display("data,csrstage.output.rdata,h,%b", rdata);
     $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
+    $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
     $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
     $display("data,csrstage.input.may_trap,b,%b", may_trap);
     $display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);

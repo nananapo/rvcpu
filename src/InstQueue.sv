@@ -32,10 +32,8 @@ wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
 assign memreq.valid     = !queue_is_full;
 assign memreq.addr      = ireq.valid ? ireq.addr : pc;
 
-assign iresp.valid      = !branch_hazard && (
-                            (queue_head != queue_tail) ||
-                            (requested && memresp.valid && memresp.addr == request_pc)
-                          );
+assign iresp.valid      = (queue_head != queue_tail) ||
+                          (requested && memresp.valid && memresp.addr == request_pc);
 assign iresp.addr       = queue_head == queue_tail ? memresp.addr : pc_queue[queue_head];
 assign iresp.inst       = queue_head == queue_tail ? memresp.inst : inst_queue[queue_head];
 assign iresp.inst_id    = inst_id;

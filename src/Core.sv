@@ -124,15 +124,21 @@ wire [31:0]     csr_mem_csr_rdata;
 // exe, csr -> if wire
 
 // 分岐予測判定のため && 簡単のために、id_validになるまでストールしている
-wire            branch_fail   = exe_branch_hazard && (id_valid ? id_reg_pc != exe_branch_target : 0);
+wire            branch_fail   = exe_branch_hazard &&
+                                (id_valid ? id_reg_pc != exe_branch_target :
+                                 iresp.valid ? iresp.addr != exe_branch_target : 0);// 0なのはストールするから
 
-wire            branch_hazard = !csr_stall_flg && (csr_trap_flg || branch_fail);
-wire [31:0]     branch_target = csr_trap_flg ? csr_trap_vector : exe_branch_target;
+wire            csr_trap_fail = csr_csr_trap_flg &&
+                                (id_valid ? id_reg_pc != csr_trap_vector :
+                                 iresp.valid ? iresp.addr != csr_trap_vector : 1);// 1なのはストールしないから
+
+wire            branch_hazard = !csr_stall_flg && (csr_trap_fail || branch_fail);
+wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : exe_branch_target;
 
 wire            exe_branch_hazard;
 wire [31:0]     exe_branch_target;
 
-wire            csr_trap_flg;
+wire            csr_csr_trap_flg;
 wire [31:0]     csr_trap_vector;
 
 // mem reg
@@ -272,7 +278,7 @@ CSRStage #(
     .csr_mem_csr_rdata(csr_mem_csr_rdata),
     
     .csr_stall_flg(csr_stall_flg),
-    .csr_trap_flg(csr_trap_flg),
+    .csr_trap_flg(csr_csr_trap_flg),
     .csr_trap_vector(csr_trap_vector),
 
     .reg_cycle(reg_cycle),
