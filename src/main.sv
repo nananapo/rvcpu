@@ -70,8 +70,8 @@ wire IResponse  iresp_mem;
 wire IRequest   ireq_core;
 wire IResponse  iresp_core;
 
-// wire DRequest   dreq_mem;
-// wire DResponse  dresp_mem;
+wire DRequest   dreq_mem;
+wire DResponse  dresp_mem;
 wire DRequest   dreq_unaligned;
 wire DResponse  dresp_unaligned;
 
@@ -92,8 +92,8 @@ MemoryInterface #(
 
     .ireq(ireq_mem),
     .iresp(iresp_mem),
-    .dreq(dreq_unaligned),
-    .dresp(dresp_unaligned)
+    .dreq(dreq_mem),
+    .dresp(dresp_mem)
 );
 
 // IF/ID Stage <-> InstQueue <-> MemoryInterface
@@ -105,9 +105,6 @@ InstQueue #() instqueue (
     .memresp(iresp_mem)
 );
 
-// assign dreq_mem = dreq_unaligned;
-// assign dresp_unaligned = dresp_mem;
-/* いったんスキップ
 // MEM Stage <-> DUnalignedAccessController <-> MemoryInterface
 DUnalignedAccessController #() dunalignedaccesscontroller (
     .clk(clkConstrained),
@@ -116,7 +113,6 @@ DUnalignedAccessController #() dunalignedaccesscontroller (
     .memreq(dreq_mem),
     .memresp(dresp_mem)
 );
-*/
 
 Core #(
     .FMAX_MHz(FMAX_MHz)
