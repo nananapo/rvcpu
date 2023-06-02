@@ -126,11 +126,13 @@ wire [31:0]     csr_mem_csr_rdata;
 // 分岐予測判定のため && 簡単のために、id_validになるまでストールしている
 wire            branch_fail   = exe_branch_hazard &&
                                 (id_valid ? id_reg_pc != exe_branch_target :
-                                 iresp.valid ? iresp.addr != exe_branch_target : 0);// 0なのはストールするから
+                                0);
+                                 // iresp.valid ? iresp.addr != exe_branch_target : 0);// 0なのはストールするから
 
 wire            csr_trap_fail = csr_csr_trap_flg &&
                                 (id_valid ? id_reg_pc != csr_trap_vector :
-                                 iresp.valid ? iresp.addr != csr_trap_vector : 1);// 1なのはストールしないから
+                                1);
+                                // iresp.valid ? iresp.addr != csr_trap_vector : 1);// 1なのはストールしないから
 
 wire            branch_hazard = !csr_stall_flg && (csr_trap_fail || branch_fail);
 wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : exe_branch_target;
