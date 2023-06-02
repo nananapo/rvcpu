@@ -161,7 +161,7 @@ assign dh_stall_flg = id_valid && (
 
 function [31:0] gen_op1data(
     input [3:0]     op1_sel,
-    input [4:0]     rs1_addr,
+    input [31:0]    reg_pc,
     input [31:0]    imm_z_uext
 );
 case(op1_sel) 
@@ -198,7 +198,7 @@ assign id_exe_inst_id           = inst_id;
 assign id_exe_ctrl.exe_fun      = exe_fun;
 assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ? 
                                     (rs1_addr == 0 ? 0 : regfile[rs1_addr]) :
-                                    gen_op1data(op1_sel,rs1_addr,imm_z_uext);
+                                    gen_op1data(op1_sel,reg_pc,imm_z_uext);
 assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ?
                                     (rs2_addr == 0 ? 0 : regfile[rs2_addr]) :
                                     gen_op2data(op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted);
