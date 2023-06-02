@@ -76,16 +76,16 @@ function func_mem_cmd_start(
 );
 case(state)
     //STATE_IDLE                              : func_mem_cmd_start = 0;
-    STATE_WAIT_READY                        : func_mem_cmd_start = mem_cmd_ready;
+    STATE_WAIT_READY                        : func_mem_cmd_start = 1;
     //STATE_END                               : func_mem_cmd_start = 0;
     //STATE_READ_VALID_BEFORE_WRITE           : func_mem_cmd_start = 0;
-    STATE_WAIT_WRITE_READY                  : func_mem_cmd_start = mem_cmd_ready;
-    STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_cmd_start = mem_cmd_ready;
+    STATE_WAIT_WRITE_READY                  : func_mem_cmd_start = 1;
+    STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_cmd_start = 1;
     //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_cmd_start = 0;
-    STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_cmd_start = mem_rdata_valid;
-    STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_cmd_start = mem_rdata_valid;
+    STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_cmd_start = 1;
+    STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_cmd_start = 1;
     //STATE_WAIT_READ_VALID                   : func_mem_cmd_start = 0;
-    STATE_WAIT_READNEXT_READY               : func_mem_cmd_start = mem_cmd_ready;
+    STATE_WAIT_READNEXT_READY               : func_mem_cmd_start = 1;
     //STATE_WAIT_READNEXT_VALID               : func_mem_cmd_start = 0;
     default: func_mem_cmd_start = 0;
 endcase
@@ -103,17 +103,16 @@ function func_mem_cmd_write(
 );
 case(state)
     //STATE_IDLE                              : func_mem_cmd_write = 0;
-    STATE_WAIT_READY                        : func_mem_cmd_write = mem_cmd_ready && 
-                                                                   save_cmd_write && 
+    STATE_WAIT_READY                        : func_mem_cmd_write = save_cmd_write && 
                                                                    save_addr % 4 == 0 && 
                                                                    save_wmask == 32'hffffffff;
     //STATE_END                               : func_mem_cmd_write = 0;
     //STATE_READ_VALID_BEFORE_WRITE           : func_mem_cmd_write = 0;
-    STATE_WAIT_WRITE_READY                  : func_mem_cmd_write = mem_cmd_ready;
+    STATE_WAIT_WRITE_READY                  : func_mem_cmd_write = 1;
     //STATE_WAIT_READNEXT_READY_BEFORE_WRITE  : func_mem_cmd_write = 0;
     //STATE_WAIT_READNEXT_VALID_BEFORE_WRITE  : func_mem_cmd_write = 0;
-    STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_cmd_write = mem_rdata_valid;
-    STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_cmd_write = mem_rdata_valid;
+    STATE_WAIT_WRITE_READY_UNALIGNED1       : func_mem_cmd_write = 1;
+    STATE_WAIT_WRITE_READY_UNALIGNED2       : func_mem_cmd_write = 1;
     //STATE_WAIT_READ_VALID                   : func_mem_cmd_write = 0;
     //STATE_WAIT_READNEXT_READY               : func_mem_cmd_write = 0;
     //STATE_WAIT_READNEXT_VALID               : func_mem_cmd_write = 0;
@@ -211,47 +210,28 @@ always @(posedge clk) begin
     case (state)
         STATE_IDLE: begin
             if (input_cmd_start) begin
-                save_cmd_write      <= input_cmd_write;
-                save_addr           <= input_addr;
-                save_wdata          <= input_wdata;
-                save_wmask          <= input_wmask;
-
-                state               <= STATE_WAIT_READY;
-                //output_cmd_ready    <= 0;
-                //output_rdata_valid  <= 0;
+                save_cmd_write  <= input_cmd_write;
+                save_addr       <= input_addr;
+                save_wdata      <= input_wdata;
+                save_wmask      <= input_wmask;
+                state           <= STATE_WAIT_READY;
             end
         end
         STATE_WAIT_READY: begin
             if (mem_cmd_ready) begin
                 if (save_cmd_write) begin
                     if (save_addr % 4 == 0) begin
-                        if (save_wmask == 32'hffffffff) begin
-                            // 投げっぱなし
-                            //mem_cmd_write   <= 1;
-                            //mem_addr        <= save_addr_aligned;
-                            state           <= STATE_END;
-                        end else begin
-                            //mem_cmd_write   <= 0;
-                            //mem_addr        <= save_addr_aligned;
-                            state           <= STATE_READ_VALID_BEFORE_WRITE;
-                        end
-                    end else begin
-                        //mem_cmd_write   <= 0;
-                        //mem_addr        <= save_addr_aligned;
-                        state           <= STATE_READ_VALID_BEFORE_WRITE;
-                    end
-                end else begin
-                    //mem_cmd_write   <= 0;
-                    //mem_addr        <= save_addr_aligned;
-                    state           <= STATE_WAIT_READ_VALID;
-                end
+                        if (save_wmask == 32'hffffffff)
+                            state   <= STATE_END;// 投げっぱなし
+                        else
+                            state   <= STATE_READ_VALID_BEFORE_WRITE;
+                    end else
+                        state   <= STATE_READ_VALID_BEFORE_WRITE;
+                end else
+                    state   <= STATE_WAIT_READ_VALID;
             end
         end
-        STATE_END: begin
-            state               <= STATE_IDLE;
-            //output_cmd_ready    <= 1;
-            //output_rdata_valid  <= 0;
-        end
+        STATE_END: state    <= STATE_IDLE;
         STATE_READ_VALID_BEFORE_WRITE: begin
             if (mem_rdata_valid) begin
                 save_rdata1 <= mem_rdata;
@@ -263,19 +243,12 @@ always @(posedge clk) begin
             end
         end
         STATE_WAIT_WRITE_READY: begin
-            if (mem_cmd_ready) begin
-                //mem_cmd_write   <= 1;
-                //mem_addr        <= save_addr_aligned;
-                //mem_wdata       <= (save_rdata1 & ~save_wmask) | (save_wdata & save_wmask);
-                state           <= STATE_END;
-            end
+            if (mem_cmd_ready)
+                state   <= STATE_END;
         end
         STATE_WAIT_READNEXT_READY_BEFORE_WRITE: begin
-            if (mem_cmd_ready) begin
-                //mem_cmd_write   <= 0;
-                //mem_addr        <= save_addr_aligned + 4;
-                state           <= STATE_WAIT_READNEXT_VALID_BEFORE_WRITE;
-            end
+            if (mem_cmd_ready)
+                state   <= STATE_WAIT_READNEXT_VALID_BEFORE_WRITE;
         end
         STATE_WAIT_READNEXT_VALID_BEFORE_WRITE: begin
             if (mem_rdata_valid) begin
@@ -284,63 +257,31 @@ always @(posedge clk) begin
             end
         end
         STATE_WAIT_WRITE_READY_UNALIGNED1: begin
-            if (mem_rdata_valid) begin
-                //mem_cmd_write   <= 1;
-                //mem_addr        <= save_addr_aligned;
-                /*
-                case (save_addr % 4)
-                    1: mem_wdata <= {(save_rdata1[31:8]  & ~save_wmask[23:0]) | (save_wdata[23:0] & save_wmask[23:0]) , save_rdata1[7:0]};
-                    2: mem_wdata <= {(save_rdata1[31:16] & ~save_wmask[15:0]) | (save_wdata[15:0] & save_wmask[15:0]) , save_rdata1[15:0]};
-                    3: mem_wdata <= {(save_rdata1[31:24] & ~save_wmask[7:0])  | (save_wdata[7:0]  & save_wmask[7:0])  , save_rdata1[23:0]};
-                endcase
-                */
-                state           <= STATE_WAIT_WRITE_READY_UNALIGNED2;
-            end
+            // TODO ここで死ぬ
+            if (mem_cmd_ready)
+                state   <= STATE_WAIT_WRITE_READY_UNALIGNED2;
         end
         STATE_WAIT_WRITE_READY_UNALIGNED2: begin
-            if (mem_rdata_valid) begin
-                state           <= STATE_END;
-                //mem_cmd_write   <= 1;
-                //mem_addr        <= save_addr_aligned + 4;
-                /*
-                case (save_addr % 4)
-                    1: mem_wdata <= {save_rdata2[31:8] , (save_rdata2[7:0]  & ~save_wmask[31:24]) | (save_wdata[31:24] & save_wmask[31:24])};
-                    2: mem_wdata <= {save_rdata2[31:16], (save_rdata2[15:0] & ~save_wmask[31:16]) | (save_wdata[31:16] & save_wmask[31:16])};
-                    3: mem_wdata <= {save_rdata2[31:24], (save_rdata2[23:0] & ~save_wmask[31:8])  | (save_wdata[31:8]  & save_wmask[31:8]) };
-                endcase
-                */
-            end
+            if (mem_cmd_ready)
+                state   <= STATE_END;
         end
         STATE_WAIT_READ_VALID: begin
             if (mem_rdata_valid) begin
-                if (save_addr % 4 == 0) begin
-                    state               <= STATE_END;
-                    //output_rdata_valid  <= 1;
-                    //output_rdata        <= mem_rdata;
-                end else begin
+                if (save_addr % 4 == 0)
+                    state       <= STATE_END;
+                else begin
                     save_rdata1 <= mem_rdata;
                     state       <= STATE_WAIT_READNEXT_READY;
                 end
             end
         end
         STATE_WAIT_READNEXT_READY: begin
-            if (mem_cmd_ready) begin
-                //mem_cmd_write   <= 0;
-                state           <= STATE_WAIT_READNEXT_VALID;
-            end
+            if (mem_cmd_ready)
+                state   <= STATE_WAIT_READNEXT_VALID;
         end
         STATE_WAIT_READNEXT_VALID: begin
-            if (mem_rdata_valid) begin
-                state                   <= STATE_END;
-                //output_rdata_valid      <= 1;
-                /*
-                case (save_addr % 4)
-                    1: output_rdata <= {save_rdata1[7:0] , mem_rdata[31:8] };
-                    2: output_rdata <= {save_rdata1[15:0], mem_rdata[31:16]};
-                    3: output_rdata <= {save_rdata1[23:0], mem_rdata[31:24]};
-                endcase
-                */
-            end
+            if (mem_rdata_valid)
+                state   <= STATE_END;
         end
     endcase
 end
@@ -348,25 +289,9 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     // $display("data,mem_unaligned_controller.state,d,%b", state);
-    // $display("data,mem_unaligned_controller.input_start,b,%b", input_cmd_start);
-    // $display("data,mem_unaligned_controller.input_write,b,%b", input_cmd_write);
-    // $display("data,mem_unaligned_controller.input_addr,h,%b", input_addr);
-    // $display("data,mem_unaligned_controller.input.wdata,h,%b", input_wdata);
     // $display("data,mem_unaligned_controller.ready,b,%b", output_cmd_ready);
-    // $display("data,mem_unaligned_controller.rdata,h,%b", output_rdata);
-    // $display("data,mem_unaligned_controller.valid,b,%b", output_rdata_valid);
-    // $display("data,mem_unaligned_controller.save.addr,h,%b", save_addr);
-    // $display("data,mem_unaligned_controller.save.wmask,h,%b", save_wmask);
-    // $display("data,mem_unaligned_controller.save.wdata,h,%b", save_wdata);
-    // $display("data,mem_unaligned_controller.save.read1,h,%b", save_rdata1);
-    // $display("data,mem_unaligned_controller.save.read2,h,%b", save_rdata2);
-    // $display("data,mem_unaligned_controller.mem_cmd_start,b,%b", mem_cmd_start);
-    // $display("data,mem_unaligned_controller.mem_cmd_write,b,%b", mem_cmd_write);
-    // $display("data,mem_unaligned_controller.mem_cmd_ready,b,%b", mem_cmd_ready);
-    // $display("data,mem_unaligned_controller.mem_addr,h,%b", mem_addr);
-    // $display("data,mem_unaligned_controller.mem_rdata,h,%b", mem_rdata);
-    // $display("data,mem_unaligned_controller.mem_rdata_v,b,%b", mem_rdata_valid);
-    // $display("data,mem_unaligned_controller.mem_wdata,h,%b", mem_wdata);
+    // $display("data,mem_unaligned_controller.cmd_start,b,%b", input_cmd_start);
+    // $display("data,mem_unaligned_controller.wmask,b,%b", input_wmask);
 end
 `endif
 
