@@ -27,7 +27,7 @@ wire branch_hazard      = ireq.valid &&
 
 wire [31:0] next_pc     = pc + 4; // ここで分岐予測したい
 wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
-                          queue_tail + 1 == queue_head; // キューがフル
+                          (queue_tail + 3'd1) == queue_head; // キューがフル
 
 assign memreq.valid     = !queue_is_full;
 assign memreq.addr      = ireq.valid ? ireq.addr : pc;
@@ -68,6 +68,7 @@ always @(posedge clk) begin
                 `ifdef PRINT_DEBUGINFO
                 $display("info,fetchstage.fetch_finish,Fetched : 0x%h -> 0x%h", request_pc, memresp.inst);
                 `endif
+                // メモリがreadyかつmemreq.validならリクエストしてる
                 if (memreq.ready && memreq.valid) begin
                     requested           <= 1;
                     request_pc          <= pc;
@@ -79,7 +80,7 @@ always @(posedge clk) begin
                     requested           <= 0;
             end
         end else begin
-            // メモリがreadyならリクエスト
+            // メモリがreadyかつmemreq.validならリクエストしてる
             if (memreq.ready && memreq.valid) begin
                 pc         <= next_pc;
                 requested  <= 1;
