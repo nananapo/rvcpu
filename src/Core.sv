@@ -112,6 +112,14 @@ wire [63:0]     exe_mem_inst_id;
 wire ctrltype   exe_mem_ctrl;
 wire [31:0]     exe_mem_alu_out;
 
+// exe,csr -> idのdatahazard
+// exe->idを最長のパスにするわけにはいかない(それだとパイプラインの意味がない)
+wire fw_ctrltype    exe_fw_ctrl;
+assign exe_fw_ctrl.valid        = exe_valid && exe_ctrl.rf_wen == REN_S;
+assign exe_fw_ctrl.can_forward  = 0;
+assign exe_fw_ctrl.addr         = exe_ctrl.wb_addr;
+assign exe_fw_ctrl.wdata        = 32'bz;
+
 // exeで分岐が発生した場合、idがvalidになるのを待って判定する。
 wire            exe_stall = (mem_valid && mem_stall) ||
                             exe_calc_stall ||
@@ -120,8 +128,6 @@ wire            exe_stall = (mem_valid && mem_stall) ||
 
 // csr -> mem wire
 wire [31:0]     csr_mem_csr_rdata;
-
-// exe, csr -> if wire
 
 // 分岐予測判定のため && 簡単のために、id_validになるまでストールしている
 wire            branch_fail   = exe_branch_hazard &&
@@ -175,6 +181,19 @@ wire [31:0]     mem_wb_alu_out;
 wire [31:0]     mem_wb_mem_rdata;
 wire [31:0]     mem_wb_csr_rdata;
 
+// mem -> id のdatahazard
+wire fw_ctrltype    mem_fw_ctrl;
+assign mem_fw_ctrl.valid        = mem_valid && mem_ctrl.rf_wen == REN_S;
+// メモリ命令ではないならフォワーディングできる
+assign mem_fw_ctrl.can_forward  = mem_ctrl.wb_sel == WB_ALU ||
+                                  mem_ctrl.wb_sel == WB_PC ||
+                                  mem_ctrl.wb_sel == WB_CSR;
+assign mem_fw_ctrl.addr         = mem_ctrl.wb_addr;
+// wb_selによってフォワーディングする値が変わる
+assign mem_fw_ctrl.wdata        = mem_ctrl.wb_sel == WB_PC ? mem_reg_pc + 4 :
+                                  mem_ctrl.wb_sel == WB_CSR ? mem_csr_rdata :
+                                  mem_alu_out;
+
 wire            mem_stall   = mem_memory_unit_stall;
 
 // wb reg
@@ -186,6 +205,7 @@ ctrltype        wb_ctrl;
 reg [31:0]      wb_alu_out;
 reg [31:0]      wb_mem_rdata;
 reg [31:0]      wb_csr_rdata;
+wire [31:0]     wb_wdata_out;
 
 // TODO メモリアクセスの例外はどう処理しようか....
 //
@@ -207,6 +227,13 @@ always @(posedge clk) begin
     end
 end
 
+// wb -> id のdatahazard
+wire fw_ctrltype    wb_fw_ctrl;
+assign wb_fw_ctrl.valid         = wb_valid && wb_ctrl.rf_wen == REN_S;
+assign wb_fw_ctrl.can_forward   = 1;
+assign wb_fw_ctrl.addr          = wb_ctrl.wb_addr;
+assign wb_fw_ctrl.wdata         = wb_wdata_out;
+
 DecodeStage #() decodestage
 (
     .clk(clk),
@@ -225,15 +252,9 @@ DecodeStage #() decodestage
     .id_exe_ctrl(id_exe_ctrl),
 
     .dh_stall_flg(id_dh_stall),
-    .dh_wb_valid(wb_valid),
-    .dh_wb_rf_wen(wb_ctrl.rf_wen),
-    .dh_wb_wb_addr(wb_ctrl.wb_addr),
-    .dh_mem_valid(mem_valid),
-    .dh_mem_rf_wen(mem_ctrl.rf_wen),
-    .dh_mem_wb_addr(mem_ctrl.wb_addr),
-    .dh_exe_valid(exe_valid),
-    .dh_exe_rf_wen(exe_ctrl.rf_wen),
-    .dh_exe_wb_addr(exe_ctrl.wb_addr),
+    .dh_exe_fw(exe_fw_ctrl),
+    .dh_mem_fw(mem_fw_ctrl),
+    .dh_wb_fw(wb_fw_ctrl),
 
     .zifencei_stall_flg(id_zifencei_stall_flg),
     .zifencei_mem_wen(
@@ -331,6 +352,7 @@ WriteBackStage #() wbstage(
     .wb_mem_rdata(wb_mem_rdata),
     .wb_csr_rdata(wb_csr_rdata),
 
+    .wb_wdata_out(wb_wdata_out),
     .exit(exit)
 );
 

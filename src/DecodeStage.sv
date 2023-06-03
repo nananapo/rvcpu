@@ -1,14 +1,17 @@
 /* verilator lint_off CASEX */
+
+// TODO フォワーディングの有無でkanataを比較するとちょっと面白いので、フォワーディングするかどうかを設定できるといいかも
+// フォワーディングがない実装は 4d5c53dd5ed32025d7428d088e6bbc968dafdc4d 以前を参照
 module DecodeStage
 (
-    input  wire         clk,
+    input wire          clk,
 
-    input  wire[31:0]   regfile[31:0],
+    input wire[31:0]    regfile[31:0],
 
-    input  wire         id_valid,
-    input  wire[31:0]   id_reg_pc,
-    input  wire[31:0]   id_inst,
-    input  wire[63:0]   id_inst_id, 
+    input wire          id_valid,
+    input wire[31:0]    id_reg_pc,
+    input wire[31:0]    id_inst,
+    input wire[63:0]    id_inst_id, 
     
     output wire             id_exe_valid,
     output wire [31:0]      id_exe_reg_pc,
@@ -16,19 +19,13 @@ module DecodeStage
     output wire [63:0]      id_exe_inst_id,
     output wire ctrltype    id_exe_ctrl,
 
-    output wire         dh_stall_flg,
-    input  wire         dh_wb_valid,
-    input  wire         dh_wb_rf_wen,
-    input  wire [4:0]   dh_wb_wb_addr,
-    input  wire         dh_mem_valid,
-    input  wire         dh_mem_rf_wen,
-    input  wire [4:0]   dh_mem_wb_addr,
-    input  wire         dh_exe_valid,
-    input  wire         dh_exe_rf_wen,
-    input  wire [4:0]   dh_exe_wb_addr,
+    output wire             dh_stall_flg,
+    input wire fw_ctrltype  dh_exe_fw,
+    input wire fw_ctrltype  dh_mem_fw,
+    input wire fw_ctrltype  dh_wb_fw,
 
     output wire         zifencei_stall_flg,
-    input  wire         zifencei_mem_wen
+    input wire          zifencei_mem_wen
 );
 
 `include "include/core.sv"
@@ -150,14 +147,21 @@ wire inst_is_fence_i        = funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode ==
 // fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
 // TODO これでは書き込みが保証されない
 assign zifencei_stall_flg   = id_valid && inst_is_fence_i && zifencei_mem_wen;
+
 // データハザード判定
+wire dh_exe_rs1 = dh_exe_fw.valid && dh_exe_fw.addr == rs1_addr && rs1_addr != 0;
+wire dh_exe_rs2 = dh_exe_fw.valid && dh_exe_fw.addr == rs2_addr && rs2_addr != 0;
+wire dh_mem_rs1 = dh_mem_fw.valid && dh_mem_fw.addr == rs1_addr && rs1_addr != 0;
+wire dh_mem_rs2 = dh_mem_fw.valid && dh_mem_fw.addr == rs2_addr && rs2_addr != 0;
+wire dh_wb_rs1  = dh_wb_fw.valid  && dh_wb_fw.addr  == rs1_addr && rs1_addr != 0;
+wire dh_wb_rs2  = dh_wb_fw.valid  && dh_wb_fw.addr  == rs2_addr && rs2_addr != 0;
+
 assign dh_stall_flg = id_valid && (
-    (dh_wb_valid  && dh_wb_rf_wen  == REN_S && dh_wb_wb_addr  == rs1_addr && rs1_addr != 0) ||
-    (dh_wb_valid  && dh_wb_rf_wen  == REN_S && dh_wb_wb_addr  == rs2_addr && rs2_addr != 0) ||
-    (dh_mem_valid && dh_mem_rf_wen == REN_S && dh_mem_wb_addr == rs1_addr && rs1_addr != 0) ||
-    (dh_mem_valid && dh_mem_rf_wen == REN_S && dh_mem_wb_addr == rs2_addr && rs2_addr != 0) ||
-    (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs1_addr && rs1_addr != 0) ||
-    (dh_exe_valid && dh_exe_rf_wen == REN_S && dh_exe_wb_addr == rs2_addr && rs2_addr != 0));
+    // dh_*_rs*ですでにチェックしているため冗長だが、わかりやすさのために残してもいいと考えている
+    (/*dh_exe_fw.valid && */!dh_exe_fw.can_forward && (dh_exe_rs1 || dh_exe_rs2)) ||
+    (/*dh_mem_fw.valid && */!dh_mem_fw.can_forward && (dh_mem_rs1 || dh_mem_rs2)) ||
+    (/*dh_wb_fw.valid  && */!dh_wb_fw.can_forward  && (dh_wb_rs1  || dh_wb_rs2 ))
+    );
 
 function [31:0] gen_op1data(
     input [3:0]     op1_sel,
@@ -197,12 +201,20 @@ assign id_exe_inst_id           = inst_id;
 
 assign id_exe_ctrl.exe_fun      = exe_fun;
 assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ? 
-                                    (rs1_addr == 0 ? 0 : regfile[rs1_addr]) :
+                                    (rs1_addr == 0 ? 0 :
+                                        // exeは常にフォワーディングできないので考えないでおく
+                                        //dh_exe_rs1 ? dh_exe_fw.wdata :
+                                        dh_mem_rs1 ? dh_mem_fw.wdata : 
+                                        dh_wb_rs1  ? dh_wb_fw.wdata : regfile[rs1_addr]
+                                    ) :
                                     gen_op1data(op1_sel,reg_pc,imm_z_uext);
-assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ?
-                                    (rs2_addr == 0 ? 0 : regfile[rs2_addr]) :
+assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ? id_exe_ctrl.rs2_data :
                                     gen_op2data(op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted);
-assign id_exe_ctrl.rs2_data     = rs2_addr == 0 ? 0 : regfile[rs2_addr];
+assign id_exe_ctrl.rs2_data     = rs2_addr == 0 ? 0 : 
+                                    // exeは常にフォワーディングできないので考えないでおく
+                                    //dh_exe_rs2 ? dh_exe_fw.wdata :
+                                    dh_mem_rs2 ? dh_mem_fw.wdata : 
+                                    dh_wb_rs2  ? dh_wb_fw.wdata : regfile[rs2_addr];
 assign id_exe_ctrl.mem_wen      = mem_wen;
 assign id_exe_ctrl.rf_wen       = rf_wen;
 assign id_exe_ctrl.wb_sel       = wb_sel;
