@@ -126,27 +126,28 @@ assign exe_fw_ctrl.can_forward  = 0;
 assign exe_fw_ctrl.addr         = exe_ctrl.wb_addr;
 assign exe_fw_ctrl.wdata        = 32'bz;
 
-// exeで分岐が発生した場合、idがvalidになるのを待って判定する。
+// exeで分岐予測の判定を行うため、idがvalidになるのを待つ
 wire            exe_stall = (mem_valid && mem_stall) ||
                             exe_calc_stall ||
-                            (exe_branch_hazard && !id_valid) || 
+                            !id_valid || 
                             csr_stall_flg;
 
 // csr -> mem wire
 wire [31:0]     csr_mem_csr_rdata;
 
-// 分岐予測判定のため && 簡単のために、id_validになるまでストールしている
 // irespと比べるとcircular logicになるので注意
-wire            branch_fail   = exe_branch_hazard &&
-                                (id_valid ? id_reg_pc != exe_branch_target : 0);// 0なのはストールするから
-
-wire            csr_trap_fail = csr_csr_trap_flg &&
-                                (id_valid ? id_reg_pc != csr_trap_vector : 1);// 1なのはストールしないから
+// TODO サイクル数を犠牲にしてクリティカルパスを短くする
+wire            branch_fail   = id_valid && exe_valid && (
+                                    (exe_branch_taken && id_reg_pc != exe_branch_target) ||
+                                    (!exe_branch_taken && id_reg_pc != exe_reg_pc + 4)
+                                );
+// CSRは必ずハザードを起こす
+wire            csr_trap_fail = csr_csr_trap_flg;
 
 wire            branch_hazard = !csr_stall_flg && (csr_trap_fail || branch_fail);
 wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : exe_branch_target;
 
-wire            exe_branch_hazard;
+wire            exe_branch_taken;
 wire [31:0]     exe_branch_target;
 
 wire            csr_csr_trap_flg;
@@ -172,6 +173,17 @@ always @(posedge clk) begin
         mem_alu_out     <= exe_mem_alu_out;
         mem_csr_rdata   <= csr_mem_csr_rdata; 
     end
+end
+
+reg [63:0]      exe_last_inst_id = 64'hffffffffffffffff;
+// 分岐予測の更新
+always @(posedge clk) begin
+    if (exe_valid) exe_last_inst_id <= exe_inst_id;
+    updateio.valid  <= exe_valid && exe_inst_id != exe_last_inst_id;
+    updateio.pc     <= exe_reg_pc;
+    updateio.is_br  <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || exe_ctrl.br_flg;
+    updateio.taken  <= exe_branch_taken;
+    updateio.target <= exe_branch_target;
 end
 
 // mem -> wb wire
@@ -282,7 +294,7 @@ ExecuteStage #() executestage
     .exe_mem_ctrl(exe_mem_ctrl),
     .exe_mem_alu_out(exe_mem_alu_out),
 
-    .branch_hazard(exe_branch_hazard),
+    .branch_taken(exe_branch_taken),
     .branch_target(exe_branch_target),
 
     .pipeline_flush(pipeline_kill),
