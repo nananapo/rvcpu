@@ -11,7 +11,7 @@ module TwoBitCounter #(
     input wire IUpdatePredictionIO updateio
 );
 
-localparam DEFAULT_COUNTER_VALUE = 2'b1;
+localparam DEFAULT_COUNTER_VALUE = 2'b0;
 
 // 本当のpc (pc[ADDR_WIDTH + 2 - 1: 2]をindexにする。
 // 下位2bitはC拡張の命令でもない限り0となる)
@@ -34,8 +34,8 @@ initial begin
 end
 
 // pcをindexに変換する
-wire [ADDR_WIDTH-1:0]   pc2i  =          pc[ADDR_SIZE + 2 - 1:2];
-wire [ADDR_WIDTH-1:0]   upc2i = updateio.pc[ADDR_SIZE + 2 - 1:2];
+wire [ADDR_WIDTH-1:0]   pc2i  =          pc[ADDR_WIDTH + 2 - 1:2];
+wire [ADDR_WIDTH-1:0]   upc2i = updateio.pc[ADDR_WIDTH + 2 - 1:2];
 
 // 11と10がtakeなので、上位bitが1ならtake。それ以外ならpc + 4
 // ...
