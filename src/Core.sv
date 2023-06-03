@@ -15,16 +15,21 @@ module Core #(
     input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
 
-    inout wire IRequest     ireq,
-    inout wire IResponse    iresp,
-    inout wire DRequest     dreq,
-    inout wire DResponse    dresp,
+    inout wire IRequest             ireq,
+    inout wire IResponse            iresp,
+    output IUpdatePredictionIO  updateio,
+    inout wire DRequest             dreq,
+    inout wire DResponse            dresp,
 
     output reg          exit,
     output reg [31:0]   gp
 );
 
 `include "include/core.sv"
+
+initial begin
+    updateio.valid = 0;
+end
 
 wire [31:0] regfile[31:0];
 assign gp   = regfile[3];

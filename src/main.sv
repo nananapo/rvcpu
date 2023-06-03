@@ -75,6 +75,8 @@ wire DResponse  dresp_mem;
 wire DRequest   dreq_unaligned;
 wire DResponse  dresp_unaligned;
 
+wire IUpdatePredictionIO    updateio;
+
 MemoryInterface #(
     .FMAX_MHz(FMAX_MHz)
 ) memory (
@@ -102,7 +104,8 @@ InstQueue #() instqueue (
     .ireq(ireq_core),
     .iresp(iresp_core),
     .memreq(ireq_mem),
-    .memresp(iresp_mem)
+    .memresp(iresp_mem),
+    .updateio(updateio)
 );
 
 // MEM Stage <-> DUnalignedAccessController <-> MemoryInterface
@@ -126,6 +129,7 @@ Core #(
 
     .ireq(ireq_core),
     .iresp(iresp_core),
+    .updateio(updateio),
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),
 

@@ -6,7 +6,9 @@ module InstQueue #(
     inout wire IRequest     ireq,
     inout wire IResponse    iresp,
     inout wire IRequest     memreq,
-    inout wire IResponse    memresp
+    inout wire IResponse    memresp,
+
+    input wire IUpdatePredictionIO updateio
 );
 
 reg [3:0]   queue_head  = 0;
@@ -28,7 +30,20 @@ wire branch_hazard      = ireq.valid &&
                           // キューのサイズが0ではない場合は必ず分岐ハザードと判定する。
                           (requested ? request_pc != ireq.addr || queue_head != queue_tail: 1);
 
-wire [31:0] next_pc     = pc + 4; // ここで分岐予測したい
+wire [31:0] next_pc;
+
+`ifndef EXCLUDE_PREDICTION_MODULE
+// 分岐予測を行わない場合はpc + 4を予測とする
+assign next_pc = pc + 4;
+`else
+TwoBitCounter #() tbc (
+    .clk(clk),
+    .pc(pc),
+    .next_pc(next_pc),
+    .updateio(updateio)
+);
+`endif
+
 wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
                           (
                             (queue_tail + 3'd1 == queue_head) || // キューが埋まっている
@@ -37,7 +52,6 @@ wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
                             (queue_tail + 3'd2 == queue_head)
                           );  
                           
-
 assign memreq.valid     = !queue_is_full;
 assign memreq.addr      = ireq.valid ? ireq.addr : pc;
 
@@ -65,7 +79,9 @@ always @(posedge clk) begin
 
         // メモリがreadyかつmemreq.validならリクエストしてる
         if (memreq.ready && memreq.valid) begin
-            pc          <= ireq.addr + 4; //ここでも分岐予測をしたい、もしくは分岐失敗時は1クロック消費して次のクロックでリクエストする
+            // TODO ここでも分岐予測をしたい
+            // もしくは簡単のために分岐失敗時は1クロック消費して次のクロックでリクエストする
+            pc          <= ireq.addr + 4;
             requested   <= 1;
             request_pc  <= ireq.addr;
             `ifdef PRINT_DEBUGINFO
@@ -133,6 +149,7 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,fetchstage.pc,h,%b", pc);
+    $display("data,fetchstage.next_pc,h,%b", next_pc);
     $display("data,fetchstage.branch_hazard,b,%b", branch_hazard);
     // $display("data,fetchstage.ireq.valid,b,%b", ireq.valid);
     // $display("data,fetchstage.ireq.addr,h,%b", ireq.addr);
