@@ -11,6 +11,7 @@ typedef struct packed
     reg [3:0]   wb_sel;
     reg [4:0]   wb_addr;
     reg [2:0]   csr_cmd;
+    reg         br_flg;
     reg         jmp_pc_flg;
     reg         jmp_reg_flg;
     reg [31:0]  imm_i_sext;
