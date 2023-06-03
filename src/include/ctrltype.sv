@@ -20,4 +20,12 @@ typedef struct packed
     reg [31:0]  imm_u_shifted;
     reg [31:0]  imm_z_uext;
 } ctrltype;
+
+typedef struct packed
+{
+    reg         valid;
+    reg         can_forward;
+    reg [4:0]   addr;
+    reg [31:0]  wdata;
+} fw_ctrltype;
 `endif
