@@ -145,7 +145,8 @@ wire            branch_fail   = id_valid && exe_valid && (
 wire            csr_trap_fail = csr_csr_trap_flg;
 
 wire            branch_hazard = !csr_stall_flg && (csr_trap_fail || branch_fail);
-wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : exe_branch_target;
+wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : 
+                                exe_branch_taken ? exe_branch_target : exe_reg_pc + 4;
 
 wire            exe_branch_taken;
 wire [31:0]     exe_branch_target;
