@@ -15,7 +15,7 @@ module ExecuteStage
     output wire ctrltype    exe_mem_ctrl,
     output wire [31:0]      exe_mem_alu_out,
     
-    output wire         branch_hazard,
+    output wire         branch_taken,
     output wire [31:0]  branch_target,
 
     input wire          pipeline_flush,
@@ -146,7 +146,7 @@ assign exe_mem_ctrl     = exe_ctrl;
 
 assign exe_mem_alu_out  = gen_alu_out(exe_fun, op1_data, op2_data, saved_result);
 
-assign branch_hazard    = exe_valid && 
+assign branch_taken     = exe_valid && 
                           (exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || gen_br_flg(exe_fun, op1_data, op2_data));
 assign branch_target    = exe_ctrl.jmp_pc_flg ? exe_reg_pc + imm_j_sext :
                           exe_ctrl.jmp_reg_flg ? op1_data + op2_data :
@@ -203,7 +203,7 @@ always @(posedge clk) begin
         $display("data,exestage.calc_stall,b,%b", calc_stall_flg);
         $display("data,exestage.ismulticyc,b,%b", is_multicycle_exe);
         $display("data,exestage.jmp_flg,d,%b", exe_ctrl.jmp_reg_flg || exe_ctrl.jmp_pc_flg);
-        $display("data,exestage.branch_hazard,b,%b", branch_hazard);
+        $display("data,exestage.branch_taken,b,%b", branch_taken);
         $display("data,exestage.branch_target,h,%b", branch_target);
     end
 end
