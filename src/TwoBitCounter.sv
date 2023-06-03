@@ -61,4 +61,22 @@ always @(posedge clk) begin
     end
 end
 
+/*
+`ifdef PRINT_DEBUGINFO
+always @(posedge clk) begin
+    $display("data,btb.request_pc,h,%b", pc);
+    $display("data,btb.predict_pc,h,%b", next_pc);
+    $display("data,btb.pc_index,b,%b", pc2i);
+    $display("data,btb.pc_keys[i],b,%b", pc_keys[pc2i]);
+    $display("data,btb.counters[i],b,%b", counters[pc2i]);
+    $display("data,btb.update.valid,b,%b", updateio.valid);
+    $display("data,btb.update.pc,b,%b", updateio.pc);
+    $display("data,btb.update.pc_index,b,%b", upc2i);
+    $display("data,btb.update.is_br,b,%b", updateio.is_br);
+    $display("data,btb.update.taken,b,%b", updateio.taken);
+    $display("data,btb.update.target,b,%b", updateio.target);
+end
+`endif
+*/
+
 endmodule
