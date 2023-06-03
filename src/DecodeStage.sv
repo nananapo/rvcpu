@@ -245,8 +245,8 @@ always @(posedge clk) begin
         $display("data,decodestage.decode.op2_data,h,%b", id_exe_ctrl.op2_data);
         $display("data,decodestage.decode.rs1_addr,d,%b", rs1_addr);
         $display("data,decodestage.decode.rs2_addr,d,%b", rs2_addr);
-        $display("data,decodestage.decode.rs1_data,h,%b", (rs1_addr == 0) ? 0 : regfile[rs1_addr]);
-        $display("data,decodestage.decode.rs2_data,h,%b", (rs2_addr == 0) ? 0 : regfile[rs2_addr]);
+        $display("data,decodestage.decode.rs1_data,h,%b", rs1_data);
+        $display("data,decodestage.decode.rs2_data,h,%b", rs2_data);
         $display("data,decodestage.decode.mem_wen,d,%b", mem_wen);
         $display("data,decodestage.decode.rf_wen,d,%b", rf_wen);
         $display("data,decodestage.decode.wb_sel,d,%b", wb_sel);
