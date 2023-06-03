@@ -192,6 +192,12 @@ case(op2_sel)
 endcase
 endfunction
 
+wire [31:0] rs2_data = rs2_addr == 0 ? 0 : 
+                // exeは常にフォワーディングできないので考えないでおく
+                //dh_exe_rs2 ? dh_exe_fw.wdata :
+                dh_mem_rs2 ? dh_mem_fw.wdata : 
+                dh_wb_rs2  ? dh_wb_fw.wdata : regfile[rs2_addr];
+
 assign id_exe_valid             = !dh_stall_flg &&
                                   !zifencei_stall_flg &&
                                   id_valid;
@@ -208,13 +214,9 @@ assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ?
                                         dh_wb_rs1  ? dh_wb_fw.wdata : regfile[rs1_addr]
                                     ) :
                                     gen_op1data(op1_sel,reg_pc,imm_z_uext);
-assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ? id_exe_ctrl.rs2_data :
+assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ? rs2_data :
                                     gen_op2data(op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted);
-assign id_exe_ctrl.rs2_data     = rs2_addr == 0 ? 0 : 
-                                    // exeは常にフォワーディングできないので考えないでおく
-                                    //dh_exe_rs2 ? dh_exe_fw.wdata :
-                                    dh_mem_rs2 ? dh_mem_fw.wdata : 
-                                    dh_wb_rs2  ? dh_wb_fw.wdata : regfile[rs2_addr];
+assign id_exe_ctrl.rs2_data     = rs2_data;
 assign id_exe_ctrl.mem_wen      = mem_wen;
 assign id_exe_ctrl.rf_wen       = rf_wen;
 assign id_exe_ctrl.wb_sel       = wb_sel;
