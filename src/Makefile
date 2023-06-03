@@ -17,7 +17,8 @@ FILES = test.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
 		CSRStage.sv \
-		WriteBackStage.sv
+		WriteBackStage.sv \
+		TwoBitCounter.sv
 
 UART_FILES = Uart_rx.sv \
 			Uart_tx.sv \
