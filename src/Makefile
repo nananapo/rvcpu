@@ -17,7 +17,8 @@ FILES = test.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
 		CSRStage.sv \
-		WriteBackStage.sv
+		WriteBackStage.sv \
+		TwoBitCounter.sv
 
 UART_FILES = Uart_rx.sv \
 			Uart_tx.sv \
@@ -57,6 +58,7 @@ v:
 	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M main.sv
 	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32A main.sv
 	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_PREDICTION_MODULE main.sv
 	verilator --lint-only --top-module main $(DEFINE_DEBUG) main.sv
 	verilator --lint-only --top-module main $(DEFINE_RISCV_TESTS) main.sv
 	verilator --lint-only --top-module main $(DEFINE_MEMORY_UART) main.sv
