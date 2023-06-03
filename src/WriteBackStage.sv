@@ -8,10 +8,11 @@ module WriteBackStage(
     input wire [31:0]   wb_inst,
     input wire [63:0]   wb_inst_id,
     input ctrltype      wb_ctrl,
-    input  wire [31:0]  wb_alu_out,
-    input  wire [31:0]  wb_mem_rdata,
-    input  wire [31:0]  wb_csr_rdata,
+    input wire [31:0]   wb_alu_out,
+    input wire [31:0]   wb_mem_rdata,
+    input wire [31:0]   wb_csr_rdata,
 
+    output wire [31:0]  wb_wdata_out,
     output wire         exit
 );
 
@@ -64,6 +65,7 @@ function [31:0] wb_data_func(
 endfunction
 
 wire [31:0] wb_data = wb_data_func(reg_pc, wb_ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
+assign wb_wdata_out = wb_data;
 
 reg [31:0] inst_count = 0;
 reg [63:0] saved_inst_id = 64'hffff000000000000;
