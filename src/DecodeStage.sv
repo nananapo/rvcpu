@@ -197,6 +197,11 @@ wire [31:0] rs2_data = rs2_addr == 0 ? 0 :
                 //dh_exe_rs2 ? dh_exe_fw.wdata :
                 dh_mem_rs2 ? dh_mem_fw.wdata : 
                 dh_wb_rs2  ? dh_wb_fw.wdata : regfile[rs2_addr];
+wire [31:0] rs1_data = rs1_addr == 0 ? 0 :
+                // exeは常にフォワーディングできないので考えないでおく
+                //dh_exe_rs1 ? dh_exe_fw.wdata :
+                dh_mem_rs1 ? dh_mem_fw.wdata : 
+                dh_wb_rs1  ? dh_wb_fw.wdata : regfile[rs1_addr];
 
 assign id_exe_valid             = !dh_stall_flg &&
                                   !zifencei_stall_flg &&
@@ -206,13 +211,7 @@ assign id_exe_inst              = inst;
 assign id_exe_inst_id           = inst_id;
 
 assign id_exe_ctrl.exe_fun      = exe_fun;
-assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ? 
-                                    (rs1_addr == 0 ? 0 :
-                                        // exeは常にフォワーディングできないので考えないでおく
-                                        //dh_exe_rs1 ? dh_exe_fw.wdata :
-                                        dh_mem_rs1 ? dh_mem_fw.wdata : 
-                                        dh_wb_rs1  ? dh_wb_fw.wdata : regfile[rs1_addr]
-                                    ) :
+assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ? rs1_data :
                                     gen_op1data(op1_sel,reg_pc,imm_z_uext);
 assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ? rs2_data :
                                     gen_op2data(op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted);
