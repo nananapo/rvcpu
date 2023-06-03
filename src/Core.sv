@@ -1,6 +1,7 @@
 `default_nettype none
 
 `include "include/ctrltype.sv"
+`include "include/memoryinterface.sv"
 
 // TODO reg_pcをpcにする
 module Core #(
