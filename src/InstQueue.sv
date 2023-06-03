@@ -32,7 +32,7 @@ wire branch_hazard      = ireq.valid &&
 
 wire [31:0] next_pc;
 
-`ifndef EXCLUDE_PREDICTION_MODULE
+`ifdef EXCLUDE_PREDICTION_MODULE
 // 分岐予測を行わない場合はpc + 4を予測とする
 assign next_pc = pc + 4;
 `else
