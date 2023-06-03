@@ -1,3 +1,5 @@
+`ifndef MEMINTERFACE_SV
+`define MEMINTERFACE_SV
 // ready, validはChiselのデータ型に従う
 typedef struct packed {
     logic           ready; // 使わない
@@ -28,3 +30,4 @@ typedef struct packed {
     logic [31:0]    addr;
     logic [31:0]    rdata;
 } DResponse;
+`endif
