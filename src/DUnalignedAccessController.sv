@@ -294,6 +294,8 @@ always @(posedge clk) begin
     // $display("data,mem_unaligned_controller.ready,b,%b", output_cmd_ready);
     // $display("data,mem_unaligned_controller.cmd_start,b,%b", input_cmd_start);
     // $display("data,mem_unaligned_controller.wmask,b,%b", input_wmask);
+    // $display("data,mem_unaligned_controller.memresp.valid,b,%b", memresp.valid);
+    // $display("data,mem_unaligned_controller.memresp.rdata,h,%b", memresp.rdata);
 end
 `endif
 
