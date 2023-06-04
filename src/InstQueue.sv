@@ -25,7 +25,7 @@ reg [63:0]  inst_id     = 64'd0;
 reg         requested   = 0;
 reg [31:0]  request_pc  = 32'd0;
 
-wire branch_hazard      = ireq.valid &&
+wire branch_hazard_and_failreq  = ireq.valid &&
                           // フェッチをリクエスト済みなら、リクエスト済みのアドレスと比べて、同じかつキューのサイズが0なら分岐ハザードは起こさない(フェッチが遅いだけと判断する)
                           // キューのサイズが0ではない場合は必ず分岐ハザードと判定する。
                           (requested ? request_pc != ireq.addr || queue_head != queue_tail: 1);
@@ -44,7 +44,7 @@ TwoBitCounter #() tbc (
 );
 `endif
 
-wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
+wire queue_is_full      = !ireq.valid && //分岐ハザードなら空
                           (
                             (queue_tail + 3'd1 == queue_head) || // キューが埋まっている
                             // circular logicを避けるために、memresp.validのときにさらに+1するのをなくして、
@@ -53,7 +53,7 @@ wire queue_is_full      = !branch_hazard && //分岐ハザードなら空
                           );  
                           
 assign memreq.valid     = !queue_is_full;
-assign memreq.addr      = ireq.valid ? ireq.addr : pc;
+assign memreq.addr      = branch_hazard_and_failreq ? ireq.addr : pc;
 
 assign iresp.valid      = (queue_head != queue_tail) ||
                           (requested && memresp.valid && memresp.addr == request_pc);
@@ -67,7 +67,7 @@ assign iresp.inst_id    = inst_id;
 
 always @(posedge clk) begin
     // 分岐予測に失敗
-    if (branch_hazard) begin
+    if (branch_hazard_and_failreq) begin
         `ifndef PRINT_DEBUGINFO
             inst_id     <= inst_id + 1;
         `endif
@@ -136,7 +136,11 @@ always @(posedge clk) begin
 
         // if/idがキューから1つ命令を取得する
         if (iresp.valid && iresp.ready) begin
-            queue_head  <= queue_head + 1;
+            // 分岐ならheadをtailにする
+            if (ireq.valid)
+                queue_head  <= queue_tail;
+            else
+                queue_head  <= queue_head + 1;
             `ifndef PRINT_DEBUGINFO
                 // PRINT_DEBUGINFOではないなら受け取るときにinst_idをインクリメントする。
                 // PRINT_DEBUGINFOなら、フェッチするときにインクリメントする。そして格納するときは1引いた値を入れる
@@ -150,7 +154,7 @@ end
 always @(posedge clk) begin
     $display("data,fetchstage.pc,h,%b", pc);
     $display("data,fetchstage.next_pc,h,%b", next_pc);
-    $display("data,fetchstage.branch_hazard,b,%b", branch_hazard);
+    $display("data,fetchstage.branch_hazard_and_failreq,b,%b", branch_hazard_and_failreq);
     // $display("data,fetchstage.ireq.valid,b,%b", ireq.valid);
     // $display("data,fetchstage.ireq.addr,h,%b", ireq.addr);
     $display("data,fetchstage.iresp.valid,b,%b", iresp.valid);
