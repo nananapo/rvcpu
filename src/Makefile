@@ -6,6 +6,7 @@ FILES = test.sv \
 		Memory.sv \
 		InstQueue.sv \
 		DecodeStage.sv \
+		DataSelectStage.sv \
 		ExecuteStage.sv \
 		MemoryStage.sv \
 		MemoryInterface.sv \
