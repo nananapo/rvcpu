@@ -3,6 +3,8 @@
 typedef struct packed 
 {
     reg [4:0]   exe_fun;
+    reg [3:0]   op1_sel;
+    reg [3:0]   op2_sel;
     reg [31:0]  op1_data;
     reg [31:0]  op2_data;
     reg [31:0]  rs2_data;

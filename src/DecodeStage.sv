@@ -6,26 +6,16 @@ module DecodeStage
 (
     input wire          clk,
 
-    input wire[31:0]    regfile[31:0],
-
     input wire          id_valid,
     input wire[31:0]    id_reg_pc,
     input wire[31:0]    id_inst,
-    input wire[63:0]    id_inst_id, 
+    input wire[63:0]    id_inst_id,
     
-    output wire             id_exe_valid,
-    output wire [31:0]      id_exe_reg_pc,
-    output wire [31:0]      id_exe_inst,
-    output wire [63:0]      id_exe_inst_id,
-    output wire ctrltype    id_exe_ctrl,
-
-    output wire             dh_stall_flg,
-    input wire fw_ctrltype  dh_exe_fw,
-    input wire fw_ctrltype  dh_mem_fw,
-    input wire fw_ctrltype  dh_wb_fw,
-
-    output wire         zifencei_stall_flg,
-    input wire          zifencei_mem_wen
+    output wire             id_ds_valid,
+    output wire [31:0]      id_ds_reg_pc,
+    output wire [31:0]      id_ds_inst,
+    output wire [63:0]      id_ds_inst_id,
+    output wire ctrltype    id_ds_ctrl
 );
 
 `include "include/core.sv"
@@ -119,8 +109,6 @@ wire [2:0] csr_cmd;
 wire       br_flg;
 assign {exe_fun, op1_sel, op2_sel, mem_wen, rf_wen, wb_sel, csr_cmd, br_flg} = decode(inst);
 
-wire [4:0] rs1_addr         = inst[19:15];
-wire [4:0] rs2_addr         = inst[24:20];
 wire [4:0] wb_addr          = inst[11:7];
 
 wire [11:0] imm_i           = inst[31:20];
@@ -143,96 +131,32 @@ wire [6:0] opcode           = inst[6:0];
 
 wire inst_is_jal            = opcode == INST_JAL_OPCODE;
 wire inst_is_jalr           = funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE;
-// Zifencei
-wire inst_is_fence_i        = funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode == INST_ZIFENCEI_FENCEI_OPCODE;
 
-// fence.iのストール判定
-// fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
-// TODO これでは書き込みが保証されない
-assign zifencei_stall_flg   = id_valid && inst_is_fence_i && zifencei_mem_wen;
+assign id_ds_valid          = id_valid;
+assign id_ds_reg_pc         = reg_pc;
+assign id_ds_inst           = inst;
+assign id_ds_inst_id        = inst_id;
 
-// データハザード判定
-wire dh_exe_rs1 = dh_exe_fw.valid && dh_exe_fw.addr == rs1_addr && rs1_addr != 0;
-wire dh_exe_rs2 = dh_exe_fw.valid && dh_exe_fw.addr == rs2_addr && rs2_addr != 0;
-wire dh_mem_rs1 = dh_mem_fw.valid && dh_mem_fw.addr == rs1_addr && rs1_addr != 0;
-wire dh_mem_rs2 = dh_mem_fw.valid && dh_mem_fw.addr == rs2_addr && rs2_addr != 0;
-wire dh_wb_rs1  = dh_wb_fw.valid  && dh_wb_fw.addr  == rs1_addr && rs1_addr != 0;
-wire dh_wb_rs2  = dh_wb_fw.valid  && dh_wb_fw.addr  == rs2_addr && rs2_addr != 0;
-
-assign dh_stall_flg = id_valid && (
-    // dh_*_rs*ですでにチェックしているため冗長だが、わかりやすさのために残してもいいと考えている
-    (/*dh_exe_fw.valid && */!dh_exe_fw.can_forward && (dh_exe_rs1 || dh_exe_rs2)) ||
-    (/*dh_mem_fw.valid && */!dh_mem_fw.can_forward && (dh_mem_rs1 || dh_mem_rs2)) ||
-    (/*dh_wb_fw.valid  && */!dh_wb_fw.can_forward  && (dh_wb_rs1  || dh_wb_rs2 ))
-    );
-
-function [31:0] gen_op1data(
-    input [3:0]     op1_sel,
-    input [31:0]    reg_pc,
-    input [31:0]    imm_z_uext
-);
-case(op1_sel) 
-    OP1_PC  : gen_op1data = reg_pc;
-    OP1_IMZ : gen_op1data = imm_z_uext;
-    default : gen_op1data = 0;
-endcase
-endfunction
-
-function [31:0] gen_op2data(
-    input [3:0]     op2_sel,
-    input [4:0]     rs2_addr,
-    input [31:0]    imm_i_sext,
-    input [31:0]    imm_s_sext,
-    input [31:0]    imm_j_sext,
-    input [31:0]    imm_u_shifted
-);
-case(op2_sel) 
-    OP2_IMI : gen_op2data = imm_i_sext;
-    OP2_IMS : gen_op2data = imm_s_sext;
-    OP2_IMJ : gen_op2data = imm_j_sext;
-    OP2_IMU : gen_op2data = imm_u_shifted;
-    default : gen_op2data = 0;
-endcase
-endfunction
-
-wire [31:0] rs2_data = rs2_addr == 0 ? 0 : 
-                // exeは常にフォワーディングできないので考えないでおく
-                //dh_exe_rs2 ? dh_exe_fw.wdata :
-                dh_mem_rs2 ? dh_mem_fw.wdata : 
-                dh_wb_rs2  ? dh_wb_fw.wdata : regfile[rs2_addr];
-wire [31:0] rs1_data = rs1_addr == 0 ? 0 :
-                // exeは常にフォワーディングできないので考えないでおく
-                //dh_exe_rs1 ? dh_exe_fw.wdata :
-                dh_mem_rs1 ? dh_mem_fw.wdata : 
-                dh_wb_rs1  ? dh_wb_fw.wdata : regfile[rs1_addr];
-
-assign id_exe_valid             = !dh_stall_flg &&
-                                  !zifencei_stall_flg &&
-                                  id_valid;
-assign id_exe_reg_pc            = reg_pc;
-assign id_exe_inst              = inst;
-assign id_exe_inst_id           = inst_id;
-
-assign id_exe_ctrl.exe_fun      = exe_fun;
-assign id_exe_ctrl.op1_data     = op1_sel == OP1_RS1 ? rs1_data :
-                                    gen_op1data(op1_sel,reg_pc,imm_z_uext);
-assign id_exe_ctrl.op2_data     = op2_sel == OP2_RS2W ? rs2_data :
-                                    gen_op2data(op2_sel,rs2_addr,imm_i_sext,imm_s_sext,imm_j_sext,imm_u_shifted);
-assign id_exe_ctrl.rs2_data     = rs2_data;
-assign id_exe_ctrl.mem_wen      = mem_wen;
-assign id_exe_ctrl.rf_wen       = rf_wen;
-assign id_exe_ctrl.wb_sel       = wb_sel;
-assign id_exe_ctrl.wb_addr      = wb_addr;
-assign id_exe_ctrl.csr_cmd      = csr_cmd;
-assign id_exe_ctrl.jmp_pc_flg   = inst_is_jal;
-assign id_exe_ctrl.jmp_reg_flg  = inst_is_jalr;
-assign id_exe_ctrl.br_flg       = br_flg;
-assign id_exe_ctrl.imm_i_sext   = imm_i_sext;
-assign id_exe_ctrl.imm_s_sext   = imm_s_sext;
-assign id_exe_ctrl.imm_b_sext   = imm_b_sext;
-assign id_exe_ctrl.imm_j_sext   = imm_j_sext;
-assign id_exe_ctrl.imm_u_shifted= imm_u_shifted;
-assign id_exe_ctrl.imm_z_uext   = imm_z_uext;
+assign id_ds_ctrl.exe_fun       = exe_fun;
+assign id_ds_ctrl.op1_sel       = op1_sel;
+assign id_ds_ctrl.op2_sel       = op2_sel;
+assign id_ds_ctrl.op1_data      = 32'hzzzzzzzz;
+assign id_ds_ctrl.op2_data      = 32'hzzzzzzzz;
+assign id_ds_ctrl.rs2_data      = 32'hzzzzzzzz;
+assign id_ds_ctrl.mem_wen       = mem_wen;
+assign id_ds_ctrl.rf_wen        = rf_wen;
+assign id_ds_ctrl.wb_sel        = wb_sel;
+assign id_ds_ctrl.wb_addr       = wb_addr;
+assign id_ds_ctrl.csr_cmd       = csr_cmd;
+assign id_ds_ctrl.jmp_pc_flg    = inst_is_jal;
+assign id_ds_ctrl.jmp_reg_flg   = inst_is_jalr;
+assign id_ds_ctrl.br_flg        = br_flg;
+assign id_ds_ctrl.imm_i_sext    = imm_i_sext;
+assign id_ds_ctrl.imm_s_sext    = imm_s_sext;
+assign id_ds_ctrl.imm_b_sext    = imm_b_sext;
+assign id_ds_ctrl.imm_j_sext    = imm_j_sext;
+assign id_ds_ctrl.imm_u_shifted = imm_u_shifted;
+assign id_ds_ctrl.imm_z_uext    = imm_z_uext;
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
@@ -245,30 +169,19 @@ always @(posedge clk) begin
         $display("data,decodestage.decode.exe_fun,d,%b", exe_fun);
         $display("data,decodestage.decode.op1_sel,d,%b", op1_sel);
         $display("data,decodestage.decode.op2_sel,d,%b", op2_sel);
-        $display("data,decodestage.decode.op1_data,h,%b", id_exe_ctrl.op1_data);
-        $display("data,decodestage.decode.op2_data,h,%b", id_exe_ctrl.op2_data);
-        $display("data,decodestage.decode.rs1_addr,d,%b", rs1_addr);
-        $display("data,decodestage.decode.rs2_addr,d,%b", rs2_addr);
-        $display("data,decodestage.decode.rs1_data,h,%b", rs1_data);
-        $display("data,decodestage.decode.rs2_data,h,%b", rs2_data);
         $display("data,decodestage.decode.mem_wen,d,%b", mem_wen);
         $display("data,decodestage.decode.rf_wen,d,%b", rf_wen);
         $display("data,decodestage.decode.wb_sel,d,%b", wb_sel);
         $display("data,decodestage.decode.wb_addr,d,%b", wb_addr);
         $display("data,decodestage.decode.csr_cmd,d,%b", csr_cmd);
-        $display("data,decodestage.decode.jmp_pc,d,%b", id_exe_ctrl.jmp_pc_flg);
-        $display("data,decodestage.decode.jmp_reg,d,%b", id_exe_ctrl.jmp_reg_flg);
+        $display("data,decodestage.decode.jmp_pc,d,%b", id_ds_ctrl.jmp_pc_flg);
+        $display("data,decodestage.decode.jmp_reg,d,%b", id_ds_ctrl.jmp_reg_flg);
         $display("data,decodestage.decode.imm_i,h,%b", imm_i_sext);
         $display("data,decodestage.decode.imm_s,h,%b", imm_s_sext);
         $display("data,decodestage.decode.imm_b,h,%b", imm_b_sext);
         $display("data,decodestage.decode.imm_j,h,%b", imm_j_sext);
         $display("data,decodestage.decode.imm_u,h,%b", imm_u_shifted);
         $display("data,decodestage.decode.imm_z,h,%b", imm_z_uext);
-
-        $display("data,decodestage.decode.is_fence_i,b,%b", inst_is_fence_i);
-        
-        $display("data,decodestage.datahazard,b,%b", dh_stall_flg);
-        $display("data,decodestage.fence_i_stall,b,%b", zifencei_stall_flg);
     end
 end
 `endif
