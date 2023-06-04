@@ -25,10 +25,23 @@ module MemoryMapController #(
 
 `include "include/memorymap.sv"
 
+reg [31:0] saved_addr = 32'h0; // これはメモリの最初のアドレスで初期化する必要がある
+always @(posedge clk) begin
+    if (input_cmd_start && output_cmd_ready)
+        saved_addr <= input_addr;
+end
+
+// TODO ここらへんの分岐、メモリ側に委譲したい気持ちがある
 wire is_uart_tx_addr    = UART_TX_OFFSET <= input_addr && input_addr <= UART_TX_END;
 wire is_uart_rx_addr    = UART_RX_OFFSET <= input_addr && input_addr <= UART_RX_END;
 wire is_mtimereg_addr   = MACHINETIMEREG_OFFSET <= input_addr && input_addr <= MACHINETIMEREG_END;
 wire is_default_memory  = !is_uart_tx_addr && !is_uart_rx_addr && !is_mtimereg_addr;
+
+// inputで分岐すると、readyとともにinputしてきたら正しくないデータを返すことになることがある
+// (uart_txを読み込んだ後に、メモリのアドレスをinputとして入れる場合など)
+wire is_uart_tx_addr_saved  = UART_TX_OFFSET <= saved_addr && saved_addr <= UART_TX_END;
+wire is_uart_rx_addr_saved  = UART_RX_OFFSET <= saved_addr && saved_addr <= UART_RX_END;
+wire is_mtimereg_addr_saved = MACHINETIMEREG_OFFSET <= saved_addr && saved_addr <= MACHINETIMEREG_END;
 
 // UART_TX
 wire        uart_tx_cmd_start   = is_uart_tx_addr ? input_cmd_start : 0;
@@ -166,17 +179,19 @@ always @(posedge clk) begin
 end
 `endif
 
-assign output_cmd_ready     =   is_uart_tx_addr ? uart_tx_cmd_ready : 
-                                is_uart_rx_addr ? uart_rx_cmd_ready : 
-                                is_mtimereg_addr? mtimereg_cmd_ready :
+// TODO 別のメモリを参照しているなら2つ以上並列で動かせるようにしたい
+// (発行をキューにしたら実装できるか？)
+assign output_cmd_ready     =   is_uart_tx_addr_saved ? uart_tx_cmd_ready : 
+                                is_uart_rx_addr_saved ? uart_rx_cmd_ready : 
+                                is_mtimereg_addr_saved? mtimereg_cmd_ready :
                                 mem_cmd_ready;
-assign output_rdata         =   is_uart_tx_addr ? uart_tx_rdata : 
-                                is_uart_rx_addr ? uart_rx_rdata : 
-                                is_mtimereg_addr? mtimereg_rdata :
+assign output_rdata         =   is_uart_tx_addr_saved ? uart_tx_rdata : 
+                                is_uart_rx_addr_saved ? uart_rx_rdata : 
+                                is_mtimereg_addr      ? mtimereg_rdata :
                                 mem_rdata;
-assign output_rdata_valid   =   is_uart_tx_addr ? uart_tx_rdata_valid : 
-                                is_uart_rx_addr ? uart_rx_rdata_valid : 
-                                is_mtimereg_addr? mtimereg_rdata_valid : 
+assign output_rdata_valid   =   is_uart_tx_addr_saved ? uart_tx_rdata_valid : 
+                                is_uart_rx_addr_saved ? uart_rx_rdata_valid : 
+                                is_mtimereg_addr_saved? mtimereg_rdata_valid : 
                                 mem_rdata_valid;
 
 endmodule
