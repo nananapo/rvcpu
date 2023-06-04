@@ -19,8 +19,8 @@ module test();
     #1 clk = ~clk;
 
   initial begin
-    $display("START_DEBUG_LOG");
     `ifdef PRINT_DEBUGINFO
+        $display("START_DEBUG_LOG");
         #20001 $finish;
     `endif
   end
