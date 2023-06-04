@@ -206,5 +206,6 @@ void portable_fini(core_portable *p);
 #endif
 
 int ee_printf(const char *fmt, ...);
+void uart_send_char(char c);
 
 #endif /* CORE_PORTME_H */

@@ -110,6 +110,7 @@ main(void)
 {
     int   argc = 0;
     char *argv[1];
+    ee_printf("start\n");
 #else
 MAIN_RETURN_TYPE
 main(int argc, char *argv[])
