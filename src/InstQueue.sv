@@ -28,7 +28,7 @@ reg [31:0]  request_pc  = 32'd0;
 wire branch_hazard_and_failreq  = ireq.valid &&
                           // フェッチをリクエスト済みなら、リクエスト済みのアドレスと比べて、同じかつキューのサイズが0なら分岐ハザードは起こさない(フェッチが遅いだけと判断する)
                           // キューのサイズが0ではない場合は必ず分岐ハザードと判定する。
-                          (requested ? request_pc != ireq.addr || queue_head != queue_tail: 1);
+                          (requested ? request_pc != ireq.addr || queue_head != queue_tail : 1);
 
 wire [31:0] next_pc;
 
@@ -44,23 +44,26 @@ TwoBitCounter #() tbc (
 );
 `endif
 
-wire queue_is_full      = !ireq.valid && //分岐ハザードなら空
-                          (
-                            (queue_tail + 3'd1 == queue_head) || // キューが埋まっている
-                            // circular logicを避けるために、memresp.validのときにさらに+1するのをなくして、
-                            // +2にと常に比較するようにしている。サイズ一個の損だが許容)
-                            (queue_tail + 3'd2 == queue_head)
-                          );  
+// 2023/06/05
+// ireqが直接memreqにつながらないようにすることにした。
+// つながると、最長のパスがこれになる。(分岐判定の計算をしたうえで、そのアドレスがメモリにつながることになる。これは長すぎる)
+// よって、サイクル数を(1か2ほど)食うことになるが、最高周波数を優先する。
+wire queue_is_full      = (queue_tail + 3'd1 == queue_head) || // キューが埋まっている
+                          // circular logicを避けるために、memresp.validのときにさらに+1するのをなくして、
+                          // +2にと常に比較するようにしている。サイズ一個の損だが許容)
+                          // TODO よく考えたらこれはいらない(ほかの書き方がある気がする)
+                          (queue_tail + 3'd2 == queue_head);
+wire queue_is_empty     = queue_head == queue_tail;
                           
 assign memreq.valid     = !queue_is_full;
-assign memreq.addr      = branch_hazard_and_failreq ? ireq.addr : pc;
+assign memreq.addr      = pc;
 
 assign iresp.valid      = (queue_head != queue_tail) ||
                           (requested && memresp.valid && memresp.addr == request_pc);
-assign iresp.addr       = queue_head == queue_tail ? memresp.addr : pc_queue[queue_head];
-assign iresp.inst       = queue_head == queue_tail ? memresp.inst : inst_queue[queue_head];
+assign iresp.addr       = queue_is_empty ? memresp.addr : pc_queue[queue_head];
+assign iresp.inst       = queue_is_empty ? memresp.inst : inst_queue[queue_head];
 `ifdef PRINT_DEBUGINFO
-assign iresp.inst_id    = queue_head == queue_tail ? inst_id - 64'd1 : inst_id_queue[queue_head];
+assign iresp.inst_id    = queue_is_empty ? inst_id - 64'd1 : inst_id_queue[queue_head];
 `else
 assign iresp.inst_id    = inst_id;
 `endif
@@ -70,29 +73,11 @@ always @(posedge clk) begin
     if (branch_hazard_and_failreq) begin
         `ifndef PRINT_DEBUGINFO
             inst_id     <= inst_id + 1;
+            $display("info,fetchstage.prediction_failed,branch hazard");
         `endif
-        queue_head  <= queue_tail; // キューのサイズを0にする
-
-        `ifdef PRINT_DEBUGINFO
-        $display("info,fetchstage.prediction_failed,branch hazard");
-        `endif
-
-        // メモリがreadyかつmemreq.validならリクエストしてる
-        if (memreq.ready && memreq.valid) begin
-            // TODO ここでも分岐予測をしたい
-            // もしくは簡単のために分岐失敗時は1クロック消費して次のクロックでリクエストする
-            pc          <= ireq.addr + 4;
-            requested   <= 1;
-            request_pc  <= ireq.addr;
-            `ifdef PRINT_DEBUGINFO
-                inst_id <= inst_id + 1;
-                $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
-            `endif
-        end else begin
-            pc          <= ireq.addr;
-            requested   <= 0;
-        end
-        // TODO $display(予測失敗)
+        queue_head  <= queue_tail;
+        pc          <= ireq.addr;
+        requested   <= 0;
     end else begin
         if (requested) begin
             // リクエストが完了した
