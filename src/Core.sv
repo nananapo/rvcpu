@@ -46,8 +46,7 @@ wire mem_memory_unit_stall; // メモリステージでメモリがreadyでは�
 // IF -> ID -> EXE (CSR) -> MEM -> WB
 wire pipeline_kill = exited;
 
-// if -> id wire
-wire if_stall = id_valid && (id_stall);
+wire if_stall = id_stall;
 
 assign iresp.ready  = !pipeline_kill &&
                       !if_stall;
@@ -65,15 +64,13 @@ reg [63:0]  id_inst_id;
 
 // if -> id logic
 always @(posedge clk) begin
-    if (!if_stall || branch_hazard) begin
-        if (!iresp.valid || branch_hazard)
-            id_valid    <= 0;
-        else begin
-            id_valid    <= 1;
-            id_reg_pc   <= iresp.addr;
-            id_inst     <= iresp.inst;
-            id_inst_id  <= iresp.inst_id;
-        end
+    if (!iresp.valid || branch_hazard) begin
+        id_valid <= 0;
+    end else if (iresp.valid && !id_stall) begin
+        id_valid    <= 1;
+        id_reg_pc   <= iresp.addr;
+        id_inst     <= iresp.inst;
+        id_inst_id  <= iresp.inst_id;
     end
 end
 
@@ -99,7 +96,7 @@ always @(posedge clk) begin
         ds_valid    <= 0;
     else if (id_stall && !ds_stall)
         ds_valid    <= 0;
-    else if (!id_stall) begin
+    else if (!id_stall && !ds_stall) begin
         ds_valid   <= id_ds_valid;
         ds_reg_pc  <= id_ds_reg_pc;
         ds_inst    <= id_ds_inst;
@@ -129,11 +126,11 @@ ctrltype        exe_ctrl;
 
 // ds -> exe logic
 always @(posedge clk) begin
-    if (branch_hazard)
+    if (branch_hazard && !exe_stall)
         exe_valid   <= 0;
     else if (ds_stall && !exe_stall)
         exe_valid   <= 0;
-    else if (!ds_stall) begin
+    else if (!ds_stall && !exe_stall) begin
         exe_valid   <= ds_exe_valid;
         exe_reg_pc  <= ds_exe_reg_pc;
         exe_inst    <= ds_exe_inst;
@@ -201,7 +198,7 @@ always @(posedge clk) begin
     // exeがストールしていても、メモリがストールしていないならinvalidにして流す
     if (exe_stall && !mem_stall)
         mem_valid       <= 0;
-    else if (!exe_stall) begin
+    else if (!exe_stall && !mem_stall) begin
         mem_valid       <= exe_mem_valid;
         mem_reg_pc      <= exe_mem_reg_pc;
         mem_inst        <= exe_mem_inst;
@@ -270,7 +267,7 @@ always @(posedge clk) begin
     // WBステージは1サイクルで終わる
     if (mem_stall)
         wb_valid        <= 0;
-    else if (!mem_stall) begin
+    else begin
         wb_valid        <= mem_wb_valid;
         wb_reg_pc       <= mem_wb_reg_pc;
         wb_inst         <= mem_wb_inst;
