@@ -73,6 +73,8 @@ always @(posedge clk) begin
     if (branch_hazard_and_failreq) begin
         `ifndef PRINT_DEBUGINFO
             inst_id     <= inst_id + 1;
+        `endif
+        `ifdef PRINT_DEBUGINFO
             $display("info,fetchstage.prediction_failed,branch hazard");
         `endif
         queue_head  <= queue_tail;
