@@ -24,6 +24,11 @@ reg [31:0]  targets_taken   [ADDR_SIZE-1:0];
 // 11 <-> 10 <-> 01 <-> 0
 reg [1:0]   counters        [ADDR_SIZE-1:0];
 
+IUpdatePredictionIO saved_updateio;
+initial begin
+    saved_updateio.valid = 0;
+end
+
 // カウンタの初期化
 int loop_i;
 initial begin
@@ -34,8 +39,8 @@ initial begin
 end
 
 // pcをindexに変換する
-wire [ADDR_WIDTH-1:0]   pc2i  =          pc[ADDR_WIDTH + 2 - 1:2];
-wire [ADDR_WIDTH-1:0]   upc2i = updateio.pc[ADDR_WIDTH + 2 - 1:2];
+wire [ADDR_WIDTH-1:0]   pc2i  =                pc[ADDR_WIDTH + 2 - 1:2];
+wire [ADDR_WIDTH-1:0]   upc2i = saved_updateio.pc[ADDR_WIDTH + 2 - 1:2];
 
 // 11と10がtakeなので、上位bitが1ならtake。それ以外ならpc + 4
 // ...
@@ -44,18 +49,19 @@ wire [ADDR_WIDTH-1:0]   upc2i = updateio.pc[ADDR_WIDTH + 2 - 1:2];
 assign next_pc  = pc_keys[pc2i] == pc && counters[pc2i][1] == 1'b1 ? targets_taken[pc2i] : pc + 4;
 
 always @(posedge clk) begin
-    if (updateio.valid) begin
-        if (!updateio.is_br) begin
+    saved_updateio <= updateio;
+    if (saved_updateio.valid) begin
+        if (!saved_updateio.is_br) begin
             pc_keys[upc2i]   <= 32'hffffffff;
             counters[upc2i]  <= DEFAULT_COUNTER_VALUE;
         end else begin
-            pc_keys[upc2i]   <= updateio.pc;
-            if (updateio.taken)
-                targets_taken[upc2i] <= updateio.target;
+            pc_keys[upc2i]   <= saved_updateio.pc;
+            if (saved_updateio.taken)
+                targets_taken[upc2i] <= saved_updateio.target;
             // 端ではなければ動かす
-            if (!(counters[upc2i] == 2'b11 && updateio.taken) &&
-                !(counters[upc2i] == 2'b00 && !updateio.taken)) begin
-                counters[upc2i] = counters[upc2i] + (updateio.taken ? 1 : -1); 
+            if (!(counters[upc2i] == 2'b11 && saved_updateio.taken) &&
+                !(counters[upc2i] == 2'b00 && !saved_updateio.taken)) begin
+                counters[upc2i] = counters[upc2i] + (saved_updateio.taken ? 1 : -1); 
             end 
         end
     end
@@ -69,12 +75,12 @@ always @(posedge clk) begin
     $display("data,btb.pc_index,b,%b", pc2i);
     $display("data,btb.pc_keys[i],b,%b", pc_keys[pc2i]);
     $display("data,btb.counters[i],b,%b", counters[pc2i]);
-    $display("data,btb.update.valid,b,%b", updateio.valid);
-    $display("data,btb.update.pc,b,%b", updateio.pc);
+    $display("data,btb.update.valid,b,%b", saved_updateio.valid);
+    $display("data,btb.update.pc,b,%b", saved_updateio.pc);
     $display("data,btb.update.pc_index,b,%b", upc2i);
-    $display("data,btb.update.is_br,b,%b", updateio.is_br);
-    $display("data,btb.update.taken,b,%b", updateio.taken);
-    $display("data,btb.update.target,b,%b", updateio.target);
+    $display("data,btb.update.is_br,b,%b", saved_updateio.is_br);
+    $display("data,btb.update.taken,b,%b", saved_updateio.taken);
+    $display("data,btb.update.target,b,%b", saved_updateio.target);
 end
 `endif
 */
