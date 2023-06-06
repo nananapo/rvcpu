@@ -389,8 +389,8 @@ endfunction
 wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
 
 wire can_access = addr[9:8] <= mode;
-wire can_read   = can_access && addr[11] == 0;
-wire can_write  = can_access && addr[10] == 0;
+wire can_read   = can_access;
+wire can_write  = can_access && addr[11:10] != 2'b11;
 
 wire stage_interrupt_ready = csr_valid;
 
