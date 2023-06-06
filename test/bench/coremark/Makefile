@@ -28,7 +28,7 @@ LDFLAGS = \
 	-lc \
 	-L/opt/riscv32/riscv32-unknown-elf/lib/ \
 
-ITERATIONS = 0
+ITERATIONS = 400
 CLOCKS_PER_SEC = 18000000
 FLAGS_STR = ""
 
@@ -50,6 +50,7 @@ CORE_CFLAGS = \
 	-I./ \
 	-I$(PORT_DIR)/ \
 	-DFLAGS_STR=\"$(FLAGS_STR)\" \
+	#-DCORE_DEBUG=1 \
 
 ELF_FILE = $(OUTPUT_DIR)/temp.elf
 BIN_FILE = $(OUTPUT_DIR)/code.bin
