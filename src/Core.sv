@@ -37,8 +37,8 @@ assign gp   = regfile[3];
 // 何クロック目かのカウント
 reg [31:0] clk_count = 0;
 
-wire id_dh_stall;           // データハザードによるストール
-wire id_zifencei_stall_flg; // fence.i命令でストールするかのフラグ
+wire ds_dh_stall;           // データハザードによるストール
+wire ds_zifencei_stall_flg; // fence.i命令でストールするかのフラグ
 wire exe_calc_stall;        // exeステージでストールしているかどうかのフラグ
 wire csr_stall_flg;         // csrステージが止まってる
 wire mem_memory_unit_stall; // メモリステージでメモリがreadyではないストール
@@ -46,8 +46,7 @@ wire mem_memory_unit_stall; // メモリステージでメモリがreadyでは�
 // IF -> ID -> EXE (CSR) -> MEM -> WB
 wire pipeline_kill = exited;
 
-// if -> id wire
-wire if_stall = (id_valid && id_stall) || id_dh_stall;
+wire if_stall = id_stall;
 
 assign iresp.ready  = !pipeline_kill &&
                       !if_stall;
@@ -65,27 +64,58 @@ reg [63:0]  id_inst_id;
 
 // if -> id logic
 always @(posedge clk) begin
-    if (!if_stall || branch_hazard) begin
-        if (!iresp.valid || branch_hazard)
-            id_valid    <= 0;
-        else begin
-            id_valid    <= 1;
-            id_reg_pc   <= iresp.addr;
-            id_inst     <= iresp.inst;
-            id_inst_id  <= iresp.inst_id;
-        end
+    if (!iresp.valid || branch_hazard) begin
+        id_valid <= 0;
+    end else if (iresp.valid && !id_stall) begin
+        id_valid    <= 1;
+        id_reg_pc   <= iresp.addr;
+        id_inst     <= iresp.inst;
+        id_inst_id  <= iresp.inst_id;
     end
 end
 
-// id -> exe wire
-wire            id_exe_valid;
-wire [31:0]     id_exe_reg_pc;
-wire [31:0]     id_exe_inst;
-wire [63:0]     id_exe_inst_id;
-wire ctrltype   id_exe_ctrl;
+// id ->ds wire
+wire            id_ds_valid;
+wire [31:0]     id_ds_reg_pc;
+wire [31:0]     id_ds_inst;
+wire [63:0]     id_ds_inst_id;
+wire ctrltype   id_ds_ctrl;
 
-wire            id_stall = (exe_valid && exe_stall) ||
-                           id_zifencei_stall_flg;
+wire            id_stall = id_valid && (ds_stall);
+
+// ds reg
+reg         ds_valid = 0;
+reg [31:0]  ds_reg_pc;
+reg [31:0]  ds_inst;
+reg [63:0]  ds_inst_id;
+ctrltype    ds_ctrl;
+
+// id -> ds logic
+always @(posedge clk) begin
+    if (branch_hazard)
+        ds_valid    <= 0;
+    else if (id_stall && !ds_stall)
+        ds_valid    <= 0;
+    else if (!id_stall && !ds_stall) begin
+        ds_valid   <= id_ds_valid;
+        ds_reg_pc  <= id_ds_reg_pc;
+        ds_inst    <= id_ds_inst;
+        ds_inst_id <= id_ds_inst_id;
+        ds_ctrl    <= id_ds_ctrl;
+    end
+end
+
+// ds -> exe wire
+wire            ds_exe_valid;
+wire [31:0]     ds_exe_reg_pc;
+wire [31:0]     ds_exe_inst;
+wire [63:0]     ds_exe_inst_id;
+wire ctrltype   ds_exe_ctrl;
+
+wire            ds_stall = ds_valid && (
+                           exe_stall ||
+                           ds_zifencei_stall_flg ||
+                           ds_dh_stall);
 
 // exe, csr reg
 reg             exe_valid = 0;
@@ -94,19 +124,18 @@ reg [31:0]      exe_inst;
 reg [63:0]      exe_inst_id;
 ctrltype        exe_ctrl;
 
-// id -> exe logic
+// ds -> exe logic
 always @(posedge clk) begin
-    if (!id_stall) begin
-        // データハザードか分岐ハザードで、かつストールしてないなら、invalidとして流す。
-        if (id_dh_stall || branch_hazard)
-            exe_valid   <= 0;
-        else begin 
-            exe_valid   <= id_exe_valid;
-            exe_reg_pc  <= id_exe_reg_pc;
-            exe_inst    <= id_exe_inst;
-            exe_inst_id <= id_exe_inst_id;
-            exe_ctrl    <= id_exe_ctrl;
-        end
+    if (branch_hazard && !exe_stall)
+        exe_valid   <= 0;
+    else if (ds_stall && !exe_stall)
+        exe_valid   <= 0;
+    else if (!ds_stall && !exe_stall) begin
+        exe_valid   <= ds_exe_valid;
+        exe_reg_pc  <= ds_exe_reg_pc;
+        exe_inst    <= ds_exe_inst;
+        exe_inst_id <= ds_exe_inst_id;
+        exe_ctrl    <= ds_exe_ctrl;
     end
 end
 
@@ -127,19 +156,20 @@ assign exe_fw_ctrl.addr         = exe_ctrl.wb_addr;
 assign exe_fw_ctrl.wdata        = 32'bz;
 
 // exeで分岐予測の判定を行うため、idがvalidになるのを待つ
-wire            exe_stall = (mem_valid && mem_stall) ||
+wire            exe_stall = exe_valid && (
+                            (mem_valid && mem_stall) ||
                             exe_calc_stall ||
-                            !id_valid || 
-                            csr_stall_flg;
+                            (exe_valid && !ds_valid) || 
+                            csr_stall_flg);
 
 // csr -> mem wire
 wire [31:0]     csr_mem_csr_rdata;
 
 // irespと比べるとcircular logicになるので注意
 // TODO サイクル数を犠牲にしてクリティカルパスを短くする
-wire            branch_fail   = id_valid && exe_valid && (
-                                    (exe_branch_taken && id_reg_pc != exe_branch_target) ||
-                                    (!exe_branch_taken && id_reg_pc != exe_reg_pc + 4)
+wire            branch_fail   = ds_valid && exe_valid && (
+                                    (exe_branch_taken && ds_reg_pc != exe_branch_target) ||
+                                    (!exe_branch_taken && ds_reg_pc != exe_reg_pc + 4)
                                 );
 // CSRは必ずハザードを起こす
 wire            csr_trap_fail = csr_csr_trap_flg;
@@ -165,7 +195,10 @@ reg [31:0]      mem_csr_rdata;
 
 // exe -> mem logic
 always @(posedge clk) begin
-    if (!exe_stall) begin
+    // exeがストールしていても、メモリがストールしていないならinvalidにして流す
+    if (exe_stall && !mem_stall)
+        mem_valid       <= 0;
+    else if (!exe_stall && !mem_stall) begin
         mem_valid       <= exe_mem_valid;
         mem_reg_pc      <= exe_mem_reg_pc;
         mem_inst        <= exe_mem_inst;
@@ -210,7 +243,7 @@ assign mem_fw_ctrl.wdata        = mem_ctrl.wb_sel == WB_PC ? mem_reg_pc + 4 :
                                   mem_ctrl.wb_sel == WB_CSR ? mem_csr_rdata :
                                   mem_alu_out;
 
-wire            mem_stall   = mem_memory_unit_stall;
+wire            mem_stall   = mem_valid && (mem_memory_unit_stall);
 
 // wb reg
 reg             wb_valid    = 0;
@@ -231,7 +264,10 @@ wire [31:0]     wb_wdata_out;
 
 // mem -> wb logic
 always @(posedge clk) begin
-    if (!mem_stall) begin
+    // WBステージは1サイクルで終わる
+    if (mem_stall)
+        wb_valid        <= 0;
+    else begin
         wb_valid        <= mem_wb_valid;
         wb_reg_pc       <= mem_wb_reg_pc;
         wb_inst         <= mem_wb_inst;
@@ -254,28 +290,47 @@ DecodeStage #() decodestage
 (
     .clk(clk),
 
-    .regfile(regfile),
-
     .id_valid(id_valid),
     .id_reg_pc(id_reg_pc),
     .id_inst(id_inst),
     .id_inst_id(id_inst_id),
 
-    .id_exe_valid(id_exe_valid),
-    .id_exe_reg_pc(id_exe_reg_pc),
-    .id_exe_inst(id_exe_inst),
-    .id_exe_inst_id(id_exe_inst_id),
-    .id_exe_ctrl(id_exe_ctrl),
+    .id_ds_valid(id_ds_valid),
+    .id_ds_reg_pc(id_ds_reg_pc),
+    .id_ds_inst(id_ds_inst),
+    .id_ds_inst_id(id_ds_inst_id),
+    .id_ds_ctrl(id_ds_ctrl)
+);
 
-    .dh_stall_flg(id_dh_stall),
+DataSelectStage #() dataselectstage
+(
+    .clk(clk),
+
+    .regfile(regfile),
+
+    .ds_valid(ds_valid),
+    .ds_reg_pc(ds_reg_pc),
+    .ds_inst(ds_inst),
+    .ds_inst_id(ds_inst_id),
+    .ds_ctrl(ds_ctrl),
+
+    .ds_exe_valid(ds_exe_valid),
+    .ds_exe_reg_pc(ds_exe_reg_pc),
+    .ds_exe_inst(ds_exe_inst),
+    .ds_exe_inst_id(ds_exe_inst_id),
+    .ds_exe_ctrl(ds_exe_ctrl),
+
+    .dh_stall_flg(ds_dh_stall),
     .dh_exe_fw(exe_fw_ctrl),
     .dh_mem_fw(mem_fw_ctrl),
     .dh_wb_fw(wb_fw_ctrl),
 
-    .zifencei_stall_flg(id_zifencei_stall_flg),
-    .zifencei_mem_wen(
-        (mem_valid && (mem_ctrl.mem_wen == MEN_SB || mem_ctrl.mem_wen == MEN_SH || mem_ctrl.mem_wen == MEN_SW)) || 
-        (exe_valid && (exe_ctrl.mem_wen == MEN_SB || exe_ctrl.mem_wen == MEN_SH || exe_ctrl.mem_wen == MEN_SW)))
+    .zifencei_stall_flg(ds_zifencei_stall_flg),
+    .zifencei_mem_wen(1'b0)
+    /*
+    (mem_valid && (mem_ctrl.mem_wen == MEN_SB || mem_ctrl.mem_wen == MEN_SH || mem_ctrl.mem_wen == MEN_SW)) || 
+    (exe_valid && (exe_ctrl.mem_wen == MEN_SB || exe_ctrl.mem_wen == MEN_SH || exe_ctrl.mem_wen == MEN_SW))
+    */
 );
 
 ExecuteStage #() executestage
@@ -379,6 +434,7 @@ always @(negedge clk) begin
     $display("clock,%d", clk_count);
     $display("data,core.if_stall,b,%b", if_stall);
     $display("data,core.id_stall,b,%b", id_stall);
+    $display("data,core.ds_stall,b,%b", ds_stall);
     $display("data,core.exe_stall,b,%b", exe_stall);
     $display("data,core.mem_stall,b,%b", mem_stall);
     $display("data,core.gp,h,%b", gp);

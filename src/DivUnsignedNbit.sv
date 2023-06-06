@@ -58,7 +58,7 @@ always @(posedge clk) begin
         STATE_DIVIDE: begin
             if (count == 1)
                 state <= STATE_END;
-            if ({1'b0, remainder} >= shifted_divisor[SIZE:0]) begin
+            if ({SIZE'(0), remainder} >= shifted_divisor) begin
                 remainder   <= remainder - shifted_divisor[SIZE-1:0];
                 quotient    <= quotient | count;
             end
@@ -86,7 +86,7 @@ always @(posedge clk) begin
     $display("data,divunbit.state,d,%b", state);
     $display("data,divunbit.save_divisor,b,%b", save_divisor);
     $display("data,divunbit.shifted_divisor,b,%b", shifted_divisor);
-    $display("data,divunbit.count,d,%b", count);
+    $display("data,divunbit.count,b,%b", count);
 end
 `endif
 `endif

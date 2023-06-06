@@ -5,6 +5,7 @@ KANATA_VERSION  = "0004"
 lastClock   = -1
 last_if_id  = None
 last_id_id  = None
+last_ds_id  = None
 last_exe_id = None
 last_mem_id = None
 last_csr_id = None
@@ -21,6 +22,7 @@ for (clock, numberData, textData) in readClockCycle():
 
     # idを取得
     id_id_valid, id_id, _   = numberData[ID_INST_ID]
+    ds_id_valid, ds_id, _   = numberData[DS_INST_ID]
     exe_id_valid, exe_id, _ = numberData[EXE_INST_ID]
     mem_id_valid, mem_id, _ = numberData[MEM_INST_ID]
     csr_id_valid, csr_id, _ = numberData[CSR_INST_ID]
@@ -28,6 +30,7 @@ for (clock, numberData, textData) in readClockCycle():
 
     # intではないならNoneにする
     id_id   = int(id_id[2:], 16)  if id_id_valid else None
+    ds_id   = int(ds_id[2:], 16)  if ds_id_valid else None
     exe_id  = int(exe_id[2:], 16) if exe_id_valid else None
     mem_id  = int(mem_id[2:], 16) if mem_id_valid else None
     csr_id  = int(csr_id[2:], 16) if csr_id_valid else None
@@ -56,6 +59,7 @@ for (clock, numberData, textData) in readClockCycle():
     # -> 前のidでE
     for id, last_id, name in [
         (id_id, last_id_id, IDSTAGE_NAME),
+        (ds_id, last_ds_id, DSSTAGE_NAME),
         (exe_id, last_exe_id, EXESTAGE_NAME),
         (mem_id, last_mem_id, MEMSTAGE_NAME),
         (csr_id, last_csr_id, CSRSTAGE_NAME),
@@ -72,6 +76,7 @@ for (clock, numberData, textData) in readClockCycle():
 
     lastClock   = clock
     last_id_id  = id_id
+    last_ds_id  = ds_id
     last_exe_id = exe_id
     last_mem_id = mem_id
     last_csr_id = csr_id
