@@ -1,9 +1,10 @@
 # rvcpu
 
 「RISC-VとChiselで学ぶ　はじめてのCPU自作」本を参考にVerilogでRISC-Vを実装したもの  
+TangNano9Kで動きます
 
 ### 第二部 簡単なCPUの実装
-https://github.com/nananapo/rvcpu/tree/8424b1996c31f129cd42e1bad60f8112c8c1eaa4  
+https://github.com/nananapo/rvcpu/tree/8424b1996c31f129cd42e1bad60f8112c8c1eaa4 
 
 追加実装
 * lb, lh, lbu, lhu命令
@@ -13,6 +14,8 @@ https://github.com/nananapo/rvcpu/tree/8424b1996c31f129cd42e1bad60f8112c8c1eaa4
 TangNano9Kで動作確認済み
 
 ### 第三部 パイプラインの実装
+
+https://github.com/nananapo/rvcpu/pull/18/commits/16bf103d1a4932d5d3c33b1546c6bdf7b2b5114c らへんまで
 
 CSR命令とメモリ命令を並列に動かす5段パイプライン  
 * IF -> ID -> EXE -> MEM(or CSR) -> WB
@@ -33,7 +36,36 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
     - [x] mret命令
     - [x] M-modeでのタイマ割込み
 
-TangNano9Kで動作確認済み
+### 2023/05/22? ~ 
+
+変更点
+* IFステージを消して、キューにフェッチした命令を入れていくモジュールを作成した
+* 2bit分岐予測器を作成した
+* 4byteアラインされていない命令フェッチは行えなくした
+* CSRステージをEXEと同時に実行させるようにした
+* レジスタ(またはフォワーディングされる)のデータを受け取る処理をIDステージから分離して新しいステージ(DS)を作成した
+* kanata log formatに対応(log/convert2kanata.py)し、Konataでパイプラインの状態を見れるようにした
+* ログを読みやすくするスクリプトを作成した (log/convert2humanreadable.py)
+* CoreMarkを動作させた
+
+簡単な図
+```txt
+    Memory  UART(TX/RX) MemoryMappedRegister
+       |         |                |
+       -----MemoryMapController----
+                 |
+        ----MemoryInterface--
+        |                   |
+    InstQueue   DUnalignedAccessController
+        |                   |
+Core---------------------------------
+|       |                   |
+|   IF/ID -> DS -> CSR -> MEM -> WB
+|               -> EXE ->
+|                   |
+|           MulNbit/DivNbit
+```
+
 
 #### メモリマップ
 ```
