@@ -32,7 +32,6 @@ wire ctrltype ctrl      = exe_ctrl;
 wire [4:0]  exe_fun     = exe_ctrl.exe_fun;
 wire [31:0] op1_data    = exe_ctrl.op1_data;
 wire [31:0] op2_data    = exe_ctrl.op2_data;
-wire [31:0] rs2_data    = exe_ctrl.rs2_data;
 wire [31:0] imm_b_sext  = exe_ctrl.imm_b_sext;
 wire [31:0] imm_j_sext  = exe_ctrl.imm_j_sext;
 
