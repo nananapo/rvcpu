@@ -2,7 +2,7 @@
 `include "include/memoryinterface.sv"
 
 module main #(
-    parameter FMAX_MHz = 18 
+    parameter FMAX_MHz = 27
 )(
     input  wire         clk27MHz,
 
@@ -33,10 +33,13 @@ wire clkConstrained;
 `ifdef DEBUG
     assign clkConstrained = clk27MHz;
 `else
+    /*
     Gowin_rPLL rpll_clk(
         .clkout(clkConstrained), //output clkout
         .clkin(clk27MHz) //input clkin
     );
+    */
+    assign clkConstrained = clk27MHz;
 `endif
 
 reg exited = 0;

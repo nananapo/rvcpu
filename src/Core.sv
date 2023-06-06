@@ -48,13 +48,25 @@ wire pipeline_kill = exited;
 
 wire if_stall = id_stall;
 
+// InstQueueの仕様として、branch_hazard = 1の時は
 assign iresp.ready  = !pipeline_kill &&
                       !if_stall;
 
+// 最後のクロックでの分岐ハザード状態
+// このレジスタを介してireqすることで、EXEステージとinstqueueが直接つながらないようにする。
+reg branch_hazard_last_clock        = 0;
+reg [31:0] branch_target_last_clock = 32'h0;
+
 // branchするとき(分岐予測に失敗したとき)はireq経由でリクエストする
 // ireq.validをtrueにすると、キューがリセットされる。
-assign ireq.valid   = branch_hazard;
-assign ireq.addr    = branch_target;
+assign ireq.valid   = branch_hazard_last_clock;
+assign ireq.addr    = branch_target_last_clock;
+
+
+always @(posedge clk) begin
+    branch_hazard_last_clock <= branch_hazard_now;
+    branch_target_last_clock <= branch_target;
+end
 
 // id reg
 reg         id_valid = 0;
@@ -64,7 +76,7 @@ reg [63:0]  id_inst_id;
 
 // if -> id logic
 always @(posedge clk) begin
-    if (!iresp.valid || branch_hazard) begin
+    if (!iresp.valid || branch_hazard_now || branch_hazard_last_clock) begin
         id_valid <= 0;
     end else if (iresp.valid && !id_stall) begin
         id_valid    <= 1;
@@ -92,7 +104,7 @@ ctrltype    ds_ctrl;
 
 // id -> ds logic
 always @(posedge clk) begin
-    if (branch_hazard)
+    if (branch_hazard_now)
         ds_valid    <= 0;
     else if (id_stall && !ds_stall)
         ds_valid    <= 0;
@@ -126,7 +138,7 @@ ctrltype        exe_ctrl;
 
 // ds -> exe logic
 always @(posedge clk) begin
-    if (branch_hazard && !exe_stall)
+    if (branch_hazard_now && !exe_stall)
         exe_valid   <= 0;
     else if (ds_stall && !exe_stall)
         exe_valid   <= 0;
@@ -174,7 +186,7 @@ wire            branch_fail   = ds_valid && exe_valid && (
 // CSRは必ずハザードを起こす
 wire            csr_trap_fail = csr_csr_trap_flg;
 
-wire            branch_hazard = !csr_stall_flg && (csr_trap_fail || branch_fail);
+wire            branch_hazard_now = !csr_stall_flg && (csr_trap_fail || branch_fail);
 wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : 
                                 exe_branch_taken ? exe_branch_target : exe_reg_pc + 4;
 
