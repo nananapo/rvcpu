@@ -29,7 +29,7 @@ LDFLAGS = \
 	-L/opt/riscv32/riscv32-unknown-elf/lib/ \
 
 ITERATIONS = 400
-CLOCKS_PER_SEC = 18000000
+CLOCKS_PER_SEC = 27000000
 FLAGS_STR = ""
 
 PORT_DIR = barebones
