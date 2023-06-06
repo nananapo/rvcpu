@@ -5,7 +5,7 @@ SECTIONS
 {
   . = 0x00000000;
   .text : { 
-    *(.text.startup)
+    *(.startup_main)
     *(.text) 
   }
   .data : { *(.data) }
