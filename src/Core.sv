@@ -77,7 +77,10 @@ reg [63:0]  id_inst_id;
 // if -> id logic
 always @(posedge clk) begin
     if (!iresp.valid || branch_hazard_now || branch_hazard_last_clock) begin
-        id_valid <= 0;
+        id_valid    <= 0;
+        `ifdef PRINT_DEBUGINFO
+            $display("info,decodestage.event.pipeline_flush,pipeline flush");
+        `endif
     end else if (iresp.valid && !id_stall) begin
         id_valid    <= 1;
         id_reg_pc   <= iresp.addr;
@@ -104,16 +107,19 @@ ctrltype    ds_ctrl;
 
 // id -> ds logic
 always @(posedge clk) begin
-    if (branch_hazard_now)
+    if (branch_hazard_now) begin
         ds_valid    <= 0;
-    else if (id_stall && !ds_stall)
+        `ifdef PRINT_DEBUGINFO
+            $display("info,datastage.event.pipeline_flush,pipeline flush");
+        `endif
+    end else if (id_stall && !ds_stall)
         ds_valid    <= 0;
     else if (!id_stall && !ds_stall) begin
-        ds_valid   <= id_ds_valid;
-        ds_reg_pc  <= id_ds_reg_pc;
-        ds_inst    <= id_ds_inst;
-        ds_inst_id <= id_ds_inst_id;
-        ds_ctrl    <= id_ds_ctrl;
+        ds_valid    <= id_ds_valid;
+        ds_reg_pc   <= id_ds_reg_pc;
+        ds_inst     <= id_ds_inst;
+        ds_inst_id  <= id_ds_inst_id;
+        ds_ctrl     <= id_ds_ctrl;
     end
 end
 

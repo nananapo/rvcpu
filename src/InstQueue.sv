@@ -75,7 +75,7 @@ always @(posedge clk) begin
             inst_id     <= inst_id + 1;
         `endif
         `ifdef PRINT_DEBUGINFO
-            $display("info,fetchstage.prediction_failed,branch hazard");
+            $display("info,fetchstage.event.branch_hazard,branch hazard");
         `endif
         queue_head  <= queue_tail;
         pc          <= ireq.addr;

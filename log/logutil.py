@@ -26,6 +26,10 @@ IF_FETCH_END    = "fetchstage.event.fetch_end"
 IF_INFO_PC      = "fetchstage.event.pc"
 IF_INFO_INST    = "fetchstage.event.inst"
 
+IF_BRANCH_HAZARD    = "fetchstage.event.branch_hazard"
+ID_PIPELINE_FLUSH   = "decodestage.event.pipeline_flush"
+DS_PIPELINE_FLUSH   = "datastage.event.pipeline_flush"
+
 # ログを1クロックサイクルごとのデータにまとめる
 def readClockCycle():
     clockCount = None
