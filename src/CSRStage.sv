@@ -402,7 +402,7 @@ assign csr_stall_flg    = csr_valid &&
 
 
 function [31:0] rdata_func(
-    input [12:0]    addr,
+    input [11:0]    addr,
     input [63:0]    reg_cycle,
     input [63:0]    reg_time,
 
