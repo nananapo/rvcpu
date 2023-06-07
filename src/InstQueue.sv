@@ -32,16 +32,42 @@ wire branch_hazard_and_failreq  = ireq.valid &&
 
 wire [31:0] next_pc;
 
+// TODO この処理を適切な場所に移動したい。
+reg [31:0] last_fetched_pc     = 32'hffffffff;
+reg [31:0] last_fetched_inst   = 32'hffffffff;
+
+wire [19:0] last_imm_j          = {
+                                    last_fetched_inst[31],
+                                    last_fetched_inst[19:12],
+                                    last_fetched_inst[20],
+                                    last_fetched_inst[30:21]
+                                  };
+wire [31:0] last_imm_j_sext     = {{11{last_imm_j[19]}}, last_imm_j, 1'b0};
+
+wire [6:0]  last_inst_opcode    = last_fetched_inst[6:0];
+
+wire        last_inst_is_jal    = last_inst_opcode == INST_JAL_OPCODE;
+wire [31:0] last_jal_target     = last_fetched_pc + last_imm_j_sext;
+
+wire jal_hazard = last_inst_is_jal && requested && request_pc != last_jal_target;
+// TODO ここまで
+
 `ifdef EXCLUDE_PREDICTION_MODULE
 // 分岐予測を行わない場合はpc + 4を予測とする
-assign next_pc = pc + 4;
+assign next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
 `else
+
+`include "include/inst.sv"
+
+wire [31:0] next_pc_tbc;
 TwoBitCounter #() tbc (
     .clk(clk),
     .pc(pc),
-    .next_pc(next_pc),
+    .next_pc(next_pc_tbc),
     .updateio(updateio)
 );
+
+assign next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
 `endif
 
 // 2023/06/05
@@ -56,10 +82,12 @@ wire queue_is_full      = (queue_tail + 3'd1 == queue_head) || // キューが�
 wire queue_is_empty     = queue_head == queue_tail;
                           
 assign memreq.valid     = !queue_is_full;
-assign memreq.addr      = pc;
+assign memreq.addr      = last_inst_is_jal ? last_jal_target : pc;
 
-assign iresp.valid      = (queue_head != queue_tail) ||
-                          (requested && memresp.valid && memresp.addr == request_pc);
+assign iresp.valid      = !jal_hazard && (
+                          (queue_head != queue_tail) ||
+                          (requested && memresp.valid && memresp.addr == request_pc)
+                          );
 assign iresp.addr       = queue_is_empty ? memresp.addr : pc_queue[queue_head];
 assign iresp.inst       = queue_is_empty ? memresp.inst : inst_queue[queue_head];
 `ifdef PRINT_DEBUGINFO
@@ -80,6 +108,27 @@ always @(posedge clk) begin
         queue_head  <= queue_tail;
         pc          <= ireq.addr;
         requested   <= 0;
+
+        // リクエストするなら、リクエストを繰り返さないようにlast_*を更新する。
+        last_fetched_pc     <= 32'hffffffff;
+        last_fetched_inst   <= 32'hffffffff;
+    // jalの先読み失敗
+    end else if (jal_hazard) begin
+        requested   <= 0;
+        // メモリがreadyかつmemreq.validならリクエストしてる
+        if (memreq.ready && memreq.valid) begin
+            pc         <= next_pc;
+            requested  <= 1;
+            request_pc <= memreq.addr;
+            `ifdef PRINT_DEBUGINFO
+                inst_id <= inst_id + 1;
+                $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
+            `endif
+
+            // リクエストするなら、リクエストを繰り返さないようにlast_*を更新する。
+            last_fetched_pc     <= 32'hffffffff;
+            last_fetched_inst   <= 32'hffffffff;
+        end
     end else begin
         if (requested) begin
             // リクエストが完了した
@@ -87,6 +136,9 @@ always @(posedge clk) begin
                 queue_tail              <= queue_tail + 1;
                 pc_queue[queue_tail]    <= memresp.addr;
                 inst_queue[queue_tail]  <= memresp.inst;
+
+                last_fetched_pc         <= memresp.addr;
+                last_fetched_inst       <= memresp.inst;
 
                 `ifdef PRINT_DEBUGINFO
                     inst_id_queue[queue_tail]  <= inst_id - 64'd1;
