@@ -98,7 +98,7 @@ always @(posedge clk) begin
                 // メモリがreadyかつmemreq.validならリクエストしてる
                 if (memreq.ready && memreq.valid) begin
                     requested           <= 1;
-                    request_pc          <= pc;
+                    request_pc          <= memreq.addr;
                     pc                  <= next_pc;
 
                     `ifdef PRINT_DEBUGINFO
@@ -113,7 +113,7 @@ always @(posedge clk) begin
             if (memreq.ready && memreq.valid) begin
                 pc         <= next_pc;
                 requested  <= 1;
-                request_pc <= pc;
+                request_pc <= memreq.addr;
                 `ifdef PRINT_DEBUGINFO
                     inst_id <= inst_id + 1;
                     $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
