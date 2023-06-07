@@ -76,11 +76,13 @@ reg [63:0]  id_inst_id;
 
 // if -> id logic
 always @(posedge clk) begin
-    if (!iresp.valid || branch_hazard_now || branch_hazard_last_clock) begin
+    if (branch_hazard_now || branch_hazard_last_clock) begin
         id_valid    <= 0;
         `ifdef PRINT_DEBUGINFO
             $display("info,decodestage.event.pipeline_flush,pipeline flush");
         `endif
+    end else if (!iresp.valid && !id_stall) begin
+        id_valid    <= 0;
     end else if (iresp.valid && !id_stall) begin
         id_valid    <= 1;
         id_reg_pc   <= iresp.addr;
