@@ -11,7 +11,17 @@ last_mem_id = None
 last_csr_id = None
 last_wb_id  = None
 
+# フェッチしたが、まだ使われていないID
+fetched_unused_id = set()
+
+
 print("Kanata", KANATA_VERSION, sep="\t")
+
+RETIRED_ID_COUNTER = 0
+def retire(id, type):
+    global RETIRED_ID_COUNTER
+    RETIRED_ID_COUNTER += 1
+    print("R", id, RETIRED_ID_COUNTER, type, sep="\t")
 
 for (clock, numberData, textData) in readClockCycle():
     print("C", clock - lastClock, "# " + str(clock), sep="\t")
@@ -42,6 +52,10 @@ for (clock, numberData, textData) in readClockCycle():
         inst = numberData[IF_INFO_INST][1][2:]
         print("L", last_if_id, 0, "(" + hex(last_if_id) + ") " + pc + " : " + inst, sep="\t")
         print("E", last_if_id, 0, IFSTAGE_NAME, sep="\t")
+
+        # フェッチ済み命令IDsetに追加
+        fetched_unused_id.add(last_if_id)
+
         last_if_id = None
 
     if IF_FETCH_START in numberData:
@@ -51,6 +65,7 @@ for (clock, numberData, textData) in readClockCycle():
 
         if last_if_id is not None:
             print("E", last_if_id, 0, IFSTAGE_NAME, sep="\t")
+            retire(last_if_id, 1)
 
         last_if_id = if_id
 
@@ -66,6 +81,8 @@ for (clock, numberData, textData) in readClockCycle():
         (wb_id, last_wb_id, WBSTAGE_NAME) ]:
 
         if id is not None:
+            if id in fetched_unused_id:
+                fetched_unused_id.remove(id)
             if last_id != id:
                 print("S", id, 0, name, sep="\t")
                 if last_id is not None:
@@ -73,6 +90,20 @@ for (clock, numberData, textData) in readClockCycle():
         else:
             if last_id is not None:
                 print("E", last_id, 0, name, sep="\t")
+
+    # 分岐ハザードが起きた場合、キューにある命令を無効化する
+    if IF_BRANCH_HAZARD in textData:
+        for id in fetched_unused_id:
+            retire(id, 1)
+        fetched_unused_id.clear()
+    
+    # パイプラインフラッシュ
+    if ID_PIPELINE_FLUSH in textData:
+        if id_id is not None:
+            retire(id_id, 1)
+    if DS_PIPELINE_FLUSH in textData:
+        if ds_id is not None:
+            retire(ds_id, 1)
 
     lastClock   = clock
     last_id_id  = id_id
