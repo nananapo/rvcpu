@@ -29,9 +29,7 @@ wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
 wire [31:0] op1_data    = csr_ctrl.op1_data;
 wire [31:0] imm_i       = csr_ctrl.imm_i_sext;
 
-reg [31:0] rdata;
 reg [31:0] trap_vector;
-assign csr_mem_csr_rdata = rdata;
 assign csr_trap_vector   = trap_vector;
 
 // モード
@@ -108,7 +106,6 @@ localparam CSR_ADDR_MCOUNTEREN  = 12'h306;
 localparam CSR_ADDR_MSTATUSH    = 12'h310;
 
 reg         reg_mstatus_sd      = 0;
-//reg [7:0]   reg_mstatus_wpri    = 0;
 reg         reg_mstatus_tsr     = 0;
 reg         reg_mstatus_tw      = 0;
 reg         reg_mstatus_tvm     = 0;
@@ -127,13 +124,10 @@ reg         reg_mstatus_mpie    = 0;
 reg         reg_mstatus_ube     = 0;
 // S-modeでtrapした時、sieが書き込まれる
 reg         reg_mstatus_spie    = 0;
-//reg         reg_mstatus_wpri    = 0;
 // M-modeでtrapしたとき、クリアされる
 reg         reg_mstatus_mie     = 0;
-//reg         reg_mstatus_wpri    = 0;
 // S-modeでtrapしたとき、クリアされる
 reg         reg_mstatus_sie     = 0;
-//reg         reg_mstatus_wpri    = 0;
 
 // XLENや実装されている拡張を提供する
 // WARLなので、この実装ではwriteを実装しない(くていいはず?)
@@ -374,9 +368,9 @@ wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2],
 wire [11:0] addr = imm_i[11:0];
 
 function [31:0] wdata_fun(
-    input [2:0] csr_cmd,
-    input [31:0]op1_data,
-    input [31:0]rdata
+    input [2:0]     csr_cmd,
+    input [31:0]    op1_data,
+    input [31:0]    rdata
 );
     case (csr_cmd)
         CSR_W       : wdata_fun = op1_data;
@@ -402,8 +396,266 @@ assign csr_trap_flg     = csr_valid && (
                           );
 
 assign csr_stall_flg    = csr_valid && 
-                          (csr_cmd != CSR_X || (may_trap && stage_interrupt_ready)) &&
+                          ((csr_cmd > 3'd3) || (may_trap && stage_interrupt_ready)) &&
                           csr_inst_id != saved_inst_id;
+
+
+
+function [31:0] rdata_func(
+    input [12:0]    addr,
+    input [63:0]    reg_cycle,
+    input [63:0]    reg_time,
+
+    input [31:0]    reg_mvendorid,
+    input [31:0]    reg_marchid,
+    input [31:0]    reg_mimpid,
+    input [31:0]    reg_mhartid,
+
+    input           reg_mstatus_sd,
+    input           reg_mstatus_tsr,
+    input           reg_mstatus_tw,
+    input           reg_mstatus_tvm,
+    input           reg_mstatus_mxr,
+    input           reg_mstatus_sum,
+    input           reg_mstatus_mprv,
+    input [1:0]     reg_mstatus_xs,
+    input [1:0]     reg_mstatus_fs,
+    input [1:0]     reg_mstatus_mpp,
+    input [1:0]     reg_mstatus_vs,
+    input           reg_mstatus_spp,
+    input           reg_mstatus_mpie,
+    input           reg_mstatus_ube,
+    input           reg_mstatus_spie,
+    input           reg_mstatus_mie,
+    input           reg_mstatus_sie,
+
+    input [31:0]    reg_misa,
+    input [31:0]    reg_medeleg,
+    input [31:0]    reg_mideleg,
+
+    input           reg_mie_meie,
+    input           reg_mie_seie,
+    input           reg_mie_mtie,
+    input           reg_mie_stie,
+    input           reg_mie_msie,
+    input           reg_mie_ssie,
+
+    input           reg_mstatush_mbe,
+    input           reg_mstatush_sbe,
+    input [31:0]    reg_mscratch,
+    input [31:0]    reg_mepc,
+    input [31:0]    reg_mcause,
+
+    input           reg_mip_meip,
+    input           reg_mip_seip,
+    input           reg_mip_mtip,
+    input           reg_mip_stip,
+    input           reg_mip_msip,
+    input           reg_mip_ssip,
+
+    input [31:0]    reg_pmpaddr0,
+    input [31:0]    reg_pmpcfg0,
+
+    input [31:0]    reg_sscratch,
+    input [31:0]    reg_sepc,
+    input [31:0]    reg_scause,
+
+    input [31:0]    reg_satp
+);
+case (addr)
+    // Counters and Timers
+    CSR_ADDR_CYCLE:     rdata_func = reg_cycle[31:0];
+    CSR_ADDR_TIME:      rdata_func = reg_time[31:0];
+    CSR_ADDR_CYCLEH:    rdata_func = reg_cycle[63:32];
+    CSR_ADDR_TIMEH:     rdata_func = reg_time[63:32];
+
+    // Machine Information Registers
+    CSR_ADDR_MVENDORID: rdata_func = reg_mvendorid;
+    CSR_ADDR_MARCHID:   rdata_func = reg_marchid;
+    CSR_ADDR_MIMPID:    rdata_func = reg_mimpid;
+    CSR_ADDR_MHARTID:   rdata_func = reg_mhartid;
+    // CSR_ADDR_MCONFIGPTR: read-only zero
+
+    // Machine Trap Setup
+    CSR_ADDR_MSTATUS:   rdata_func = {
+        reg_mstatus_sd,
+        8'b0,
+        reg_mstatus_tsr,
+        reg_mstatus_tw,
+        reg_mstatus_tvm,
+        reg_mstatus_mxr,
+        reg_mstatus_sum,
+        reg_mstatus_mprv,
+        reg_mstatus_xs,
+        reg_mstatus_fs,
+        reg_mstatus_mpp,
+        reg_mstatus_vs,
+        reg_mstatus_spp,
+        reg_mstatus_mpie,
+        reg_mstatus_ube,
+        reg_mstatus_spie,
+        1'b0,
+        reg_mstatus_mie,
+        1'b0,
+        reg_mstatus_sie,
+        1'b0
+    };
+    CSR_ADDR_MISA:      rdata_func = reg_misa;
+    CSR_ADDR_MEDELEG:   rdata_func = reg_medeleg;
+    CSR_ADDR_MIDELEG:   rdata_func = reg_mideleg;
+    CSR_ADDR_MIE:       rdata_func = {
+        16'b0,
+        4'b0,
+        reg_mie_meie, 1'b0,
+        reg_mie_seie, 1'b0,
+        reg_mie_mtie, 1'b0,
+        reg_mie_stie, 1'b0,
+        reg_mie_msie, 1'b0,
+        reg_mie_ssie, 1'b0
+    };
+    CSR_ADDR_MTVEC:     rdata_func = reg_mtvec;
+    // CSR_ADDR_MCOUNTEREN: 0
+    CSR_ADDR_MSTATUSH:  rdata_func = {
+        26'b0,
+        reg_mstatush_mbe,
+        reg_mstatush_sbe,
+        4'b0
+    };
+
+    // Machine Trap Handling
+    CSR_ADDR_MSCRATCH:  rdata_func = reg_mscratch;
+    CSR_ADDR_MEPC:      rdata_func = reg_mepc;
+    CSR_ADDR_MCAUSE:    rdata_func = reg_mcause;
+    // CSR_ADDR_MTVAL:  read-only zero
+    CSR_ADDR_MIP:       rdata_func = {
+        20'b0,
+        reg_mip_meip, 1'b0,
+        reg_mip_seip, 1'b0,
+        reg_mip_mtip, 1'b0,
+        reg_mip_stip, 1'b0,
+        reg_mip_msip, 1'b0,
+        reg_mip_ssip, 1'b0
+    };
+    // CSR_ADDR_MTINST:    0
+    // CSR_ADDR_MTVAL2:    0
+
+    // Machine Memory Protection
+    CSR_ADDR_PMPADDR0:  rdata_func = reg_pmpaddr0;
+    CSR_ADDR_PMPCFG0:   rdata_func = reg_pmpcfg0;
+
+    // Machine Counter/Timers
+    CSR_ADDR_MCYCLE:    rdata_func = reg_cycle[31:0];
+    // CSR_ADDR_MINSTRET: not impl
+    CSR_ADDR_MCYCLEH:   rdata_func = reg_cycle[63:32];
+    // CSR_ADDR_MINSTRETH: not impl
+
+    // Supervisor Trap Setup
+    // sstatusはmstatusのサブセット
+    CSR_ADDR_SSTATUS:   rdata_func = {
+        reg_mstatus_sd,
+        11'b0,
+        reg_mstatus_mxr,
+        reg_mstatus_sum,
+        1'b0,
+        reg_mstatus_xs,
+        reg_mstatus_fs,
+        2'b0,
+        reg_mstatus_vs,
+        reg_mstatus_spp,
+        1'b0,
+        reg_mstatus_ube,
+        reg_mstatus_spie,
+        3'b0,
+        reg_mstatus_sie,
+        1'b0
+    };
+    // sieはmieのサブセット
+    CSR_ADDR_SIE:       rdata_func = {
+        16'b0,
+        6'b0,
+        reg_mie_seie,
+        3'b0,
+        reg_mie_stie,
+        3'b0,
+        reg_mie_ssie,
+        1'b0
+    };
+    CSR_ADDR_STVEC:     rdata_func = reg_stvec;
+    // CSR_ADDR_SCOUNTEREN: 0
+
+    // Supervisor Trap Handling
+    CSR_ADDR_SSCRATCH:  rdata_func = reg_sscratch;
+    CSR_ADDR_SEPC:      rdata_func = reg_sepc;
+    CSR_ADDR_SCAUSE:    rdata_func = reg_scause;
+    // CSR_ADDR_STVAL:     rdata_func = reg_stval;
+    CSR_ADDR_SIP:       rdata_func = {
+        22'b0,
+        reg_mip_seip, 1'b0,
+        2'b0,
+        reg_mip_stip, 1'b0,
+        2'b0,
+        reg_mip_ssip, 1'b0
+    };
+    // Supervisor Protection and Translation
+    CSR_ADDR_SATP:      rdata_func = reg_satp; 
+    default:            rdata_func = 32'b0;
+endcase
+endfunction
+
+wire [31:0] rdata = can_read ? rdata_func(
+    addr,
+    reg_cycle,
+    reg_time,
+    reg_mvendorid,
+    reg_marchid,
+    reg_mimpid,
+    reg_mhartid,
+    reg_mstatus_sd,
+    reg_mstatus_tsr,
+    reg_mstatus_tw,
+    reg_mstatus_tvm,
+    reg_mstatus_mxr,
+    reg_mstatus_sum,
+    reg_mstatus_mprv,
+    reg_mstatus_xs,
+    reg_mstatus_fs,
+    reg_mstatus_mpp,
+    reg_mstatus_vs,
+    reg_mstatus_spp,
+    reg_mstatus_mpie,
+    reg_mstatus_ube,
+    reg_mstatus_spie,
+    reg_mstatus_mie,
+    reg_mstatus_sie,
+    reg_misa,
+    reg_medeleg,
+    reg_mideleg,
+    reg_mie_meie,
+    reg_mie_seie,
+    reg_mie_mtie,
+    reg_mie_stie,
+    reg_mie_msie,
+    reg_mie_ssie,
+    reg_mstatush_mbe,
+    reg_mstatush_sbe,
+    reg_mscratch,
+    reg_mepc,
+    reg_mcause,
+    reg_mip_meip,
+    reg_mip_seip,
+    reg_mip_mtip,
+    reg_mip_stip,
+    reg_mip_msip,
+    reg_mip_ssip,
+    reg_pmpaddr0,
+    reg_pmpcfg0,
+    reg_sscratch,
+    reg_sepc,
+    reg_scause,
+    reg_satp
+) : 32'b0;
+assign csr_mem_csr_rdata = rdata;
+
 
 reg [63:0] saved_inst_id = 64'hffff000000000000;
 always @(posedge clk) begin
@@ -483,152 +735,6 @@ if (csr_valid) begin
             end
             default: begin end
         endcase 
-    end
-
-    if (can_read) begin
-        case (addr)
-            // Counters and Timers
-            // TODO アクセス制御を共通化したい
-            CSR_ADDR_CYCLE: rdata <= reg_cycle[31:0];
-            CSR_ADDR_TIME:  rdata <= reg_time[31:0];
-            CSR_ADDR_CYCLEH:rdata <= reg_cycle[63:32];
-            CSR_ADDR_TIMEH: rdata <= reg_time[63:32];
-
-            // Machine Information Registers
-            CSR_ADDR_MVENDORID: rdata <= reg_mvendorid;
-            CSR_ADDR_MARCHID:   rdata <= reg_marchid;
-            CSR_ADDR_MIMPID:    rdata <= reg_mimpid;
-            CSR_ADDR_MHARTID:   rdata <= reg_mhartid;
-            // CSR_ADDR_MCONFIGPTR: read-only zero
-
-            // Machine Trap Setup
-            CSR_ADDR_MSTATUS:   rdata <= {
-                reg_mstatus_sd,
-                8'b0,
-                reg_mstatus_tsr,
-                reg_mstatus_tw,
-                reg_mstatus_tvm,
-                reg_mstatus_mxr,
-                reg_mstatus_sum,
-                reg_mstatus_mprv,
-                reg_mstatus_xs,
-                reg_mstatus_fs,
-                reg_mstatus_mpp,
-                reg_mstatus_vs,
-                reg_mstatus_spp,
-                reg_mstatus_mpie,
-                reg_mstatus_ube,
-                reg_mstatus_spie,
-                1'b0,
-                reg_mstatus_mie,
-                1'b0,
-                reg_mstatus_sie,
-                1'b0
-            };
-            CSR_ADDR_MISA:      rdata <= reg_misa;
-            CSR_ADDR_MEDELEG:   rdata <= reg_medeleg;
-            CSR_ADDR_MIDELEG:   rdata <= reg_mideleg;
-            CSR_ADDR_MIE:       rdata <= {
-                16'b0,
-                4'b0,
-                reg_mie_meie, 1'b0,
-                reg_mie_seie, 1'b0,
-                reg_mie_mtie, 1'b0,
-                reg_mie_stie, 1'b0,
-                reg_mie_msie, 1'b0,
-                reg_mie_ssie, 1'b0
-            };
-            CSR_ADDR_MTVEC:     rdata <= reg_mtvec;
-            // CSR_ADDR_MCOUNTEREN: 0
-            CSR_ADDR_MSTATUSH:  rdata <= {
-                26'b0,
-                reg_mstatush_mbe,
-                reg_mstatush_sbe,
-                4'b0
-            };
-
-            // Machine Trap Handling
-            CSR_ADDR_MSCRATCH:  rdata <= reg_mscratch;
-            CSR_ADDR_MEPC:      rdata <= reg_mepc;
-            CSR_ADDR_MCAUSE:    rdata <= reg_mcause;
-            // CSR_ADDR_MTVAL:  read-only zero
-            CSR_ADDR_MIP:       rdata <= {
-                20'b0,
-                reg_mip_meip, 1'b0,
-                reg_mip_seip, 1'b0,
-                reg_mip_mtip, 1'b0,
-                reg_mip_stip, 1'b0,
-                reg_mip_msip, 1'b0,
-                reg_mip_ssip, 1'b0
-            };
-            // CSR_ADDR_MTINST:    0
-            // CSR_ADDR_MTVAL2:    0
-
-            // Machine Memory Protection
-            CSR_ADDR_PMPADDR0:  rdata <= reg_pmpaddr0;
-            CSR_ADDR_PMPCFG0:   rdata <= reg_pmpcfg0;
-
-            // Machine Counter/Timers
-            CSR_ADDR_MCYCLE:    rdata <= reg_cycle[31:0];
-            // CSR_ADDR_MINSTRET: not impl
-            CSR_ADDR_MCYCLEH:   rdata <= reg_cycle[63:32];
-            // CSR_ADDR_MINSTRETH: not impl
-
-            // Supervisor Trap Setup
-            // sstatusはmstatusのサブセット
-            CSR_ADDR_SSTATUS:       rdata <= {
-                reg_mstatus_sd,
-                11'b0,
-                reg_mstatus_mxr,
-                reg_mstatus_sum,
-                1'b0,
-                reg_mstatus_xs,
-                reg_mstatus_fs,
-                2'b0,
-                reg_mstatus_vs,
-                reg_mstatus_spp,
-                1'b0,
-                reg_mstatus_ube,
-                reg_mstatus_spie,
-                3'b0,
-                reg_mstatus_sie,
-                1'b0
-            };
-            // sieはmieのサブセット
-            CSR_ADDR_SIE:           rdata <= {
-                16'b0,
-                6'b0,
-                reg_mie_seie,
-                3'b0,
-                reg_mie_stie,
-                3'b0,
-                reg_mie_ssie,
-                1'b0
-            };
-            CSR_ADDR_STVEC:         rdata <= reg_stvec;
-            // CSR_ADDR_SCOUNTEREN: 0
-
-            // Supervisor Trap Handling
-            CSR_ADDR_SSCRATCH:  rdata <= reg_sscratch;
-            CSR_ADDR_SEPC:      rdata <= reg_sepc;
-            CSR_ADDR_SCAUSE:    rdata <= reg_scause;
-            // CSR_ADDR_STVAL:     rdata <= reg_stval;
-            CSR_ADDR_SIP:       rdata <= {
-                22'b0,
-                reg_mip_seip, 1'b0,
-                2'b0,
-                reg_mip_stip, 1'b0,
-                2'b0,
-                reg_mip_ssip, 1'b0
-            };
-
-            // Supervisor Protection and Translation
-            CSR_ADDR_SATP:      rdata <= reg_satp; 
-
-            default:            rdata <= 32'b0;
-        endcase
-    end else begin
-        rdata <= 32'b0;
     end
 
     case (csr_cmd)
