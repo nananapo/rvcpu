@@ -1,0 +1,23 @@
+on: 
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+jobs:
+  label_issue:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install verilator
+        run: |
+          sudo apt-get -y install verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -v
