@@ -29,7 +29,9 @@ wire [31:0] inst        = exe_inst;
 wire [63:0] inst_id     = exe_inst_id;
 wire ctrltype ctrl      = exe_ctrl;
 
-wire [4:0]  exe_fun     = exe_ctrl.exe_fun;
+wire alui_exe_type i_exe= exe_ctrl.i_exe;
+wire br_exe_type br_exe = exe_ctrl.br_exe;
+wire alum_exe_type m_exe= exe_ctrl.m_exe;
 wire [31:0] op1_data    = exe_ctrl.op1_data;
 wire [31:0] op2_data    = exe_ctrl.op2_data;
 wire [31:0] imm_b_sext  = exe_ctrl.imm_b_sext;
@@ -42,7 +44,8 @@ ALU #(
     .ENABLE_ALU(1'b1),
     .ENABLE_BRANCH(1'b1)
 ) alu (
-    .exe_fun(exe_fun),
+    .i_exe(i_exe),
+    .br_exe(br_exe),
     .op1_data(op1_data),
     .op2_data(op2_data),
     .alu_out(alu_out),
@@ -78,8 +81,8 @@ MultNbit #(
 );
 `endif
 
-wire        is_div              = exe_fun == ALU_DIV || exe_fun == ALU_DIVU || exe_fun == ALU_REM || exe_fun == ALU_REMU;
-wire        is_mul              = exe_fun == ALU_MUL || exe_fun == ALU_MULH || exe_fun == ALU_MULHU || exe_fun == ALU_MULHSU;
+wire        is_div              = m_exe == ALUM_DIV || m_exe == ALUM_DIVU || m_exe == ALUM_REM || m_exe == ALUM_REMU;
+wire        is_mul              = m_exe == ALUM_MUL || m_exe == ALUM_MULH || m_exe == ALUM_MULHU || m_exe == ALUM_MULHSU;
 
 reg         calc_started        = 0; // 複数サイクルかかる計算を開始済みか
 reg         is_calculated       = 0; // 複数サイクルかかる計算が終了しているか
@@ -88,7 +91,7 @@ reg [63:0]  saved_inst_id       = 64'hffff000000000000;
 wire        may_start_m         = !is_calculated || saved_inst_id != inst_id; // 複数サイクルかかる計算を始める可能性があるか
 
 wire        divm_start          = exe_valid && is_div && may_start_m && divm_ready;
-wire        divm_signed         = exe_fun == ALU_DIV || exe_fun == ALU_REM;
+wire        divm_signed         = m_exe == ALUM_DIV || m_exe == ALUM_REM;
 wire        divm_ready;
 wire        divm_valid;
 wire        divm_error;
@@ -98,16 +101,16 @@ wire [32:0] divm_quotient;
 wire [32:0] divm_remainder;
 
 wire        multm_start         = exe_valid && is_mul && may_start_m && multm_ready;
-wire        multm_signed        = exe_fun == ALU_MUL || exe_fun == ALU_MULH || exe_fun == ALU_MULHSU;
+wire        multm_signed        = m_exe == ALUM_MUL || m_exe == ALUM_MULH || m_exe == ALUM_MULHSU;
 wire        multm_ready;
 wire        multm_valid;
 wire [32:0] multm_multiplicand  = multm_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};
-wire [32:0] multm_multiplier    = multm_signed && exe_fun != ALU_MULHSU ? {op2_data[31], op2_data} : {1'b0, op2_data};
+wire [32:0] multm_multiplier    = multm_signed && m_exe != ALUM_MULHSU ? {op2_data[31], op2_data} : {1'b0, op2_data};
 wire [65:0] multm_product;
 
 reg [31:0]  saved_result        = 0; // 複数サイクルかかる計算の結果
 wire        calc_valid          = (is_div && divm_valid) || (is_mul && multm_valid); // 複数サイクルかかる計算が今クロックで終了したか
-wire        is_multicycle_exe   = is_div || is_mul; // 現在のexe_funが複数サイクルかかる計算かどうか
+wire        is_multicycle_exe   = m_exe != ALUM_X; // 現在のm_exeが複数サイクルかかる計算かどうか
 
 assign calc_stall_flg   = exe_valid && is_multicycle_exe && 
                           (divm_start || multm_start || !is_calculated); // モジュールで計算を始める = 未計算
@@ -146,15 +149,15 @@ always @(posedge clk) begin
         end else if (calc_started && calc_valid) begin
             is_calculated   <= 1;
             calc_started    <= 0;
-            case (exe_fun) 
-                ALU_DIV     : saved_result <= divm_quotient[31:0];
-                ALU_DIVU    : saved_result <= divm_quotient[31:0];
-                ALU_REM     : saved_result <= divm_remainder[31:0];
-                ALU_REMU    : saved_result <= divm_remainder[31:0];
-                ALU_MUL     : saved_result <= multm_product[31:0];
-                ALU_MULH    : saved_result <= multm_product[63:32];
-                ALU_MULHU   : saved_result <= multm_product[63:32];
-                ALU_MULHSU  : saved_result <= multm_product[63:32];
+            case (m_exe) 
+                ALUM_DIV     : saved_result <= divm_quotient[31:0];
+                ALUM_DIVU    : saved_result <= divm_quotient[31:0];
+                ALUM_REM     : saved_result <= divm_remainder[31:0];
+                ALUM_REMU    : saved_result <= divm_remainder[31:0];
+                ALUM_MUL     : saved_result <= multm_product[31:0];
+                ALUM_MULH    : saved_result <= multm_product[63:32];
+                ALUM_MULHU   : saved_result <= multm_product[63:32];
+                ALUM_MULHSU  : saved_result <= multm_product[63:32];
                 default     : saved_result <= 0;
             endcase
         end else begin
@@ -170,7 +173,9 @@ always @(posedge clk) begin
     if (exe_valid) begin
         $display("data,exestage.reg_pc,h,%b", exe_reg_pc);
         $display("data,exestage.inst,h,%b", exe_inst);
-        $display("data,exestage.exe_fun,d,%b", exe_fun);
+        $display("data,exestage.i_exe,d,%b", i_exe);
+        $display("data,exestage.br_exe,d,%b", br_exe);
+        $display("data,exestage.m_exe,d,%b", m_exe);
         $display("data,exestage.op1_data,h,%b", op1_data);
         $display("data,exestage.op2_data,h,%b", op2_data);
         $display("data,exestage.calc_stall,b,%b", calc_stall_flg);

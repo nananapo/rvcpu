@@ -235,7 +235,7 @@ always @(posedge clk) begin
     if (exe_valid) exe_last_inst_id <= exe_inst_id;
     updateio.valid  <= exe_valid && exe_inst_id != exe_last_inst_id;
     updateio.pc     <= exe_reg_pc;
-    updateio.is_br  <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || exe_ctrl.br_flg;
+    updateio.is_br  <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || exe_ctrl.br_exe != BR_X;
     updateio.taken  <= exe_branch_taken;
     updateio.target <= exe_branch_target;
 end
