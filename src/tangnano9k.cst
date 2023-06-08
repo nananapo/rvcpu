@@ -24,5 +24,10 @@ IO_PORT "uart_tx" IO_TYPE=LVCMOS33 PULL_MODE=UP;
 
 IO_LOC "uart_rx" 18;
 IO_PORT "uart_rx" IO_TYPE=LVCMOS33 PULL_MODE=UP;
-IO_LOC "clk" 52;
-IO_PORT "clk" PULL_MODE=UP;
+IO_LOC "clk27MHz" 52;
+IO_PORT "clk27MHz" PULL_MODE=UP;
+
+IO_LOC "mem_uart_tx" 33;
+IO_PORT "mem_uart_tx" IO_TYPE=LVCMOS33;
+IO_LOC "mem_uart_rx" 76;
+IO_PORT "mem_uart_rx" IO_TYPE=LVCMOS33 PULL_MODE=DOWN;

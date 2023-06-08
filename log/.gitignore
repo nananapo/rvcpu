@@ -1,0 +1,4 @@
+debug.*
+*.kanata
+__pycache__
+output/

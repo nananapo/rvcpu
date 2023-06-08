@@ -1,0 +1,17 @@
+
+temp.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <main>:
+   0:	ff010113          	addi	sp,sp,-16
+   4:	00012623          	sw	zero,12(sp)
+   8:	00000793          	li	a5,0
+   c:	06400713          	li	a4,100
+  10:	00f12623          	sw	a5,12(sp)
+  14:	00178793          	addi	a5,a5,1
+  18:	fee79ce3          	bne	a5,a4,10 <main+0x10>
+  1c:	00000513          	li	a0,0
+  20:	01010113          	addi	sp,sp,16
+  24:	00008067          	ret

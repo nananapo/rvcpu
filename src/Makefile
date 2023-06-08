@@ -1,38 +1,75 @@
-FILES = test.v \
-		main.v \
-		Core.v \
-		Memory.v \
-		FetchStage.v \
-		DecodeStage.v \
-		ExecuteStage.v \
-		MemoryStage.v \
-		MemoryInterface.v \
-		MemoryMapController.v \
-		MemoryMappedIO_Uart_rx.v \
-		MemoryMappedIO_Uart_tx.v \
-		MemoryUnlignedAccessController.v \
-		CSRStage.v \
-		WriteBackStage.v
+FILES = test.sv \
+		main.sv \
+		Core.sv \
+		DivNbit.sv \
+		DivUnsignedNbit.sv \
+		Memory.sv \
+		InstQueue.sv \
+		DecodeStage.sv \
+		DataSelectStage.sv \
+		ExecuteStage.sv \
+		MemoryStage.sv \
+		MemoryInterface.sv \
+		MemoryMapController.sv \
+		MemoryMapped_MachineTimeRegister.sv \
+		MemoryMappedIO_Uart_rx.sv \
+		MemoryMappedIO_Uart_tx.sv \
+		DUnalignedAccessController.sv \
+		MultNbit.sv \
+		MultUnsignedNbit.sv \
+		CSRStage.sv \
+		WriteBackStage.sv \
+		TwoBitCounter.sv
 
-UART_FILES = Uart_rx.v \
-			Uart_tx.v \
-			UARTMemory.v
+UART_FILES = Uart_rx.sv \
+			Uart_tx.sv \
+			UARTMemory.sv
 
-DEFALUT_DEFINE = -DDEBUG
+DEFINE_DEBUG = -DDEBUG
+DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST -DPRINT_DEBUGINFO
+DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
 
 d:
-	iverilog $(DEFALUT_DEFINE) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_DEBUG) -DPRINT_DEBUGINFO -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	vvp debug.o
+
+dn:
+	iverilog $(DEFINE_DEBUG) -DFAST_UART -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
 	vvp debug.o
 
 riscv-tests:
-	iverilog $(DEFALUT_DEFINE) -DRISCV_TEST -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_RISCV_TESTS) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
 	vvp debug.o
 
 dm:
-	iverilog $(DEFALUT_DEFINE) -DMEMORY_UART -g2005-sv -o debug.o -s test  $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_MEMORY_UART) -g2005-sv -o debug.o -s test  $(FILES) $(UART_FILES)
 	vvp debug.o
 
+dv:
+	rm -rf obj_dir
+	verilator --cc $(DEFINE_DEBUG) -DFAST_UART test_verilator.sv --exe test_kenel_verilator_main.cpp
+	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
+	obj_dir/Vtest_verilator
+
+dk:
+	cd ../tinyos && ./build.sh
+	make dv
+
 v:
-	verilator --lint-only main.v
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_PREDICTION_MODULE main.sv
+	verilator --lint-only --top-module main $(DEFINE_DEBUG) main.sv
+	verilator --lint-only --top-module main $(DEFINE_RISCV_TESTS) main.sv
+	verilator --lint-only --top-module main $(DEFINE_MEMORY_UART) main.sv
+
+test_div:
+	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_div test_div.sv DivUnsignedNbit.sv DivNbit.sv
+	vvp debug.o
+
+test_mult:
+	iverilog -DDEBUG -DPRINT_ALU_MODULE -g2005-sv -o debug.o -s test_mult test_mult.sv MultUnsignedNbit.sv MultNbit.sv
+	vvp debug.o
 
 .PHONY: d v

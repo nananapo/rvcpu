@@ -1,4 +1,6 @@
-MEMORY_V_FILENAME = "../src/MemoryInterface.v"
+import sys
+
+MEMORY_V_FILENAME = "../src/MemoryInterface.sv"
 REPLACE_WORD = "MEMORY_FILE_NAME"
 
 # backup
@@ -20,7 +22,7 @@ def test(filename):
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
     system("cd ../src/ && make riscv-tests > " + resultFileName)
 
-    with open(resultFileName, "r", encoding='utf-8') as f:
+    with open(resultFileName, "r") as f:
         result = "".join(f.readlines())
         if "Test passed" in result:
             results.append("PASS : "+ filename)
@@ -34,14 +36,20 @@ def test(filename):
 for fileName in os.listdir("riscv-tests/"):
     if not fileName.endswith(".aligned"):
         continue
-    test(fileName)
+    if len(sys.argv) == 1 or fileName.find(sys.argv[1]) != -1:
+        test(fileName)
 
 results = sorted(results)
 
+successCount = str(sum(resultstatus))
+statusText = "Test Result : " + successCount + " / " + str(len(resultstatus))
+
 with open("results/result.txt", "w", encoding='utf-8') as f:
-    f.write("STATUS : " + str(sum(resultstatus)) + " / " + str(len(resultstatus)) + "\n")
+    f.write(statusText + "\n")
     f.write("\n".join(results))
 
 # rollback
 with open(MEMORY_V_FILENAME, "w", encoding='utf-8') as f:
     f.write(memory_backup)
+
+print(statusText)
