@@ -3,7 +3,6 @@
 `include "include/ctrltype.sv"
 `include "include/memoryinterface.sv"
 
-// TODO reg_pcをpcにする
 module Core #(
     parameter FMAX_MHz = 27
 )(
@@ -70,7 +69,7 @@ end
 
 // id reg
 reg         id_valid = 0;
-reg [31:0]  id_reg_pc;
+reg [31:0]  id_pc;
 reg [31:0]  id_inst;
 reg [63:0]  id_inst_id;
 
@@ -85,7 +84,7 @@ always @(posedge clk) begin
         id_valid    <= 0;
     end else if (iresp.valid && !id_stall) begin
         id_valid    <= 1;
-        id_reg_pc   <= iresp.addr;
+        id_pc       <= iresp.addr;
         id_inst     <= iresp.inst;
         id_inst_id  <= iresp.inst_id;
     end
@@ -93,7 +92,7 @@ end
 
 // id ->ds wire
 wire            id_ds_valid;
-wire [31:0]     id_ds_reg_pc;
+wire [31:0]     id_ds_pc;
 wire [31:0]     id_ds_inst;
 wire [63:0]     id_ds_inst_id;
 wire ctrltype   id_ds_ctrl;
@@ -102,7 +101,7 @@ wire            id_stall = id_valid && (ds_stall);
 
 // ds reg
 reg         ds_valid = 0;
-reg [31:0]  ds_reg_pc;
+reg [31:0]  ds_pc;
 reg [31:0]  ds_inst;
 reg [63:0]  ds_inst_id;
 ctrltype    ds_ctrl;
@@ -118,7 +117,7 @@ always @(posedge clk) begin
         ds_valid    <= 0;
     else if (!id_stall && !ds_stall) begin
         ds_valid    <= id_ds_valid;
-        ds_reg_pc   <= id_ds_reg_pc;
+        ds_pc       <= id_ds_pc;
         ds_inst     <= id_ds_inst;
         ds_inst_id  <= id_ds_inst_id;
         ds_ctrl     <= id_ds_ctrl;
@@ -127,7 +126,7 @@ end
 
 // ds -> exe wire
 wire            ds_exe_valid;
-wire [31:0]     ds_exe_reg_pc;
+wire [31:0]     ds_exe_pc;
 wire [31:0]     ds_exe_inst;
 wire [63:0]     ds_exe_inst_id;
 wire ctrltype   ds_exe_ctrl;
@@ -139,7 +138,7 @@ wire            ds_stall = ds_valid && (
 
 // exe, csr reg
 reg             exe_valid = 0;
-reg [31:0]      exe_reg_pc;
+reg [31:0]      exe_pc;
 reg [31:0]      exe_inst;
 reg [63:0]      exe_inst_id;
 ctrltype        exe_ctrl;
@@ -152,7 +151,7 @@ always @(posedge clk) begin
         exe_valid   <= 0;
     else if (!ds_stall && !exe_stall) begin
         exe_valid   <= ds_exe_valid;
-        exe_reg_pc  <= ds_exe_reg_pc;
+        exe_pc      <= ds_exe_pc;
         exe_inst    <= ds_exe_inst;
         exe_inst_id <= ds_exe_inst_id;
         exe_ctrl    <= ds_exe_ctrl;
@@ -161,7 +160,7 @@ end
 
 // exe -> mem wire
 wire            exe_mem_valid;
-wire [31:0]     exe_mem_reg_pc;
+wire [31:0]     exe_mem_pc;
 wire [31:0]     exe_mem_inst;
 wire [63:0]     exe_mem_inst_id;
 wire ctrltype   exe_mem_ctrl;
@@ -188,15 +187,15 @@ wire [31:0]     csr_mem_csr_rdata;
 // irespと比べるとcircular logicになるので注意
 // TODO サイクル数を犠牲にしてクリティカルパスを短くする
 wire            branch_fail   = ds_valid && exe_valid && (
-                                    (exe_branch_taken && ds_reg_pc != exe_branch_target) ||
-                                    (!exe_branch_taken && ds_reg_pc != exe_reg_pc + 4)
+                                    (exe_branch_taken && ds_pc != exe_branch_target) ||
+                                    (!exe_branch_taken && ds_pc != exe_pc + 4)
                                 );
 // CSRは必ずハザードを起こす
 wire            csr_trap_fail = csr_csr_trap_flg;
 
 wire            branch_hazard_now = !csr_stall_flg && (csr_trap_fail || branch_fail);
 wire [31:0]     branch_target = csr_csr_trap_flg ? csr_trap_vector : 
-                                exe_branch_taken ? exe_branch_target : exe_reg_pc + 4;
+                                exe_branch_taken ? exe_branch_target : exe_pc + 4;
 
 wire            exe_branch_taken;
 wire [31:0]     exe_branch_target;
@@ -206,7 +205,7 @@ wire [31:0]     csr_trap_vector;
 
 // mem reg
 reg             mem_valid = 0;
-reg [31:0]      mem_reg_pc;
+reg [31:0]      mem_pc;
 reg [31:0]      mem_inst;
 reg [63:0]      mem_inst_id;
 ctrltype        mem_ctrl;
@@ -220,7 +219,7 @@ always @(posedge clk) begin
         mem_valid       <= 0;
     else if (!exe_stall && !mem_stall) begin
         mem_valid       <= exe_mem_valid;
-        mem_reg_pc      <= exe_mem_reg_pc;
+        mem_pc          <= exe_mem_pc;
         mem_inst        <= exe_mem_inst;
         mem_inst_id     <= exe_mem_inst_id;
         mem_ctrl        <= exe_mem_ctrl;
@@ -234,7 +233,7 @@ reg [63:0]      exe_last_inst_id = 64'hffffffffffffffff;
 always @(posedge clk) begin
     if (exe_valid) exe_last_inst_id <= exe_inst_id;
     updateio.valid  <= exe_valid && exe_inst_id != exe_last_inst_id;
-    updateio.pc     <= exe_reg_pc;
+    updateio.pc     <= exe_pc;
     updateio.is_br  <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || exe_ctrl.br_exe != BR_X;
     updateio.taken  <= exe_branch_taken;
     updateio.target <= exe_branch_target;
@@ -242,7 +241,7 @@ end
 
 // mem -> wb wire
 wire            mem_wb_valid;
-wire [31:0]     mem_wb_reg_pc;
+wire [31:0]     mem_wb_pc;
 wire [31:0]     mem_wb_inst;
 wire [63:0]     mem_wb_inst_id;
 wire ctrltype   mem_wb_ctrl;
@@ -259,7 +258,7 @@ assign mem_fw_ctrl.can_forward  = mem_ctrl.wb_sel == WB_ALU ||
                                   mem_ctrl.wb_sel == WB_CSR;
 assign mem_fw_ctrl.addr         = mem_ctrl.wb_addr;
 // wb_selによってフォワーディングする値が変わる
-assign mem_fw_ctrl.wdata        = mem_ctrl.wb_sel == WB_PC ? mem_reg_pc + 4 :
+assign mem_fw_ctrl.wdata        = mem_ctrl.wb_sel == WB_PC ? mem_pc + 4 :
                                   mem_ctrl.wb_sel == WB_CSR ? mem_csr_rdata :
                                   mem_alu_out;
 
@@ -267,7 +266,7 @@ wire            mem_stall   = mem_valid && (mem_memory_unit_stall);
 
 // wb reg
 reg             wb_valid    = 0;
-reg [31:0]      wb_reg_pc;
+reg [31:0]      wb_pc;
 reg [31:0]      wb_inst;
 reg [63:0]      wb_inst_id;
 ctrltype        wb_ctrl;
@@ -289,7 +288,7 @@ always @(posedge clk) begin
         wb_valid        <= 0;
     else begin
         wb_valid        <= mem_wb_valid;
-        wb_reg_pc       <= mem_wb_reg_pc;
+        wb_pc           <= mem_wb_pc;
         wb_inst         <= mem_wb_inst;
         wb_inst_id      <= mem_wb_inst_id;
         wb_ctrl         <= mem_wb_ctrl;
@@ -311,12 +310,12 @@ DecodeStage #() decodestage
     .clk(clk),
 
     .id_valid(id_valid),
-    .id_reg_pc(id_reg_pc),
+    .id_pc(id_pc),
     .id_inst(id_inst),
     .id_inst_id(id_inst_id),
 
     .id_ds_valid(id_ds_valid),
-    .id_ds_reg_pc(id_ds_reg_pc),
+    .id_ds_pc(id_ds_pc),
     .id_ds_inst(id_ds_inst),
     .id_ds_inst_id(id_ds_inst_id),
     .id_ds_ctrl(id_ds_ctrl)
@@ -329,13 +328,13 @@ DataSelectStage #() dataselectstage
     .regfile(regfile),
 
     .ds_valid(ds_valid),
-    .ds_reg_pc(ds_reg_pc),
+    .ds_pc(ds_pc),
     .ds_inst(ds_inst),
     .ds_inst_id(ds_inst_id),
     .ds_ctrl(ds_ctrl),
 
     .ds_exe_valid(ds_exe_valid),
-    .ds_exe_reg_pc(ds_exe_reg_pc),
+    .ds_exe_pc(ds_exe_pc),
     .ds_exe_inst(ds_exe_inst),
     .ds_exe_inst_id(ds_exe_inst_id),
     .ds_exe_ctrl(ds_exe_ctrl),
@@ -358,13 +357,13 @@ ExecuteStage #() executestage
     .clk(clk),
 
     .exe_valid(exe_valid),
-    .exe_reg_pc(exe_reg_pc),
+    .exe_pc(exe_pc),
     .exe_inst(exe_inst),
     .exe_inst_id(exe_inst_id),
     .exe_ctrl(exe_ctrl),
 
     .exe_mem_valid(exe_mem_valid),
-    .exe_mem_reg_pc(exe_mem_reg_pc),
+    .exe_mem_pc(exe_mem_pc),
     .exe_mem_inst(exe_mem_inst),
     .exe_mem_inst_id(exe_mem_inst_id),
     .exe_mem_ctrl(exe_mem_ctrl),
@@ -384,7 +383,7 @@ CSRStage #(
     .clk(clk),
 
     .csr_valid(exe_valid),
-    .csr_reg_pc(exe_reg_pc),
+    .csr_pc(exe_pc),
     .csr_inst(exe_inst),
     .csr_inst_id(exe_inst_id),
     .csr_ctrl(exe_ctrl),
@@ -409,7 +408,7 @@ MemoryStage #() memorystage
     .dresp(dresp),
 
     .mem_valid(mem_valid),
-    .mem_reg_pc(mem_reg_pc),
+    .mem_pc(mem_pc),
     .mem_inst(mem_inst),
     .mem_inst_id(mem_inst_id),
     .mem_ctrl(mem_ctrl),
@@ -417,7 +416,7 @@ MemoryStage #() memorystage
     .mem_csr_rdata(mem_csr_rdata),
 
     .mem_wb_valid(mem_wb_valid),
-    .mem_wb_reg_pc(mem_wb_reg_pc),
+    .mem_wb_pc(mem_wb_pc),
     .mem_wb_inst(mem_wb_inst),
     .mem_wb_inst_id(mem_wb_inst_id),
     .mem_wb_ctrl(mem_wb_ctrl),
@@ -435,7 +434,7 @@ WriteBackStage #() wbstage(
     .regfile(regfile),
 
     .wb_valid(wb_valid),
-    .wb_reg_pc(wb_reg_pc),
+    .wb_pc(wb_pc),
     .wb_inst(wb_inst),
     .wb_inst_id(wb_inst_id),
     .wb_ctrl(wb_ctrl),

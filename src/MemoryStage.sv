@@ -2,7 +2,7 @@ module MemoryStage(
     input wire          clk,
 
     input wire          mem_valid,
-    input wire [31:0]   mem_reg_pc,
+    input wire [31:0]   mem_pc,
     input wire [31:0]   mem_inst,
     input wire [63:0]   mem_inst_id,
     input wire ctrltype mem_ctrl,
@@ -10,7 +10,7 @@ module MemoryStage(
     input wire [31:0]   mem_csr_rdata,
 
     output wire             mem_wb_valid,
-    output wire [31:0]      mem_wb_reg_pc,
+    output wire [31:0]      mem_wb_pc,
     output wire [31:0]      mem_wb_inst,
     output wire [63:0]      mem_wb_inst_id,
     output wire ctrltype    mem_wb_ctrl,
@@ -35,7 +35,7 @@ localparam STATE_WAIT_READ_VALID    = 2;
 
 reg [1:0]   state       = STATE_WAIT;
 
-wire [31:0]     reg_pc      = mem_reg_pc;
+wire [31:0]     pc          = mem_pc;
 wire [31:0]     inst        = mem_inst;
 wire [63:0]     inst_id     = mem_inst_id;
 wire ctrltype   ctrl        = mem_ctrl;
@@ -94,7 +94,7 @@ function [31:0] gen_memdata(
 endfunction
 
 assign mem_wb_valid     = mem_valid && !pipeline_flush;
-assign mem_wb_reg_pc    = mem_reg_pc;
+assign mem_wb_pc        = mem_pc;
 assign mem_wb_inst      = mem_inst;
 assign mem_wb_inst_id   = mem_inst_id;
 assign mem_wb_ctrl      = mem_ctrl;
@@ -152,13 +152,13 @@ always @(posedge clk) begin
     $display("data,memstage.state,d,%b", state);
     $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : INST_ID_NOP);
     if (mem_valid) begin
-        $display("data,memstage.reg_pc,h,%b", reg_pc);
+        $display("data,memstage.pc,h,%b", pc);
         $display("data,memstage.inst,h,%b", inst);
         $display("data,memstage.rs2_data,h,%b", rs2_data);
         $display("data,memstage.alu_out,h,%b", alu_out);
         $display("data,memstage.mem_wen,d,%b", mem_wen);
         
-        // $display("data,memstage.output.reg_pc,h,%b", mem_wb_reg_pc);
+        // $display("data,memstage.output.pc,h,%b", mem_wb_pc);
         $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
 
         $display("data,memstage.is_load,b,%b", is_load);

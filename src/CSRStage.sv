@@ -4,7 +4,7 @@ module CSRStage #(
     input  wire         clk,
 
     input wire          csr_valid,
-    input wire [31:0]   csr_reg_pc,
+    input wire [31:0]   csr_pc,
     input wire [31:0]   csr_inst,
     input wire [63:0]   csr_inst_id,
     input wire ctrltype csr_ctrl,
@@ -23,7 +23,7 @@ module CSRStage #(
 
 `include "include/core.sv"
 
-wire [31:0] reg_pc      = csr_reg_pc;
+wire [31:0] pc          = csr_pc;
 wire [63:0] inst_id     = csr_inst_id;
 wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
 wire [31:0] op1_data    = csr_ctrl.op1_data;
@@ -668,14 +668,14 @@ if (csr_valid) begin
     // 割り込みを起こす
     if (may_trap && stage_interrupt_ready) begin
         `ifdef PRINT_DEBUGINFO
-            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", reg_pc);
+            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", pc);
         `endif
         if (trap_to_machine_mode) begin
             // M-modeに遷移
             mode                <= MODE_MACHINE;
 
             reg_mcause          <= interrupt_cause;
-            reg_mepc            <= reg_pc;
+            reg_mepc            <= pc;
             //reg_mtval           <= 0;
             reg_mstatus_mpp     <= mode;
             reg_mstatus_mpie    <= reg_mstatus_mie;
@@ -687,7 +687,7 @@ if (csr_valid) begin
             mode                <= MODE_SUPERVISOR;
 
             reg_scause          <= interrupt_cause;
-            reg_sepc            <= reg_pc;
+            reg_sepc            <= pc;
             // reg_stval           <= 0;
             reg_mstatus_spp     <= mode[0];
             reg_mstatus_spie    <= reg_mstatus_sie;
@@ -881,7 +881,7 @@ always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", csr_valid);
     $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? INST_ID_NOP : inst_id);
     if (csr_valid) begin
-        $display("data,csrstage.reg_pc,h,%b", reg_pc);
+        $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", csr_inst);
 
         // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);

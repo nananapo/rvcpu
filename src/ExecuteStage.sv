@@ -3,13 +3,13 @@ module ExecuteStage
     input wire          clk,
 
     input wire          exe_valid,
-    input wire [31:0]   exe_reg_pc,
+    input wire [31:0]   exe_pc,
     input wire [31:0]   exe_inst,
     input wire [63:0]   exe_inst_id,
     input wire ctrltype exe_ctrl,
 
     output wire             exe_mem_valid,
-    output wire [31:0]      exe_mem_reg_pc,
+    output wire [31:0]      exe_mem_pc,
     output wire [31:0]      exe_mem_inst,
     output wire [63:0]      exe_mem_inst_id,
     output wire ctrltype    exe_mem_ctrl,
@@ -24,7 +24,7 @@ module ExecuteStage
 
 `include "include/core.sv"
 
-wire [31:0] reg_pc      = exe_reg_pc;
+wire [31:0] pc          = exe_pc;
 wire [31:0] inst        = exe_inst;
 wire [63:0] inst_id     = exe_inst_id;
 wire ctrltype ctrl      = exe_ctrl;
@@ -116,7 +116,7 @@ assign calc_stall_flg   = exe_valid && is_multicycle_exe &&
                           (divm_start || multm_start || !is_calculated); // モジュールで計算を始める = 未計算
 
 assign exe_mem_valid    = exe_valid && !calc_stall_flg;
-assign exe_mem_reg_pc   = exe_reg_pc;
+assign exe_mem_pc       = exe_pc;
 assign exe_mem_inst     = exe_inst;
 assign exe_mem_inst_id  = exe_inst_id;
 assign exe_mem_ctrl     = exe_ctrl;
@@ -125,9 +125,9 @@ assign exe_mem_alu_out  = is_div || is_mul ? saved_result : alu_out;
 
 assign branch_taken     = exe_valid && 
                           (exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || alu_branch_take);
-assign branch_target    = exe_ctrl.jmp_pc_flg ? exe_reg_pc + imm_j_sext :
+assign branch_target    = exe_ctrl.jmp_pc_flg ? exe_pc + imm_j_sext :
                           exe_ctrl.jmp_reg_flg ? op1_data + op2_data :
-                          reg_pc + imm_b_sext;
+                          pc + imm_b_sext;
 
 always @(posedge clk) begin
     if (exe_valid)
@@ -171,7 +171,7 @@ always @(posedge clk) begin
     $display("data,exestage.valid,b,%b", exe_valid);
     $display("data,exestage.inst_id,h,%b", exe_valid ? exe_inst_id : INST_ID_NOP);
     if (exe_valid) begin
-        $display("data,exestage.reg_pc,h,%b", exe_reg_pc);
+        $display("data,exestage.pc,h,%b", exe_pc);
         $display("data,exestage.inst,h,%b", exe_inst);
         $display("data,exestage.i_exe,d,%b", i_exe);
         $display("data,exestage.br_exe,d,%b", br_exe);

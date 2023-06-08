@@ -7,12 +7,12 @@ module DecodeStage
     input wire          clk,
 
     input wire          id_valid,
-    input wire[31:0]    id_reg_pc,
+    input wire[31:0]    id_pc,
     input wire[31:0]    id_inst,
     input wire[63:0]    id_inst_id,
     
     output wire             id_ds_valid,
-    output wire [31:0]      id_ds_reg_pc,
+    output wire [31:0]      id_ds_pc,
     output wire [31:0]      id_ds_inst,
     output wire [63:0]      id_ds_inst_id,
     output wire ctrltype    id_ds_ctrl
@@ -21,7 +21,7 @@ module DecodeStage
 `include "include/core.sv"
 `include "include/inst.sv"
 
-wire [31:0] reg_pc  = id_reg_pc;
+wire [31:0] pc      = id_pc;
 wire [31:0] inst    = id_inst;
 wire [63:0] inst_id = id_inst_id;
 
@@ -135,7 +135,7 @@ wire inst_is_jal            = opcode == INST_JAL_OPCODE;
 wire inst_is_jalr           = funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE;
 
 assign id_ds_valid          = id_valid;
-assign id_ds_reg_pc         = reg_pc;
+assign id_ds_pc             = pc;
 assign id_ds_inst           = inst;
 assign id_ds_inst_id        = inst_id;
 
@@ -166,7 +166,7 @@ always @(posedge clk) begin
     $display("data,decodestage.valid,b,%b", id_valid);
     $display("data,decodestage.inst_id,h,%b", id_valid ? inst_id : INST_ID_NOP);
     if (id_valid) begin
-        $display("data,decodestage.reg_pc,h,%b", reg_pc);
+        $display("data,decodestage.pc,h,%b", pc);
         $display("data,decodestage.inst,h,%b", inst);
 
         $display("data,decodestage.decode.i_exe,d,%b", i_exe);
