@@ -178,7 +178,7 @@ assign exe_fw_ctrl.wdata        = 32'bz;
 wire            exe_stall = exe_valid && (
                             (mem_valid && mem_stall) ||
                             exe_calc_stall ||
-                            (exe_valid && !ds_valid) || 
+                            (!ds_valid && !id_valid) || 
                             csr_stall_flg);
 
 // csr -> mem wire
@@ -186,9 +186,12 @@ wire [31:0]     csr_mem_csr_rdata;
 
 // irespと比べるとcircular logicになるので注意
 // TODO サイクル数を犠牲にしてクリティカルパスを短くする
-wire            branch_fail   = ds_valid && exe_valid && (
-                                    (exe_branch_taken && ds_pc != exe_branch_target) ||
-                                    (!exe_branch_taken && ds_pc != exe_pc + 4)
+wire            branch_fail   = exe_valid && (
+                                    ds_valid ?
+                                        (exe_branch_taken && ds_pc != exe_branch_target) || (!exe_branch_taken && ds_pc != exe_pc + 4)
+                                    : id_valid ?
+                                        (exe_branch_taken && id_pc != exe_branch_target) || (!exe_branch_taken && id_pc != exe_pc + 4)
+                                    : 1'b0
                                 );
 // CSRは必ずハザードを起こす
 wire            csr_trap_fail = csr_csr_trap_flg;
