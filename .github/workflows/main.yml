@@ -17,9 +17,9 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install verilator
+      - name: Install verilator and iverilog
         run: |
-          sudo apt-get -y install verilator
+          sudo apt-get -y install verilator iverilog
       - name: Test
         run: |
-          cd test && python3 test.py -v
+          cd test && python3 test.py
