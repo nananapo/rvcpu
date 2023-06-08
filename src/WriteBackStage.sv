@@ -21,7 +21,7 @@ module WriteBackStage(
 wire [31:0] pc              = wb_pc;
 wire [31:0] inst            = wb_inst;
 wire [63:0] inst_id         = wb_inst_id;
-// ctrltype ctrl             = wb_ctrl;
+wire ctrltype ctrl          = wb_ctrl;
 wire [31:0] alu_out         = wb_alu_out;
 wire [31:0] memory_rdata    = wb_mem_rdata;
 wire [31:0] csr_rdata       = wb_csr_rdata;
@@ -64,7 +64,7 @@ function [31:0] wb_data_func(
     endcase
 endfunction
 
-wire [31:0] wb_data = wb_data_func(pc, wb_ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
+wire [31:0] wb_data = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
 assign wb_wdata_out = wb_data;
 
 reg [31:0] inst_count = 0;
@@ -77,8 +77,8 @@ always @(posedge clk) begin
         saved_inst_id <= inst_id;
     if (is_new_inst)
         inst_count += 1;
-    if (is_new_inst && wb_ctrl.rf_wen == REN_S) begin
-        regfile[wb_ctrl.wb_addr] <= wb_data;
+    if (is_new_inst && ctrl.rf_wen == REN_S) begin
+        regfile[ctrl.wb_addr] <= wb_data;
     end    
 end
 
@@ -89,8 +89,8 @@ always @(posedge clk) begin
     if (wb_valid) begin
         $display("data,wbstage.pc,h,%b", pc);
         $display("data,wbstage.inst,h,%b", inst);
-        $display("data,wbstage.wb_sel,d,%b", wb_ctrl.wb_sel);
-        $display("data,wbstage.wb_addr,d,%b", wb_ctrl.wb_addr);
+        $display("data,wbstage.wb_sel,d,%b", ctrl.wb_sel);
+        $display("data,wbstage.wb_addr,d,%b", ctrl.wb_addr);
         $display("data,wbstage.wb_data,h,%b", wb_data);
         $display("data,wbstage.inst_count,d,%b", inst_count);
         // $display("data,wbstage.exit,%b", exit);
