@@ -2,7 +2,7 @@
 
 Verilogで記述されたRISC-V(RV32IM)のCPUです。  
 「RISC-VとChiselで学ぶ　はじめてのCPU自作」という本を参考に実装しはじめました  
-TangNano9Kで動かことを確認しています。
+TangNano9Kで動くことを確認しています。
 
 ## 第二部 簡単なCPUの実装
 https://github.com/nananapo/rvcpu/tree/8424b1996c31f129cd42e1bad60f8112c8c1eaa4 
