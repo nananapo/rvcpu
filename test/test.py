@@ -13,6 +13,8 @@ with open(MEMORY_V_FILENAME, "r", encoding='utf-8') as f:
 from os import system
 import os
 
+os.makedirs("../test/results", exist_ok=True)
+
 results = []
 resultstatus = []
 def test(makecmd, filename):
