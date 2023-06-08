@@ -20,4 +20,22 @@ module test(
     .gp(gp)
   );
 
+`ifdef RISCV_TEST
+  always @(posedge clk) begin
+	if (exit) begin
+		if (gp == 1)
+			$display("info,coretest.result,Test passed");
+		else
+			$display("info,coretest,result,Test failed : gp(%d) is not 1", gp);
+    	$finish;
+	end 
+  end
+`endif
+
+initial begin
+  `ifdef PRINT_DEBUGINFO
+      $display("START_DEBUG_LOG");
+  `endif
+end
+  
 endmodule
