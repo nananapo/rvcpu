@@ -61,3 +61,6 @@ with open(MEMORY_V_FILENAME, "w", encoding='utf-8') as f:
     f.write(memory_backup)
 
 print(statusText)
+
+if sum(resultstatus) != len(resultstatus):
+    exit(1)
