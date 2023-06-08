@@ -35,6 +35,20 @@ wire [31:0] op2_data    = exe_ctrl.op2_data;
 wire [31:0] imm_b_sext  = exe_ctrl.imm_b_sext;
 wire [31:0] imm_j_sext  = exe_ctrl.imm_j_sext;
 
+wire [31:0] alu_out;
+wire        alu_branch_take;
+
+ALU #(
+    .ENABLE_ALU(1'b1),
+    .ENABLE_BRANCH(1'b1)
+) alu (
+    .exe_fun(exe_fun),
+    .op1_data(op1_data),
+    .op2_data(op2_data),
+    .alu_out(alu_out),
+    .branch_take(alu_branch_take)
+);
+
 `ifndef EXCLUDE_RV32M
 DivNbit #(
     .SIZE(33) // オーバーフロー対策
@@ -98,59 +112,19 @@ wire        is_multicycle_exe   = is_div || is_mul; // 現在のexe_funが複数
 assign calc_stall_flg   = exe_valid && is_multicycle_exe && 
                           (divm_start || multm_start || !is_calculated); // モジュールで計算を始める = 未計算
 
-function [31:0] gen_alu_out(
-    input [4:0 ] exe_fun,
-    input [31:0] op1_data,
-    input [31:0] op2_data,
-    input [31:0] saved_result
-);
-    case (exe_fun) 
-    ALU_ADD     : gen_alu_out = op1_data + op2_data;
-    ALU_SUB     : gen_alu_out = op1_data - op2_data;
-    ALU_AND     : gen_alu_out = op1_data & op2_data;
-    ALU_OR      : gen_alu_out = op1_data | op2_data;
-    ALU_XOR     : gen_alu_out = op1_data ^ op2_data;
-    ALU_SLL     : gen_alu_out = op1_data << op2_data[4:0];
-    ALU_SRL     : gen_alu_out = op1_data >> op2_data[4:0];
-    ALU_SRA     : gen_alu_out = $signed($signed(op1_data) >>> op2_data[4:0]);
-    ALU_SLT     : gen_alu_out = {31'b0, ($signed(op1_data) < $signed(op2_data))};
-    ALU_SLTU    : gen_alu_out = {31'b0, op1_data < op2_data};
-    ALU_JALR    : gen_alu_out = (op1_data + op2_data) & (~1);
-    ALU_COPY1   : gen_alu_out = op1_data;
-    default     : gen_alu_out = saved_result;
-    endcase
-endfunction
-
-function gen_br_flg(
-    input [4:0 ] exe_fun,
-    input [31:0] op1_data,
-    input [31:0] op2_data
-);
-    case(exe_fun) 
-    BR_BEQ  : gen_br_flg = (op1_data == op2_data);
-    BR_BNE  : gen_br_flg = !(op1_data == op2_data);
-    BR_BLT  : gen_br_flg = ($signed(op1_data) < $signed(op2_data));
-    BR_BGE  : gen_br_flg = !($signed(op1_data) < $signed(op2_data));
-    BR_BLTU : gen_br_flg = (op1_data < op2_data);
-    BR_BGEU : gen_br_flg = !(op1_data < op2_data);
-    default : gen_br_flg = 0;
-    endcase
-endfunction
-
 assign exe_mem_valid    = exe_valid && !calc_stall_flg;
 assign exe_mem_reg_pc   = exe_reg_pc;
 assign exe_mem_inst     = exe_inst;
 assign exe_mem_inst_id  = exe_inst_id;
 assign exe_mem_ctrl     = exe_ctrl;
 
-assign exe_mem_alu_out  = gen_alu_out(exe_fun, op1_data, op2_data, saved_result);
+assign exe_mem_alu_out  = is_div || is_mul ? saved_result : alu_out;
 
 assign branch_taken     = exe_valid && 
-                          (exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || gen_br_flg(exe_fun, op1_data, op2_data));
+                          (exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || alu_branch_take);
 assign branch_target    = exe_ctrl.jmp_pc_flg ? exe_reg_pc + imm_j_sext :
                           exe_ctrl.jmp_reg_flg ? op1_data + op2_data :
                           reg_pc + imm_b_sext;
-
 
 always @(posedge clk) begin
     if (exe_valid)
