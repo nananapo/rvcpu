@@ -52,6 +52,12 @@ dv:
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
 	obj_dir/Vtest_verilator
 
+dvrv:
+	rm -rf obj_dir
+	verilator --cc $(DEFINE_DEBUG) -DPRINT_DEBUGINFO $(DEFINE_RISCV_TESTS) -DFAST_UART test_verilator.sv --exe test_kenel_verilator_main.cpp
+	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
+	obj_dir/Vtest_verilator
+
 dk:
 	cd ../tinyos && ./build.sh
 	make dv
