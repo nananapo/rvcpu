@@ -11,6 +11,8 @@ module InstQueue #(
     input wire IUpdatePredictionIO updateio
 );
 
+`include "include/inst.sv"
+
 reg [3:0]   queue_head  = 0;
 reg [3:0]   queue_tail  = 0;
 reg [31:0]  pc_queue[QUEUE_SIZE-1:0];
@@ -56,8 +58,6 @@ wire jal_hazard = last_inst_is_jal && requested && request_pc != last_jal_target
 // 分岐予測を行わない場合はpc + 4を予測とする
 assign next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
 `else
-
-`include "include/inst.sv"
 
 wire [31:0] next_pc_tbc;
 TwoBitCounter #() tbc (

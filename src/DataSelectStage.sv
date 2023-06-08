@@ -104,7 +104,9 @@ assign ds_exe_inst       = inst;
 assign ds_exe_inst_id    = inst_id;
 
 // idからそのまま
-assign ds_exe_ctrl.exe_fun      = ds_ctrl.exe_fun;
+assign ds_exe_ctrl.i_exe        = ds_ctrl.i_exe;
+assign ds_exe_ctrl.br_exe       = ds_ctrl.br_exe;
+assign ds_exe_ctrl.m_exe        = ds_ctrl.m_exe;
 assign ds_exe_ctrl.op1_sel      = ds_ctrl.op1_sel;
 assign ds_exe_ctrl.op2_sel      = ds_ctrl.op2_sel;
 // assign ds_exe_ctrl.op1_data     = ;
@@ -117,7 +119,6 @@ assign ds_exe_ctrl.wb_addr      = ds_ctrl.wb_addr;
 assign ds_exe_ctrl.csr_cmd      = ds_ctrl.csr_cmd;
 assign ds_exe_ctrl.jmp_pc_flg   = ds_ctrl.jmp_pc_flg;
 assign ds_exe_ctrl.jmp_reg_flg  = ds_ctrl.jmp_reg_flg;
-assign ds_exe_ctrl.br_flg       = ds_ctrl.br_flg;
 assign ds_exe_ctrl.imm_i_sext   = ds_ctrl.imm_i_sext;
 assign ds_exe_ctrl.imm_s_sext   = ds_ctrl.imm_s_sext;
 assign ds_exe_ctrl.imm_b_sext   = ds_ctrl.imm_b_sext;
