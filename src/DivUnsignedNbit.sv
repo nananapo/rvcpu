@@ -58,7 +58,7 @@ always @(posedge clk) begin
         STATE_DIVIDE: begin
             if (count == 1)
                 state <= STATE_END;
-            if ({SIZE'(0), remainder} >= shifted_divisor) begin
+            if ({{SIZE{1'b0}}, remainder} >= shifted_divisor) begin
                 remainder   <= remainder - shifted_divisor[SIZE-1:0];
                 quotient    <= quotient | count;
             end
