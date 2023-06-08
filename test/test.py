@@ -43,7 +43,7 @@ if len(args) >= 1 and args[0] == "-v":
     verilator_mode = True
     args = args[1:]
 
-for fileName in os.listdir("riscv-tests/"):
+for fileName in sorted(os.listdir("riscv-tests/")):
     if not fileName.endswith(".aligned"):
         continue
     if len(args) == 0 or fileName.find(args[0]) != -1:
