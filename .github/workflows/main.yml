@@ -17,9 +17,23 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install verilator and iverilog
+      - name: Install iverilog
         run: |
-          sudo apt-get -y install verilator iverilog
+          sudo apt-get -y install iverilog
       - name: Test
         run: |
           cd test && python3 test.py
+  coremark bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install verilator
+        run: |
+          sudo apt-get -y install verilator
+      - name: Test
+        run: |
+          cd src
+        	rm -rf obj_dir
+        	verilator --cc $(DEFINE_DEBUG) -DFAST_UART test_verilator.sv --exe test_kenel_verilator_main.cpp
+        	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
+        	timeout 1200 obj_dir/Vtest_verilator
