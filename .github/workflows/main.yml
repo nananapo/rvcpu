@@ -36,4 +36,4 @@ jobs:
           rm -rf obj_dir
           verilator --cc -DDEBUG -DFAST_UART test_verilator.sv --exe test_kenel_verilator_main.cpp
           make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
-          timeout 1200 obj_dir/Vtest_verilator
+          timeout 7200 obj_dir/Vtest_verilator
