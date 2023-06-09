@@ -2,9 +2,6 @@ localparam REGPC_NOP    = 32'hffffffff;
 localparam INST_NOP     = 32'h00000033;
 localparam INST_ID_NOP  = 64'bx;
 
-localparam BR_N     = 1'b0;
-localparam BR_Y     = 1'b1;
-
 localparam OP1_X    = 4'd0;
 localparam OP1_RS1  = 4'd1;
 localparam OP1_PC   = 4'd2;
