@@ -1,4 +1,3 @@
-import sys
 import subprocess
 
 def get_lines(cmd):
@@ -12,7 +11,7 @@ def get_lines(cmd):
 
 startCount = 0
 for line in get_lines(cmd='cd ../../src && timeout 7200 obj_dir/Vtest_verilator'):
-    print(line)
+    print(line, end="")
     if "Correct operation validated" in line:
         exit(0)
     if "start" in line:
