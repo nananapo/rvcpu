@@ -47,12 +47,13 @@ reg [63:0]  saved_inst_id   = 64'hffff000000000000;
 wire        may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 
 // amoswapはload -> writeするのでmem_wenを置き換える
-reg [3:0]   replace_mem_wen = MEN_X;
-wire [3:0]  mem_wen         = !mem_valid ? MEN_X : 
-                              saved_inst_id != inst_id ? ctrl.mem_wen : replace_mem_wen;
+men_type_type replace_mem_wen = MEN_X;
+wire men_type_type mem_wen  = men_type_type'(!mem_valid ? MEN_X : 
+                                saved_inst_id != inst_id ? ctrl.mem_wen : replace_mem_wen);
+wire men_size_type mem_size = ctrl.mem_size;
 
-wire is_store   = mem_wen == MEN_SB || mem_wen == MEN_SH || mem_wen == MEN_SW;
-wire is_load    = mem_wen == MEN_LB || mem_wen == MEN_LBU || mem_wen == MEN_LH || mem_wen == MEN_LHU || mem_wen == MEN_LW || mem_wen == MEN_AMOSWAP_W_AQRL;
+wire is_store   = mem_wen == MEN_S;
+wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU; // || mem_wen == MEN_AMOSWAP_W_AQRL;
 
 // TODO いずれwireではなくdreq, drespに置き換える
 wire        memu_cmd_start  = state == STATE_WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
@@ -61,8 +62,8 @@ wire        memu_cmd_ready;
 wire        memu_valid;
 wire [31:0] memu_addr       = alu_out;
 wire [31:0] memu_wdata      = rs2_data;
-wire [31:0] memu_wmask      = mem_wen == MEN_SB ? 32'h000000ff :
-                              mem_wen == MEN_SH ? 32'h0000ffff : 32'hffffffff;
+wire [31:0] memu_wmask      = mem_size == MENS_B ? 32'h000000ff :
+                              mem_size == MENS_H ? 32'h0000ffff : 32'hffffffff;
 wire [31:0] memu_rdata;
 
 assign dreq.valid       = memu_cmd_start;
@@ -79,18 +80,25 @@ assign memory_unit_stall = mem_valid &&
 
 reg [31:0]  saved_mem_rdata;
 
-function [31:0] gen_memdata(
-    input [3:0]     mem_wen,
-    input           mem_valid,
-    input [31:0]    mem_rdata
+function [31:0] mem_rdata_func(
+    input men_type_type mem_type,
+    input men_size_type mem_size,
+    input               mem_valid,
+    input [31:0]        mem_rdata
 );
-    case(mem_wen)
-    MEN_LB : gen_memdata = {{24{mem_rdata[7]}}, mem_rdata[7:0]};
-    MEN_LBU: gen_memdata = {24'b0, mem_rdata[7:0]};
-    MEN_LH : gen_memdata = {16'b0, mem_rdata[15:0]};
-    MEN_LHU: gen_memdata = {{16{mem_rdata[15]}}, mem_rdata[15:0]};
-    default: gen_memdata = mem_rdata; // amoswapを含む
-    endcase
+if (mem_type == MEN_LS) begin
+    if (mem_size == MENS_B) // lb
+        mem_rdata_func = {{24{mem_rdata[7]}}, mem_rdata[7:0]};
+    else if (mem_size == MENS_H) // lh
+        mem_rdata_func = {{16{mem_rdata[15]}}, mem_rdata[15:0]};
+    else // lw
+        mem_rdata_func = mem_rdata;
+end else begin
+    if (mem_size == MENS_B) // lbu
+        mem_rdata_func = {24'b0, mem_rdata[7:0]};
+    else // lhu
+        mem_rdata_func = {16'b0, mem_rdata[15:0]};
+end
 endfunction
 
 assign mem_wb_valid     = mem_valid && !pipeline_flush;
@@ -99,7 +107,7 @@ assign mem_wb_inst      = mem_inst;
 assign mem_wb_inst_id   = mem_inst_id;
 assign mem_wb_ctrl      = mem_ctrl;
 assign mem_wb_alu_out   = mem_alu_out;
-assign mem_wb_mem_rdata = gen_memdata(ctrl.mem_wen, mem_valid, saved_mem_rdata);
+assign mem_wb_mem_rdata = mem_rdata_func(ctrl.mem_wen, ctrl.mem_size, mem_valid, saved_mem_rdata);
 assign mem_wb_csr_rdata = mem_csr_rdata;
 
 always @(posedge clk) begin
@@ -132,11 +140,15 @@ always @(posedge clk) begin
         STATE_WAIT_READ_VALID: begin
             if (memu_valid) begin
                 saved_mem_rdata <= memu_rdata;
+                /* TODO
                 if (mem_wen == MEN_AMOSWAP_W_AQRL) begin
                     state           <= STATE_WAIT_READY;
                     is_cmd_executed <= 0;
-                    replace_mem_wen <= MEN_SW;
-                end else begin
+                    replace_mem_wen <= MEN_S;
+                    replace_mem_size <= MEN_W; // Xと同じなのでやる必要がないのでは？
+                end else 
+                */
+                begin
                     state           <= STATE_WAIT;
                     is_cmd_executed <= 1;
                     replace_mem_wen <= MEN_X;
@@ -157,8 +169,8 @@ always @(posedge clk) begin
         $display("data,memstage.rs2_data,h,%b", rs2_data);
         $display("data,memstage.alu_out,h,%b", alu_out);
         $display("data,memstage.mem_wen,d,%b", mem_wen);
+        $display("data,memstage.mem_size,d,%b", mem_size);
         
-        // $display("data,memstage.output.pc,h,%b", mem_wb_pc);
         $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
 
         $display("data,memstage.is_load,b,%b", is_load);

@@ -39,6 +39,28 @@ typedef enum reg [3:0] {
     ALUM_REMU
 } alum_exe_type;
 
+typedef enum reg [1:0] {
+    // WB_X    = 2'd0,
+    WB_ALU  = 2'd0,
+    WB_MEM  = 2'd1,
+    WB_PC   = 2'd2,
+    WB_CSR  = 2'd3
+} wb_sel_type;
+
+typedef enum reg [1:0] {
+    MEN_X,  // x
+    MEN_S,  // store
+    MEN_LS, // load signed
+    MEN_LU  // load unsigned
+} men_type_type;
+
+typedef enum reg [1:0] {
+    // MENS_X  = 2'd0, // x
+    MENS_W  = 2'd0, // word
+    MENS_H  = 2'd1, // half word
+    MENS_B  = 2'd2  // byte
+} men_size_type;
+
 typedef struct packed 
 {
     alui_exe_type   i_exe; // 整数演算
@@ -49,9 +71,10 @@ typedef struct packed
     reg [31:0]  op1_data;
     reg [31:0]  op2_data;
     reg [31:0]  rs2_data;
-    reg [3:0]   mem_wen;
+    men_type_type   mem_wen;
+    men_size_type   mem_size;
     reg         rf_wen;
-    reg [3:0]   wb_sel;
+    wb_sel_type     wb_sel;
     reg [4:0]   wb_addr;
     reg [2:0]   csr_cmd;
     reg         jmp_pc_flg;

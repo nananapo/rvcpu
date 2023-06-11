@@ -47,20 +47,16 @@ wire [31:0] csr_rdata       = wb_csr_rdata;
 // WB STAGE
 function [31:0] wb_data_func(
     input [31:0]    pc,
-    input [3:0]     wb_sel,
+    input wb_sel_type   wb_sel,
     input [31:0]    alu_out,
     input [31:0]    csr_rdata,
     input [31:0]    memory_rdata
 );
     case (wb_sel)
-        WB_MEMB     : wb_data_func = {{24{memory_rdata[7]}}, memory_rdata[7:0]};
-        WB_MEMBU    : wb_data_func = {24'b0, memory_rdata[7:0]};
-        WB_MEMH     : wb_data_func = {{16{memory_rdata[15]}}, memory_rdata[15:0]};
-        WB_MEMHU    : wb_data_func = {16'b0, memory_rdata[15:0]};
-        WB_MEMW     : wb_data_func = memory_rdata;
-        WB_PC       : wb_data_func = pc + 4;
-        WB_CSR      : wb_data_func = csr_rdata;
-        default     : wb_data_func = alu_out;
+        WB_MEM  : wb_data_func = memory_rdata;
+        WB_PC   : wb_data_func = pc + 4;
+        WB_CSR  : wb_data_func = csr_rdata;
+        default : wb_data_func = alu_out;
     endcase
 endfunction
 

@@ -350,8 +350,8 @@ DataSelectStage #() dataselectstage
     .zifencei_stall_flg(ds_zifencei_stall_flg),
     .zifencei_mem_wen(1'b0)
     /*
-    (mem_valid && (mem_ctrl.mem_wen == MEN_SB || mem_ctrl.mem_wen == MEN_SH || mem_ctrl.mem_wen == MEN_SW)) || 
-    (exe_valid && (exe_ctrl.mem_wen == MEN_SB || exe_ctrl.mem_wen == MEN_SH || exe_ctrl.mem_wen == MEN_SW))
+    (mem_valid && mem_ctrl.mem_wen == MEN_S) || 
+    (exe_valid && exe_ctrl.mem_wen == MEN_S)
     */
 );
 
