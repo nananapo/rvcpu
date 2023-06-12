@@ -1,19 +1,28 @@
 module DataSelectStage
 (
     input wire clk,
-    input wire[31:0]    regfile[31:0],
+    input wire [31:0]   regfile[31:0],
 
     input wire          ds_valid,
-    input wire[31:0]    ds_pc,
-    input wire[31:0]    ds_inst,
-    input wire[63:0]    ds_inst_id, 
+    input wire [31:0]   ds_pc,
+    input wire [31:0]   ds_inst,
+    input wire [63:0]   ds_inst_id,
     input wire ctrltype ds_ctrl,
+    input wire [31:0]   ds_imm_i,
+    input wire [31:0]   ds_imm_s,
+    input wire [31:0]   ds_imm_b,
+    input wire [31:0]   ds_imm_j,
+    input wire [31:0]   ds_imm_u,
+    input wire [31:0]   ds_imm_z,
     
     output wire             ds_exe_valid,
     output wire [31:0]      ds_exe_pc,
     output wire [31:0]      ds_exe_inst,
     output wire [63:0]      ds_exe_inst_id,
     output wire ctrltype    ds_exe_ctrl,
+    output wire [31:0]      ds_exe_imm_i,
+    output wire [31:0]      ds_exe_imm_b,
+    output wire [31:0]      ds_exe_imm_j,
 
     output wire             dh_stall_flg,
     input wire fw_ctrltype  dh_exe_fw,
@@ -60,11 +69,11 @@ assign dh_stall_flg = ds_valid && (
 function [31:0] gen_op1data(
     input [3:0]     op1_sel,
     input [31:0]    pc,
-    input [31:0]    imm_z_uext
+    input [31:0]    imm_z
 );
 case(op1_sel) 
     OP1_PC  : gen_op1data = pc;
-    OP1_IMZ : gen_op1data = imm_z_uext;
+    OP1_IMZ : gen_op1data = imm_z;
     default : gen_op1data = 0;
 endcase
 endfunction
@@ -72,16 +81,16 @@ endfunction
 function [31:0] gen_op2data(
     input [3:0]     op2_sel,
     input [4:0]     rs2_addr,
-    input [31:0]    imm_i_sext,
-    input [31:0]    imm_s_sext,
-    input [31:0]    imm_j_sext,
-    input [31:0]    imm_u_shifted
+    input [31:0]    imm_i,
+    input [31:0]    imm_s,
+    input [31:0]    imm_j,
+    input [31:0]    imm_u
 );
 case(op2_sel) 
-    OP2_IMI : gen_op2data = imm_i_sext;
-    OP2_IMS : gen_op2data = imm_s_sext;
-    OP2_IMJ : gen_op2data = imm_j_sext;
-    OP2_IMU : gen_op2data = imm_u_shifted;
+    OP2_IMI : gen_op2data = imm_i;
+    OP2_IMS : gen_op2data = imm_s;
+    OP2_IMJ : gen_op2data = imm_j;
+    OP2_IMU : gen_op2data = imm_u;
     default : gen_op2data = 0;
 endcase
 endfunction
@@ -120,25 +129,23 @@ assign ds_exe_ctrl.wb_addr      = ds_ctrl.wb_addr;
 assign ds_exe_ctrl.csr_cmd      = ds_ctrl.csr_cmd;
 assign ds_exe_ctrl.jmp_pc_flg   = ds_ctrl.jmp_pc_flg;
 assign ds_exe_ctrl.jmp_reg_flg  = ds_ctrl.jmp_reg_flg;
-assign ds_exe_ctrl.imm_i_sext   = ds_ctrl.imm_i_sext;
-assign ds_exe_ctrl.imm_s_sext   = ds_ctrl.imm_s_sext;
-assign ds_exe_ctrl.imm_b_sext   = ds_ctrl.imm_b_sext;
-assign ds_exe_ctrl.imm_j_sext   = ds_ctrl.imm_j_sext;
-assign ds_exe_ctrl.imm_u_shifted= ds_ctrl.imm_u_shifted;
-assign ds_exe_ctrl.imm_z_uext   = ds_ctrl.imm_z_uext;
+
+assign ds_exe_imm_i   = ds_imm_i;
+assign ds_exe_imm_b   = ds_imm_b;
+assign ds_exe_imm_j   = ds_imm_j;
 
 // op1_data, op2_data, rs2_dataはここで設定する
 assign ds_exe_ctrl.op1_data     = ds_ctrl.op1_sel == OP1_RS1 ? rs1_data :
                                     gen_op1data(ds_ctrl.op1_sel,
                                                 pc,
-                                                ds_ctrl.imm_z_uext);
+                                                ds_imm_z);
 assign ds_exe_ctrl.op2_data     = ds_ctrl.op2_sel == OP2_RS2W ? rs2_data :
                                     gen_op2data(ds_ctrl.op2_sel,
                                                 rs2_addr,
-                                                ds_ctrl.imm_i_sext,
-                                                ds_ctrl.imm_s_sext,
-                                                ds_ctrl.imm_j_sext,
-                                                ds_ctrl.imm_u_shifted);
+                                                ds_imm_i,
+                                                ds_imm_s,
+                                                ds_imm_j,
+                                                ds_imm_u);
 assign ds_exe_ctrl.rs2_data     = rs2_data;
 
 

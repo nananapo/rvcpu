@@ -10,7 +10,8 @@
         <File path="src/CSRStage.sv" type="file.verilog" enable="1"/>
         <File path="src/DUnalignedAccessController.sv" type="file.verilog" enable="1"/>
         <File path="src/DataSelectStage.sv" type="file.verilog" enable="1"/>
-        <File path="src/DecodeStage.sv" type="file.verilog" enable="1"/>
+        <File path="src/IDecode.sv" type="file.verilog" enable="1"/>
+        <File path="src/ImmDecode.sv" type="file.verilog" enable="1"/>
         <File path="src/DivNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/DivUnsignedNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/ExecuteStage.sv" type="file.verilog" enable="1"/>

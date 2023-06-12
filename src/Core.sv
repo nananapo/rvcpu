@@ -14,11 +14,11 @@ module Core #(
     input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
 
-    inout wire IRequest             ireq,
-    inout wire IResponse            iresp,
+    inout wire IRequest         ireq,
+    inout wire IResponse        iresp,
     output IUpdatePredictionIO  updateio,
-    inout wire DRequest             dreq,
-    inout wire DResponse            dresp,
+    inout wire DRequest         dreq,
+    inout wire DResponse        dresp,
 
     output reg          exit,
     output reg [31:0]   gp
@@ -90,12 +90,20 @@ always @(posedge clk) begin
     end
 end
 
+// ID Stage
+
 // id ->ds wire
-wire            id_ds_valid;
-wire [31:0]     id_ds_pc;
-wire [31:0]     id_ds_inst;
-wire [63:0]     id_ds_inst_id;
+wire            id_ds_valid     = id_valid;
+wire [31:0]     id_ds_pc        = id_pc;
+wire [31:0]     id_ds_inst      = id_inst;
+wire [63:0]     id_ds_inst_id   = id_inst_id;
 wire ctrltype   id_ds_ctrl;
+wire [31:0]     id_ds_imm_i;
+wire [31:0]     id_ds_imm_s;
+wire [31:0]     id_ds_imm_b;
+wire [31:0]     id_ds_imm_j;
+wire [31:0]     id_ds_imm_u;
+wire [31:0]     id_ds_imm_z;
 
 wire            id_stall = id_valid && (ds_stall);
 
@@ -105,6 +113,57 @@ reg [31:0]  ds_pc;
 reg [31:0]  ds_inst;
 reg [63:0]  ds_inst_id;
 ctrltype    ds_ctrl;
+reg [31:0]  ds_imm_i;
+reg [31:0]  ds_imm_s;
+reg [31:0]  ds_imm_b;
+reg [31:0]  ds_imm_j;
+reg [31:0]  ds_imm_u;
+reg [31:0]  ds_imm_z;
+
+IDecode #() idecode (
+    .inst(id_inst),
+    .ctrl(id_ds_ctrl)
+);
+
+ImmDecode #() immdecode (
+    .inst(id_inst),
+    .imm_i(id_ds_imm_i),
+    .imm_s(id_ds_imm_s),
+    .imm_b(id_ds_imm_b),
+    .imm_j(id_ds_imm_j),
+    .imm_u(id_ds_imm_u),
+    .imm_z(id_ds_imm_z)
+);
+
+`ifdef PRINT_DEBUGINFO 
+always @(posedge clk) begin
+    $display("data,decodestage.valid,b,%b",     id_valid);
+    $display("data,decodestage.inst_id,h,%b",   id_valid ? id_inst_id : INST_ID_NOP);
+    if (id_valid) begin
+        $display("data,decodestage.pc,h,%b",                id_pc);
+        $display("data,decodestage.inst,h,%b",              id_inst);
+        $display("data,decodestage.decode.i_exe,d,%b",      id_ds_ctrl.i_exe);
+        $display("data,decodestage.decode.br_exe,d,%b",     id_ds_ctrl.br_exe);
+        $display("data,decodestage.decode.m_exe,d,%b",      id_ds_ctrl.m_exe);
+        $display("data,decodestage.decode.op1_sel,d,%b",    id_ds_ctrl.op1_sel);
+        $display("data,decodestage.decode.op2_sel,d,%b",    id_ds_ctrl.op2_sel);
+        $display("data,decodestage.decode.mem_wen,d,%b",    id_ds_ctrl.mem_wen);
+        $display("data,decodestage.decode.mem_size,d,%b",   id_ds_ctrl.mem_size);
+        $display("data,decodestage.decode.rf_wen,d,%b",     id_ds_ctrl.rf_wen);
+        $display("data,decodestage.decode.wb_sel,d,%b",     id_ds_ctrl.wb_sel);
+        $display("data,decodestage.decode.wb_addr,d,%b",    id_ds_ctrl.wb_addr);
+        $display("data,decodestage.decode.csr_cmd,d,%b",    id_ds_ctrl.csr_cmd);
+        $display("data,decodestage.decode.jmp_pc,d,%b",     id_ds_ctrl.jmp_pc_flg);
+        $display("data,decodestage.decode.jmp_reg,d,%b",    id_ds_ctrl.jmp_reg_flg);
+        $display("data,decodestage.decode.imm_i,h,%b",      id_ds_imm_i);
+        $display("data,decodestage.decode.imm_s,h,%b",      id_ds_imm_s);
+        $display("data,decodestage.decode.imm_b,h,%b",      id_ds_imm_b);
+        $display("data,decodestage.decode.imm_j,h,%b",      id_ds_imm_j);
+        $display("data,decodestage.decode.imm_u,h,%b",      id_ds_imm_u);
+        $display("data,decodestage.decode.imm_z,h,%b",      id_ds_imm_z);
+    end
+end
+`endif
 
 // id -> ds logic
 always @(posedge clk) begin
@@ -121,6 +180,12 @@ always @(posedge clk) begin
         ds_inst     <= id_ds_inst;
         ds_inst_id  <= id_ds_inst_id;
         ds_ctrl     <= id_ds_ctrl;
+        ds_imm_i    <= id_ds_imm_i;
+        ds_imm_s    <= id_ds_imm_s;
+        ds_imm_b    <= id_ds_imm_b;
+        ds_imm_j    <= id_ds_imm_j;
+        ds_imm_u    <= id_ds_imm_u;
+        ds_imm_z    <= id_ds_imm_z;
     end
 end
 
@@ -130,6 +195,9 @@ wire [31:0]     ds_exe_pc;
 wire [31:0]     ds_exe_inst;
 wire [63:0]     ds_exe_inst_id;
 wire ctrltype   ds_exe_ctrl;
+wire [31:0]     ds_exe_imm_i;
+wire [31:0]     ds_exe_imm_b;
+wire [31:0]     ds_exe_imm_j;
 
 wire            ds_stall = ds_valid && (
                            exe_stall ||
@@ -142,6 +210,9 @@ reg [31:0]      exe_pc;
 reg [31:0]      exe_inst;
 reg [63:0]      exe_inst_id;
 ctrltype        exe_ctrl;
+reg [31:0]      exe_imm_i;
+reg [31:0]      exe_imm_b;
+reg [31:0]      exe_imm_j;
 
 // ds -> exe logic
 always @(posedge clk) begin
@@ -155,6 +226,9 @@ always @(posedge clk) begin
         exe_inst    <= ds_exe_inst;
         exe_inst_id <= ds_exe_inst_id;
         exe_ctrl    <= ds_exe_ctrl;
+        exe_imm_i   <= ds_exe_imm_i;
+        exe_imm_b   <= ds_exe_imm_b;
+        exe_imm_j   <= ds_exe_imm_j;
     end
 end
 
@@ -308,22 +382,6 @@ assign wb_fw_ctrl.can_forward   = 1;
 assign wb_fw_ctrl.addr          = wb_ctrl.wb_addr;
 assign wb_fw_ctrl.wdata         = wb_wdata_out;
 
-DecodeStage #() decodestage
-(
-    .clk(clk),
-
-    .id_valid(id_valid),
-    .id_pc(id_pc),
-    .id_inst(id_inst),
-    .id_inst_id(id_inst_id),
-
-    .id_ds_valid(id_ds_valid),
-    .id_ds_pc(id_ds_pc),
-    .id_ds_inst(id_ds_inst),
-    .id_ds_inst_id(id_ds_inst_id),
-    .id_ds_ctrl(id_ds_ctrl)
-);
-
 DataSelectStage #() dataselectstage
 (
     .clk(clk),
@@ -335,12 +393,21 @@ DataSelectStage #() dataselectstage
     .ds_inst(ds_inst),
     .ds_inst_id(ds_inst_id),
     .ds_ctrl(ds_ctrl),
+    .ds_imm_i(ds_imm_i),
+    .ds_imm_s(ds_imm_s),
+    .ds_imm_b(ds_imm_b),
+    .ds_imm_j(ds_imm_j),
+    .ds_imm_u(ds_imm_u),
+    .ds_imm_z(ds_imm_z),
 
     .ds_exe_valid(ds_exe_valid),
     .ds_exe_pc(ds_exe_pc),
     .ds_exe_inst(ds_exe_inst),
     .ds_exe_inst_id(ds_exe_inst_id),
     .ds_exe_ctrl(ds_exe_ctrl),
+    .ds_exe_imm_i(ds_exe_imm_i),
+    .ds_exe_imm_b(ds_exe_imm_b),
+    .ds_exe_imm_j(ds_exe_imm_j),
 
     .dh_stall_flg(ds_dh_stall),
     .dh_exe_fw(exe_fw_ctrl),
@@ -364,6 +431,8 @@ ExecuteStage #() executestage
     .exe_inst(exe_inst),
     .exe_inst_id(exe_inst_id),
     .exe_ctrl(exe_ctrl),
+    .exe_imm_b(exe_imm_b),
+    .exe_imm_j(exe_imm_j),
 
     .exe_mem_valid(exe_mem_valid),
     .exe_mem_pc(exe_mem_pc),
@@ -390,6 +459,7 @@ CSRStage #(
     .csr_inst(exe_inst),
     .csr_inst_id(exe_inst_id),
     .csr_ctrl(exe_ctrl),
+    .csr_imm_i(exe_imm_i),
 
     .csr_mem_csr_rdata(csr_mem_csr_rdata),
     

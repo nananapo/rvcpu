@@ -7,6 +7,8 @@ module ExecuteStage
     input wire [31:0]   exe_inst,
     input wire [63:0]   exe_inst_id,
     input wire ctrltype exe_ctrl,
+    input wire [31:0]   exe_imm_b,
+    input wire [31:0]   exe_imm_j,
 
     output wire             exe_mem_valid,
     output wire [31:0]      exe_mem_pc,
@@ -34,8 +36,6 @@ wire br_exe_type br_exe = exe_ctrl.br_exe;
 wire alum_exe_type m_exe= exe_ctrl.m_exe;
 wire [31:0] op1_data    = exe_ctrl.op1_data;
 wire [31:0] op2_data    = exe_ctrl.op2_data;
-wire [31:0] imm_b_sext  = exe_ctrl.imm_b_sext;
-wire [31:0] imm_j_sext  = exe_ctrl.imm_j_sext;
 
 wire [31:0] alu_out;
 wire        alu_branch_take;
@@ -125,9 +125,9 @@ assign exe_mem_alu_out  = is_div || is_mul ? saved_result : alu_out;
 
 assign branch_taken     = exe_valid && 
                           (exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || alu_branch_take);
-assign branch_target    = exe_ctrl.jmp_pc_flg ? exe_pc + imm_j_sext :
+assign branch_target    = exe_ctrl.jmp_pc_flg ? exe_pc + exe_imm_j :
                           exe_ctrl.jmp_reg_flg ? op1_data + op2_data :
-                          pc + imm_b_sext;
+                          pc + exe_imm_b;
 
 always @(posedge clk) begin
     if (exe_valid)

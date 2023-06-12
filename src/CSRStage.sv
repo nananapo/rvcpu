@@ -8,6 +8,7 @@ module CSRStage #(
     input wire [31:0]   csr_inst,
     input wire [63:0]   csr_inst_id,
     input wire ctrltype csr_ctrl,
+    input wire [31:0]   csr_imm_i,
 
     output wire [31:0]  csr_mem_csr_rdata,
 
@@ -27,7 +28,6 @@ wire [31:0] pc          = csr_pc;
 wire [63:0] inst_id     = csr_inst_id;
 wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
 wire [31:0] op1_data    = csr_ctrl.op1_data;
-wire [31:0] imm_i       = csr_ctrl.imm_i_sext;
 
 reg [31:0] trap_vector;
 assign csr_trap_vector   = trap_vector;
@@ -365,7 +365,7 @@ wire [31:0] mtvec_addr = reg_mtvec[1:0] == 2'b00 ? reg_mtvec : {reg_mtvec[31:2],
 wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 
 // ecallなら0x342を読む
-wire [11:0] addr = imm_i[11:0];
+wire [11:0] addr = csr_imm_i[11:0];
 
 function [31:0] wdata_fun(
     input [2:0]     csr_cmd,
@@ -864,24 +864,17 @@ always @(posedge clk) begin
         $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", csr_inst);
 
-        // $display("data,csrstage.input.csr_cmd,%b", input_csr_cmd);
-        // $display("data,csrstage.input.op1_data,%b", input_op1_data);
-        // $display("data,csrstage.input.imm_i,%b", input_imm_i);
-
-        $display("data,csrstage.output.rdata,h,%b", rdata);
-        $display("data,csrstage.output.trap_vector,h,%b", trap_vector);
-        $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
-        $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
-        $display("data,csrstage.input.may_trap,b,%b", may_trap);
-        $display("data,csrstage.input.intrrupt_ready,b,%b", stage_interrupt_ready);
-
         $display("data,csrstage.mode,d,%b", mode);
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
-        // $display("data,csrstage.op1_data,%b", op1_data);
-        // $display("data,csrstage.imm_i,%b", imm_i);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
-        $display("data,csrstage.mtvec,h,%b", reg_mtvec);
+        $display("data,csrstage.rdata,h,%b", rdata);
+        $display("data,csrstage.trap_vector,h,%b", trap_vector);
+        $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
+        $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
+        $display("data,csrstage.may_trap,b,%b", may_trap);
+        $display("data,csrstage.intrrupt_ready,b,%b", stage_interrupt_ready);
+
     end
 end
 `endif

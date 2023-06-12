@@ -66,25 +66,19 @@ typedef struct packed
     alui_exe_type   i_exe; // 整数演算
     br_exe_type     br_exe;// 分岐計算
     alum_exe_type   m_exe; // M拡張計算
-    reg [3:0]   op1_sel;
-    reg [3:0]   op2_sel;
-    reg [31:0]  op1_data;
-    reg [31:0]  op2_data;
-    reg [31:0]  rs2_data;
+    reg [3:0]       op1_sel;
+    reg [3:0]       op2_sel;
+    reg [31:0]      op1_data;
+    reg [31:0]      op2_data;
+    reg [31:0]      rs2_data;
     men_type_type   mem_wen;
     men_size_type   mem_size;
-    reg         rf_wen;
+    reg             rf_wen;
     wb_sel_type     wb_sel;
-    reg [4:0]   wb_addr;
-    reg [2:0]   csr_cmd;
-    reg         jmp_pc_flg;
-    reg         jmp_reg_flg;
-    reg [31:0]  imm_i_sext;
-    reg [31:0]  imm_s_sext;
-    reg [31:0]  imm_b_sext;
-    reg [31:0]  imm_j_sext;
-    reg [31:0]  imm_u_shifted;
-    reg [31:0]  imm_z_uext;
+    reg [4:0]       wb_addr;
+    reg [2:0]       csr_cmd;
+    reg             jmp_pc_flg;
+    reg             jmp_reg_flg;
 } ctrltype;
 
 typedef struct packed
