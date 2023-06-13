@@ -1,6 +1,6 @@
 import sys
 
-MEMORY_V_FILENAME = "../src/MemoryInterface.sv"
+MEMORY_V_FILENAME = "../src/main.sv"
 REPLACE_WORD = "MEMORY_FILE_NAME"
 MAKE_COMMAND_IVERILOG = "make riscv-tests"
 MAKE_COMMAND_VERILATOR = "make dvrv"

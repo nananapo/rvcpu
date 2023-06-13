@@ -80,28 +80,72 @@ wire DResponse  dresp_unaligned;
 
 wire IUpdatePredictionIO    updateio;
 
-MemoryInterface #(
-    .FMAX_MHz(FMAX_MHz)
-) memory (
-    .clk(clkConstrained),
-    .exit(exited),
+wire        memcntr_memmap_req_ready;
+wire        memcntr_memmap_req_valid;
+wire [31:0] memcntr_memmap_req_addr;
+wire        memcntr_memmap_req_wen;
+wire [31:0] memcntr_memmap_req_wdata;
+wire [31:0] memcntr_memmap_resp_rdata;
+wire        memcntr_memmap_resp_valid;
 
-    .mem_uart_rx(mem_uart_rx),
-    .mem_uart_tx(mem_uart_tx),
+MemoryMapController #(
+    .FMAX_MHz(FMAX_MHz),
+`ifdef RISCV_TEST
+    // make riscv-tests
+    .MEMORY_SIZE(2097152),
+    .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+`elsif DEBUG
+    // make d
+    .MEMORY_SIZE(2097152),
+    //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
+    //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
+    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
+`else
+    // build
+    .MEMORY_SIZE(1024 * 8), // 8 * 8Kb
+    //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
+    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
+`endif
+) memmapcntr (
+    .clk(clkConstrained),
 
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
+    .mem_uart_rx(mem_uart_rx),
+    .mem_uart_tx(mem_uart_tx),
 
     .mtime(reg_time),
     .mtimecmp(reg_mtimecmp),
 
+    .output_cmd_ready(memcntr_memmap_req_ready),
+    .input_cmd_start(memcntr_memmap_req_valid),
+    .input_addr(memcntr_memmap_req_addr),
+    .input_cmd_write(memcntr_memmap_req_wen),
+    .input_wdata(memcntr_memmap_req_wdata),
+    .output_rdata(memcntr_memmap_resp_rdata),
+    .output_rdata_valid(memcntr_memmap_resp_valid)
+);
+
+
+MemCmdCntr #() memcmdcntr (
+    .clk(clkConstrained),
+    .exit(exited),
+
     .ireq(ireq_mem),
     .iresp(iresp_mem),
     .dreq(dreq_mem),
-    .dresp(dresp_mem)
+    .dresp(dresp_mem),
+
+    .mem_req_ready(memcntr_memmap_req_ready),
+    .mem_req_valid(memcntr_memmap_req_valid),
+    .mem_req_addr(memcntr_memmap_req_addr),
+    .mem_req_wen(memcntr_memmap_req_wen),
+    .mem_req_wdata(memcntr_memmap_req_wdata),
+    .mem_resp_rdata(memcntr_memmap_resp_rdata),
+    .mem_resp_valid(memcntr_memmap_resp_valid)
 );
 
-// IF/ID Stage <-> InstQueue <-> MemoryInterface
+// IF/ID Stage <-> InstQueue <-> MemCmdCntr
 InstQueue #() instqueue (
     .clk(clkConstrained),
     .ireq(ireq_core),
@@ -111,7 +155,7 @@ InstQueue #() instqueue (
     .updateio(updateio)
 );
 
-// MEM Stage <-> DUnalignedAccessController <-> MemoryInterface
+// MEM Stage <-> DUnalignedAccessController <-> MemCmdCntr
 DUnalignedAccessController #() dunalignedaccesscontroller (
     .clk(clkConstrained),
     .dreq(dreq_unaligned),

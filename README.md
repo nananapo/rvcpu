@@ -55,7 +55,7 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
        |         |                |
        -----MemoryMapController----
                  |
-        ----MemoryInterface--
+        ----MemCmdCntr-------
         |                   |
     InstQueue   DUnalignedAccessController
         |                   |

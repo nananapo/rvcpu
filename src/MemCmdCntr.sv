@@ -1,21 +1,19 @@
-module MemoryInterface #(
-    parameter FMAX_MHz = 27
-)(
-    input  wire         clk,
-    input  wire         exit,
+module MemCmdCntr (
+    input wire  clk,
+    input wire  exit,
 
-    input  wire         uart_rx,
-    output wire         uart_tx,
-    input  wire         mem_uart_rx,
-    output wire         mem_uart_tx,
+    inout wire IRequest     ireq,
+    inout wire IResponse   iresp,
+    inout wire DRequest     dreq,
+    inout wire DResponse   dresp,
 
-    input  wire [63:0]  mtime,
-    output wire [63:0]  mtimecmp,
-    
-    inout wire IRequest      ireq,
-    inout wire IResponse     iresp,
-    inout wire DRequest      dreq,
-    inout wire DResponse     dresp
+    input wire          mem_req_ready,
+    output wire         mem_req_valid,
+    output wire [31:0]  mem_req_addr,
+    output wire         mem_req_wen,
+    output wire [31:0]  mem_req_wdata,
+    input wire [31:0]   mem_resp_rdata,
+    input wire          mem_resp_valid
 );
 
 typedef enum reg [1:0] {
@@ -31,52 +29,6 @@ initial begin
     saved_dreq.valid = 0;
     saved_ireq.valid = 0;
 end
-
-MemoryMapController #(
-    .FMAX_MHz(FMAX_MHz),
-`ifdef RISCV_TEST
-    // make riscv-tests
-    .MEMORY_SIZE(2097152),
-    .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
-`elsif DEBUG
-    // make d
-    .MEMORY_SIZE(2097152),
-    //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
-`else
-    // build
-    .MEMORY_SIZE(1024 * 8), // 8 * 8Kb
-    //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
-`endif
-) memmapcontroller (
-    .clk(clk),
-
-    .uart_rx(uart_rx),
-    .uart_tx(uart_tx),
-    .mem_uart_rx(mem_uart_rx),
-    .mem_uart_tx(mem_uart_tx),
-
-    .mtime(mtime),
-    .mtimecmp(mtimecmp),
-
-    .input_cmd_start(mem_cmd_start),
-    .input_cmd_write(mem_cmd_write),
-    .output_cmd_ready(mem_cmd_ready),
-    .input_addr(mem_addr),
-    .output_rdata(mem_rdata),
-    .output_rdata_valid(mem_rdata_valid),
-    .input_wdata(mem_wdata)
-);
-
-wire        mem_cmd_start;
-wire        mem_cmd_write;
-wire        mem_cmd_ready;
-wire [31:0] mem_addr;
-wire [31:0] mem_rdata;
-wire        mem_rdata_valid;
-wire [31:0] mem_wdata;
 
 // start : write : addr : wdata
 function [1 + 1 + 32 + 32 - 1:0] memsig(
@@ -136,7 +88,7 @@ endcase
 endfunction
 
 
-assign {mem_cmd_start, mem_cmd_write, mem_addr, mem_wdata} = memsig(
+assign {mem_req_valid, mem_req_wen, mem_req_addr, mem_req_wdata} = memsig(
     state,
     ireq.valid,
     ireq.addr,
@@ -156,14 +108,14 @@ wire req_ready      = state == WAIT_CMD ||
                       (state == WAIT_READ_VALID && !(saved_ireq.valid && saved_dreq.valid));
 
 assign ireq.ready   = req_ready;
-assign iresp.valid  = state == WAIT_READ_VALID && mem_rdata_valid && saved_ireq.valid;
+assign iresp.valid  = state == WAIT_READ_VALID && mem_resp_valid && saved_ireq.valid;
 assign iresp.addr   = saved_ireq.addr;
-assign iresp.inst   = mem_rdata;
+assign iresp.inst   = mem_resp_rdata;
 
 assign dreq.ready   = req_ready;
-assign dresp.valid  = state == WAIT_READ_VALID && mem_rdata_valid && !saved_ireq.valid;
+assign dresp.valid  = state == WAIT_READ_VALID && mem_resp_valid && !saved_ireq.valid;
 assign dresp.addr   = saved_dreq.addr;
-assign dresp.rdata  = mem_rdata;
+assign dresp.rdata  = mem_resp_rdata;
 
 always @(posedge clk) begin
     if (!exit) begin case (state) 
@@ -171,13 +123,13 @@ always @(posedge clk) begin
             saved_ireq  <= ireq;
             saved_dreq  <= dreq;
             if (ireq.valid || dreq.valid) begin
-                if (!mem_cmd_ready)  state <= WAIT_READY;
+                if (!mem_req_ready)  state <= WAIT_READY;
                 else if (ireq.valid) state <= WAIT_READ_VALID;
                 else if (dreq.valid) state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
             end
         end
         WAIT_READY: begin
-            if (mem_cmd_ready) begin
+            if (mem_req_ready) begin
                 if (saved_ireq.valid)
                     state <= WAIT_READ_VALID;
                 else if(saved_dreq.valid)
@@ -185,7 +137,7 @@ always @(posedge clk) begin
             end
         end
         WAIT_READ_VALID: begin
-            if (mem_rdata_valid) begin
+            if (mem_resp_valid) begin
                 // ireqが終わった
                 if (saved_ireq.valid) begin
                     // dreqが始まる
@@ -196,7 +148,7 @@ always @(posedge clk) begin
                     end else if (ireq.valid || dreq.valid) begin
                         saved_ireq  <= ireq;
                         saved_dreq  <= dreq;
-                        if (!mem_cmd_ready)  state <= WAIT_READY;
+                        if (!mem_req_ready)  state <= WAIT_READY;
                         else if (ireq.valid) state <= WAIT_READ_VALID;
                         else if (dreq.valid) state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
                     end else
@@ -206,7 +158,7 @@ always @(posedge clk) begin
                     if (ireq.valid || dreq.valid) begin
                         saved_ireq  <= ireq;
                         saved_dreq  <= dreq;
-                        if (!mem_cmd_ready)  state <= WAIT_READY;
+                        if (!mem_req_ready)  state <= WAIT_READY;
                         else if (ireq.valid) state <= WAIT_READ_VALID;
                         else if (dreq.valid) state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
                     end else

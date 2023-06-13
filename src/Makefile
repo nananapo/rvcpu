@@ -10,7 +10,7 @@ FILES = test.sv \
 		DataSelectStage.sv \
 		ExecuteStage.sv \
 		MemoryStage.sv \
-		MemoryInterface.sv \
+		MemCmdCntr.sv \
 		MemoryMapController.sv \
 		MemoryMapped_MachineTimeRegister.sv \
 		MemoryMappedIO_Uart_rx.sv \
