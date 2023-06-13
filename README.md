@@ -120,28 +120,3 @@ info,情報名,テキスト
 [Kanata Log Format](https://github.com/shioyadan/Konata/blob/master/docs/kanata-log-format.md)は、パイプラインの状態を表すことができるログのフォーマットです。[shioyadan/Konata](https://github.com/shioyadan/Konata)で表示することができます。
 
 デバッグログをkanataに変換するためには、log/convert2kanata.pyを使用します。
-
-### (Deprecated) シリアル通信でメモリ操作
-
-UARTでメモリ操作(load, store)を行います  
-
-```sh
-$ python3 test/uart/hand.py
-input port : COM4
---------------------
-INST :  LOAD
-ADDR :  00000000
-DATA :  0480006f
--------------------- 
-INST :  LOAD
-ADDR :  00000004     
-DATA :  34202f73
---------------------  
-INST :  LOAD
-ADDR :  00000048      
-DATA :  00000093
-...
-```
-
-下記をコメントアウトすると、[test/uart/hand.py](https://github.com/nananapo/rvcpu/blob/main/test/uart/hand.py) で試すことができます
-https://github.com/nananapo/rvcpu/blob/8ffd14d2b5fd7aa3b2b501a41bf194a244ea2803/src/include/memoryinterface.sv#L1

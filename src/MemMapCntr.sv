@@ -126,39 +126,20 @@ wire [31:0] mem_rdata;
 wire        mem_rdata_valid;
 wire [31:0] mem_wdata       = input_wdata;
 
-
-`ifdef MEMORY_UART
-    UARTMemory #(
-        .FMAX_MHz(FMAX_MHz)
-    ) memory (
-        .clk(clk),
-        .uart_rx(mem_uart_rx),
-        .uart_tx(mem_uart_tx),
-        .cmd_start(mem_cmd_start),
-        .cmd_write(mem_cmd_write),
-        .cmd_ready(mem_cmd_ready),
-        .addr(mem_addr),
-        .rdata(mem_rdata),
-        .rdata_valid(mem_rdata_valid),
-        .wdata(mem_wdata)
-    );
-`else
-    Memory
-    #(
-        .MEMORY_SIZE(MEMORY_SIZE),
-        .MEMORY_FILE(MEMORY_FILE)
-    ) memory (
-        .clk(clk),
-
-        .input_cmd_start(mem_cmd_start),
-        .input_cmd_write(mem_cmd_write),
-        .output_cmd_ready(mem_cmd_ready),
-        .input_addr(mem_addr),
-        .output_rdata(mem_rdata),
-        .output_rdata_valid(mem_rdata_valid),
-        .input_wdata(mem_wdata)
-    );
-`endif
+Memory
+#(
+    .MEMORY_SIZE(MEMORY_SIZE),
+    .MEMORY_FILE(MEMORY_FILE)
+) memory (
+    .clk(clk),
+    .input_cmd_start(mem_cmd_start),
+    .input_cmd_write(mem_cmd_write),
+    .output_cmd_ready(mem_cmd_ready),
+    .input_addr(mem_addr),
+    .output_rdata(mem_rdata),
+    .output_rdata_valid(mem_rdata_valid),
+    .input_wdata(mem_wdata)
+);
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
