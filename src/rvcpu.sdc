@@ -10,4 +10,6 @@ report_max_frequency -mod_ins {core/executestage}
 report_max_frequency -mod_ins {core/csrstage}
 report_max_frequency -mod_ins {core/memorystage}
 report_max_frequency -mod_ins {core/wbstage}
-report_max_frequency -mod_ins {memory}
+report_max_frequency -mod_ins {memmapcntr}
+report_max_frequency -mod_ins {memcmdcntr}
+report_max_frequency -mod_ins {instqueue}
