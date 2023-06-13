@@ -88,7 +88,7 @@ wire [31:0] memcntr_memmap_req_wdata;
 wire [31:0] memcntr_memmap_resp_rdata;
 wire        memcntr_memmap_resp_valid;
 
-MemoryMapController #(
+MemMapCntr #(
     .FMAX_MHz(FMAX_MHz),
 `ifdef RISCV_TEST
     // make riscv-tests

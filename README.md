@@ -53,7 +53,7 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
 ```txt
     Memory  UART(TX/RX) MemoryMappedRegister
        |         |                |
-       -----MemoryMapController----
+       -----MemMapCntr-------------
                  |
         ----MemCmdCntr-------
         |                   |

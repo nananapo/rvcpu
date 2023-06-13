@@ -11,7 +11,7 @@ FILES = test.sv \
 		ExecuteStage.sv \
 		MemoryStage.sv \
 		MemCmdCntr.sv \
-		MemoryMapController.sv \
+		MemMapCntr.sv \
 		MemoryMapped_MachineTimeRegister.sv \
 		MemoryMappedIO_Uart_rx.sv \
 		MemoryMappedIO_Uart_tx.sv \
