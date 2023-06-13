@@ -24,6 +24,7 @@ typedef struct packed {
 
 wire buf_kill;
 wire buf_wready;
+wire buf_wready_next;
 wire buf_wvalid;
 wire BufType buf_wdata;
 wire BufType buf_rdata;
@@ -53,6 +54,7 @@ SyncQueue #(
     .kill(buf_kill),
 
     .wready(buf_wready),
+    .wready_next(buf_wready_next),
     .wvalid(buf_wvalid),
     .wdata(buf_wdata),
 
@@ -109,7 +111,7 @@ TwoBitCounter #(
 assign next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
 `endif
 
-assign memreq.valid = buf_wready;
+assign memreq.valid = buf_wready_next;
 assign memreq.addr  = pc;
 
 always @(posedge clk) begin
@@ -188,12 +190,12 @@ always @(posedge clk) begin
     $display("data,fetchstage.iresp.ready,b,%b", iresp.ready);
     $display("data,fetchstage.iresp.addr,h,%b", iresp.addr);
     $display("data,fetchstage.iresp.inst,h,%b", iresp.inst);
-    $display("data,fetchstage.memreq.ready,b,%b", memreq.ready);
-    $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
-    $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
-    $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
-    $display("data,fetchstage.memresp.addr,h,%b", memresp.addr);
-    $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
+    // $display("data,fetchstage.memreq.ready,b,%b", memreq.ready);
+    // $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
+    // $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
+    // $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
+    // $display("data,fetchstage.memresp.addr,h,%b", memresp.addr);
+    // $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
     $display("data,fetchstage.requested,b,%b", requested);
     $display("data,fetchstage.request_pc,h,%b", request_pc);
 end

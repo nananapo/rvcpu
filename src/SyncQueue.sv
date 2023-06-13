@@ -8,6 +8,7 @@ module SyncQueue #(
     input wire kill,
 
     output wire wready,
+    output wire wready_next,
     input wire wvalid,
     input wire [DATA_SIZE-1:0] wdata,
 
@@ -22,7 +23,8 @@ reg [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
 reg [QUEUE_WIDTH-1:0] head = 0;
 reg [QUEUE_WIDTH-1:0] tail = 0;
 
-assign wready   = tail + {{QUEUE_WIDTH-1{1'd0}}, 1'd1} != head;
+assign wready       = tail + {{QUEUE_WIDTH-1{1'd0}}, 1'd1} != head;
+assign wready_next  = wready && tail + {{QUEUE_WIDTH-2{1'd0}}, 2'b10} != head;
 assign rvalid   = head != tail;
 assign rdata    = queue[head];
 
@@ -38,5 +40,18 @@ always @(posedge clk) begin
             head <= head + 1;
     end
 end
+
+/*
+always @(posedge clk) begin
+    $display("data,fetchstage.queue.head,d,%b", head);
+    $display("data,fetchstage.queue.tail,d,%b", tail);
+    $display("data,fetchstage.queue.wready,d,%b", wready);
+    $display("data,fetchstage.queue.wvalid,d,%b", wvalid);
+    $display("data,fetchstage.queue.wdata,h,%b", wdata);
+    $display("data,fetchstage.queue.rready,d,%b", rready);
+    $display("data,fetchstage.queue.rvalid,d,%b", rvalid);
+    $display("data,fetchstage.queue.rdata,h,%b", rdata);
+end
+*/
 
 endmodule
