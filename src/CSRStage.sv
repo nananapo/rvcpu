@@ -6,7 +6,7 @@ module CSRStage #(
     input wire          csr_valid,
     input wire [31:0]   csr_pc,
     input wire [31:0]   csr_inst,
-    input wire [63:0]   csr_inst_id,
+    input wire iidtype  csr_inst_id,
     input wire ctrltype csr_ctrl,
     input wire [31:0]   csr_imm_i,
 
@@ -25,7 +25,7 @@ module CSRStage #(
 `include "include/core.sv"
 
 wire [31:0] pc          = csr_pc;
-wire [63:0] inst_id     = csr_inst_id;
+wire iidtype inst_id    = csr_inst_id;
 wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
 wire [31:0] op1_data    = csr_ctrl.op1_data;
 
@@ -157,10 +157,8 @@ reg [31:0]  reg_mtvec           = 0;
 
 //reg         reg_mcounteren; // read-only zeroでよい
 
-//reg [25:0]  reg_mstatush_wpri   = 0;
 reg         reg_mstatush_mbe    = 0;
 reg         reg_mstatush_sbe    = 0;
-//reg [3:0]   reg_mstatush_wpri   = 0;
 
 // Machine Trap Handling
 /*
@@ -657,7 +655,7 @@ wire [31:0] rdata = can_read ? rdata_func(
 assign csr_mem_csr_rdata = rdata;
 
 
-reg [63:0] saved_inst_id = 64'hffff000000000000;
+iidtype saved_inst_id = INST_ID_RANDOM;
 always @(posedge clk) begin
     if (csr_valid)
         saved_inst_id <= csr_inst_id;

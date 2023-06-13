@@ -6,7 +6,7 @@ module WriteBackStage(
     input wire          wb_valid,
     input wire [31:0]   wb_pc,
     input wire [31:0]   wb_inst,
-    input wire [63:0]   wb_inst_id,
+    input iidtype       wb_inst_id,
     input ctrltype      wb_ctrl,
     input wire [31:0]   wb_alu_out,
     input wire [31:0]   wb_mem_rdata,
@@ -20,7 +20,7 @@ module WriteBackStage(
 
 wire [31:0] pc              = wb_pc;
 wire [31:0] inst            = wb_inst;
-wire [63:0] inst_id         = wb_inst_id;
+wire iidtype inst_id        = wb_inst_id;
 wire ctrltype ctrl          = wb_ctrl;
 wire [31:0] alu_out         = wb_alu_out;
 wire [31:0] memory_rdata    = wb_mem_rdata;
@@ -64,7 +64,7 @@ wire [31:0] wb_data = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_r
 assign wb_wdata_out = wb_data;
 
 reg [31:0] inst_count = 0;
-reg [63:0] saved_inst_id = 64'hffff000000000000;
+iidtype    saved_inst_id = INST_ID_RANDOM;
 
 wire is_new_inst = wb_valid && saved_inst_id != inst_id;
 

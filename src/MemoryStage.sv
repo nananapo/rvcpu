@@ -4,7 +4,7 @@ module MemoryStage(
     input wire          mem_valid,
     input wire [31:0]   mem_pc,
     input wire [31:0]   mem_inst,
-    input wire [63:0]   mem_inst_id,
+    input wire iidtype  mem_inst_id,
     input wire ctrltype mem_ctrl,
     input wire [31:0]   mem_alu_out,
     input wire [31:0]   mem_csr_rdata,
@@ -12,7 +12,7 @@ module MemoryStage(
     output wire             mem_wb_valid,
     output wire [31:0]      mem_wb_pc,
     output wire [31:0]      mem_wb_inst,
-    output wire [63:0]      mem_wb_inst_id,
+    output wire iidtype     mem_wb_inst_id,
     output wire ctrltype    mem_wb_ctrl,
     output wire [31:0]      mem_wb_alu_out,
     output wire [31:0]      mem_wb_mem_rdata,
@@ -37,14 +37,14 @@ reg [1:0]   state       = STATE_WAIT;
 
 wire [31:0]     pc          = mem_pc;
 wire [31:0]     inst        = mem_inst;
-wire [63:0]     inst_id     = mem_inst_id;
+wire iidtype    inst_id     = mem_inst_id;
 wire ctrltype   ctrl        = mem_ctrl;
 wire [31:0]     rs2_data    = mem_ctrl.rs2_data;
 wire [31:0]     alu_out     = mem_alu_out;
 
-reg         is_cmd_executed = 0;
-reg [63:0]  saved_inst_id   = 64'hffff000000000000;
-wire        may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
+reg     is_cmd_executed = 0;
+iidtype saved_inst_id   = INST_ID_RANDOM;
+wire    may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 
 // amoswapはload -> writeするのでmem_wenを置き換える
 men_type_type replace_mem_wen = MEN_X;

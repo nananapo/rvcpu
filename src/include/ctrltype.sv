@@ -88,4 +88,16 @@ typedef struct packed
     reg [4:0]   addr;
     reg [31:0]  wdata;
 } fw_ctrltype;
+
+`ifdef DEBUG
+typedef struct packed
+{
+    reg [63:0] id;
+} iidtype;
+`else 
+typedef struct packed {
+    reg [7:0] id;
+} iidtype;
+`endif
+
 `endif

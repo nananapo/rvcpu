@@ -1,6 +1,16 @@
 localparam REGPC_NOP    = 32'hffffffff;
 localparam INST_NOP     = 32'h00000033;
-localparam INST_ID_NOP  = 64'bx;
+`ifdef DEBUG
+localparam INST_ID_NOP = 64'bx;
+localparam INST_ID_RANDOM = 64'hffffffff_ffffffff;
+localparam INST_ID_ZERO = 64'd1;
+localparam INST_ID_ONE = 64'd1;
+`else
+localparam INST_ID_NOP = 8'bx;
+localparam INST_ID_RANDOM = 8'hff;
+localparam INST_ID_ZERO = 8'd0;
+localparam INST_ID_ONE = 8'd1;
+`endif
 
 localparam OP1_X    = 4'd0;
 localparam OP1_RS1  = 4'd1;

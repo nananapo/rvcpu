@@ -71,7 +71,7 @@ end
 reg         id_valid = 0;
 reg [31:0]  id_pc;
 reg [31:0]  id_inst;
-reg [63:0]  id_inst_id;
+iidtype     id_inst_id;
 
 // if -> id logic
 always @(posedge clk) begin
@@ -96,7 +96,7 @@ end
 wire            id_ds_valid     = id_valid;
 wire [31:0]     id_ds_pc        = id_pc;
 wire [31:0]     id_ds_inst      = id_inst;
-wire [63:0]     id_ds_inst_id   = id_inst_id;
+wire iidtype    id_ds_inst_id   = id_inst_id;
 wire ctrltype   id_ds_ctrl;
 wire [31:0]     id_ds_imm_i;
 wire [31:0]     id_ds_imm_s;
@@ -111,7 +111,7 @@ wire            id_stall = id_valid && (ds_stall);
 reg         ds_valid = 0;
 reg [31:0]  ds_pc;
 reg [31:0]  ds_inst;
-reg [63:0]  ds_inst_id;
+iidtype     ds_inst_id;
 ctrltype    ds_ctrl;
 reg [31:0]  ds_imm_i;
 reg [31:0]  ds_imm_s;
@@ -193,7 +193,7 @@ end
 wire            ds_exe_valid;
 wire [31:0]     ds_exe_pc;
 wire [31:0]     ds_exe_inst;
-wire [63:0]     ds_exe_inst_id;
+wire iidtype    ds_exe_inst_id;
 wire ctrltype   ds_exe_ctrl;
 wire [31:0]     ds_exe_imm_i;
 wire [31:0]     ds_exe_imm_b;
@@ -208,7 +208,7 @@ wire            ds_stall = ds_valid && (
 reg             exe_valid = 0;
 reg [31:0]      exe_pc;
 reg [31:0]      exe_inst;
-reg [63:0]      exe_inst_id;
+iidtype         exe_inst_id;
 ctrltype        exe_ctrl;
 reg [31:0]      exe_imm_i;
 reg [31:0]      exe_imm_b;
@@ -236,7 +236,7 @@ end
 wire            exe_mem_valid;
 wire [31:0]     exe_mem_pc;
 wire [31:0]     exe_mem_inst;
-wire [63:0]     exe_mem_inst_id;
+wire iidtype    exe_mem_inst_id;
 wire ctrltype   exe_mem_ctrl;
 wire [31:0]     exe_mem_alu_out;
 
@@ -284,7 +284,7 @@ wire [31:0]     csr_trap_vector;
 reg             mem_valid = 0;
 reg [31:0]      mem_pc;
 reg [31:0]      mem_inst;
-reg [63:0]      mem_inst_id;
+iidtype         mem_inst_id;
 ctrltype        mem_ctrl;
 reg [31:0]      mem_alu_out;
 reg [31:0]      mem_csr_rdata;
@@ -305,7 +305,7 @@ always @(posedge clk) begin
     end
 end
 
-reg [63:0]      exe_last_inst_id = 64'hffffffffffffffff;
+iidtype exe_last_inst_id = INST_ID_RANDOM;
 // 分岐予測の更新
 always @(posedge clk) begin
     if (exe_valid) exe_last_inst_id <= exe_inst_id;
@@ -320,7 +320,7 @@ end
 wire            mem_wb_valid;
 wire [31:0]     mem_wb_pc;
 wire [31:0]     mem_wb_inst;
-wire [63:0]     mem_wb_inst_id;
+wire iidtype    mem_wb_inst_id;
 wire ctrltype   mem_wb_ctrl;
 wire [31:0]     mem_wb_alu_out;
 wire [31:0]     mem_wb_mem_rdata;
@@ -345,7 +345,7 @@ wire            mem_stall   = mem_valid && (mem_memory_unit_stall);
 reg             wb_valid    = 0;
 reg [31:0]      wb_pc;
 reg [31:0]      wb_inst;
-reg [63:0]      wb_inst_id;
+iidtype         wb_inst_id;
 ctrltype        wb_ctrl;
 reg [31:0]      wb_alu_out;
 reg [31:0]      wb_mem_rdata;

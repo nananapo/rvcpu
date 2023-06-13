@@ -6,7 +6,7 @@ module DataSelectStage
     input wire          ds_valid,
     input wire [31:0]   ds_pc,
     input wire [31:0]   ds_inst,
-    input wire [63:0]   ds_inst_id,
+    input wire iidtype  ds_inst_id,
     input wire ctrltype ds_ctrl,
     input wire [31:0]   ds_imm_i,
     input wire [31:0]   ds_imm_s,
@@ -18,7 +18,7 @@ module DataSelectStage
     output wire             ds_exe_valid,
     output wire [31:0]      ds_exe_pc,
     output wire [31:0]      ds_exe_inst,
-    output wire [63:0]      ds_exe_inst_id,
+    output wire iidtype     ds_exe_inst_id,
     output wire ctrltype    ds_exe_ctrl,
     output wire [31:0]      ds_exe_imm_i,
     output wire [31:0]      ds_exe_imm_b,
@@ -37,10 +37,10 @@ module DataSelectStage
 
 wire [31:0] pc      = ds_pc;
 wire [31:0] inst    = ds_inst;
-wire [63:0] inst_id = ds_inst_id;
+wire iidtype inst_id= ds_inst_id;
 
-wire [4:0] rs1_addr  = inst[19:15];
-wire [4:0] rs2_addr  = inst[24:20];
+wire [4:0] rs1_addr = inst[19:15];
+wire [4:0] rs2_addr = inst[24:20];
 
 // Zifencei
 wire inst_is_fence_i        = 0; // TODO ちょっと一旦実装を取りやめ

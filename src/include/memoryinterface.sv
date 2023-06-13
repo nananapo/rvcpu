@@ -1,5 +1,8 @@
 `ifndef MEMINTERFACE_SV
 `define MEMINTERFACE_SV
+
+`include "include/ctrltype.sv"
+
 // ready, validはChiselのデータ型に従う
 typedef struct packed {
     logic           ready; // 使わない
@@ -12,7 +15,7 @@ typedef struct packed {
     logic           valid;
     logic [31:0]    addr;
     logic [31:0]    inst;
-    logic [63:0]    inst_id;
+    iidtype         inst_id;
 } IResponse;
 
 typedef struct packed {

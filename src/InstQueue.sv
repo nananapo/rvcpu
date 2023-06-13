@@ -12,12 +12,13 @@ module InstQueue #(
 );
 
 `include "include/inst.sv"
+`include "include/core.sv"
 
 typedef struct packed {
     logic [31:0] addr;
     logic [31:0] inst;
     `ifdef PRINT_DEBUGINFO
-    logic [63:0] inst_id;
+    iidtype inst_id;
     `endif
 } BufType;
 
@@ -33,7 +34,7 @@ assign buf_wvalid       = !jal_hazard && requested && memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.inst;
 `ifdef PRINT_DEBUGINFO
-assign buf_wdata.inst_id= inst_id - 64'd1;
+assign buf_wdata.inst_id= inst_id - INST_ID_ONE;
 `endif
 
 assign iresp.addr       = buf_rdata.addr;
@@ -61,7 +62,7 @@ SyncQueue #(
 );
 
 reg [31:0]  pc          = 32'd0;
-reg [63:0]  inst_id     = 64'd0;
+iidtype     inst_id     = INST_ID_ZERO;
 
 reg         requested   = 0;
 reg [31:0]  request_pc  = 32'd0;
