@@ -1,0 +1,42 @@
+// 書き込んだら次のクロックで取り出せる同期キュー
+// QUEUE_SIZEは2の冪にしてね
+module SyncQueue #(
+    parameter DATA_SIZE = 32,
+    parameter QUEUE_SIZE = 32
+)(
+    input wire clk,
+    input wire kill,
+
+    output wire wready,
+    input wire wvalid,
+    input wire [DATA_SIZE-1:0] wdata,
+
+    input wire rready,
+    output wire rvalid,
+    output wire [DATA_SIZE-1:0] rdata
+);
+
+localparam QUEUE_WIDTH = $clog2(QUEUE_SIZE);
+
+reg [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
+reg [QUEUE_WIDTH-1:0] head = 0;
+reg [QUEUE_WIDTH-1:0] tail = 0;
+
+assign wready   = tail + {{QUEUE_WIDTH-1{1'd0}}, 1'd1} != head;
+assign rvalid   = head != tail;
+assign rdata    = queue[head];
+
+always @(posedge clk) begin
+    if (kill)
+        head <= tail;
+    else begin
+        if (wready && wvalid) begin
+            tail <= tail + 1;
+            queue[tail] <= wdata;
+        end
+        if (rready && rvalid)
+            head <= head + 1;
+    end
+end
+
+endmodule

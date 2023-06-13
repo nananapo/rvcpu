@@ -21,11 +21,12 @@ FILES = test.sv \
 		CSRStage.sv \
 		WriteBackStage.sv \
 		TwoBitCounter.sv \
-		ALU.sv
+		ALU.sv \
+		SyncQueue.sv \
+		FastSyncQueue.sv
 
 UART_FILES = Uart_rx.sv \
-			Uart_tx.sv \
-			UARTMemory.sv
+			Uart_tx.sv
 
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST -DPRINT_DEBUGINFO
