@@ -1,5 +1,5 @@
 module InstQueue #(
-    parameter QUEUE_SIZE = 5'd16
+    parameter QUEUE_SIZE = 16
 ) (
     input wire          clk,
 
@@ -13,13 +13,52 @@ module InstQueue #(
 
 `include "include/inst.sv"
 
-reg [3:0]   queue_head  = 0;
-reg [3:0]   queue_tail  = 0;
-reg [31:0]  pc_queue[QUEUE_SIZE-1:0];
-reg [31:0]  inst_queue[QUEUE_SIZE-1:0];
+typedef struct packed {
+    logic [31:0] addr;
+    logic [31:0] inst;
+    `ifdef PRINT_DEBUGINFO
+    logic [63:0] inst_id;
+    `endif
+} BufType;
+
+wire buf_kill;
+wire buf_wready;
+wire buf_wvalid;
+wire BufType buf_wdata;
+wire BufType buf_rdata;
+
+assign buf_kill         = branch_hazard;
+// TODO さらにレジスタをはさんでjal_hazardを消したい
+assign buf_wvalid       = !jal_hazard && requested && memresp.valid;
+assign buf_wdata.addr   = request_pc;
+assign buf_wdata.inst   = memresp.inst;
 `ifdef PRINT_DEBUGINFO
-reg [63:0]  inst_id_queue[QUEUE_SIZE-1:0];
+assign buf_wdata.inst_id= inst_id - 64'd1;
 `endif
+
+assign iresp.addr       = buf_rdata.addr;
+assign iresp.inst       = buf_rdata.inst;
+`ifdef PRINT_DEBUGINFO
+assign iresp.inst_id    = buf_rdata.inst_id;
+`else
+assign iresp.inst_id    = inst_id;
+`endif
+
+SyncQueue #(
+    .DATA_SIZE($bits(BufType)),
+    .QUEUE_SIZE(QUEUE_SIZE)
+) resqueue (
+    .clk(clk),
+    .kill(buf_kill),
+
+    .wready(buf_wready),
+    .wvalid(buf_wvalid),
+    .wdata(buf_wdata),
+
+    .rready(iresp.ready),
+    .rvalid(iresp.valid),
+    .rdata(buf_rdata)
+);
 
 reg [31:0]  pc          = 32'd0;
 reg [63:0]  inst_id     = 64'd0;
@@ -27,10 +66,7 @@ reg [63:0]  inst_id     = 64'd0;
 reg         requested   = 0;
 reg [31:0]  request_pc  = 32'd0;
 
-wire branch_hazard_and_failreq  = ireq.valid &&
-                          // フェッチをリクエスト済みなら、リクエスト済みのアドレスと比べて、同じかつキューのサイズが0なら分岐ハザードは起こさない(フェッチが遅いだけと判断する)
-                          // キューのサイズが0ではない場合は必ず分岐ハザードと判定する。
-                          (requested ? request_pc != ireq.addr || queue_head != queue_tail : 1);
+wire branch_hazard      = ireq.valid;
 
 wire [31:0] next_pc;
 
@@ -60,7 +96,9 @@ assign next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
 `else
 
 wire [31:0] next_pc_tbc;
-TwoBitCounter #() tbc (
+TwoBitCounter #(
+    .ADDR_SIZE(32)
+) tbc (
     .clk(clk),
     .pc(pc),
     .next_pc(next_pc_tbc),
@@ -70,78 +108,42 @@ TwoBitCounter #() tbc (
 assign next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
 `endif
 
-// 2023/06/05
-// ireqが直接memreqにつながらないようにすることにした。
-// つながると、最長のパスがこれになる。(分岐判定の計算をしたうえで、そのアドレスがメモリにつながることになる。これは長すぎる)
-// よって、サイクル数を(1か2ほど)食うことになるが、最高周波数を優先する。
-wire queue_is_full      = (queue_tail + 3'd1 == queue_head) || // キューが埋まっている
-                          // circular logicを避けるために、memresp.validのときにさらに+1するのをなくして、
-                          // +2にと常に比較するようにしている。サイズ一個の損だが許容)
-                          // TODO よく考えたらこれはいらない(ほかの書き方がある気がする)
-                          (queue_tail + 3'd2 == queue_head);
-wire queue_is_empty     = queue_head == queue_tail;
-                          
-assign memreq.valid     = !queue_is_full;
-assign memreq.addr      = last_inst_is_jal ? last_jal_target : pc;
-
-assign iresp.valid      = !jal_hazard && (
-                          (queue_head != queue_tail) ||
-                          (requested && memresp.valid && memresp.addr == request_pc)
-                          );
-assign iresp.addr       = queue_is_empty ? memresp.addr : pc_queue[queue_head];
-assign iresp.inst       = queue_is_empty ? memresp.inst : inst_queue[queue_head];
-`ifdef PRINT_DEBUGINFO
-assign iresp.inst_id    = queue_is_empty ? inst_id - 64'd1 : inst_id_queue[queue_head];
-`else
-assign iresp.inst_id    = inst_id;
-`endif
+assign memreq.valid = buf_wready;
+assign memreq.addr  = pc;
 
 always @(posedge clk) begin
     // 分岐予測に失敗
-    if (branch_hazard_and_failreq) begin
+    if (branch_hazard) begin
         `ifndef PRINT_DEBUGINFO
             inst_id     <= inst_id + 1;
         `endif
         `ifdef PRINT_DEBUGINFO
             $display("info,fetchstage.event.branch_hazard,branch hazard");
         `endif
-        queue_head  <= queue_tail;
         pc          <= ireq.addr;
         requested   <= 0;
 
-        // リクエストするなら、リクエストを繰り返さないようにlast_*を更新する。
         last_fetched_pc     <= 32'hffffffff;
         last_fetched_inst   <= 32'hffffffff;
     // jalの先読み失敗
     end else if (jal_hazard) begin
         requested   <= 0;
-        // メモリがreadyかつmemreq.validならリクエストしてる
-        if (memreq.ready && memreq.valid) begin
-            pc         <= next_pc;
-            requested  <= 1;
-            request_pc <= memreq.addr;
-            `ifdef PRINT_DEBUGINFO
-                inst_id <= inst_id + 1;
-                $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
-            `endif
+        pc          <= last_jal_target;
 
-            // リクエストするなら、リクエストを繰り返さないようにlast_*を更新する。
-            last_fetched_pc     <= 32'hffffffff;
-            last_fetched_inst   <= 32'hffffffff;
-        end
+        `ifdef PRINT_DEBUGINFO
+            $display("info,fetchstage.event.jal_detect,jal hazard");
+        `endif
+
+        last_fetched_pc     <= 32'hffffffff;
+        last_fetched_inst   <= 32'hffffffff;
     end else begin
         if (requested) begin
             // リクエストが完了した
             if (memresp.valid && memresp.addr == request_pc) begin
-                queue_tail              <= queue_tail + 1;
-                pc_queue[queue_tail]    <= memresp.addr;
-                inst_queue[queue_tail]  <= memresp.inst;
-
                 last_fetched_pc         <= memresp.addr;
                 last_fetched_inst       <= memresp.inst;
 
                 `ifdef PRINT_DEBUGINFO
-                    inst_id_queue[queue_tail]  <= inst_id - 64'd1;
                     $display("info,fetchstage.event.fetch_end,fetch end");
                     $display("data,fetchstage.event.pc,h,%b", memresp.addr);
                     $display("data,fetchstage.event.inst,h,%b", memresp.inst);
@@ -172,20 +174,6 @@ always @(posedge clk) begin
                 `endif
             end
         end
-
-        // if/idがキューから1つ命令を取得する
-        if (iresp.valid && iresp.ready) begin
-            // 分岐ならheadをtailにする
-            if (ireq.valid)
-                queue_head  <= queue_tail;
-            else
-                queue_head  <= queue_head + 1;
-            `ifndef PRINT_DEBUGINFO
-                // PRINT_DEBUGINFOではないなら受け取るときにinst_idをインクリメントする。
-                // PRINT_DEBUGINFOなら、フェッチするときにインクリメントする。そして格納するときは1引いた値を入れる
-                inst_id     <= inst_id + 1;
-            `endif
-        end
     end
 end
 
@@ -193,24 +181,20 @@ end
 always @(posedge clk) begin
     $display("data,fetchstage.pc,h,%b", pc);
     $display("data,fetchstage.next_pc,h,%b", next_pc);
-    $display("data,fetchstage.branch_hazard_and_failreq,b,%b", branch_hazard_and_failreq);
     // $display("data,fetchstage.ireq.valid,b,%b", ireq.valid);
     // $display("data,fetchstage.ireq.addr,h,%b", ireq.addr);
     $display("data,fetchstage.iresp.valid,b,%b", iresp.valid);
     $display("data,fetchstage.iresp.ready,b,%b", iresp.ready);
     $display("data,fetchstage.iresp.addr,h,%b", iresp.addr);
     $display("data,fetchstage.iresp.inst,h,%b", iresp.inst);
-    // $display("data,fetchstage.memreq.ready,b,%b", memreq.ready);
-    // $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
-    // $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
-    // $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
-    // $display("data,fetchstage.memresp.addr,h,%b", memresp.addr);
-    // $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
+    $display("data,fetchstage.memreq.ready,b,%b", memreq.ready);
+    $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
+    $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
+    $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
+    $display("data,fetchstage.memresp.addr,h,%b", memresp.addr);
+    $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
     $display("data,fetchstage.requested,b,%b", requested);
     $display("data,fetchstage.request_pc,h,%b", request_pc);
-    $display("data,fetchstage.queue_is_full,b,%b", queue_is_full);
-    // $display("data,fetchstage.queue_head,h,%b", queue_head);
-    // $display("data,fetchstage.queue_tail,h,%b", queue_tail);
 end
 `endif
 
