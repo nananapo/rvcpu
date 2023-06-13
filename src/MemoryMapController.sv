@@ -13,14 +13,13 @@ module MemoryMapController #(
     input  wire [63:0]  mtime,
     output wire [63:0]  mtimecmp,
 
-    input  wire         input_cmd_start,
-    input  wire         input_cmd_write,
     output wire         output_cmd_ready,
-
+    input  wire         input_cmd_start,
     input  wire [31:0]  input_addr,
+    input  wire         input_cmd_write,
+    input  wire [31:0]  input_wdata,
     output wire [31:0]  output_rdata,
-    output wire         output_rdata_valid,
-    input  wire [31:0]  input_wdata
+    output wire         output_rdata_valid
 );
 
 `include "include/memorymap.sv"
