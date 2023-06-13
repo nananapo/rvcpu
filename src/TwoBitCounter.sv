@@ -1,8 +1,7 @@
 // TODO pcがかぶった時の挙動を知らない
 // pcがかぶったとき、それが同じアドレスで命令が違う時も知らない
 module TwoBitCounter #(
-    parameter ADDR_WIDTH    = 6,// (戒め) ロジックの深さがwidth + n段増えます
-    parameter ADDR_SIZE     = 64
+    parameter ADDR_SIZE = 64 // 2の冪にしてね
 )(
     input wire          clk,
     input wire [31:0]   pc,         // 予測したいアドレス
@@ -10,6 +9,8 @@ module TwoBitCounter #(
     
     input wire IUpdatePredictionIO updateio
 );
+
+localparam ADDR_WIDTH = $clog2(ADDR_SIZE);
 
 localparam DEFAULT_COUNTER_VALUE = 2'b0;
 
