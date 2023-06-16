@@ -55,11 +55,8 @@ typedef enum reg [1:0] {
 } men_type_type;
 
 typedef enum reg [1:0] {
-    // MENS_X  = 2'd0, // x
-    MENS_W  = 2'd0, // word
-    MENS_H  = 2'd1, // half word
-    MENS_B  = 2'd2  // byte
-} men_size_type;
+    SIZE_W, SIZE_H, SIZE_B
+} sizetype;
 
 typedef struct packed 
 {
@@ -72,7 +69,7 @@ typedef struct packed
     reg [31:0]      op2_data;
     reg [31:0]      rs2_data;
     men_type_type   mem_wen;
-    men_size_type   mem_size;
+    sizetype        mem_size;
     reg             rf_wen;
     wb_sel_type     wb_sel;
     reg [4:0]       wb_addr;

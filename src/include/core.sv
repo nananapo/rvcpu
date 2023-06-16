@@ -26,7 +26,7 @@ localparam OP2_IMZ  = 4'd5;
 localparam OP2_X    = 4'd6;
 
 localparam WB_X     = 2'd0;
-localparam MENS_X   = 2'd0;
+localparam SIZE_X   = 2'd0;
 // RV32A
 // localparam MEN_AMOSWAP_W_AQRL = 4'd9;
 

@@ -50,7 +50,7 @@ wire    may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 men_type_type replace_mem_wen = MEN_X;
 wire men_type_type mem_wen  = men_type_type'(!mem_valid ? MEN_X : 
                                 saved_inst_id != inst_id ? ctrl.mem_wen : replace_mem_wen);
-wire men_size_type mem_size = ctrl.mem_size;
+wire sizetype mem_size = ctrl.mem_size;
 
 wire is_store   = mem_wen == MEN_S;
 wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU; // || mem_wen == MEN_AMOSWAP_W_AQRL;
@@ -62,8 +62,8 @@ wire        memu_cmd_ready;
 wire        memu_valid;
 wire [31:0] memu_addr       = alu_out;
 wire [31:0] memu_wdata      = rs2_data;
-wire [31:0] memu_wmask      = mem_size == MENS_B ? 32'h000000ff :
-                              mem_size == MENS_H ? 32'h0000ffff : 32'hffffffff;
+wire [31:0] memu_wmask      = mem_size == SIZE_B ? 32'h000000ff :
+                              mem_size == SIZE_H ? 32'h0000ffff : 32'hffffffff;
 wire [31:0] memu_rdata;
 
 assign dreq.valid       = memu_cmd_start;
@@ -80,21 +80,22 @@ assign memory_unit_stall = mem_valid &&
 
 reg [31:0]  saved_mem_rdata;
 
+// ここで1クロック消費してもいいかも
 function [31:0] mem_rdata_func(
     input men_type_type mem_type,
-    input men_size_type mem_size,
+    input sizetype      mem_size,
     input               mem_valid,
     input [31:0]        mem_rdata
 );
 if (mem_type == MEN_LS) begin
-    if (mem_size == MENS_B) // lb
+    if (mem_size == SIZE_B) // lb
         mem_rdata_func = {{24{mem_rdata[7]}}, mem_rdata[7:0]};
-    else if (mem_size == MENS_H) // lh
+    else if (mem_size == SIZE_H) // lh
         mem_rdata_func = {{16{mem_rdata[15]}}, mem_rdata[15:0]};
     else // lw
         mem_rdata_func = mem_rdata;
 end else begin
-    if (mem_size == MENS_B) // lbu
+    if (mem_size == SIZE_B) // lbu
         mem_rdata_func = {24'b0, mem_rdata[7:0]};
     else // lhu
         mem_rdata_func = {16'b0, mem_rdata[15:0]};
