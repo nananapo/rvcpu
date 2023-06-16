@@ -17,9 +17,7 @@ module InstQueue #(
 typedef struct packed {
     logic [31:0] addr;
     logic [31:0] inst;
-    `ifdef PRINT_DEBUGINFO
     iidtype inst_id;
-    `endif
 } BufType;
 
 wire buf_kill;
@@ -34,17 +32,11 @@ assign buf_kill         = branch_hazard;
 assign buf_wvalid       = !jal_hazard && requested && memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.inst;
-`ifdef PRINT_DEBUGINFO
 assign buf_wdata.inst_id= inst_id - INST_ID_ONE;
-`endif
 
 assign iresp.addr       = buf_rdata.addr;
 assign iresp.inst       = buf_rdata.inst;
-`ifdef PRINT_DEBUGINFO
 assign iresp.inst_id    = buf_rdata.inst_id;
-`else
-assign iresp.inst_id    = inst_id;
-`endif
 
 SyncQueue #(
     .DATA_SIZE($bits(BufType)),
@@ -117,9 +109,6 @@ assign memreq.addr  = pc;
 always @(posedge clk) begin
     // 分岐予測に失敗
     if (branch_hazard) begin
-        `ifndef PRINT_DEBUGINFO
-            inst_id     <= inst_id + 1;
-        `endif
         `ifdef PRINT_DEBUGINFO
             $display("info,fetchstage.event.branch_hazard,branch hazard");
         `endif
@@ -154,12 +143,11 @@ always @(posedge clk) begin
 
                 // メモリがreadyかつmemreq.validならリクエストしてる
                 if (memreq.ready && memreq.valid) begin
-                    requested           <= 1;
-                    request_pc          <= memreq.addr;
-                    pc                  <= next_pc;
-
+                    requested   <= 1;
+                    request_pc  <= memreq.addr;
+                    pc          <= next_pc;
+                    inst_id     <= inst_id + 1;
                     `ifdef PRINT_DEBUGINFO
-                        inst_id <= inst_id + 1;
                         $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
                     `endif
                 end else
@@ -168,11 +156,11 @@ always @(posedge clk) begin
         end else begin
             // メモリがreadyかつmemreq.validならリクエストしてる
             if (memreq.ready && memreq.valid) begin
-                pc         <= next_pc;
-                requested  <= 1;
-                request_pc <= memreq.addr;
+                pc          <= next_pc;
+                requested   <= 1;
+                request_pc  <= memreq.addr;
+                inst_id     <= inst_id + 1;
                 `ifdef PRINT_DEBUGINFO
-                    inst_id <= inst_id + 1;
                     $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
                 `endif
             end
