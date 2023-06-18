@@ -9,6 +9,9 @@ module ExecuteStage
     input wire ctrltype exe_ctrl,
     input wire [31:0]   exe_imm_b,
     input wire [31:0]   exe_imm_j,
+    input wire [31:0]   exe_op1_data,
+    input wire [31:0]   exe_op2_data,
+    input wire [31:0]   exe_rs2_data,
 
     output wire             exe_mem_valid,
     output wire [31:0]      exe_mem_pc,
@@ -16,6 +19,7 @@ module ExecuteStage
     output wire iidtype     exe_mem_inst_id,
     output wire ctrltype    exe_mem_ctrl,
     output wire [31:0]      exe_mem_alu_out,
+    output wire [31:0]      exe_mem_rs2_data,
     
     output wire         branch_taken,
     output wire [31:0]  branch_target,
@@ -34,8 +38,8 @@ wire ctrltype ctrl      = exe_ctrl;
 wire alui_exe_type i_exe= exe_ctrl.i_exe;
 wire br_exe_type br_exe = exe_ctrl.br_exe;
 wire alum_exe_type m_exe= exe_ctrl.m_exe;
-wire [31:0] op1_data    = exe_ctrl.op1_data;
-wire [31:0] op2_data    = exe_ctrl.op2_data;
+wire [31:0] op1_data    = exe_op1_data;
+wire [31:0] op2_data    = exe_op2_data;
 
 wire [31:0] alu_out;
 wire        alu_branch_take;
@@ -120,6 +124,7 @@ assign exe_mem_pc       = exe_pc;
 assign exe_mem_inst     = exe_inst;
 assign exe_mem_inst_id  = exe_inst_id;
 assign exe_mem_ctrl     = exe_ctrl;
+assign exe_mem_rs2_data = exe_rs2_data;
 
 assign exe_mem_alu_out  = is_div || is_mul ? saved_result : alu_out;
 

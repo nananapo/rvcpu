@@ -23,6 +23,9 @@ module DataSelectStage
     output wire [31:0]      ds_exe_imm_i,
     output wire [31:0]      ds_exe_imm_b,
     output wire [31:0]      ds_exe_imm_j,
+    output wire [31:0]      ds_exe_op1_data,
+    output wire [31:0]      ds_exe_op2_data,
+    output wire [31:0]      ds_exe_rs2_data,
 
     output wire             dh_stall_flg,
     input wire fw_ctrltype  dh_exe_fw,
@@ -118,9 +121,6 @@ assign ds_exe_ctrl.br_exe       = ds_ctrl.br_exe;
 assign ds_exe_ctrl.m_exe        = ds_ctrl.m_exe;
 assign ds_exe_ctrl.op1_sel      = ds_ctrl.op1_sel;
 assign ds_exe_ctrl.op2_sel      = ds_ctrl.op2_sel;
-// assign ds_exe_ctrl.op1_data     = ;
-// assign ds_exe_ctrl.op2_data     = ;
-// assign ds_exe_ctrl.rs2_data     = ;
 assign ds_exe_ctrl.mem_wen      = ds_ctrl.mem_wen;
 assign ds_exe_ctrl.mem_size     = ds_ctrl.mem_size;
 assign ds_exe_ctrl.rf_wen       = ds_ctrl.rf_wen;
@@ -130,23 +130,16 @@ assign ds_exe_ctrl.csr_cmd      = ds_ctrl.csr_cmd;
 assign ds_exe_ctrl.jmp_pc_flg   = ds_ctrl.jmp_pc_flg;
 assign ds_exe_ctrl.jmp_reg_flg  = ds_ctrl.jmp_reg_flg;
 
-assign ds_exe_imm_i   = ds_imm_i;
-assign ds_exe_imm_b   = ds_imm_b;
-assign ds_exe_imm_j   = ds_imm_j;
+assign ds_exe_imm_i = ds_imm_i;
+assign ds_exe_imm_b = ds_imm_b;
+assign ds_exe_imm_j = ds_imm_j;
 
 // op1_data, op2_data, rs2_dataはここで設定する
-assign ds_exe_ctrl.op1_data     = ds_ctrl.op1_sel == OP1_RS1 ? rs1_data :
-                                    gen_op1data(ds_ctrl.op1_sel,
-                                                pc,
-                                                ds_imm_z);
-assign ds_exe_ctrl.op2_data     = ds_ctrl.op2_sel == OP2_RS2W ? rs2_data :
-                                    gen_op2data(ds_ctrl.op2_sel,
-                                                rs2_addr,
-                                                ds_imm_i,
-                                                ds_imm_s,
-                                                ds_imm_j,
-                                                ds_imm_u);
-assign ds_exe_ctrl.rs2_data     = rs2_data;
+assign ds_exe_op1_data  = ds_ctrl.op1_sel == OP1_RS1 ? rs1_data : 
+                            gen_op1data(ds_ctrl.op1_sel, pc, ds_imm_z);
+assign ds_exe_op2_data  = ds_ctrl.op2_sel == OP2_RS2W ? rs2_data :
+                            gen_op2data(ds_ctrl.op2_sel, rs2_addr, ds_imm_i, ds_imm_s, ds_imm_j, ds_imm_u);
+assign ds_exe_rs2_data  = rs2_data;
 
 
 `ifdef PRINT_DEBUGINFO 
@@ -159,8 +152,8 @@ always @(posedge clk) begin
 
         $display("data,datastage.decode.op1_sel,d,%b", ds_ctrl.op1_sel);
         $display("data,datastage.decode.op2_sel,d,%b", ds_ctrl.op2_sel);
-        $display("data,datastage.decode.op1_data,h,%b", ds_exe_ctrl.op1_data);
-        $display("data,datastage.decode.op2_data,h,%b", ds_exe_ctrl.op2_data);
+        $display("data,datastage.decode.op1_data,h,%b", ds_exe_op1_data);
+        $display("data,datastage.decode.op2_data,h,%b", ds_exe_op2_data);
         $display("data,datastage.decode.rs1_addr,d,%b", rs1_addr);
         $display("data,datastage.decode.rs2_addr,d,%b", rs2_addr);
         $display("data,datastage.decode.rs1_data,h,%b", rs1_data);

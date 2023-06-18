@@ -198,6 +198,9 @@ wire ctrltype   ds_exe_ctrl;
 wire [31:0]     ds_exe_imm_i;
 wire [31:0]     ds_exe_imm_b;
 wire [31:0]     ds_exe_imm_j;
+wire [31:0]     ds_exe_op1_data;
+wire [31:0]     ds_exe_op2_data;
+wire [31:0]     ds_exe_rs2_data;
 
 wire            ds_stall = ds_valid && (
                            exe_stall ||
@@ -213,6 +216,9 @@ ctrltype        exe_ctrl;
 reg [31:0]      exe_imm_i;
 reg [31:0]      exe_imm_b;
 reg [31:0]      exe_imm_j;
+reg [31:0]      exe_op1_data;
+reg [31:0]      exe_op2_data;
+reg [31:0]      exe_rs2_data;
 
 // ds -> exe logic
 always @(posedge clk) begin
@@ -229,6 +235,9 @@ always @(posedge clk) begin
         exe_imm_i   <= ds_exe_imm_i;
         exe_imm_b   <= ds_exe_imm_b;
         exe_imm_j   <= ds_exe_imm_j;
+        exe_op1_data<= ds_exe_op1_data;
+        exe_op2_data<= ds_exe_op2_data;
+        exe_rs2_data<= ds_exe_rs2_data;
     end
 end
 
@@ -239,6 +248,7 @@ wire [31:0]     exe_mem_inst;
 wire iidtype    exe_mem_inst_id;
 wire ctrltype   exe_mem_ctrl;
 wire [31:0]     exe_mem_alu_out;
+wire [31:0]     exe_mem_rs2_data;
 
 // exe,csr -> idのdatahazard
 // exe->idを最長のパスにするわけにはいかない(それだとパイプラインの意味がない)
@@ -288,6 +298,7 @@ iidtype         mem_inst_id;
 ctrltype        mem_ctrl;
 reg [31:0]      mem_alu_out;
 reg [31:0]      mem_csr_rdata;
+reg [31:0]      mem_rs2_data;
 
 // exe -> mem logic
 always @(posedge clk) begin
@@ -302,6 +313,7 @@ always @(posedge clk) begin
         mem_ctrl        <= exe_mem_ctrl;
         mem_alu_out     <= exe_mem_alu_out;
         mem_csr_rdata   <= csr_mem_csr_rdata; 
+        mem_rs2_data    <= exe_mem_rs2_data;
     end
 end
 
@@ -408,6 +420,9 @@ DataSelectStage #() dataselectstage
     .ds_exe_imm_i(ds_exe_imm_i),
     .ds_exe_imm_b(ds_exe_imm_b),
     .ds_exe_imm_j(ds_exe_imm_j),
+    .ds_exe_op1_data(ds_exe_op1_data),
+    .ds_exe_op2_data(ds_exe_op2_data),
+    .ds_exe_rs2_data(ds_exe_rs2_data),
 
     .dh_stall_flg(ds_dh_stall),
     .dh_exe_fw(exe_fw_ctrl),
@@ -433,6 +448,9 @@ ExecuteStage #() executestage
     .exe_ctrl(exe_ctrl),
     .exe_imm_b(exe_imm_b),
     .exe_imm_j(exe_imm_j),
+    .exe_op1_data(exe_op1_data),
+    .exe_op2_data(exe_op2_data),
+    .exe_rs2_data(exe_rs2_data),
 
     .exe_mem_valid(exe_mem_valid),
     .exe_mem_pc(exe_mem_pc),
@@ -440,6 +458,7 @@ ExecuteStage #() executestage
     .exe_mem_inst_id(exe_mem_inst_id),
     .exe_mem_ctrl(exe_mem_ctrl),
     .exe_mem_alu_out(exe_mem_alu_out),
+    .exe_mem_rs2_data(exe_mem_rs2_data),
 
     .branch_taken(exe_branch_taken),
     .branch_target(exe_branch_target),
@@ -460,6 +479,7 @@ CSRStage #(
     .csr_inst_id(exe_inst_id),
     .csr_ctrl(exe_ctrl),
     .csr_imm_i(exe_imm_i),
+    .csr_op1_data(exe_op1_data),
 
     .csr_mem_csr_rdata(csr_mem_csr_rdata),
     
@@ -487,6 +507,7 @@ MemoryStage #() memorystage
     .mem_ctrl(mem_ctrl),
     .mem_alu_out(mem_alu_out),
     .mem_csr_rdata(mem_csr_rdata),
+    .mem_rs2_data(mem_rs2_data),
 
     .mem_wb_valid(mem_wb_valid),
     .mem_wb_pc(mem_wb_pc),

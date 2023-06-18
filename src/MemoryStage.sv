@@ -8,6 +8,7 @@ module MemoryStage(
     input wire ctrltype mem_ctrl,
     input wire [31:0]   mem_alu_out,
     input wire [31:0]   mem_csr_rdata,
+    input wire [31:0]   mem_rs2_data,
 
     output wire             mem_wb_valid,
     output wire [31:0]      mem_wb_pc,
@@ -39,7 +40,7 @@ wire [31:0]     pc          = mem_pc;
 wire [31:0]     inst        = mem_inst;
 wire iidtype    inst_id     = mem_inst_id;
 wire ctrltype   ctrl        = mem_ctrl;
-wire [31:0]     rs2_data    = mem_ctrl.rs2_data;
+wire [31:0]     rs2_data    = mem_rs2_data;
 wire [31:0]     alu_out     = mem_alu_out;
 
 reg     is_cmd_executed = 0;

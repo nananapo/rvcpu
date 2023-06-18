@@ -9,6 +9,7 @@ module CSRStage #(
     input wire iidtype  csr_inst_id,
     input wire ctrltype csr_ctrl,
     input wire [31:0]   csr_imm_i,
+    input wire [31:0]   csr_op1_data,
 
     output wire [31:0]  csr_mem_csr_rdata,
 
@@ -27,7 +28,7 @@ module CSRStage #(
 wire [31:0] pc          = csr_pc;
 wire iidtype inst_id    = csr_inst_id;
 wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
-wire [31:0] op1_data    = csr_ctrl.op1_data;
+wire [31:0] op1_data    = csr_op1_data;
 
 reg [31:0] trap_vector;
 assign csr_trap_vector   = trap_vector;

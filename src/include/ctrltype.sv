@@ -64,9 +64,6 @@ typedef struct packed
     alum_exe_type   m_exe; // M拡張計算
     reg [3:0]       op1_sel;
     reg [3:0]       op2_sel;
-    reg [31:0]      op1_data;
-    reg [31:0]      op2_data;
-    reg [31:0]      rs2_data;
     men_type_type   mem_wen;
     sizetype        mem_size;
     reg             rf_wen;
