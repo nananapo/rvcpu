@@ -62,8 +62,7 @@ wire        memu_cmd_ready;
 wire        memu_valid;
 wire [31:0] memu_addr       = alu_out;
 wire [31:0] memu_wdata      = rs2_data;
-wire [31:0] memu_wmask      = mem_size == SIZE_B ? 32'h000000ff :
-                              mem_size == SIZE_H ? 32'h0000ffff : 32'hffffffff;
+sizetype    memu_wmask      = mem_size;
 wire [31:0] memu_rdata;
 
 assign dreq.valid       = memu_cmd_start;

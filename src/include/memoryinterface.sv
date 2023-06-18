@@ -32,7 +32,7 @@ typedef struct packed {
     logic [31:0]    addr;
     logic           wen;
     logic [31:0]    wdata;
-    logic [31:0]    wmask; // DUnalignedAccessController との間でしか使わない
+    sizetype        wmask;
 } DRequest;
 
 typedef struct packed {
