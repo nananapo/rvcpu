@@ -19,10 +19,9 @@ module MemoryStage(
     output wire [31:0]      mem_wb_mem_rdata,
     output wire [31:0]      mem_wb_csr_rdata,
 
-    input wire          pipeline_flush,
     output reg          memory_unit_stall,
 
-    inout wire DRequest     dreq, // TODO kill
+    inout wire DRequest     dreq,
     inout wire DResponse    dresp
 );
 
@@ -47,7 +46,6 @@ reg     is_cmd_executed = 0;
 iidtype saved_inst_id   = INST_ID_RANDOM;
 wire    may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 
-// amoswapはload -> writeするのでmem_wenを置き換える
 men_type_type replace_mem_wen = MEN_X;
 wire men_type_type mem_wen  = men_type_type'(!mem_valid ? MEN_X : 
                                 saved_inst_id != inst_id ? ctrl.mem_wen : replace_mem_wen);
@@ -56,31 +54,21 @@ wire sizetype mem_size = ctrl.mem_size;
 wire is_store   = mem_wen == MEN_S;
 wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU;
 
-// TODO いずれwireではなくdreq, drespに置き換える
-wire        memu_cmd_start  = state == WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
-wire        memu_cmd_write  = is_store;
-wire        memu_cmd_ready;
-wire        memu_valid;
-wire [31:0] memu_addr       = alu_out;
-wire [31:0] memu_wdata      = rs2_data;
-wire sizetype memu_wmask    = mem_size;
-wire [31:0] memu_rdata;
+wire        memu_cmd_ready   = dreq.ready;
+wire        memu_valid       = dresp.valid;
+wire [31:0] memu_rdata       = dresp.rdata;
 
-assign dreq.valid       = memu_cmd_start;
-assign dreq.wen         = memu_cmd_write;
-assign memu_cmd_ready   = dreq.ready;
-assign memu_valid       = dresp.valid;
-assign dreq.addr        = memu_addr;
-assign dreq.wdata       = memu_wdata;    
-assign dreq.wmask       = memu_wmask;
-assign memu_rdata       = dresp.rdata;
+assign dreq.valid       = state == WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
+assign dreq.wen         = is_store;
+assign dreq.addr        = alu_out;
+assign dreq.wdata       = rs2_data;    
+assign dreq.wmask       = mem_size;
 
 assign memory_unit_stall = mem_valid && 
                             (state != IDLE || (may_start_m && mem_wen != MEN_X));
 
 reg [31:0]  saved_mem_rdata;
 
-// ここで1クロック消費してもいいかも
 function [31:0] mem_rdata_func(
     input men_type_type mem_type,
     input sizetype      mem_size,
@@ -102,7 +90,7 @@ end else begin
 end
 endfunction
 
-assign mem_wb_valid     = mem_valid && !pipeline_flush;
+assign mem_wb_valid     = mem_valid;
 assign mem_wb_pc        = mem_pc;
 assign mem_wb_inst      = mem_inst;
 assign mem_wb_inst_id   = mem_inst_id;
@@ -117,7 +105,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (pipeline_flush || !mem_valid || mem_wen == MEN_X) begin
+    if (!mem_valid || mem_wen == MEN_X) begin
         state           <= IDLE;
         is_cmd_executed <= 0;
         replace_mem_wen <= MEN_X;

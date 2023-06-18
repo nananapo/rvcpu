@@ -24,7 +24,6 @@ module ExecuteStage
     output wire         branch_taken,
     output wire [31:0]  branch_target,
 
-    input wire          pipeline_flush,
     output wire         calc_stall_flg
 );
 
@@ -141,7 +140,7 @@ end
 
 always @(posedge clk) begin
     // EX STAGE
-    if (pipeline_flush || !exe_valid || !is_multicycle_exe) begin
+    if (!exe_valid || !is_multicycle_exe) begin
         // TODO kill muldiv
         calc_started    <= 0;
         is_calculated   <= 0;

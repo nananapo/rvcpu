@@ -42,13 +42,10 @@ wire exe_calc_stall;        // exeステージでストールしているかど�
 wire csr_stall_flg;         // csrステージが止まってる
 wire mem_memory_unit_stall; // メモリステージでメモリがreadyではないストール
 
-// IF -> ID -> EXE (CSR) -> MEM -> WB
-wire pipeline_kill = exited;
-
 wire if_stall = id_stall;
 
 // InstQueueの仕様として、branch_hazard = 1の時は
-assign iresp.ready  = !pipeline_kill &&
+assign iresp.ready  = !exited &&
                       !if_stall;
 
 // 最後のクロックでの分岐ハザード状態
@@ -463,7 +460,6 @@ ExecuteStage #() executestage
     .branch_taken(exe_branch_taken),
     .branch_target(exe_branch_target),
 
-    .pipeline_flush(pipeline_kill),
     .calc_stall_flg(exe_calc_stall)
 );
 
@@ -518,7 +514,6 @@ MemoryStage #() memorystage
     .mem_wb_mem_rdata(mem_wb_mem_rdata),
     .mem_wb_csr_rdata(mem_wb_csr_rdata),
 
-    .pipeline_flush(pipeline_kill),
     .memory_unit_stall(mem_memory_unit_stall)
 );
 
