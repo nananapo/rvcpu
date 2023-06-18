@@ -40,11 +40,10 @@ typedef enum reg [3:0] {
 } alum_exe_type;
 
 typedef enum reg [1:0] {
-    // WB_X    = 2'd0,
-    WB_ALU  = 2'd0,
-    WB_MEM  = 2'd1,
-    WB_PC   = 2'd2,
-    WB_CSR  = 2'd3
+    WB_ALU,
+    WB_MEM,
+    WB_PC,
+    WB_CSR
 } wb_sel_type;
 
 typedef enum reg [1:0] {
