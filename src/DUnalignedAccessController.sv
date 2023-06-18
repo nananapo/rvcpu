@@ -59,11 +59,15 @@ wire [1:0]  saddr_lb = sdreq.addr[1:0];
 // アドレスの4byte アラインされている形
 wire [31:0] saddr_aligned = {sdreq.addr[31:2], 2'b00};
 
+wire [31:0] swdata = sdreq.wdata;
+wire        sis_b = sdreq.wmask == SIZE_B;
+wire        sis_h = sdreq.wmask == SIZE_H;
+wire        sis_w = sdreq.wmask == SIZE_W;
+
 // このstore命令はloadする必要があるか
-wire require_load = (sdreq.wmask != SIZE_W || saddr_lb != 2'b00);
+wire require_load = (!sis_w || saddr_lb != 2'b00);
 // この命令は2回loadする必要があるか
-wire is_load_twice = (sdreq.wmask == SIZE_W && saddr_lb != 2'b00) ||
-                     (sdreq.wmask == SIZE_H && (saddr_lb == 2'd2 || saddr_lb == 2'd3));
+wire is_load_twice = (sis_w && saddr_lb != 2'b00) || (sis_h && saddr_lb == 2'd3);
 
 reg [31:0]  saved_rdata1;
 reg [31:0]  saved_rdata2;
@@ -115,20 +119,32 @@ always @(posedge clk) begin
         case (saddr_lb)
         2'd0: begin
             load_result  <= saved_rdata1;
+            store_wdata1 <= {saved_rdata1[31:16], // アラインされたw命令はloadしないので無視
+                             sis_b ? saved_rdata1[15:8] : swdata[15:8], // 2byte目はb命令でなければ書き込む
+                             swdata[7:0]}; // 1byteは必ず書き込む
         end
         2'd1: begin
-            store_wdata2 <= {saved_rdata2[31:8], sdreq.wdata[31:24]};
-            store_wdata1 <= {sdreq.wdata[23:0], saved_rdata1[7:0]};
+            store_wdata2 <= {saved_rdata2[31:8],
+                             swdata[31:24]}; // 2回書き込むときは必ずw命令
+            store_wdata1 <= {!sis_w ? saved_rdata1[31:24] : swdata[23:16], // 3byte目はw命令なら書き込む
+                             sis_b  ? saved_rdata1[23:16] : swdata[15:8],  // 2byte目はb命令でなければ書き込む
+                             swdata[7:0], // 1byteは必ず書き込む
+                             saved_rdata1[7:0]};
             load_result  <= {saved_rdata2[7:0], saved_rdata1[31:8]};
         end
         2'd2: begin
-            store_wdata2 <= {saved_rdata2[31:16], sdreq.wdata[31:16]};
-            store_wdata1 <= {sdreq.wdata[15:0], saved_rdata1[15:0]};
+            store_wdata2 <= {saved_rdata2[31:16],
+                             swdata[31:16]}; // 2回書き込むときは必ずw命令
+            store_wdata1 <= {sis_b ? saved_rdata1[31:24] : swdata[15:8], // 2byte目はb命令でなければ書き込む
+                             swdata[7:0], // 1byteは必ず書き込む
+                             saved_rdata1[15:0]};
             load_result  <= {saved_rdata2[15:0], saved_rdata1[31:16]};
         end
         2'd3: begin
-            store_wdata2 <= {saved_rdata2[31:24], sdreq.wdata[31:8]};
-            store_wdata1 <= {sdreq.wdata[7:0], saved_rdata1[23:0]};
+            store_wdata2 <= {saved_rdata2[31:24],
+                             sis_w  ? swdata[31:16] : saved_rdata2[23:8], // 4, 3byte目はw命令なら書き込む
+                             !sis_b ? swdata[15:8]  : saved_rdata2[7:0]}; // 2byte目はb命令でなければ書き込む
+            store_wdata1 <= {swdata[7:0], saved_rdata1[23:0]}; // 1byteは必ず書き込む
             load_result  <= {saved_rdata2[23:0], saved_rdata1[31:24]};
         end
         endcase
