@@ -93,7 +93,7 @@ always @(posedge clk) begin
     end
     LOAD_VALID: begin
         if (memresp.valid) begin
-            state <= is_load_twice ? LOAD_READY2 : LOAD_END;
+            state <= statetype'(is_load_twice ? LOAD_READY2 : LOAD_END);
             saved_rdata1 <= memresp.rdata;
         end
     end
@@ -109,7 +109,7 @@ always @(posedge clk) begin
         end
     end
     LOAD_END: begin
-        state <= sdreq.wen ? STORE_READY : LOAD_PUSH;
+        state <= statetype'(sdreq.wen ? STORE_READY : LOAD_PUSH);
 
         // storeの準備, loadの結果準備
         case (saddr_lb)
@@ -138,12 +138,12 @@ always @(posedge clk) begin
         state <= IDLE;
     end
     STORE_CHECK: begin
-        state <= require_load ? LOAD_READY : STORE_READY;
+        state <= statetype'(require_load ? LOAD_READY : STORE_READY);
         store_wdata1 <= sdreq.wdata; // すぐにSTORE_READYに行く場合のwdataの準備
     end
     STORE_READY: begin
         if (memreq.ready) begin
-            state <= is_load_twice ? STORE_READY2 : IDLE;
+            state <= statetype'(is_load_twice ? STORE_READY2 : IDLE);
         end
     end
     STORE_READY2: begin
@@ -154,7 +154,7 @@ always @(posedge clk) begin
     default/*IDLE*/: begin
         sdreq <= dreq;
         if (dreq.valid) begin
-            state <= dreq.wen ? STORE_CHECK : LOAD_READY;
+            state <= statetype'(dreq.wen ? STORE_CHECK : LOAD_READY);
         end
     end
     endcase
