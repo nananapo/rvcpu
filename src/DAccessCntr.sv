@@ -50,9 +50,9 @@ end
 
 // LOADの場合、
 // 4byteアラインされているなら、4クロック以上
-//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_END
+//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_END -> LOAD_PUSH
 // されていないなら、6クロック以上
-//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_READY2 -> LOAD_VALID2 -> LOAD_END
+//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_READY2 -> LOAD_VALID2 -> LOAD_END -> LOAD_PUSH
 
 // 下位2ビット
 wire [1:0]  saddr_lb = sdreq.addr[1:0];

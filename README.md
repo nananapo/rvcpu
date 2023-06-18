@@ -39,6 +39,9 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
 
 ## 2023/05/22? ~ 今
 
+TODO  
+https://github.com/users/nananapo/projects/1/views/2
+
 変更点
 * IFステージを消して、キューにフェッチした命令を入れていくモジュールを作成した
 * 2bit分岐予測器を作成した
@@ -48,6 +51,18 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
 * kanata log formatに対応(log/convert2kanata.py)し、Konataでパイプラインの状態を見れるようにした
 * ログを読みやすくするスクリプトを作成した (log/convert2humanreadable.py)
 * CoreMarkを動作させた
+
+
+|  命令  |  サイクル数  |
+| ---- | ---- |
+| mret | 2 |
+| sret | 2 |
+| store | 3 or 7 or 9 以上 |
+| load | 4 or 6 以上 |
+| mul | 32 |
+| div | 32 |
+| rem | 32 |
+| その他 | 1 |
 
 簡単な図
 ```txt
