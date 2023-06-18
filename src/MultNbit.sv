@@ -13,10 +13,11 @@ module MultNbit #(
     output reg signed [SIZE*2-1:0]  product         // 積
 );
 
-localparam STATE_IDLE   = 0;
-localparam STATE_WAIT   = 1;
+typedef enum reg { 
+    IDLE, WAIT
+} statetype;
 
-reg state = STATE_IDLE;
+statetype state = IDLE;
 
 reg result_is_minus = 0;
 
@@ -44,14 +45,14 @@ MultUnsignedNbit #(
 
 always @(posedge clk) begin
     case (state)
-        STATE_IDLE: begin
+        IDLE: begin
             if (start) begin
-                state               <= STATE_WAIT;
+                state               <= WAIT;
                 result_is_minus     <= is_signed && ($signed(multiplier) < $signed({SIZE{1'b0}})) != ($signed(multiplicand) < $signed({SIZE{1'b0}}));
             end
         end
-        STATE_WAIT:
-            if (valid) state <= STATE_IDLE;
+        WAIT:
+            if (valid) state <= IDLE;
     endcase
 end
 

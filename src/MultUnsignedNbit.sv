@@ -12,41 +12,41 @@ module MultUnsignedNbit #(
     output reg [SIZE*2-1:0] product         // 積
 );
 
-localparam STATE_IDLE   = 0;
-localparam STATE_MULT   = 1;
-localparam STATE_END    = 2;
+typedef enum reg [1:0] { 
+    IDLE, EXECUTE, DONE
+} statetype;
 
-reg [1:0] state = STATE_IDLE;
+statetype state = IDLE;
 
 reg [9:0] count = 0;
 
 reg [SIZE*2-1:0] save_multiplicand;
 reg [SIZE-1:0] save_multiplier;
 
-assign ready = state == STATE_IDLE;
-assign valid = state == STATE_END;
+assign ready = state == IDLE;
+assign valid = state == DONE;
 
 always @(posedge clk) begin
     case (state)
-        STATE_IDLE: begin
+        IDLE: begin
             if (start) begin
-                state               <= STATE_MULT;
+                state               <= EXECUTE;
                 save_multiplicand   <= {{SIZE{1'b0}}, multiplicand};
                 save_multiplier     <= multiplier;
                 product             <= 0;
                 count               <= 0;
             end
         end
-        STATE_MULT: begin
+        EXECUTE: begin
             if (count == SIZE - 1)
-                state <= STATE_END;
+                state <= DONE;
             if (save_multiplier[0] == 1)
                 product <= product + save_multiplicand;
             save_multiplicand   <= save_multiplicand << 1;
             save_multiplier     <= save_multiplier >> 1; 
             count               <= count + 1;
         end
-        default: state <= STATE_IDLE;
+        default: state <= IDLE;
     endcase
 end
 

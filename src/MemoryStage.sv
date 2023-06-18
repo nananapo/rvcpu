@@ -29,12 +29,12 @@ module MemoryStage(
 `include "include/core.sv"
 `include "include/memoryinterface.sv"
 
-// TODO enumにする
-localparam STATE_WAIT               = 0;
-localparam STATE_WAIT_READY         = 1;
-localparam STATE_WAIT_READ_VALID    = 2;
+typedef enum reg [1:0]
+{
+    IDLE, WAIT_READY, WAIT_VALID 
+} statetype;
 
-reg [1:0]   state       = STATE_WAIT;
+statetype state = IDLE;
 
 wire [31:0]     pc          = mem_pc;
 wire [31:0]     inst        = mem_inst;
@@ -54,10 +54,10 @@ wire men_type_type mem_wen  = men_type_type'(!mem_valid ? MEN_X :
 wire sizetype mem_size = ctrl.mem_size;
 
 wire is_store   = mem_wen == MEN_S;
-wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU; // || mem_wen == MEN_AMOSWAP_W_AQRL;
+wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU;
 
 // TODO いずれwireではなくdreq, drespに置き換える
-wire        memu_cmd_start  = state == STATE_WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
+wire        memu_cmd_start  = state == WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
 wire        memu_cmd_write  = is_store;
 wire        memu_cmd_ready;
 wire        memu_valid;
@@ -76,7 +76,7 @@ assign dreq.wmask       = memu_wmask;
 assign memu_rdata       = dresp.rdata;
 
 assign memory_unit_stall = mem_valid && 
-                            (state != STATE_WAIT || (may_start_m && mem_wen != MEN_X));
+                            (state != IDLE || (may_start_m && mem_wen != MEN_X));
 
 reg [31:0]  saved_mem_rdata;
 
@@ -118,43 +118,35 @@ end
 
 always @(posedge clk) begin
     if (pipeline_flush || !mem_valid || mem_wen == MEN_X) begin
-        state           <= STATE_WAIT;
+        state           <= IDLE;
         is_cmd_executed <= 0;
         replace_mem_wen <= MEN_X;
     end else case (state)
-        STATE_WAIT: begin
-            replace_mem_wen <= mem_wen;
-            if (mem_wen != MEN_X)
-                state <= STATE_WAIT_READY; // ready待ちへ
-        end
-        STATE_WAIT_READY: begin
+        WAIT_READY: begin
             if (memu_cmd_ready) begin
                 if (is_store) begin
-                    state           <= STATE_WAIT;
+                    state           <= IDLE;
                     replace_mem_wen <= MEN_X;
                     is_cmd_executed <= 1;
                 end else begin
-                    state           <= STATE_WAIT_READ_VALID;
+                    state           <= WAIT_VALID;
                 end
             end
         end
-        STATE_WAIT_READ_VALID: begin
+        WAIT_VALID: begin
             if (memu_valid) begin
                 saved_mem_rdata <= memu_rdata;
-                /* TODO
-                if (mem_wen == MEN_AMOSWAP_W_AQRL) begin
-                    state           <= STATE_WAIT_READY;
-                    is_cmd_executed <= 0;
-                    replace_mem_wen <= MEN_S;
-                    replace_mem_size <= MEN_W; // Xと同じなのでやる必要がないのでは？
-                end else 
-                */
                 begin
-                    state           <= STATE_WAIT;
+                    state           <= IDLE;
                     is_cmd_executed <= 1;
                     replace_mem_wen <= MEN_X;
                 end
             end
+        end
+        default/*IDLE*/: begin
+            replace_mem_wen <= mem_wen;
+            if (mem_wen != MEN_X)
+                state <= WAIT_READY; // ready待ちへ
         end
     endcase
 end
