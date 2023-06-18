@@ -175,7 +175,7 @@ assign output_cmd_ready     =   is_uart_tx_addr_saved ? uart_tx_cmd_ready :
                                 mem_cmd_ready;
 assign output_rdata         =   is_uart_tx_addr_saved ? uart_tx_rdata : 
                                 is_uart_rx_addr_saved ? uart_rx_rdata : 
-                                is_mtimereg_addr      ? mtimereg_rdata :
+                                is_mtimereg_addr_saved? mtimereg_rdata :
                                 mem_rdata;
 assign output_rdata_valid   =   is_uart_tx_addr_saved ? uart_tx_rdata_valid : 
                                 is_uart_rx_addr_saved ? uart_rx_rdata_valid : 
