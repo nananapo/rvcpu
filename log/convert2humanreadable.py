@@ -1,5 +1,11 @@
 from logutil import *
 from copy import deepcopy
+import sys
+
+EXCLUDE_OTHER = False
+
+if len(sys.argv) > 1 and sys.argv[0] == "-e":
+    EXCLUDE_OTHER = True
 
 try:
     for (clock, numberData, textData) in readClockCycle():
@@ -51,13 +57,12 @@ try:
                 print(key, " " * (maxlen - len(key)), ":", value)
             for key, value in texts.items():
                 print(key, " " * (maxlen - len(key)), ":", value)
-
-        print("other", "-" * 20)
-        for key, (validnum, value, f) in num_others.items():
-            print(key, " " * (maxlen - len(key)), ":", value)
-        for key, value in text_others.items():
-            print(key, " " * (maxlen - len(key)), ":", value)
-        
+        if EXCLUDE_OTHER:
+            print("other", "-" * 20)
+            for key, (validnum, value, f) in num_others.items():
+                print(key, " " * (maxlen - len(key)), ":", value)
+            for key, value in text_others.items():
+                print(key, " " * (maxlen - len(key)), ":", value)
         print()
 except:
     exit(-1)
