@@ -547,9 +547,11 @@ always @(negedge clk) begin
     $display("data,core.mem_stall,b,%b", mem_stall);
     $display("data,core.gp,h,%b", gp);
     $display("data,core.exit,b,%b", exit);
+    `ifdef PRINT_REG
     for (reg_i = 1; reg_i < 32; reg_i = reg_i + 1) begin
         $display("data,core.regfile[%d],h,%b", reg_i, regfile[reg_i]);
     end
+    `endif
 end
 `endif
 
