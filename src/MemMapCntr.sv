@@ -143,19 +143,27 @@ Memory
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("data,memorymapcontroller.start,b,%b", input_cmd_start);
-    $display("data,memorymapcontroller.addr,h,%b", input_addr);
-    $display("data,memorymapcontroller.write,b,%b", input_cmd_write);
-    $display("data,memorymapcontroller.wdata,h,%b", input_wdata);
-    $display("data,memorymapcontroller.rdata.output,h,%b", output_rdata);
-    // $display("data,memorymapcontroller.rdata.uart_tx,h,%b", uart_tx_rdata);
-    // $display("data,memorymapcontroller.rdata.uart_rx,h,%b", uart_rx_rdata);
-    // $display("data,memorymapcontroller.is_uart_tx_addr,b,%b", is_uart_tx_addr);
-    // $display("data,memorymapcontroller.uart_tx_addr,h,%b", uart_tx_addr);
-    // $display("data,memorymapcontroller.is_uart_rx_addr,b,%b", is_uart_rx_addr);
-    // $display("data,memorymapcontroller.uart_rx_addr,h,%b", uart_rx_addr);
-    // $display("data,memorymapcontroller.is_mtimereg_addr,b,%b", is_mtimereg_addr);
-    // $display("data,memorymapcontroller.mtimereg_addr,h,%b", mtimereg_addr);
+    $display("data,memmapcntr.start,b,%b", input_cmd_start);
+    $display("data,memmapcntr.addr,h,%b", input_addr);
+    $display("data,memmapcntr.write,b,%b", input_cmd_write);
+    $display("data,memmapcntr.wdata,h,%b", input_wdata);
+    $display("data,memmapcntr.rdata.output,h,%b", output_rdata);
+    // $display("data,memmapcntr.rdata.uart_tx,h,%b", uart_tx_rdata);
+    // $display("data,memmapcntr.rdata.uart_rx,h,%b", uart_rx_rdata);
+    // $display("data,memmapcntr.is_uart_tx_addr,b,%b", is_uart_tx_addr);
+    // $display("data,memmapcntr.uart_tx_addr,h,%b", uart_tx_addr);
+    // $display("data,memmapcntr.is_uart_rx_addr,b,%b", is_uart_rx_addr);
+    // $display("data,memmapcntr.uart_rx_addr,h,%b", uart_rx_addr);
+    // $display("data,memmapcntr.is_mtimereg_addr,b,%b", is_mtimereg_addr);
+    // $display("data,memmapcntr.mtimereg_addr,h,%b", mtimereg_addr);
+    // $display("data,memmapcntr.saved_addr,h,%b", saved_addr);
+    // $display("data,memmapcntr.uart_tx_rdata,h,%b", uart_tx_rdata);
+    // $display("data,memmapcntr.uart_rx_rdata,h,%b", uart_rx_rdata);
+    // $display("data,memmapcntr.mtimereg_rdata,h,%b", mtimereg_rdata);
+    // $display("data,memmapcntr.mem_rdata,h,%b", mem_rdata);
+    // $display("data,memmapcntr.is_uart_tx_addr_saved,b,%b", is_uart_tx_addr_saved);
+    // $display("data,memmapcntr.is_uart_rx_addr_saved,b,%b", is_uart_rx_addr_saved);
+    // $display("data,memmapcntr.is_mtimereg_addr_saved,b,%b", is_mtimereg_addr_saved);
 end
 `endif
 
