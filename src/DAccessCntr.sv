@@ -1,6 +1,6 @@
 `include "include/memoryinterface.sv"
 
-module DUnalignedAccessController (
+module DAccessCntr (
     input wire              clk,
     inout wire DRequest     dreq,
     inout wire DResponse    dresp,

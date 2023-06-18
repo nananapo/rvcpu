@@ -15,7 +15,7 @@ FILES = test.sv \
 		MemoryMapped_MachineTimeRegister.sv \
 		MemoryMappedIO_Uart_rx.sv \
 		MemoryMappedIO_Uart_tx.sv \
-		DUnalignedAccessController.sv \
+		DAccessCntr.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
 		CSRStage.sv \

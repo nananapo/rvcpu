@@ -155,8 +155,8 @@ InstQueue #() instqueue (
     .updateio(updateio)
 );
 
-// MEM Stage <-> DUnalignedAccessController <-> MemCmdCntr
-DUnalignedAccessController #() dunalignedaccesscontroller (
+// MEM Stage <-> DAccessCntr <-> MemCmdCntr
+DAccessCntr #() dunalignedaccesscontroller (
     .clk(clkConstrained),
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),

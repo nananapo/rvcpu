@@ -57,7 +57,7 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
                  |
         ----MemCmdCntr-------
         |                   |
-    InstQueue   DUnalignedAccessController
+    InstQueue           DAccessCntr
         |                   |
 Core---------------------------------
 |       |                   |
