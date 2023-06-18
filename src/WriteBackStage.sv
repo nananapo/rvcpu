@@ -89,7 +89,6 @@ always @(posedge clk) begin
         $display("data,wbstage.wb_addr,d,%b", ctrl.wb_addr);
         $display("data,wbstage.wb_data,h,%b", wb_data);
         $display("data,wbstage.inst_count,d,%b", inst_count);
-        // $display("data,wbstage.exit,%b", exit);
     end
 end
 `endif

@@ -17,18 +17,6 @@ localparam [31:0] DELAY_FRAMES = 2;
 localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
 `endif
 
-/*
-initial begin
-    rdata_valid = 0;
-    rdata = 0;
-
-    #16 rdata = "1";
-    #16 rdata_valid = 1;
-    #17 rdata_valid = 0;
-end
-endmodule
-*/
-
 localparam  HALF_DELAY_WAIT = (DELAY_FRAMES / 2);
 
 localparam RX_STATE_IDLE        = 0;
