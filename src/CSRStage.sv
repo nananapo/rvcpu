@@ -219,6 +219,7 @@ reg [31:0] medeleg = 0;
 // past M-mode to HS-mode
 // 
 // 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
+reg [15:0] mideleg_custom = 0;
 wire mideleg_sgeip  = 0; // any guest external interruptsをサポートする
 reg mideleg_meip    = 0;
 wire mideleg_vseip  = 0; // hypervisor extensionをサポートしない
@@ -230,7 +231,8 @@ reg mideleg_msip    = 0;
 wire mideleg_vssip  = 0; // hypervisor extensionをサポートしない
 reg mideleg_ssip    = 0;
 wire [31:0] mideleg = {
-    19'b0,
+    mideleg_custom,
+    3'b0,
     mideleg_sgeip,
     mideleg_meip,
     mideleg_vseip,
@@ -245,7 +247,6 @@ wire [31:0] mideleg = {
     mideleg_ssip,
     1'b0
 };
-
 
 reg mie_meie = 0; // external interrupt
 reg mie_seie = 0;
@@ -522,7 +523,7 @@ if (csr_valid) begin
     end else begin
         // pending registerを更新する
         mip_mtip <= reg_mtime >= reg_mtimecmp;
-        // 例外、mret, sretを処理する
+        // mret, sretを処理する
         case (csr_cmd)
             // MRET, SRET
             // 3.1.6.1
@@ -560,6 +561,7 @@ if (csr_valid) begin
             end
             ADDR_MEDELEG: medeleg <= wdata;
             ADDR_MIDELEG: begin
+                mideleg_custom <= wdata[31:16];
                 mideleg_meip <= wdata[11];
                 mideleg_seip <= wdata[9];
                 mideleg_mtip <= wdata[7];
