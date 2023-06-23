@@ -142,7 +142,7 @@ typedef enum reg [1:0] {
 // 現在のモード
 modetype mode = M_MODE;
 
-reg mstatus_sd   = 0;
+wire mstatus_sd  = 0;
 wire mstatus_tsr = 0; // 3.1.6.5 サポートしない。1ならS-modeでSRETするとillegal instruction exceptionにする
 wire mstatus_tw  = 0; // 3.1.6.5 WFI instruction をサポートしないのでサポートしない
 wire mstatus_tvm = 0; // 3.1.6.5 SFENCE.VMA or SINVAL.VMA をサポートしないのでサポートしない
@@ -218,29 +218,29 @@ reg [31:0] medeleg = 0;
 // interrupts) is also read-only one. VS-level interrupts and guest external interrupts are always delegated
 // past M-mode to HS-mode
 // 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
-// reg mideleg_sgeip = 0; // any guest external interruptsをサポートする
-reg mideleg_meip = 0;
-// reg mideleg_vseip = 0; // hypervisor extensionをサポートしない
-reg mideleg_seip = 0;
-reg mideleg_mtip = 0;
-// reg mideleg_vstip = 0; // hypervisor extensionをサポートしない
-reg mideleg_stip = 0;
-reg mideleg_msip = 0;
-// reg mideleg_vssip = 0; // hypervisor extensionをサポートしない
-reg mideleg_ssip = 0;
+wire mideleg_sgeip  = 0; // any guest external interruptsをサポートする
+reg mideleg_meip    = 0;
+wire mideleg_vseip  = 0; // hypervisor extensionをサポートしない
+reg mideleg_seip    = 0;
+reg mideleg_mtip    = 0;
+wire mideleg_vstip  = 0; // hypervisor extensionをサポートしない
+reg mideleg_stip    = 0;
+reg mideleg_msip    = 0;
+wire mideleg_vssip  = 0; // hypervisor extensionをサポートしない
+reg mideleg_ssip    = 0;
 wire [31:0] mideleg = {
     19'b0,
-    1'b0, // mideleg_sgeip,
+    mideleg_sgeip,
     mideleg_meip,
-    1'b0, // mideleg_vseip,
+    mideleg_vseip,
     mideleg_seip,
     1'b0,
     mideleg_mtip,
-    1'b0, // mideleg_vstip,
+    mideleg_vstip,
     mideleg_stip,
     1'b0,
     mideleg_msip,
-    1'b0, // mideleg_vssip,
+    mideleg_vssip,
     mideleg_ssip,
     1'b0
 };
@@ -547,7 +547,6 @@ if (csr_valid) begin
         case (addr)
             // Machine Trap Setup
             ADDR_MSTATUS: begin
-                mstatus_sd   <= wdata[31];
                 mstatus_mpp  <= wdata[12:11];
                 mstatus_spp  <= wdata[8];
                 mstatus_mpie <= wdata[7];
@@ -585,7 +584,6 @@ if (csr_valid) begin
             ADDR_MTVAL2: mtvec2 <= wdata;
             // Supervisor Trap Setup
             ADDR_SSTATUS: begin
-                mstatus_sd  <= wdata[31];
                 mstatus_spp <= wdata[8];
                 mstatus_spie<= wdata[5];
                 mstatus_sie <= wdata[1];
