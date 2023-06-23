@@ -311,7 +311,7 @@ wire [31:0] interrupt_cause = (
     32'b0
 );
 wire [31:0] exception_cause = (
-    MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE + mode // ecall
+    MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE + {30'b0, mode} // ecall
 );
 wire [31:0] trap_cause = may_expt ? exception_cause : interrupt_cause;
 
