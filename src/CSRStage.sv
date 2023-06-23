@@ -217,6 +217,7 @@ reg [31:0] medeleg = 0;
 // implemented (GEILEN is nonzero), bit 12 of mideleg (corresponding to supervisor-level guest external
 // interrupts) is also read-only one. VS-level interrupts and guest external interrupts are always delegated
 // past M-mode to HS-mode
+// 
 // 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
 wire mideleg_sgeip  = 0; // any guest external interruptsをサポートする
 reg mideleg_meip    = 0;
@@ -315,20 +316,9 @@ wire [31:0] mtvec_addr = mtvec[1:0] == XTVEC_DIRECT ? mtvec : {mtvec[31:2], 2'b0
 wire [31:0] stvec_addr = stvec[1:0] == XTVEC_DIRECT ? stvec : {stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 
 // 3.1.6.1
+// 3.1.9
 wire global_mie = mode == M_MODE ? mstatus_mie : 1;
 wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
-
-// trapが起こりそうかどうか
-wire may_expt = (
-    csr_cmd == CSR_ECALL // ecall
-);
-
-wire may_interrupt = (
-    mip_meip || mip_seip ||
-    mip_mtip || mip_stip ||
-    mip_msip || mip_ssip
-);
-wire may_trap = may_expt || may_interrupt;
 
 // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
@@ -347,12 +337,26 @@ wire [31:0] exception_cause = (
 );
 wire [31:0] trap_cause = may_expt ? exception_cause : interrupt_cause;
 
-wire interrupt_to_mmode = mideleg[{1'b0,interrupt_cause[3:0]}] == 1;
-wire exception_to_mmode = (
-    1 // ecallはデフォルトでM-modeになる
-);
-wire trap_to_mmode = may_expt ? exception_to_mmode : interrupt_to_mmode;
+// 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
+// S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
+wire interrupt_to_mmode = mideleg[interrupt_cause[4:0]] == 0;
+wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
+wire trap_to_mmode = mode == M_MODE || (may_expt ? exception_to_mmode : interrupt_to_mmode);
 
+// trapが起こりそうかどうか
+wire may_expt = (
+    csr_cmd == CSR_ECALL // ecall
+);
+wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
+(
+    (mip_meip && mie_meie) ||
+    (mip_seip && mie_seie) ||
+    (mip_mtip && mie_mtie) ||
+    (mip_stip && mie_stie) ||
+    (mip_msip && mie_msie) ||
+    (mip_ssip && mie_ssie)
+);
+wire may_trap = may_expt || may_interrupt;
 
 wire [11:0] addr = csr_imm_i[11:0];
 
@@ -517,7 +521,7 @@ if (csr_valid) begin
         end
     end else begin
         // pending registerを更新する
-        mip_mtip <= global_mie && mie_mtie && (reg_mtime >= reg_mtimecmp);
+        mip_mtip <= reg_mtime >= reg_mtimecmp;
         // 例外、mret, sretを処理する
         case (csr_cmd)
             // MRET, SRET
