@@ -25,636 +25,408 @@ module CSRStage #(
 
 `include "include/core.sv"
 
-wire [31:0] pc          = csr_pc;
+wire [31:0]  pc         = csr_pc;
 wire iidtype inst_id    = csr_inst_id;
-wire [2:0]  csr_cmd     = csr_ctrl.csr_cmd;
-wire [31:0] op1_data    = csr_op1_data;
+wire [2:0]   csr_cmd    = csr_ctrl.csr_cmd;
+wire [31:0]  op1_data   = csr_op1_data;
 
+// trap_vectorはレジスタ経由で渡す
 reg [31:0] trap_vector;
-assign csr_trap_vector   = trap_vector;
+assign csr_trap_vector  = trap_vector;
 
-// モード
-localparam MODE_MACHINE     = 2'b11;
-//localparam HYPERVISOR_MODE  = 2'b10;
-localparam MODE_SUPERVISOR  = 2'b01;
-localparam MODE_USER        = 2'b00;
+// Table 3.6
+                                                                                           // I ECODE Description 
+localparam MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT = 32'b10000000_00000000_00000000_00000001; // 1 1     Supervisor software interrupt
+localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT    = 32'b10000000_00000000_00000000_00000011; // 1 3     Machine software interrupt
+localparam MCAUSE_SUPERVISOR_TIMER_INTERRUPT    = 32'b10000000_00000000_00000000_00000101; // 1 5     Supervisor timer interrupt
+localparam MCAUSE_MACHINE_TIMER_INTERRUPT       = 32'b10000000_00000000_00000000_00000111; // 1 7     Machine timer interrupt
+localparam MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT = 32'b10000000_00000000_00000000_00001001; // 1 9     Supervisor external interrupt
+localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT    = 32'b10000000_00000000_00000000_00001011; // 1 11    Machine external interrupt
+                                                            // I ECODE Description 
+localparam MCAUSE_INSTRUCTION_ADDRESS_MISALIGNED= 32'b0000; // 0 0     Instruction address misaligned
+localparam MCAUSE_INSTRUCTION_ACCESS_FAULT      = 32'b0001; // 0 1     Instruction access fault
+localparam MCAUSE_ILLEGAL_INSTRUCTION           = 32'b0010; // 0 2     Illegal instruction
+localparam MCAUSE_BREAKPOINT                    = 32'b0011; // 0 3     Breakpoint
+localparam MCAUSE_LOAD_ADDRESS_MISALIGNED       = 32'b0100; // 0 4     Load address misaligned
+localparam MCAUSE_LOAD_ACCESS_FAULT             = 32'b0101; // 0 5     Load access fault
+localparam MCAUSE_STORE_AMO_ADDRESS_MISALIGNED  = 32'b0110; // 0 6     Store/AMO address misaligned
+localparam MCAUSE_STORE_AMO_ACCESS_FAULT        = 32'b0111; // 0 7     Store/AMO access fault
+localparam MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE  = 32'b1000; // 0 8     Environment call from U-mode
+localparam MCAUSE_ENVIRONMENT_CALL_FROM_S_MODE  = 32'b1001; // 0 9     Environment call from S-mode
+localparam MCAUSE_ENVIRONMENT_CALL_FROM_M_MODE  = 32'b1011; // 0 11    Environment call from M-mode
+localparam MCAUSE_INSTRUCTION_PAGE_FAULT        = 32'b1100; // 0 12    Instruction page fault
+localparam MCAUSE_LOAD_PAGE_FAULT               = 32'b1101; // 0 13    Load page fault
+localparam MCAUSE_STORE_AMO_PAGE_FAULT          = 32'b1111; // 0 15    Store/AMO page fault
+
+typedef enum reg [1:0] {
+    M_MODE = 2'b11, // Machine Mode
+    H_MODE = 2'b10, // Hypervisor Mode
+    S_MODE = 2'b01, // Supervisor Mode
+    U_MODE = 2'b00  // User Mode
+} modetype;
+
+typedef enum reg [11:0] { 
+    // Counters and Timers
+    ADDR_CYCLE      = 12'hc00,
+    ADDR_TIME       = 12'hc01,
+    // ADDR_INSTRET    = 12'hc02, // read-only 0
+    // ADDR_HPMCOUNTER~= 12'hc03 ~ 12'hc1f, // read-only 0 
+    ADDR_CYCLEH     = 12'hc80,
+    ADDR_TIMEH      = 12'hc81,
+    // ADDR_INSTRETH    = 12'hc82,
+    // ADDR_HPMCOUNTERH~= 12'hc83 ~ 12'hc9f, // read-only 0 
+
+    // Supervisor Trap Setup
+    ADDR_SSTATUS    = 12'h100,
+    ADDR_SIE        = 12'h104,
+    ADDR_STVEC      = 12'h105,
+    ADDR_SCOUNTEREN = 12'h106, // 4.1.5 cycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
+    // Supervisor Configuration
+    // ADDR_SENVCFG    = 12'h10a, // read-only 0
+    // Supervisor Trap Handling
+    ADDR_SSCRATCH   = 12'h140,
+    ADDR_SEPC       = 12'h141,
+    ADDR_SCAUSE     = 12'h142,
+    ADDR_STVAL      = 12'h143,
+    ADDR_SIP        = 12'h144,
+    // Supervisor Protection and Translation
+    ADDR_SATP       = 12'h180,
+    // Debug/Trace Registers
+    // ADDR_SCONTEXT   = 12'h5a8
+
+    // Machine Information Registers
+    // ADDR_MVENDORID  = 12'hf11, // read-only 0
+    // ADDR_MARCHID    = 12'hf12, // read-only 0
+    // ADDR_MIMPID     = 12'hf13, // read-only 0
+    // ADDR_MHARTID    = 12'hf14, // read-only 0
+    // ADDR_MCONFIGPTR = 12'hf15, // read-only 0
+    // Machine Trap Setup
+    ADDR_MSTATUS    = 12'h300,
+    ADDR_MISA       = 12'h301, // RV32IM(A)
+    ADDR_MEDELEG    = 12'h302,
+    ADDR_MIDELEG    = 12'h303,
+    ADDR_MIE        = 12'h304,
+    ADDR_MTVEC      = 12'h305,
+    ADDR_MCOUNTEREN = 12'h306,
+    ADDR_MSTATUSH   = 12'h310,
+    // Machine Trap Handling
+    ADDR_MSCRATCH   = 12'h340, // 自由
+    ADDR_MEPC       = 12'h341, // M-modeにトラップするとき、仮想アドレスに設定する
+    ADDR_MCAUSE     = 12'h342, // trapするときに書き込む。上位1bitでInterruptかを判断する
+    ADDR_MTVAL      = 12'h343, // exceptionなら実装によって書き込まれる。だが、read-only zeroでもよい
+    ADDR_MIP        = 12'h344, // 3.1.9
+    // ADDR_MTINST     = 12'h34a, // read-only 0 // 8.6.3に書いてある?
+    // ADDR_MTVAL2     = 12'h34b, // read-only 0
+    // Machine Configuration
+    // ADDR_MENVCFG    = 12'h30A, // 未確認
+    // ADDR_MENVCFGH   = 12'h31A, // 未確認
+    // ADDR_MSECCFG    = 12'h747, // 未確認
+    // ADDR_MSECCFGH   = 12'h757, // 未確認
+    // Machine Memory Protection
+    // ADDR_PMPADDR0   = 12'h3B0, // read-only 0 // 実装しない
+    // ADDR_PMPCFG0    = 12'h3A0, // read-only 0 // 実装しない
+    // Machine Non-Maskable Interrupt Handling
+    // 未確認
+    // Machine Counter/Timers
+    ADDR_MCYCLE     = 12'hb00,
+    ADDR_MINSTRET   = 12'hb02,
+    ADDR_MCYCLEH    = 12'hb80,
+    ADDR_MINSTRETH  = 12'hb82
+} csr_addr_type;
+
+typedef enum reg [1:0] { 
+    XTVEC_DIRECT   = 2'b00,
+    XTVEC_VECTORED = 2'b01
+} xtvec_mode_type;
 
 // 現在のモード
-reg [1:0]   mode = MODE_MACHINE;
+modetype mode = M_MODE;
 
-// Counters and Timers
-localparam CSR_ADDR_CYCLE       = 12'hc00;
-localparam CSR_ADDR_TIME        = 12'hc01;
-localparam CSR_ADDR_CYCLEH      = 12'hc80;
-localparam CSR_ADDR_TIMEH       = 12'hc81;
-// TODO? INSTRET
+reg mstatus_sd   = 0;
+wire mstatus_tsr = 0; // 3.1.6.5 サポートしない。1ならS-modeでSRETするとillegal instruction exceptionにする
+wire mstatus_tw  = 0; // 3.1.6.5 WFI instruction をサポートしないのでサポートしない
+wire mstatus_tvm = 0; // 3.1.6.5 SFENCE.VMA or SINVAL.VMA をサポートしないのでサポートしない
+wire mstatus_mxr = 0; // 3.1.6.3 サポートしない
+wire mstatus_sum = 0; // 3.1.6.3 サポートしない
+wire mstatus_mprv= 0; // 3.1.6.3 サポートしない
+wire [1:0] mstatus_xs = 0; // 3.1.6.6 サポートしない
+wire [1:0] mstatus_fs = 0; // 3.1.6.6 サポートしない
+reg [1:0] mstatus_mpp = M_MODE; // S-modeでtrapしても書き込まれない // 初期値をM-modeにする
+wire [1:0] mstatus_vs = 0; // 3.1.6.6 サポートしない
+reg mstatus_spp  = 0; // S-modeでtrapしたとき、アクティブなモードが書き込まれる
+reg mstatus_mpie = 0; // S-modeでtrapしても書き込まれない
+wire mstatus_ube = 0; // 3.1.6.4 サポートしない
+reg mstatus_spie = 0; // S-modeでtrapした時、sieが書き込まれる
+reg mstatus_mie  = 0; // M-modeでtrapしたとき、クリアされる
+reg mstatus_sie  = 0; // S-modeでtrapしたとき、クリアされる
 
-// Machine Information Registers
-localparam CSR_ADDR_MVENDORID   = 12'hf11;
-localparam CSR_ADDR_MARCHID     = 12'hf12;
-localparam CSR_ADDR_MIMPID      = 12'hf13;
-localparam CSR_ADDR_MHARTID     = 12'hf14;
-localparam CSR_ADDR_MCONFIGPTR  = 12'hf15;
+wire mstatush_mbe = 0; // 3.1.6.4 サポートしない
+wire mstatush_sbe = 0; // 3.1.6.4 サポートしない
 
-wire [31:0] reg_mvendorid   = 32'b0;
-wire [31:0] reg_marchid     = 32'b0;
-wire [31:0] reg_mimpid      = 32'b0;
-wire [31:0] reg_mhartid     = 32'b0;
+wire [31:0] mstatus = {
+    mstatus_sd,
+    8'b0,
+    mstatus_tsr,
+    mstatus_tw,
+    mstatus_tvm,
+    mstatus_mxr,
+    mstatus_sum,
+    mstatus_mprv,
+    mstatus_xs,
+    mstatus_fs,
+    mstatus_mpp,
+    mstatus_vs,
+    mstatus_spp,
+    mstatus_mpie,
+    mstatus_ube,
+    mstatus_spie,
+    1'b0,
+    mstatus_mie,
+    1'b0,
+    mstatus_sie,
+    1'b0
+};
+wire [31:0] sstatus = {
+    mstatus_sd,
+    11'b0,
+    mstatus_mxr,
+    mstatus_sum,
+    1'b0,
+    mstatus_xs,
+    mstatus_fs,
+    2'b0,
+    mstatus_vs,
+    mstatus_spp,
+    1'b0,
+    mstatus_ube,
+    mstatus_spie,
+    3'b0,
+    mstatus_sie,
+    1'b0
+};
+wire [31:0] mstatush = {26'b0, mstatush_mbe, mstatush_sbe, 4'b0};
 
-// Machine Trap Setup
-/*
-基本はマシンモードで処理
-trapは高い特権モードから低い特権モードに遷移することはない
-ただ、同じ特権モードに遷移することはある
+//                   |MXL|   |Extensions                |
+//                     32     ZYXWVUTSRQPONMLKJIHGFEDCBA
+wire [31:0] misa = 32'b01_000_00000000000001000100000001;
 
-3.1.7
-S-modeからM-modeにトラップするとき、
-mpieはmieになる。mieは0になる。mppはSになる(S-modeを表すものになる)
+reg [31:0] medeleg = 0;
+reg [31:0] mideleg = 0;
 
-3.1.7
-mretする。MPPが権限モードyを表しているとする。
-MIEはMPIEに変更される。MIPEは1になる。
-MPPはサポートされてる最も低い権限モードの値に設定される。
-(UがサポートされてたらU、それ以外はM)
-(UではなくSの場合は？)
-MPP!=Mの時、MPRVを0に設定する
+reg mie_meie = 0; // external interrupt
+reg mie_seie = 0;
+reg mie_mtie = 0; // timer interrupt
+reg mie_stie = 0;
+reg mie_msie = 0; // software interrupt
+reg mie_ssie = 0;
 
-3.1.8
-RV32なら、SXL, UXLは32で固定
+wire [31:0] mie = {
+    16'b0, 4'b0,
+    mie_meie, 1'b0,
+    mie_seie, 1'b0,
+    mie_mtie, 1'b0,
+    mie_stie, 1'b0,
+    mie_msie, 1'b0,
+    mie_ssie, 1'b0
+};
+wire [31:0] sie = {
+    16'b0, 6'b0,
+    mie_seie, 3'b0,
+    mie_stie, 3'b0,
+    mie_ssie, 1'b0
+};
 
-3.1.6.3
-MPRVは有効な特権モードを変更する
-MPRV=0:
-    普通。現在のモードのtranslation(ページング？)とプロテクション機構を使う
-MPRV=1:
-    現在のモードがMPPに設定されてるかのように
-    load, storeのアドレスはtranslate & protected。エンディアンも*
-    命令は関係ない
-UモードがサポートされてないならMPRV=read-only 0
+reg [31:0] mtvec = 0;
 
-M->S, U、S->Urにretするとき、mprvは0になる
+reg [31:0] mscratch = 0;
+reg [31:0] mepc     = 0;
+reg [31:0] mcause   = 0;
 
-MXRが有効だと、ReadableだけでなくてExecutableも読めるようになる
-ページベースの仮想メモリじゃないなら意味なし
-*/
-localparam CSR_ADDR_MSTATUS     = 12'h300;
-localparam CSR_ADDR_MISA        = 12'h301;
-localparam CSR_ADDR_MEDELEG     = 12'h302;
-localparam CSR_ADDR_MIDELEG     = 12'h303;
-localparam CSR_ADDR_MIE         = 12'h304;
-localparam CSR_ADDR_MTVEC       = 12'h305;
-localparam CSR_ADDR_MCOUNTEREN  = 12'h306;
-localparam CSR_ADDR_MSTATUSH    = 12'h310;
+reg mip_meip = 0;
+reg mip_seip = 0;
+reg mip_mtip = 0;
+reg mip_stip = 0;
+reg mip_msip = 0;
+reg mip_ssip = 0;
+wire [31:0] mip = {
+    20'b0,
+    mip_meip, 1'b0,
+    mip_seip, 1'b0,
+    mip_mtip, 1'b0,
+    mip_stip, 1'b0,
+    mip_msip, 1'b0,
+    mip_ssip, 1'b0
+};
+wire [31:0] sip = {
+    22'b0,
+    mip_seip, 1'b0,
+    2'b0,
+    mip_stip, 1'b0,
+    2'b0,
+    mip_ssip, 1'b0
+};
 
-reg         reg_mstatus_sd      = 0;
-reg         reg_mstatus_tsr     = 0;
-reg         reg_mstatus_tw      = 0;
-reg         reg_mstatus_tvm     = 0;
-reg         reg_mstatus_mxr     = 0;
-reg         reg_mstatus_sum     = 0;
-reg         reg_mstatus_mprv    = 0;
-reg [1:0]   reg_mstatus_xs      = 0;
-reg [1:0]   reg_mstatus_fs      = 0;
-// S-modeでtrapしても書き込まれない
-reg [1:0]   reg_mstatus_mpp     = MODE_MACHINE; // 初期値をM-modeにする
-reg [1:0]   reg_mstatus_vs      = 0;
-// S-modeでtrapしたとき、アクティブなとモードが書き込まれる
-reg         reg_mstatus_spp     = 0;
-// S-modeでtrapしても書き込まれない
-reg         reg_mstatus_mpie    = 0;
-reg         reg_mstatus_ube     = 0;
-// S-modeでtrapした時、sieが書き込まれる
-reg         reg_mstatus_spie    = 0;
-// M-modeでtrapしたとき、クリアされる
-reg         reg_mstatus_mie     = 0;
-// S-modeでtrapしたとき、クリアされる
-reg         reg_mstatus_sie     = 0;
+reg [31:0] mtinst   = 0;
+reg [31:0] stvec    = 0;
+reg [31:0] sscratch = 0;
+reg [31:0] sepc     = 0;
+reg [31:0] scause   = 0;
+reg [31:0] satp     = 0;
 
-// XLENや実装されている拡張を提供する
-// WARLなので、この実装ではwriteを実装しない(くていいはず?)
-// A, I, M拡張を実装しているのでそのbitを立てている
-//                                   |MXL|0 |Extensions                |
-//                                           ZYXWVUTSRQPONMLKJIHGFEDCBA
-wire [31:0]  reg_misa           = 32'b01_000_00000000000001000100000001;
+// 3.1.7
+// MODE = Direct(0)  : BASE
+// MODE = Vectored(1): BASE + cause * 4
+wire [31:0] mtvec_addr = mtvec[1:0] == XTVEC_DIRECT ? mtvec : {mtvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
+wire [31:0] stvec_addr = stvec[1:0] == XTVEC_DIRECT ? stvec : {stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 
-// サポートしないtrapは0を保持する
-// 1はreadonlyであってはならない。
-// デリゲートできるasynchronous trapはデリゲートされないことも必ずサポートしないといけない
-reg [31:0]  reg_medeleg         = 0;
+// 3.1.6.1
+wire global_mie = mode == M_MODE ? mstatus_mie : 1;
+wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
 
-// サポートしないtrapは0を保持する
-// machine-levelの割り込みに対して1のread-onlyなbitを作ってはいけない
-// それ以外はOK
-reg [31:0]  reg_mideleg         = 0;
+// mtiが起こりそうかどうか
+wire machine_timer_interrupt_active = (mip_mtip && mstatus_mie && mie_mtie);
 
-reg         reg_mie_meie        = 0; // external interrupt、つまり何～？
-reg         reg_mie_seie        = 0;
-reg         reg_mie_mtie        = 0; // 7 timer interrupt
-reg         reg_mie_stie        = 0;
-reg         reg_mie_msie        = 0; // software interrupt、つまりecall?
-reg         reg_mie_ssie        = 0;
+// trapが起こりそうかどうか
+wire may_expt = (
+    csr_cmd == CSR_ECALL // ecall
+);
 
-reg [31:0]  reg_mtvec           = 0;
-
-//reg         reg_mcounteren; // read-only zeroでよい
-
-reg         reg_mstatush_mbe    = 0;
-reg         reg_mstatush_sbe    = 0;
-
-// Machine Trap Handling
-/*
-3.1.9
-割り込みiがM-modeにトラップする条件(全部trueのとき)
-(a) 今のモードがMで、mstatusのMIEがsetされてる(1?) / または、M-modeより低いモード
-(b) mipとmieでiがsetされている
-(c) midelegがあるなら、iがmidelegに設定されていない
-
-3.1.14
-M-modeにトラップするとき、mepcにはtrapが発生した時の(仮想)アドレスを設定する
-それ以外では書かない、ソフトウェアも書き込む
--> ecallで書き込むってこと？
-*/
-localparam CSR_ADDR_MSCRATCH    = 12'h340; // 自由
-localparam CSR_ADDR_MEPC        = 12'h341; // M-modeにトラップするとき、仮想アドレスに設定する
-localparam CSR_ADDR_MCAUSE      = 12'h342; // trapするときに書き込む。上位1bitでInterruptかを判断する
-localparam CSR_ADDR_MTVAL       = 12'h343; // exceptionなら実装によって書き込まれる。だが、read-only zeroでもよい(そういう実装にできる)
-localparam CSR_ADDR_MIP         = 12'h344; // 3.1.9
-localparam CSR_ADDR_MTINST      = 12'h34a; // 0でいい、 8.6.3に書いてある?
-localparam CSR_ADDR_MTVAL2      = 12'h34b; // 0でいい
-
-/*
-Table 3.6
-I ECODE Description
-1 1     Supervisor software interrupt
-1 3     Machine software interrupt
-1 5     Supervisor timer interrupt
-1 7     Machine timer interrupt
-1 9     Supervisor external interrupt
-1 11    Machine external interrupt
-*/
-localparam MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT = 32'b10000000_00000000_00000000_00000001;
-localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT    = 32'b10000000_00000000_00000000_00000011;
-localparam MCAUSE_SUPERVISOR_TIMER_INTERRUPT    = 32'b10000000_00000000_00000000_00000101;
-localparam MCAUSE_MACHINE_TIMER_INTERRUPT       = 32'b10000000_00000000_00000000_00000111;
-localparam MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT = 32'b10000000_00000000_00000000_00001001;
-localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT    = 32'b10000000_00000000_00000000_00001011;
-/*
-Table 3.6
-I ECODE Description
-0 0     Instruction address misaligned
-0 1     Instruction access fault
-0 2     Illegal instruction
-0 3     Breakpoint
-0 4     Load address misaligned
-0 5     Load access fault
-0 6     Store/AMO address misaligned
-0 7     Store/AMO access fault
-0 8     Environment call from U-mode
-0 9     Environment call from S-mode
-0 11    Environment call from M-mode
-0 12    Instruction page fault
-0 13    Load page fault
-0 15    Store/AMO page fault
-*/
-localparam MCAUSE_INSTRUCTION_ADDRESS_MISALIGNED    = 32'b0000;
-localparam MCAUSE_INSTRUCTION_ACCESS_FAULT          = 32'b0001;
-localparam MCAUSE_ILLEGAL_INSTRUCTION               = 32'b0010;
-localparam MCAUSE_BREAKPOINT                        = 32'b0011;
-localparam MCAUSE_LOAD_ADDRESS_MISALIGNED           = 32'b0100;
-localparam MCAUSE_LOAD_ACCESS_FAULT                 = 32'b0101;
-localparam MCAUSE_STORE_AMO_ADDRESS_MISALIGNED      = 32'b0110;
-localparam MCAUSE_STORE_AMO_ACCESS_FAULT            = 32'b0111;
-localparam MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE      = 32'b1000;
-localparam MCAUSE_ENVIRONMENT_CALL_FROM_S_MODE      = 32'b1001;
-localparam MCAUSE_ENVIRONMENT_CALL_FROM_M_MODE      = 32'b1011;
-localparam MCAUSE_INSTRUCTION_PAGE_FAULT            = 32'b1100;
-localparam MCAUSE_LOAD_PAGE_FAULT                   = 32'b1101;
-localparam MCAUSE_STORE_AMO_PAGE_FAULT              = 32'b1111;
-
-/*
-Table43.7 
-Priority Exc. Code Description
-
-Highest
-3           Instruction address breakpoint
----
-12, 1       First encountered page fault or access fault
----
-1           Instruction access fault
----
-2           Illegal instruction
-0           Instruction address misaligned
-8, 9, 11    Environment call
-3           Environment break
-3           Load/store/AMO address breakpoint
----
-13,15,5,7   First encountered page fault or access fault
----
-5, 7        Load/store/AMO access fault
----
-4, 6        Load/store/AMO address misaligned
-Lowest
-*/
-
-
-reg [31:0]  reg_mscratch    = 0;
-reg [31:0]  reg_mepc        = 0;
-reg [31:0]  reg_mcause      = 0;
-// reg [31:0]  reg_mtval       = 0;
+wire may_interrupt = (
+    mip_meip || mip_seip ||
+    machine_timer_interrupt_active || mip_stip ||
+    mip_msip || mip_ssip
+);
+wire may_trap = may_expt || may_interrupt;
 
 // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
 // priority order: MEI, MSI, MTI, SEI, SSI, STI.
-reg         reg_mip_meip    = 0;
-reg         reg_mip_seip    = 0;
-reg         reg_mip_mtip    = 0;
-reg         reg_mip_stip    = 0;
-reg         reg_mip_msip    = 0;
-reg         reg_mip_ssip    = 0;
-
-reg [31:0]  reg_mtinst      = 0;
-// reg [31:0]  reg_mtval2      = 0;
-
-// Machine Memory Protection
-localparam CSR_ADDR_PMPADDR0    = 12'h3B0;
-localparam CSR_ADDR_PMPCFG0     = 12'h3A0;
-
-reg [31:0]  reg_pmpaddr0    = 0;
-reg [31:0]  reg_pmpcfg0     = 0;
-
-// Machine Counter/Timers
-localparam CSR_ADDR_MCYCLE      = 12'hb00;
-localparam CSR_ADDR_MINSTRET    = 12'hb02;
-localparam CSR_ADDR_MCYCLEH     = 12'hb80;
-localparam CSR_ADDR_MINSTRETH   = 12'hb82;
-
-// Supervisor Trap Setup
-localparam CSR_ADDR_SSTATUS     = 12'h100;
-localparam CSR_ADDR_SIE         = 12'h104;
-localparam CSR_ADDR_STVEC       = 12'h105;
-localparam CSR_ADDR_SCOUNTEREN  = 12'h106; // 4.1.5 cycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
-
-// reg [31:0]  reg_sstatus     = 0;
-// reg [31:0]  reg_sie         = 0;
-reg [31:0]  reg_stvec       = 0;
-// reg reg_scounteren; // read-only zeroでよい
-
-// Supervisor Configuration
-localparam CSR_ADDR_SENVCFG     = 12'h10a; // 後で調べる
-
-// Supervisor Trap Handling
-localparam CSR_ADDR_SSCRATCH    = 12'h140;
-localparam CSR_ADDR_SEPC        = 12'h141;
-localparam CSR_ADDR_SCAUSE      = 12'h142;
-localparam CSR_ADDR_STVAL       = 12'h143;
-localparam CSR_ADDR_SIP         = 12'h144;
-
-reg [31:0]  reg_sscratch    = 0;
-reg [31:0]  reg_sepc        = 0;
-reg [31:0]  reg_scause      = 0;
-// reg [31:0]  reg_stval       = 0;
-// sipはmipのサブセット
-// reg [31:0]  reg_sip         = 0;
-
-// Supervisor Protection and Translation
-localparam CSR_ADDR_SATP        = 12'h180;
-
-reg [31:0]  reg_satp        = 0;
-
-// Debug/Trace Registers
-localparam CSR_ADDR_SCONTEXT    = 12'h5a8;
-
-reg [31:0]  reg_scontext    = 0; // わからん
-
-// mtiが起こりそうかどうか
-wire machine_timer_interrupt_active = (reg_mip_mtip && reg_mstatus_mie && reg_mie_mtie);
-
-// trapが起こりそうかどうか
-// TODO ここにトラップが起きる条件を書くよ
-wire may_trap = (
-    reg_mip_meip ||
-    reg_mip_seip ||
-    machine_timer_interrupt_active ||
-    reg_mip_stip ||
-    reg_mip_msip ||
-    reg_mip_ssip
-);
-
-// 現在起きるinterruptのcause
-// priority : MEI, MSI, MTI, SEI, SSI, STI
 wire [31:0] interrupt_cause = (
-    reg_mip_meip ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
-    reg_mip_msip ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
+    mip_meip ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
+    mip_msip ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
     machine_timer_interrupt_active ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
-    reg_mip_seip ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
-    reg_mip_ssip ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
-    reg_mip_stip ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
+    mip_seip ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
+    mip_ssip ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
+    mip_stip ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
     32'b0
 );
+wire [31:0] exception_cause = (
+    MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE + mode // ecall
+);
+wire [31:0] trap_cause = may_expt ? exception_cause : interrupt_cause;
 
-// 現在起きるinterruptがM-modeへのトラップを起こすかのフラグ
-wire trap_to_machine_mode   = reg_mideleg[{1'b0,interrupt_cause[3:0]}] == 1;
+wire interrupt_to_mmode = mideleg[{1'b0,interrupt_cause[3:0]}] == 1;
+wire exception_to_mmode = (
+    1 // ecallはデフォルトでM-modeになる
+);
+wire trap_to_mmode = may_expt ? exception_to_mmode : interrupt_to_mmode;
 
-// mtvecのMODEを考慮した飛び先
-// 3.1.7
-// MODE = Direct(0)     : BASE
-// MODE = Vectored(1)   : BASE + cause * 4
-wire [31:0] mtvec_addr = reg_mtvec[1:0] == 2'b00 ? reg_mtvec : {reg_mtvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
-// stvecのMODEを考慮した飛び先
-wire [31:0] stvec_addr = reg_stvec[1:0] == 2'b00 ? reg_stvec : {reg_stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
 
-// ecallなら0x342を読む
 wire [11:0] addr = csr_imm_i[11:0];
 
 function [31:0] wdata_fun(
-    input [2:0]     csr_cmd,
-    input [31:0]    op1_data,
-    input [31:0]    rdata
+    input [2:0]  csr_cmd,
+    input [31:0] op1_data,
+    input [31:0] rdata
 );
-    case (csr_cmd)
-        CSR_W       : wdata_fun = op1_data;
-        CSR_S       : wdata_fun = rdata | op1_data;
-        CSR_C       : wdata_fun = rdata & ~op1_data;
-        default     : wdata_fun = 0;
-    endcase
-endfunction
-
-wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
-
-wire can_access = addr[9:8] <= mode;
-wire can_read   = can_access;
-wire can_write  = can_access && addr[11:10] != 2'b11;
-
-wire stage_interrupt_ready = csr_valid;
-
-assign csr_trap_flg     = csr_valid && (
-                            (may_trap && stage_interrupt_ready) ||
-                            csr_cmd == CSR_ECALL ||
-                            csr_cmd == CSR_MRET ||
-                            csr_cmd == CSR_SRET
-                          );
-
-assign csr_stall_flg    = csr_valid && 
-                          ((csr_cmd > 3'd3) || (may_trap && stage_interrupt_ready)) &&
-                          csr_inst_id != saved_inst_id;
-
-
-
-function [31:0] rdata_func(
-    input [11:0]    addr,
-    input [63:0]    reg_cycle,
-    input [63:0]    reg_time,
-
-    input [31:0]    reg_mvendorid,
-    input [31:0]    reg_marchid,
-    input [31:0]    reg_mimpid,
-    input [31:0]    reg_mhartid,
-
-    input           reg_mstatus_sd,
-    input           reg_mstatus_tsr,
-    input           reg_mstatus_tw,
-    input           reg_mstatus_tvm,
-    input           reg_mstatus_mxr,
-    input           reg_mstatus_sum,
-    input           reg_mstatus_mprv,
-    input [1:0]     reg_mstatus_xs,
-    input [1:0]     reg_mstatus_fs,
-    input [1:0]     reg_mstatus_mpp,
-    input [1:0]     reg_mstatus_vs,
-    input           reg_mstatus_spp,
-    input           reg_mstatus_mpie,
-    input           reg_mstatus_ube,
-    input           reg_mstatus_spie,
-    input           reg_mstatus_mie,
-    input           reg_mstatus_sie,
-
-    input [31:0]    reg_misa,
-    input [31:0]    reg_medeleg,
-    input [31:0]    reg_mideleg,
-
-    input           reg_mie_meie,
-    input           reg_mie_seie,
-    input           reg_mie_mtie,
-    input           reg_mie_stie,
-    input           reg_mie_msie,
-    input           reg_mie_ssie,
-
-    input           reg_mstatush_mbe,
-    input           reg_mstatush_sbe,
-    input [31:0]    reg_mscratch,
-    input [31:0]    reg_mepc,
-    input [31:0]    reg_mcause,
-
-    input           reg_mip_meip,
-    input           reg_mip_seip,
-    input           reg_mip_mtip,
-    input           reg_mip_stip,
-    input           reg_mip_msip,
-    input           reg_mip_ssip,
-
-    input [31:0]    reg_pmpaddr0,
-    input [31:0]    reg_pmpcfg0,
-
-    input [31:0]    reg_sscratch,
-    input [31:0]    reg_sepc,
-    input [31:0]    reg_scause,
-
-    input [31:0]    reg_satp
-);
-case (addr)
-    // Counters and Timers
-    CSR_ADDR_CYCLE:     rdata_func = reg_cycle[31:0];
-    CSR_ADDR_TIME:      rdata_func = reg_time[31:0];
-    CSR_ADDR_CYCLEH:    rdata_func = reg_cycle[63:32];
-    CSR_ADDR_TIMEH:     rdata_func = reg_time[63:32];
-
-    // Machine Information Registers
-    CSR_ADDR_MVENDORID: rdata_func = reg_mvendorid;
-    CSR_ADDR_MARCHID:   rdata_func = reg_marchid;
-    CSR_ADDR_MIMPID:    rdata_func = reg_mimpid;
-    CSR_ADDR_MHARTID:   rdata_func = reg_mhartid;
-    // CSR_ADDR_MCONFIGPTR: read-only zero
-
-    // Machine Trap Setup
-    CSR_ADDR_MSTATUS:   rdata_func = {
-        reg_mstatus_sd,
-        8'b0,
-        reg_mstatus_tsr,
-        reg_mstatus_tw,
-        reg_mstatus_tvm,
-        reg_mstatus_mxr,
-        reg_mstatus_sum,
-        reg_mstatus_mprv,
-        reg_mstatus_xs,
-        reg_mstatus_fs,
-        reg_mstatus_mpp,
-        reg_mstatus_vs,
-        reg_mstatus_spp,
-        reg_mstatus_mpie,
-        reg_mstatus_ube,
-        reg_mstatus_spie,
-        1'b0,
-        reg_mstatus_mie,
-        1'b0,
-        reg_mstatus_sie,
-        1'b0
-    };
-    CSR_ADDR_MISA:      rdata_func = reg_misa;
-    CSR_ADDR_MEDELEG:   rdata_func = reg_medeleg;
-    CSR_ADDR_MIDELEG:   rdata_func = reg_mideleg;
-    CSR_ADDR_MIE:       rdata_func = {
-        16'b0,
-        4'b0,
-        reg_mie_meie, 1'b0,
-        reg_mie_seie, 1'b0,
-        reg_mie_mtie, 1'b0,
-        reg_mie_stie, 1'b0,
-        reg_mie_msie, 1'b0,
-        reg_mie_ssie, 1'b0
-    };
-    CSR_ADDR_MTVEC:     rdata_func = reg_mtvec;
-    // CSR_ADDR_MCOUNTEREN: 0
-    CSR_ADDR_MSTATUSH:  rdata_func = {
-        26'b0,
-        reg_mstatush_mbe,
-        reg_mstatush_sbe,
-        4'b0
-    };
-
-    // Machine Trap Handling
-    CSR_ADDR_MSCRATCH:  rdata_func = reg_mscratch;
-    CSR_ADDR_MEPC:      rdata_func = reg_mepc;
-    CSR_ADDR_MCAUSE:    rdata_func = reg_mcause;
-    // CSR_ADDR_MTVAL:  read-only zero
-    CSR_ADDR_MIP:       rdata_func = {
-        20'b0,
-        reg_mip_meip, 1'b0,
-        reg_mip_seip, 1'b0,
-        reg_mip_mtip, 1'b0,
-        reg_mip_stip, 1'b0,
-        reg_mip_msip, 1'b0,
-        reg_mip_ssip, 1'b0
-    };
-    // CSR_ADDR_MTINST:    0
-    // CSR_ADDR_MTVAL2:    0
-
-    // Machine Memory Protection
-    CSR_ADDR_PMPADDR0:  rdata_func = reg_pmpaddr0;
-    CSR_ADDR_PMPCFG0:   rdata_func = reg_pmpcfg0;
-
-    // Machine Counter/Timers
-    CSR_ADDR_MCYCLE:    rdata_func = reg_cycle[31:0];
-    // CSR_ADDR_MINSTRET: not impl
-    CSR_ADDR_MCYCLEH:   rdata_func = reg_cycle[63:32];
-    // CSR_ADDR_MINSTRETH: not impl
-
-    // Supervisor Trap Setup
-    // sstatusはmstatusのサブセット
-    CSR_ADDR_SSTATUS:   rdata_func = {
-        reg_mstatus_sd,
-        11'b0,
-        reg_mstatus_mxr,
-        reg_mstatus_sum,
-        1'b0,
-        reg_mstatus_xs,
-        reg_mstatus_fs,
-        2'b0,
-        reg_mstatus_vs,
-        reg_mstatus_spp,
-        1'b0,
-        reg_mstatus_ube,
-        reg_mstatus_spie,
-        3'b0,
-        reg_mstatus_sie,
-        1'b0
-    };
-    // sieはmieのサブセット
-    CSR_ADDR_SIE:       rdata_func = {
-        16'b0,
-        6'b0,
-        reg_mie_seie,
-        3'b0,
-        reg_mie_stie,
-        3'b0,
-        reg_mie_ssie,
-        1'b0
-    };
-    CSR_ADDR_STVEC:     rdata_func = reg_stvec;
-    // CSR_ADDR_SCOUNTEREN: 0
-
-    // Supervisor Trap Handling
-    CSR_ADDR_SSCRATCH:  rdata_func = reg_sscratch;
-    CSR_ADDR_SEPC:      rdata_func = reg_sepc;
-    CSR_ADDR_SCAUSE:    rdata_func = reg_scause;
-    // CSR_ADDR_STVAL:     rdata_func = reg_stval;
-    CSR_ADDR_SIP:       rdata_func = {
-        22'b0,
-        reg_mip_seip, 1'b0,
-        2'b0,
-        reg_mip_stip, 1'b0,
-        2'b0,
-        reg_mip_ssip, 1'b0
-    };
-    // Supervisor Protection and Translation
-    CSR_ADDR_SATP:      rdata_func = reg_satp; 
-    default:            rdata_func = 32'b0;
+case (csr_cmd)
+    CSR_W  : wdata_fun = op1_data;
+    CSR_S  : wdata_fun = rdata | op1_data;
+    CSR_C  : wdata_fun = rdata & ~op1_data;
+    default: wdata_fun = 0;
 endcase
 endfunction
 
-wire [31:0] rdata = can_read ? rdata_func(
+function [31:0] rdata_f(
+    input [11:0] addr,
+    input [63:0] reg_cycle,
+    input [63:0] reg_time,
+    input [31:0] mstatus,
+    input [31:0] sstatus,
+    input [31:0] mstatush,
+    input [31:0] misa,
+    input [31:0] medeleg,
+    input [31:0] mideleg,
+    input [31:0] mie,
+    input [31:0] sie,
+    input [31:0] mscratch,
+    input [31:0] mepc,
+    input [31:0] mcause,
+    input [31:0] mip,
+    input [31:0] sip,
+    input [31:0] sscratch,
+    input [31:0] sepc,
+    input [31:0] scause,
+    input [31:0] satp
+);
+case (addr)
+    // Counters and Timers
+    ADDR_CYCLE:     rdata_f = reg_cycle[31:0];
+    ADDR_TIME:      rdata_f = reg_time[31:0];
+    ADDR_CYCLEH:    rdata_f = reg_cycle[63:32];
+    ADDR_TIMEH:     rdata_f = reg_time[63:32];
+    // Machine Trap Setup
+    ADDR_MSTATUS:   rdata_f = mstatus;
+    ADDR_MISA:      rdata_f = misa;
+    ADDR_MEDELEG:   rdata_f = medeleg;
+    ADDR_MIDELEG:   rdata_f = mideleg;
+    ADDR_MIE:       rdata_f = mie;
+    ADDR_MTVEC:     rdata_f = mtvec;
+    ADDR_MSTATUSH:  rdata_f = mstatush;
+    // Machine Trap Handling
+    ADDR_MSCRATCH:  rdata_f = mscratch;
+    ADDR_MEPC:      rdata_f = mepc;
+    ADDR_MCAUSE:    rdata_f = mcause;
+    ADDR_MIP:       rdata_f = mip;
+    // Machine Counter/Timers
+    ADDR_MCYCLE:    rdata_f = reg_cycle[31:0];
+    ADDR_MCYCLEH:   rdata_f = reg_cycle[63:32];
+    // Supervisor Trap Setup
+    ADDR_SSTATUS:   rdata_f = sstatus;
+    ADDR_SIE:       rdata_f = sie;
+    ADDR_STVEC:     rdata_f = stvec;
+    // ADDR_SCOUNTEREN: 0
+    // Supervisor Trap Handling
+    ADDR_SSCRATCH:  rdata_f = sscratch;
+    ADDR_SEPC:      rdata_f = sepc;
+    ADDR_SCAUSE:    rdata_f = scause;
+    // ADDR_STVAL:     rdata_f = stval;
+    ADDR_SIP:       rdata_f = sip;
+    // Supervisor Protection and Translation
+    ADDR_SATP:      rdata_f = satp; 
+    default:        rdata_f = 32'b0;
+endcase
+endfunction
+
+wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
+wire [31:0] rdata = can_read ? rdata_f(
     addr,
     reg_cycle,
     reg_time,
-    reg_mvendorid,
-    reg_marchid,
-    reg_mimpid,
-    reg_mhartid,
-    reg_mstatus_sd,
-    reg_mstatus_tsr,
-    reg_mstatus_tw,
-    reg_mstatus_tvm,
-    reg_mstatus_mxr,
-    reg_mstatus_sum,
-    reg_mstatus_mprv,
-    reg_mstatus_xs,
-    reg_mstatus_fs,
-    reg_mstatus_mpp,
-    reg_mstatus_vs,
-    reg_mstatus_spp,
-    reg_mstatus_mpie,
-    reg_mstatus_ube,
-    reg_mstatus_spie,
-    reg_mstatus_mie,
-    reg_mstatus_sie,
-    reg_misa,
-    reg_medeleg,
-    reg_mideleg,
-    reg_mie_meie,
-    reg_mie_seie,
-    reg_mie_mtie,
-    reg_mie_stie,
-    reg_mie_msie,
-    reg_mie_ssie,
-    reg_mstatush_mbe,
-    reg_mstatush_sbe,
-    reg_mscratch,
-    reg_mepc,
-    reg_mcause,
-    reg_mip_meip,
-    reg_mip_seip,
-    reg_mip_mtip,
-    reg_mip_stip,
-    reg_mip_msip,
-    reg_mip_ssip,
-    reg_pmpaddr0,
-    reg_pmpcfg0,
-    reg_sscratch,
-    reg_sepc,
-    reg_scause,
-    reg_satp
+    mstatus,
+    sstatus,
+    mstatush,
+    misa,
+    medeleg,
+    mideleg,
+    mie,
+    sie,
+    mscratch,
+    mepc,
+    mcause,
+    mip,
+    sip,
+    sscratch,
+    sepc,
+    scause,
+    satp
 ) : 32'b0;
 assign csr_mem_csr_rdata = rdata;
 
+// 2.1 CSR Address Mapping Conventions
+wire can_access = addr[9:8] <= mode;
+wire can_read   = can_access;
+wire can_write  = can_access && addr[11:10] != 2'b11;
 
 iidtype saved_inst_id = INST_ID_RANDOM;
 always @(posedge clk) begin
@@ -662,193 +434,134 @@ always @(posedge clk) begin
         saved_inst_id <= csr_inst_id;
 end
 
+// defined in include/core.sv
+wire cmd_is_2clock  = csr_cmd[2] != 1'b0;
+wire cmd_is_trap    = csr_cmd[2] == 1'b1;
+wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
+
+assign csr_stall_flg = csr_valid &&
+                       (cmd_is_2clock || may_trap) &&
+                       csr_inst_id != saved_inst_id;
+assign csr_trap_flg  = csr_valid && (may_trap || cmd_is_trap);
+
 always @(posedge clk) begin
 if (csr_valid) begin
-    // 割り込みを起こす
-    if (may_trap && stage_interrupt_ready) begin
+    // trapを起こす
+    if (may_trap) begin
         `ifdef PRINT_DEBUGINFO
-            $display("info,csrstage.intterupt_occured,INTERRUPT PC : 0x%h", pc);
+            $display("info,csrstage.trap.pc,0x%h", pc);
+            $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
+            $display("info,csrstage.trap.cause,0x%h", mtvec_addr);
+            $display("info,csrstage.trap.mtvec,0x%h", mtvec_addr);
+            $display("info,csrstage.trap.stvec,0x%h", stvec_addr);
         `endif
-        if (trap_to_machine_mode) begin
-            // M-modeに遷移
-            mode                <= MODE_MACHINE;
-
-            reg_mcause          <= interrupt_cause;
-            reg_mepc            <= pc;
-            //reg_mtval           <= 0;
-            reg_mstatus_mpp     <= mode;
-            reg_mstatus_mpie    <= reg_mstatus_mie;
-            reg_mstatus_mie     <= 0;
-
-            trap_vector         <= mtvec_addr;
+        // 3.1.6.1
+        // To support nested traps, each privilege mode x that can respond to interrupts has a two-level stack of
+        // interrupt-enable bits and privilege modes. xPIE holds the value of the interrupt-enable bit active prior
+        // to the trap, and xPP holds the previous privilege mode. The xPP fields can only hold privilege modes
+        // up to x, so MPP is two bits wide and SPP is one bit wide. When a trap is taken from privilege mode y
+        // into privilege mode x, xPIE is set to the value of xIE; xIE is set to 0; and xPP is set to y
+        if (trap_to_mmode) begin
+            mode         <= M_MODE;
+            trap_vector  <= mtvec_addr;
+            mcause       <= trap_cause;
+            mepc         <= pc;
+            mstatus_mpie <= mstatus_mie;
+            mstatus_mie  <= 0;
+            mstatus_mpp  <= mode;
         end else begin
-            // S-modeに遷移
-            mode                <= MODE_SUPERVISOR;
-
-            reg_scause          <= interrupt_cause;
-            reg_sepc            <= pc;
-            // reg_stval           <= 0;
-            reg_mstatus_spp     <= mode[0];
-            reg_mstatus_spie    <= reg_mstatus_sie;
-            reg_mstatus_sie     <= 0;
-
-            trap_vector         <= stvec_addr;
+            mode         <= S_MODE;
+            trap_vector  <= stvec_addr;
+            scause       <= trap_cause;
+            sepc         <= pc;
+            mstatus_spie <= mstatus_sie;
+            mstatus_sie  <= 0;
+            mstatus_spp  <= mode[0];
         end
     end else begin
         // pending registerを更新する
-        reg_mip_mtip <= (reg_mtime >= reg_mtimecmp);
-
+        mip_mtip <= (reg_mtime >= reg_mtimecmp);
         // 例外、mret, sretを処理する
         case (csr_cmd)
-            CSR_ECALL: begin
-                // environment call from x-Mode execeptionを起こす
-                //trap_vector <= mode == MODE_USER ? stvec_addr : mtvec_addr;
-                trap_vector <= mtvec_addr; // riscv-testsを動かすためにmtvecにしている
-                // 現在のモードに応じた値を書き込む
-                case (mode)
-                    MODE_USER:          reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE; 
-                    MODE_SUPERVISOR:    reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_S_MODE; 
-                    MODE_MACHINE:       reg_mcause <= MCAUSE_ENVIRONMENT_CALL_FROM_M_MODE;
-                    default:            reg_mcause <= 0;// TODO
-                endcase
-                // 一つ上の特権レベルに遷移する
-                mode        <= mode == MODE_USER ? MODE_SUPERVISOR : MODE_MACHINE;
-            end
+            // MRET, SRET
+            // 3.1.6.1
+            // An MRET or SRET instruction is used to return from a trap in M-mode or S-mode respectively. When
+            // executing an xRET instruction, supposing xPP holds the value y, xIE is set to xPIE; the privilege mode is
+            // changed to y; xPIE is set to 1; and xPP is set to the least-privileged supported mode (U if U-mode is
+            // implemented, else M). If y≠M, xRET also sets MPRV=0.
             CSR_MRET: begin
-                reg_mstatus_mie <= reg_mstatus_mpie;
-                mode            <= reg_mstatus_mpp;
-                reg_mstatus_mpie<= 1;
-                reg_mstatus_mpp <= MODE_USER;
-                if (reg_mstatus_mpp != MODE_MACHINE) begin
-                    reg_mstatus_mprv <= 0;
-                end
-                trap_vector     <= reg_mepc;
+                mstatus_mie     <= mstatus_mpie;
+                mode            <= modetype'(mstatus_mpp);
+                mstatus_mpie    <= 1;
+                mstatus_mpp     <= U_MODE;
+                trap_vector     <= mepc;
             end
             CSR_SRET: begin
-                reg_mstatus_sie <= reg_mstatus_spie;
-                mode            <= {1'b0, reg_mstatus_spp};
-                reg_mstatus_spie<= 1;
-                reg_mstatus_spp <= MODE_USER[0];
-                reg_mstatus_mprv<= 0;
-                trap_vector     <= reg_sepc;
+                mstatus_sie     <= mstatus_spie;
+                mode            <= modetype'({1'b0, mstatus_spp});
+                mstatus_spie    <= 1;
+                mstatus_spp     <= U_MODE[0];
+                trap_vector     <= sepc;
             end
             default: begin end
         endcase 
     end
-
-    if (can_write && (csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C)) begin
+    if (can_write && cmd_is_write) begin
         case (addr)
-            // Counters and Timers
-            // READ ONLY
-            // CSR_ADDR_CYCLE:
-            // CSR_ADDR_TIME:
-            // CSR_ADDR_CYCLEH:
-            // CSR_ADDR_TIMEH:
-            
-            // Machine Information Registers
-            // READ ONLY
-            // CSR_ADDR_MVENDORID: 
-            // CSR_ADDR_MARCHID:
-            // CSR_ADDR_MIMPID:
-            // CSR_ADDR_MHARTID:
-            // CSR_ADDR_MCONFIGPTR: read-only zero
-
             // Machine Trap Setup
-            CSR_ADDR_MSTATUS: begin
-                reg_mstatus_sd      <= wdata[31];
-                reg_mstatus_tsr     <= wdata[22];
-                reg_mstatus_tw      <= wdata[21];
-                reg_mstatus_tvm     <= wdata[10];
-                reg_mstatus_mxr     <= wdata[19];
-                reg_mstatus_sum     <= wdata[18];
-                reg_mstatus_mprv    <= wdata[17];
-                reg_mstatus_xs      <= wdata[16:15];
-                reg_mstatus_fs      <= wdata[14:13];
-                reg_mstatus_mpp     <= wdata[12:11];
-                reg_mstatus_vs      <= wdata[10:9];
-                reg_mstatus_spp     <= wdata[8];
-                reg_mstatus_mpie    <= wdata[7];
-                reg_mstatus_ube     <= wdata[6];
-                reg_mstatus_spie    <= wdata[5];
-                reg_mstatus_mie     <= wdata[3];
-                reg_mstatus_sie     <= wdata[1];
+            ADDR_MSTATUS: begin
+                mstatus_sd   <= wdata[31];
+                mstatus_mpp  <= wdata[12:11];
+                mstatus_spp  <= wdata[8];
+                mstatus_mpie <= wdata[7];
+                mstatus_spie <= wdata[5];
+                mstatus_mie  <= wdata[3];
+                mstatus_sie  <= wdata[1];
             end
-            // CSR_ADDR_MISA: READ ONLY
-            CSR_ADDR_MEDELEG:   reg_medeleg <= wdata;
-            CSR_ADDR_MIDELEG: begin
-                reg_mideleg  <= wdata; 
+            ADDR_MEDELEG: medeleg <= wdata;
+            ADDR_MIDELEG: mideleg <= wdata; 
+            ADDR_MIE: begin
+                mie_meie <= wdata[11];
+                mie_seie <= wdata[9];
+                mie_mtie <= wdata[7];
+                mie_stie <= wdata[5];
+                mie_msie <= wdata[3];
+                mie_ssie <= wdata[1];
             end
-            CSR_ADDR_MIE: begin
-                reg_mie_meie <= wdata[11];
-                reg_mie_seie <= wdata[9];
-                reg_mie_mtie <= wdata[7];
-                reg_mie_stie <= wdata[5];
-                reg_mie_msie <= wdata[3];
-                reg_mie_ssie <= wdata[1];
-            end
-            CSR_ADDR_MTVEC:     reg_mtvec   <= wdata;
-            // CSR_ADDR_MCOUNTEREN:  READ ONLY
-            CSR_ADDR_MSTATUSH: begin
-                //reg_mstatush_wpri   <= wdata[31:6],
-                reg_mstatush_mbe    <= wdata[5];
-                reg_mstatush_sbe    <= wdata[4];
-                //reg_mstatush_wpri   <= wdata[3:0];
-            end
-
+            ADDR_MTVEC: mtvec <= wdata;
             // Machine Trap Handling
-            CSR_ADDR_MSCRATCH:  reg_mscratch <= wdata;
-            CSR_ADDR_MEPC:      reg_mepc     <= {wdata[31:2], 2'b00};
-            CSR_ADDR_MCAUSE:    reg_mcause   <= wdata;
-            // CSR_ADDR_MTVAL:  read-only zero
-            CSR_ADDR_MIP: begin
-                // reg_mip_meip    <= wdata[11]; // readonly
-                reg_mip_seip    <= wdata[9];
-                reg_mip_stip    <= wdata[5];
-                // reg_mip_msip    <= wdata[3]; // readonly
-                reg_mip_ssip    <= wdata[1];
+            ADDR_MSCRATCH:  mscratch <= wdata;
+            ADDR_MEPC:      mepc     <= {wdata[31:2], 2'b00};
+            ADDR_MCAUSE:    mcause   <= wdata;
+            ADDR_MIP: begin
+                mip_seip <= wdata[9];
+                mip_stip <= wdata[5];
+                mip_ssip <= wdata[1];
             end
-            // CSR_ADDR_MTINST:    0
-            // CSR_ADDR_MTVAL2:    0
-        
-            // Machine Memory Protection
-            CSR_ADDR_PMPADDR0:  reg_pmpaddr0 <= wdata;
-            CSR_ADDR_PMPCFG0:   reg_pmpcfg0 <= wdata;
-
             // Supervisor Trap Setup
-            CSR_ADDR_SSTATUS: begin
-                reg_mstatus_sd      <= wdata[31];
-                reg_mstatus_mxr     <= wdata[19];
-                reg_mstatus_sum     <= wdata[18];
-                reg_mstatus_xs      <= wdata[16:15];
-                reg_mstatus_fs      <= wdata[14:13];
-                reg_mstatus_vs      <= wdata[10:9];
-                reg_mstatus_spp     <= wdata[8];
-                reg_mstatus_ube     <= wdata[6];
-                reg_mstatus_spie    <= wdata[5];
-                reg_mstatus_sie     <= wdata[1];
+            ADDR_SSTATUS: begin
+                mstatus_sd  <= wdata[31];
+                mstatus_spp <= wdata[8];
+                mstatus_spie<= wdata[5];
+                mstatus_sie <= wdata[1];
             end
-            CSR_ADDR_SIE: begin
-                reg_mie_seie <= wdata[9];
-                reg_mie_stie <= wdata[5];
-                reg_mie_ssie <= wdata[1];
+            ADDR_SIE: begin
+                mie_seie <= wdata[9];
+                mie_stie <= wdata[5];
+                mie_ssie <= wdata[1];
             end
-            CSR_ADDR_STVEC:     reg_stvec   <= wdata;
-            //CSR_ADDR_SCOUNTEREN: READ ONLY
-
+            ADDR_STVEC: stvec   <= wdata;
             // Supervisor Trap Handling
-            CSR_ADDR_SSCRATCH:  reg_sscratch <= wdata;
-            CSR_ADDR_SEPC:      reg_sepc <= wdata;
-            CSR_ADDR_SCAUSE:    reg_scause <= wdata;
-            // CSR_ADDR_STVAL:     reg_stval <= wdata;
-            CSR_ADDR_SIP: begin
-                reg_mip_seip    <= wdata[9];
-                reg_mip_stip    <= wdata[5];
-                reg_mip_ssip    <= wdata[1];
+            ADDR_SSCRATCH: sscratch <= wdata;
+            ADDR_SEPC:     sepc <= wdata;
+            ADDR_SCAUSE:   scause <= wdata;
+            ADDR_SIP: begin
+                mip_seip <= wdata[9];
+                mip_stip <= wdata[5];
+                mip_ssip <= wdata[1];
             end
-
             // Supervisor Protection and Translation
-            CSR_ADDR_SATP:      reg_satp    <= wdata; 
-
+            ADDR_SATP: satp <= wdata; 
             default: begin end
         endcase
     end
@@ -859,7 +572,7 @@ end
 always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", csr_valid);
     $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? INST_ID_NOP : inst_id);
-    if (csr_valid) begin
+    if (csr_valid && (csr_cmd != CSR_X || may_trap)) begin
         $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", csr_inst);
 
@@ -872,8 +585,6 @@ always @(posedge clk) begin
         $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
         $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
         $display("data,csrstage.may_trap,b,%b", may_trap);
-        $display("data,csrstage.intrrupt_ready,b,%b", stage_interrupt_ready);
-
     end
 end
 `endif
