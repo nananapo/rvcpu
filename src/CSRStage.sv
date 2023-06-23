@@ -316,9 +316,6 @@ wire [31:0] stvec_addr = stvec[1:0] == XTVEC_DIRECT ? stvec : {stvec[31:2], 2'b0
 wire global_mie = mode == M_MODE ? mstatus_mie : 1;
 wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
 
-// mtiが起こりそうかどうか
-wire machine_timer_interrupt_active = (mip_mtip && mstatus_mie && mie_mtie);
-
 // trapが起こりそうかどうか
 wire may_expt = (
     csr_cmd == CSR_ECALL // ecall
@@ -326,7 +323,7 @@ wire may_expt = (
 
 wire may_interrupt = (
     mip_meip || mip_seip ||
-    machine_timer_interrupt_active || mip_stip ||
+    mip_mtip || mip_stip ||
     mip_msip || mip_ssip
 );
 wire may_trap = may_expt || may_interrupt;
@@ -337,7 +334,7 @@ wire may_trap = may_expt || may_interrupt;
 wire [31:0] interrupt_cause = (
     mip_meip ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
     mip_msip ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
-    machine_timer_interrupt_active ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
+    mip_mtip ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
     mip_seip ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
     mip_ssip ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
     mip_stip ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
@@ -512,7 +509,7 @@ if (csr_valid) begin
         end
     end else begin
         // pending registerを更新する
-        mip_mtip <= (reg_mtime >= reg_mtimecmp);
+        mip_mtip <= global_mie && mie_mtie && (reg_mtime >= reg_mtimecmp);
         // 例外、mret, sretを処理する
         case (csr_cmd)
             // MRET, SRET
