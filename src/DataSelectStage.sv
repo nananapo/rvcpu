@@ -30,10 +30,7 @@ module DataSelectStage
     output wire             dh_stall_flg,
     input wire fw_ctrltype  dh_exe_fw,
     input wire fw_ctrltype  dh_mem_fw,
-    input wire fw_ctrltype  dh_wb_fw,
-
-    output wire         zifencei_stall_flg,
-    input wire          zifencei_mem_wen
+    input wire fw_ctrltype  dh_wb_fw
 );
 
 `include "include/core.sv"
@@ -44,15 +41,6 @@ wire iidtype inst_id= ds_inst_id;
 
 wire [4:0] rs1_addr = inst[19:15];
 wire [4:0] rs2_addr = inst[24:20];
-
-// Zifencei
-wire inst_is_fence_i        = 0; // TODO ちょっと一旦実装を取りやめ
-// funct3 == INST_ZIFENCEI_FENCEI_FUNCT3 && opcode == INST_ZIFENCEI_FENCEI_OPCODE;
-
-// fence.iのストール判定
-// fence.i命令かつ、EXEかMEMステージがmem_wenならストールする
-// TODO これでは書き込みが保証されない
-assign zifencei_stall_flg   = 0;//ds_valid && inst_is_fence_i && zifencei_mem_wen;
 
 // データハザード判定
 wire dh_exe_rs1 = dh_exe_fw.valid && dh_exe_fw.addr == rs1_addr && rs1_addr != 0;
@@ -110,7 +98,7 @@ wire [31:0] rs1_data = rs1_addr == 0 ? 0 :
                 dh_wb_rs1  ? dh_wb_fw.wdata : regfile[rs1_addr];
 
 // ds -> exe
-assign ds_exe_valid     = !dh_stall_flg && !zifencei_stall_flg && ds_valid;
+assign ds_exe_valid     = !dh_stall_flg && ds_valid;
 assign ds_exe_pc        = pc;
 assign ds_exe_inst      = inst;
 assign ds_exe_inst_id   = inst_id;
@@ -158,10 +146,7 @@ always @(posedge clk) begin
         $display("data,datastage.decode.rs2_addr,d,%b", rs2_addr);
         $display("data,datastage.decode.rs1_data,h,%b", rs1_data);
         $display("data,datastage.decode.rs2_data,h,%b", rs2_data);
-        // $display("data,datastage.decode.is_fence_i,b,%b", inst_is_fence_i);
-
         $display("data,datastage.datahazard,b,%b", dh_stall_flg);
-        // $display("data,datastage.fence_i_stall,b,%b", zifencei_stall_flg);
     end
 end
 `endif

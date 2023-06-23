@@ -37,7 +37,6 @@ assign gp   = regfile[3];
 reg [31:0] clk_count = 0;
 
 wire ds_dh_stall;           // データハザードによるストール
-wire ds_zifencei_stall_flg; // fence.i命令でストールするかのフラグ
 wire exe_calc_stall;        // exeステージでストールしているかどうかのフラグ
 wire csr_stall_flg;         // csrステージが止まってる
 wire mem_memory_unit_stall; // メモリステージでメモリがreadyではないストール
@@ -201,7 +200,6 @@ wire [31:0]     ds_exe_rs2_data;
 
 wire            ds_stall = ds_valid && (
                            exe_stall ||
-                           ds_zifencei_stall_flg ||
                            ds_dh_stall);
 
 // exe, csr reg
@@ -424,14 +422,7 @@ DataSelectStage #() dataselectstage
     .dh_stall_flg(ds_dh_stall),
     .dh_exe_fw(exe_fw_ctrl),
     .dh_mem_fw(mem_fw_ctrl),
-    .dh_wb_fw(wb_fw_ctrl),
-
-    .zifencei_stall_flg(ds_zifencei_stall_flg),
-    .zifencei_mem_wen(1'b0)
-    /*
-    (mem_valid && mem_ctrl.mem_wen == MEN_S) || 
-    (exe_valid && exe_ctrl.mem_wen == MEN_S)
-    */
+    .dh_wb_fw(wb_fw_ctrl)
 );
 
 ExecuteStage #() executestage
