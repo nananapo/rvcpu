@@ -115,8 +115,8 @@ typedef enum reg [11:0] {
     ADDR_MCAUSE     = 12'h342, // trapするときに書き込む。上位1bitでInterruptかを判断する
     ADDR_MTVAL      = 12'h343, // exceptionなら実装によって書き込まれる。だが、read-only zeroでもよい
     ADDR_MIP        = 12'h344, // 3.1.9
-    // ADDR_MTINST     = 12'h34a, // read-only 0 // 8.6.3に書いてある?
-    // ADDR_MTVAL2     = 12'h34b, // read-only 0
+    ADDR_MTINST     = 12'h34a, // 9.4.5
+    ADDR_MTVAL2     = 12'h34b,
     // Machine Configuration
     // ADDR_MENVCFG    = 12'h30A, // 未確認
     // ADDR_MENVCFGH   = 12'h31A, // 未確認
@@ -300,6 +300,8 @@ wire [31:0] sip = {
 };
 
 reg [31:0] mtinst   = 0;
+reg [31:0] mtvec2   = 0;
+
 reg [31:0] stvec    = 0;
 reg [31:0] sscratch = 0;
 reg [31:0] sepc     = 0;
@@ -384,6 +386,8 @@ function [31:0] rdata_f(
     input [31:0] mcause,
     input [31:0] mip,
     input [31:0] sip,
+    input [31:0] mtinst,
+    input [31:0] mtvec2,
     input [31:0] sscratch,
     input [31:0] sepc,
     input [31:0] scause,
@@ -408,6 +412,8 @@ case (addr)
     ADDR_MEPC:      rdata_f = mepc;
     ADDR_MCAUSE:    rdata_f = mcause;
     ADDR_MIP:       rdata_f = mip;
+    ADDR_MTINST:    rdata_f = mtinst;
+    ADDR_MTVAL2:    rdata_f = mtvec2;
     // Machine Counter/Timers
     ADDR_MCYCLE:    rdata_f = reg_cycle[31:0];
     ADDR_MCYCLEH:   rdata_f = reg_cycle[63:32];
@@ -445,6 +451,8 @@ wire [31:0] rdata = can_read ? rdata_f(
     mcause,
     mip,
     sip,
+    mtinst,
+    mtvec2,
     sscratch,
     sepc,
     scause,
@@ -574,6 +582,7 @@ if (csr_valid) begin
                 mip_stip <= wdata[5];
                 mip_ssip <= wdata[1];
             end
+            ADDR_MTVAL2: mtvec2 <= wdata;
             // Supervisor Trap Setup
             ADDR_SSTATUS: begin
                 mstatus_sd  <= wdata[31];
