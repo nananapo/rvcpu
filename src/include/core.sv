@@ -33,10 +33,12 @@ localparam SIZE_X   = 2'dx;
 localparam REN_X    = 1'b0;
 localparam REN_S    = 1'b1;
 
-localparam CSR_X    = 3'd0;
-localparam CSR_W    = 3'd1;
-localparam CSR_S    = 3'd2;
-localparam CSR_C    = 3'd3;
-localparam CSR_ECALL= 3'd4;
-localparam CSR_SRET = 3'd5;
-localparam CSR_MRET = 3'd6;
+// 上位1bitが0ならCSR Stageはストールしない
+// 上位1bitが1ならトラップする
+localparam CSR_X    = 3'b000;
+localparam CSR_W    = 3'b001;
+localparam CSR_S    = 3'b010;
+localparam CSR_C    = 3'b011;
+localparam CSR_ECALL= 3'b100;
+localparam CSR_SRET = 3'b101;
+localparam CSR_MRET = 3'b110;
