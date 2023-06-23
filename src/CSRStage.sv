@@ -211,7 +211,40 @@ wire [31:0] mstatush = {26'b0, mstatush_mbe, mstatush_sbe, 4'b0};
 wire [31:0] misa = 32'b01_000_00000000000001000100000001;
 
 reg [31:0] medeleg = 0;
-reg [31:0] mideleg = 0;
+// 9.4.2. Machine Interrupt Delegation Register (mideleg)
+// When the hypervisor extension is implemented, bits 10, 6, and 2 of mideleg (corresponding to the
+// standard VS-level interrupts) are each read-only one. Furthermore, if any guest external interrupts are
+// implemented (GEILEN is nonzero), bit 12 of mideleg (corresponding to supervisor-level guest external
+// interrupts) is also read-only one. VS-level interrupts and guest external interrupts are always delegated
+// past M-mode to HS-mode
+// 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
+// reg mideleg_sgeip = 0; // any guest external interruptsをサポートする
+reg mideleg_meip = 0;
+// reg mideleg_vseip = 0; // hypervisor extensionをサポートしない
+reg mideleg_seip = 0;
+reg mideleg_mtip = 0;
+// reg mideleg_vstip = 0; // hypervisor extensionをサポートしない
+reg mideleg_stip = 0;
+reg mideleg_msip = 0;
+// reg mideleg_vssip = 0; // hypervisor extensionをサポートしない
+reg mideleg_ssip = 0;
+wire [31:0] mideleg = {
+    19'b0,
+    1'b0, // mideleg_sgeip,
+    mideleg_meip,
+    1'b0, // mideleg_vseip,
+    mideleg_seip,
+    1'b0,
+    mideleg_mtip,
+    1'b0, // mideleg_vstip,
+    mideleg_stip,
+    1'b0,
+    mideleg_msip,
+    1'b0, // mideleg_vssip,
+    mideleg_ssip,
+    1'b0
+};
+
 
 reg mie_meie = 0; // external interrupt
 reg mie_seie = 0;
@@ -385,7 +418,6 @@ case (addr)
     ADDR_SSTATUS:   rdata_f = sstatus;
     ADDR_SIE:       rdata_f = sie;
     ADDR_STVEC:     rdata_f = stvec;
-    // ADDR_SCOUNTEREN: 0
     // Supervisor Trap Handling
     ADDR_SSCRATCH:  rdata_f = sscratch;
     ADDR_SEPC:      rdata_f = sepc;
@@ -519,7 +551,14 @@ if (csr_valid) begin
                 mstatus_sie  <= wdata[1];
             end
             ADDR_MEDELEG: medeleg <= wdata;
-            ADDR_MIDELEG: mideleg <= wdata; 
+            ADDR_MIDELEG: begin
+                mideleg_meip <= wdata[11];
+                mideleg_seip <= wdata[9];
+                mideleg_mtip <= wdata[7];
+                mideleg_stip <= wdata[5];
+                mideleg_msip <= wdata[3];
+                mideleg_ssip <= wdata[1];
+            end
             ADDR_MIE: begin
                 mie_meie <= wdata[11];
                 mie_seie <= wdata[9];
