@@ -93,4 +93,11 @@ typedef struct packed {
 } iidtype;
 `endif
 
+typedef enum reg [1:0] {
+    M_MODE = 2'b11, // Machine Mode
+    H_MODE = 2'b10, // Hypervisor Mode
+    S_MODE = 2'b01, // Supervisor Mode
+    U_MODE = 2'b00  // User Mode
+} modetype;
+
 `endif

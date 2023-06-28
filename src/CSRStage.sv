@@ -58,13 +58,6 @@ localparam MCAUSE_INSTRUCTION_PAGE_FAULT        = 32'b1100; // 0 12    Instructi
 localparam MCAUSE_LOAD_PAGE_FAULT               = 32'b1101; // 0 13    Load page fault
 localparam MCAUSE_STORE_AMO_PAGE_FAULT          = 32'b1111; // 0 15    Store/AMO page fault
 
-typedef enum reg [1:0] {
-    M_MODE = 2'b11, // Machine Mode
-    H_MODE = 2'b10, // Hypervisor Mode
-    S_MODE = 2'b01, // Supervisor Mode
-    U_MODE = 2'b00  // User Mode
-} modetype;
-
 typedef enum reg [11:0] { 
     // Counters and Timers
     ADDR_CYCLE      = 12'hc00,
