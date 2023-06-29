@@ -86,21 +86,29 @@ wire jal_hazard = last_inst_is_jal && requested && request_pc != last_jal_target
 // TODO ここまで
 
 `ifdef EXCLUDE_PREDICTION_MODULE
-// 分岐予測を行わない場合はpc + 4を予測とする
-assign next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
+    // 分岐予測を行わない場合はpc + 4を予測とする
+    `ifdef DEBUG
+        wire [31:0] __next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
+        assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
+    `else
+        assign next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
+    `endif
 `else
-
-wire [31:0] next_pc_tbc;
-TwoBitCounter #(
-    .ADDR_SIZE(32)
-) tbc (
-    .clk(clk),
-    .pc(pc),
-    .next_pc(next_pc_tbc),
-    .updateio(updateio)
-);
-
-assign next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
+    wire [31:0] next_pc_tbc;
+    TwoBitCounter #(
+        .ADDR_SIZE(32)
+    ) tbc (
+        .clk(clk),
+        .pc(pc),
+        .next_pc(next_pc_tbc),
+        .updateio(updateio)
+    );
+    `ifdef DEBUG
+        wire [31:0] __next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
+        assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
+    `else
+        assign next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
+    `endif
 `endif
 
 assign memreq.valid = buf_wready_next;
