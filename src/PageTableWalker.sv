@@ -51,7 +51,7 @@ reg [31:0]  s_req_addr;
 // ページのレベル
 reg [1:0]   level;
 // 次にアクセスするアドレス
-reg [33:0]  next_address;
+reg [33:0]  next_addr;
 // 結果
 reg [31:0]  result_inst;
 // 保存されたアドレスのvpn, offset
@@ -69,7 +69,7 @@ wire [21:0] validonly_pte_ppn  = memresp.inst[31:10];
 
 assign sv32_req_ready   = state == IDLE;
 assign sv32_req_valid   = state == WALK_READY || state == IF_READY;
-assign sv32_req_addr    = next_address[31:0];
+assign sv32_req_addr    = next_addr[31:0];
 assign sv32_resp_valid  = state == IF_END;
 assign sv32_resp_addr   = s_req_addr;
 assign sv32_resp_inst   = result_inst;
@@ -85,7 +85,7 @@ else if (sv32_enable) begin
             s_req_addr  <= ireq.addr;
             // 5.3.2 step 3
             level       <= 1; // level = 2 - 1 = 1スタート
-            next_address<= {satp_ppn, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
+            next_addr<= {satp_ppn, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
         end
     end
     WALK_READY: begin
@@ -106,16 +106,16 @@ else if (sv32_enable) begin
                 // ppn[1], ppn[0], page offset
                 // 12    , 10    , 12
                 if (level == 2'b11 || level == 2'b10)
-                    next_address <= 34'b0; // ！！！勝手な未定義動作です！！！
+                    next_addr <= 34'b0; // ！！！勝手な未定義動作です！！！
                 if (level == 2'b01)
-                    next_address <= {validonly_pte_ppn1, s_vpn0, s_page_offset};
+                    next_addr <= {validonly_pte_ppn1, s_vpn0, s_page_offset};
                 if (level == 2'b00)
-                    next_address <= {validonly_pte_ppn1, validonly_pte_ppn0, s_page_offset};
+                    next_addr <= {validonly_pte_ppn1, validonly_pte_ppn0, s_page_offset};
             end else begin
                 // 5.3.2 step 4
                 level <= level - 2'd1;
                 // 2回目は必ずvpn0
-                next_address <= {validonly_pte_ppn, s_vpn0, {PTESIZE_WIDTH{1'b0}}};
+                next_addr <= {validonly_pte_ppn, s_vpn0, {PTESIZE_WIDTH{1'b0}}};
             end
         end
     end
@@ -126,7 +126,7 @@ else if (sv32_enable) begin
     end
     IF_VALID: begin
         if (memresp.valid) begin
-            state <= IF_VALID;
+            state <= IF_END;
             result_inst <= memresp.inst;
         end
     end
