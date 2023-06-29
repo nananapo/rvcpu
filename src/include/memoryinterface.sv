@@ -5,7 +5,7 @@
 
 // ready, validはChiselのデータ型に従う
 typedef struct packed {
-    logic           ready; // 使わない
+    logic           ready;
     logic           valid;
     logic [31:0]    addr;
 } IRequest;
