@@ -117,6 +117,7 @@ assign ds_exe_ctrl.wb_addr      = ds_ctrl.wb_addr;
 assign ds_exe_ctrl.csr_cmd      = ds_ctrl.csr_cmd;
 assign ds_exe_ctrl.jmp_pc_flg   = ds_ctrl.jmp_pc_flg;
 assign ds_exe_ctrl.jmp_reg_flg  = ds_ctrl.jmp_reg_flg;
+assign ds_exe_ctrl.svinval      = ds_ctrl.svinval;
 
 assign ds_exe_imm_i = ds_imm_i;
 assign ds_exe_imm_b = ds_imm_b;

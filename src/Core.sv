@@ -515,6 +515,7 @@ always @(posedge clk) begin
         $display("data,decodestage.decode.csr_cmd,d,%b", id_ds_ctrl.csr_cmd);
         $display("data,decodestage.decode.jmp_pc,d,%b", id_ds_ctrl.jmp_pc_flg);
         $display("data,decodestage.decode.jmp_reg,d,%b", id_ds_ctrl.jmp_reg_flg);
+        $display("data,decodestage.decode.svinval,d,%b", id_ds_ctrl.svinval);
         $display("data,decodestage.decode.imm_i,h,%b", id_ds_imm_i);
         $display("data,decodestage.decode.imm_s,h,%b", id_ds_imm_s);
         $display("data,decodestage.decode.imm_b,h,%b", id_ds_imm_b);

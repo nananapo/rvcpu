@@ -72,6 +72,7 @@ typedef struct packed
     reg [2:0]       csr_cmd;
     reg             jmp_pc_flg;
     reg             jmp_reg_flg;
+    reg             svinval;
 } ctrltype;
 
 typedef struct packed

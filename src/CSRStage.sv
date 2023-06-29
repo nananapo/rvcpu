@@ -488,7 +488,7 @@ assign csr_trap_flg  = csr_valid && (may_trap || cmd_is_trap);
 
 assign output_mode = mode;
 assign output_satp = satp;
-assign satp_change_hazard = csr_valid && can_write && cmd_is_write && addr == ADDR_SATP;
+assign satp_change_hazard = csr_valid && ((can_write && cmd_is_write && addr == ADDR_SATP) || csr_ctrl.svinval); // SVINVALはsatpを変えてしまったものとして扱うことでflushする
 
 // mret, sret, ecallのtrap_vectorはレジスタ経由で渡す
 // 割り込み、例外はワイヤで渡す

@@ -98,5 +98,6 @@ wire [6:0] opcode       = inst[6:0];
 assign ctrl.wb_addr     = inst[11:7];
 assign ctrl.jmp_pc_flg  = opcode == INST_JAL_OPCODE;
 assign ctrl.jmp_reg_flg = funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE;
+assign ctrl.svinval     = opcode == INST_SVINVAL_OPCODE;
 
 endmodule

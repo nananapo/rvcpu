@@ -42,3 +42,6 @@ localparam CSR_C    = 3'b011;
 localparam CSR_ECALL= 3'b100;
 localparam CSR_SRET = 3'b101;
 localparam CSR_MRET = 3'b110;
+
+localparam SVINVAL_N = 1'b0;
+localparam SVINVAL_Y = 1'b1;

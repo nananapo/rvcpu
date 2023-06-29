@@ -169,3 +169,10 @@ localparam INST_RV32A_AMOSWAP_W_FUNCT3  = 3'b010;
 localparam INST_RV32A_AMOSWAP_W_FUNCT5  = 5'b00001;
 
 `endif
+
+
+/*----------------Svinal---------------*/
+localparam INST_SVINVAL_OPCODE = 7'b1110011;
+localparam INST_SVINVAL_FUNCT3 = 3'b000;
+localparam INST_SVINVAL_SINVAL_VMA_FUNCT7 = 7'b0001011;
+localparam INST_SVINVAL_SFENCE_FUNCT7 = 7'b0001100;
