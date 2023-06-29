@@ -14,11 +14,13 @@ module Core #(
     input wire [63:0]   reg_mtime,
     input wire [63:0]   reg_mtimecmp,
 
-    inout wire IRequest         ireq,
-    inout wire IResponse        iresp,
-    output IUpdatePredictionIO  updateio,
-    inout wire DRequest         dreq,
-    inout wire DResponse        dresp,
+    inout wire IRequest     ireq,
+    inout wire IResponse    iresp,
+    output IUpdatePredictionIO  updateio, // reg
+    inout wire DRequest     dreq,
+    inout wire DResponse    dresp,
+    output wire modetype    csr_mode,
+    output wire [31:0]      csr_satp,
 
     output reg          exit,
     output reg [31:0]   gp
@@ -96,8 +98,6 @@ wire            exe_calc_stall;
 wire            csr_csr_trap_flg;
 wire [31:0]     csr_trap_vector;
 wire            csr_stall_flg;
-wire modetype   csr_mode;
-wire [31:0]     csr_satp;
 
 // exe -> mem wire
 wire            exe_mem_valid;
@@ -110,6 +110,7 @@ wire [31:0]     exe_mem_rs2_data;
 
 // csr -> mem wire
 wire [31:0]     csr_mem_csr_rdata;
+wire            satp_change_hazard;
 
 // mem reg
 reg             mem_valid = 0;
@@ -254,6 +255,8 @@ always @(posedge clk) begin
         exe_valid   <= 0;
     else if (ds_stall && !exe_stall)
         exe_valid   <= 0;
+    else if (!csr_stall_flg && csr_csr_trap_flg)
+        exe_valid   <= 0;
     else if (!ds_stall && !exe_stall) begin
         exe_valid   <= ds_exe_valid;
         exe_pc      <= ds_exe_pc;
@@ -276,10 +279,9 @@ wire branch_fail = exe_valid && (
                           (exe_branch_taken && id_pc != exe_branch_target) || (!exe_branch_taken && id_pc != exe_pc + 4)
                       : 1'b0
                     );
-wire csr_trap_fail = csr_csr_trap_flg;
 
 // csrはトラップするときに1クロックストールする
-wire branch_hazard_now = !csr_stall_flg && (csr_trap_fail || branch_fail);
+wire branch_hazard_now = !csr_stall_flg && (csr_csr_trap_flg || branch_fail || satp_change_hazard);
 // 分岐ハザードよりもCSRのトラップを優先する
 wire [31:0] branch_target = csr_csr_trap_flg ? csr_trap_vector : 
                             exe_branch_taken ? exe_branch_target : exe_pc + 4;
@@ -440,7 +442,11 @@ CSRStage #(
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
     .reg_mtime(reg_mtime),
-    .reg_mtimecmp(reg_mtimecmp)
+    .reg_mtimecmp(reg_mtimecmp),
+
+    .output_mode(csr_mode),
+    .output_satp(csr_satp),
+    .satp_change_hazard(satp_change_hazard)
 );
 
 MemoryStage #() memorystage

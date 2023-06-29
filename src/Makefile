@@ -1,6 +1,9 @@
 FILES = test.sv \
 		main.sv \
 		Core.sv \
+		ALU.sv \
+		CSRStage.sv \
+		DAccessCntr.sv \
 		DivNbit.sv \
 		DivUnsignedNbit.sv \
 		Memory.sv \
@@ -15,37 +18,37 @@ FILES = test.sv \
 		MemoryMapped_MachineTimeRegister.sv \
 		MemoryMappedIO_Uart_rx.sv \
 		MemoryMappedIO_Uart_tx.sv \
-		DAccessCntr.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
-		CSRStage.sv \
+		PageTableWalker.sv \
 		WriteBackStage.sv \
 		TwoBitCounter.sv \
-		ALU.sv \
 		SyncQueue.sv \
-		FastSyncQueue.sv
-
-UART_FILES = Uart_rx.sv \
-			Uart_tx.sv
+		FastSyncQueue.sv \
+		Uart_rx.sv \
+		Uart_tx.sv
 
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST -DPRINT_DEBUGINFO
 DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
 
 d:
-	iverilog $(DEFINE_DEBUG) -DPRINT_DEBUGINFO -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_DEBUG) -DPRINT_DEBUGINFO -g2005-sv -o debug.o -s test $(FILES)
+	vvp debug.o
+df:
+	iverilog $(DEFINE_DEBUG) -DFAST_UART -DPRINT_DEBUGINFO -g2005-sv -o debug.o -s test $(FILES)
 	vvp debug.o
 
 dn:
-	iverilog $(DEFINE_DEBUG) -DFAST_UART -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_DEBUG) -DFAST_UART -g2005-sv -o debug.o -s test $(FILES)
 	vvp debug.o
 
 riscv-tests:
-	iverilog $(DEFINE_RISCV_TESTS) -g2005-sv -o debug.o -s test $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_RISCV_TESTS) -g2005-sv -o debug.o -s test $(FILES)
 	vvp debug.o
 
 dm:
-	iverilog $(DEFINE_MEMORY_UART) -g2005-sv -o debug.o -s test  $(FILES) $(UART_FILES)
+	iverilog $(DEFINE_MEMORY_UART) -g2005-sv -o debug.o -s test  $(FILES)
 	vvp debug.o
 
 dv:

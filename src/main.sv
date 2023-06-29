@@ -68,10 +68,15 @@ always @(posedge clkConstrained) begin
     end
 end
 
+wire modetype   csr_mode;
+wire [31:0]     csr_satp;
+
 wire IRequest   ireq_mem;
 wire IResponse  iresp_mem;
-wire IRequest   ireq_core;
-wire IResponse  iresp_core;
+wire IRequest   ireq_ptw;
+wire IResponse  iresp_ptw;
+wire IRequest   ireq_iq;
+wire IResponse  iresp_iq;
 
 wire DRequest   dreq_mem;
 wire DResponse  dresp_mem;
@@ -98,13 +103,15 @@ MemMapCntr #(
     // make d
     .MEMORY_SIZE(2097152),
     //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
+    .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
     //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
+    //.MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
 `else
     // build
     .MEMORY_SIZE(1024 * 8), // 8 * 8Kb
     //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
+    //.MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
+    .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
 `endif
 ) memmapcntr (
     .clk(clkConstrained),
@@ -145,13 +152,25 @@ MemCmdCntr #() memcmdcntr (
     .mem_resp_valid(memcntr_memmap_resp_valid)
 );
 
+// PTW
+PageTableWalker #() ptw (
+    .clk(clkConstrained),
+    .ireq(ireq_ptw),
+    .iresp(iresp_ptw),
+    .memreq(ireq_mem),
+    .memresp(iresp_mem),
+    .csr_mode(csr_mode),
+    .csr_satp(csr_satp),
+    .kill(ireq_iq.valid) // 分岐のロジック再利用
+);
+
 // IF/ID Stage <-> InstQueue <-> MemCmdCntr
 InstQueue #() instqueue (
     .clk(clkConstrained),
-    .ireq(ireq_core),
-    .iresp(iresp_core),
-    .memreq(ireq_mem),
-    .memresp(iresp_mem),
+    .ireq(ireq_iq),
+    .iresp(iresp_iq),
+    .memreq(ireq_ptw),
+    .memresp(iresp_ptw),
     .updateio(updateio)
 );
 
@@ -174,11 +193,13 @@ Core #(
     .reg_mtime(reg_time),
     .reg_mtimecmp(reg_mtimecmp),
 
-    .ireq(ireq_core),
-    .iresp(iresp_core),
+    .ireq(ireq_iq),
+    .iresp(iresp_iq),
     .updateio(updateio),
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),
+    .csr_mode(csr_mode),
+    .csr_satp(csr_satp),
 
     .gp(gp),
     .exit(exit),

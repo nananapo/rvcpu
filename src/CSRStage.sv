@@ -20,7 +20,11 @@ module CSRStage #(
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
     input wire [63:0]   reg_mtime,
-    input wire [63:0]   reg_mtimecmp
+    input wire [63:0]   reg_mtimecmp,
+
+    output wire modetype output_mode,
+    output wire [31:0]   output_satp,
+    output wire          satp_change_hazard
 );
 
 `include "include/core.sv"
@@ -29,10 +33,6 @@ wire [31:0]  pc         = csr_pc;
 wire iidtype inst_id    = csr_inst_id;
 wire [2:0]   csr_cmd    = csr_ctrl.csr_cmd;
 wire [31:0]  op1_data   = csr_op1_data;
-
-// trap_vectorはレジスタ経由で渡す
-reg [31:0] trap_vector;
-assign csr_trap_vector  = trap_vector;
 
 // Table 3.6
                                                                                            // I ECODE Description 
@@ -73,7 +73,7 @@ typedef enum reg [11:0] {
     ADDR_SSTATUS    = 12'h100,
     ADDR_SIE        = 12'h104,
     ADDR_STVEC      = 12'h105,
-    ADDR_SCOUNTEREN = 12'h106, // 4.1.5 cycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
+    ADDR_SCOUNTEREN = 12'h106, // 5.1.5 U-modeがcycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
     // Supervisor Configuration
     // ADDR_SENVCFG    = 12'h10a, // read-only 0
     // Supervisor Trap Handling
@@ -301,6 +301,12 @@ reg [31:0] stvec    = 0;
 reg [31:0] sscratch = 0;
 reg [31:0] sepc     = 0;
 reg [31:0] scause   = 0;
+// 5.1.11
+// MODE(1) | ASID(9) | PPN(22)
+// Table 23
+// MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
+//            0ではないなら動作はUNSPECIFIED！こわいね 
+// MODE = 1 : Sv32, ページングが有効
 reg [31:0] satp     = 0;
 
 // 3.1.7
@@ -475,9 +481,18 @@ wire cmd_is_trap    = csr_cmd[2] == 1'b1;
 wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
 
 assign csr_stall_flg = csr_valid &&
-                       (cmd_is_2clock || may_trap) &&
-                       csr_inst_id != saved_inst_id;
+                       cmd_is_2clock &&
+                       (csr_inst_id != saved_inst_id);
 assign csr_trap_flg  = csr_valid && (may_trap || cmd_is_trap);
+
+assign output_mode = mode;
+assign output_satp = satp;
+assign satp_change_hazard = csr_valid && can_write && cmd_is_write && addr == ADDR_SATP;
+
+// mret, sret, ecallのtrap_vectorはレジスタ経由で渡す
+// 割り込み、例外はワイヤで渡す
+reg [31:0] trap_vector;
+assign csr_trap_vector = may_trap ? (trap_to_mmode ? mtvec_addr : stvec_addr) : trap_vector;
 
 always @(posedge clk) begin
 if (csr_valid) begin
@@ -498,7 +513,6 @@ if (csr_valid) begin
         // into privilege mode x, xPIE is set to the value of xIE; xIE is set to 0; and xPP is set to y
         if (trap_to_mmode) begin
             mode         <= M_MODE;
-            trap_vector  <= mtvec_addr;
             mcause       <= trap_cause;
             mepc         <= pc;
             mstatus_mpie <= mstatus_mie;
@@ -506,7 +520,6 @@ if (csr_valid) begin
             mstatus_mpp  <= mode;
         end else begin
             mode         <= S_MODE;
-            trap_vector  <= stvec_addr;
             scause       <= trap_cause;
             sepc         <= pc;
             mstatus_spie <= mstatus_sie;
