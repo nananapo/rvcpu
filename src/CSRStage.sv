@@ -539,30 +539,32 @@ if (csr_valid) begin
     end else begin
         // pending registerを更新する
         mip_mtip <= reg_mtime >= reg_mtimecmp;
-        // mret, sretを処理する
-        case (csr_cmd)
-            // MRET, SRET
-            // 3.1.6.1
-            // An MRET or SRET instruction is used to return from a trap in M-mode or S-mode respectively. When
-            // executing an xRET instruction, supposing xPP holds the value y, xIE is set to xPIE; the privilege mode is
-            // changed to y; xPIE is set to 1; and xPP is set to the least-privileged supported mode (U if U-mode is
-            // implemented, else M). If y≠M, xRET also sets MPRV=0.
-            CSR_MRET: begin
-                mstatus_mie     <= mstatus_mpie;
-                mode            <= modetype'(mstatus_mpp);
-                mstatus_mpie    <= 1;
-                mstatus_mpp     <= U_MODE;
-                trap_vector     <= mepc;
-            end
-            CSR_SRET: begin
-                mstatus_sie     <= mstatus_spie;
-                mode            <= modetype'({1'b0, mstatus_spp});
-                mstatus_spie    <= 1;
-                mstatus_spp     <= U_MODE[0];
-                trap_vector     <= sepc;
-            end
-            default: begin end
-        endcase
+        if (csr_inst_id != saved_inst_id) begin
+            // mret, sretを処理する
+            case (csr_cmd)
+                // MRET, SRET
+                // 3.1.6.1
+                // An MRET or SRET instruction is used to return from a trap in M-mode or S-mode respectively. When
+                // executing an xRET instruction, supposing xPP holds the value y, xIE is set to xPIE; the privilege mode is
+                // changed to y; xPIE is set to 1; and xPP is set to the least-privileged supported mode (U if U-mode is
+                // implemented, else M). If y≠M, xRET also sets MPRV=0.
+                CSR_MRET: begin
+                    mstatus_mie     <= mstatus_mpie;
+                    mode            <= modetype'(mstatus_mpp);
+                    mstatus_mpie    <= 1;
+                    mstatus_mpp     <= U_MODE;
+                    trap_vector     <= mepc;
+                end
+                CSR_SRET: begin
+                    mstatus_sie     <= mstatus_spie;
+                    mode            <= modetype'({1'b0, mstatus_spp});
+                    mstatus_spie    <= 1;
+                    mstatus_spp     <= U_MODE[0];
+                    trap_vector     <= sepc;
+                end
+                default: begin end
+            endcase
+        end
 
         if (can_write && cmd_is_write) begin
             case (addr)
