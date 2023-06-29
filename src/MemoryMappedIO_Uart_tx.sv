@@ -111,6 +111,7 @@ always @(posedge clk) begin
                         $write("%c", rdata[31:24]);
                     end
                 endcase
+                $fflush();
                 queue_head  <= queue_head + 1;
                 state       <= STATE_IDLE;
             end
