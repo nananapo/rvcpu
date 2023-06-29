@@ -24,6 +24,7 @@ int main(void)
     while (1)
     {
         *DEBUG_COUNT = *DEBUG_COUNT + 1;
+        // send_uint(*DEBUG_COUNT);
     }
 }
 
@@ -31,7 +32,7 @@ int main(void)
 
 void timer_interrupt(void)
 {
-    //send_uint(*DEBUG_COUNT);
+    // send_uint(*DEBUG_COUNT);
 
     uart_send_char('t');
     uart_send_char('i');
@@ -50,6 +51,10 @@ void timer_interrupt(void)
     uart_send_char('t');
 
     uart_send_char('\n');
+    
+    send_uint(*MTIMECMP_ADDR);
+    uart_send_char('\n');
+
     set_next_timecmp(INTERVAL);
 }
 
