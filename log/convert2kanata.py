@@ -50,12 +50,12 @@ for (clock, numberData, textData) in readClockCycle():
         # label
         pc = numberData[IF_INFO_PC][1][2:]
         inst = numberData[IF_INFO_INST][1][2:]
-        print("L", last_if_id, 0, "(" + hex(last_if_id) + ") " + pc + " : " + inst, sep="\t")
-        print("E", last_if_id, 0, IFSTAGE_NAME, sep="\t")
-
-        # フェッチ済み命令IDsetに追加
-        fetched_unused_id.add(last_if_id)
-
+        if last_if_id is not None:
+            # おかしい
+            print("L", last_if_id, 0, "(" + hex(last_if_id) + ") " + pc + " : " + inst, sep="\t")
+            print("E", last_if_id, 0, IFSTAGE_NAME, sep="\t")
+            # フェッチ済み命令IDsetに追加
+            fetched_unused_id.add(last_if_id)
         last_if_id = None
 
     if IF_FETCH_START in numberData:
