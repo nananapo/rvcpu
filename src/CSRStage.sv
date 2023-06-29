@@ -323,13 +323,14 @@ wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
 // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
 // priority order: MEI, MSI, MTI, SEI, SSI, STI.
+// TODO mip_* && mie_*をまとめる
 wire [31:0] interrupt_cause = (
-    mip_meip ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
-    mip_msip ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
-    mip_mtip ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
-    mip_seip ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
-    mip_ssip ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
-    mip_stip ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
+    (mip_meip && mie_meie) ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
+    (mip_msip && mie_msie) ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
+    (mip_mtip && mie_mtie) ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
+    (mip_seip && mie_seie) ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
+    (mip_ssip && mie_ssie) ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
+    (mip_stip && mie_stie) ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
     32'b0
 );
 wire [31:0] exception_cause = (
@@ -350,11 +351,11 @@ wire may_expt = (
 wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
 (
     (mip_meip && mie_meie) ||
-    (mip_seip && mie_seie) ||
-    (mip_mtip && mie_mtie) ||
-    (mip_stip && mie_stie) ||
     (mip_msip && mie_msie) ||
-    (mip_ssip && mie_ssie)
+    (mip_mtip && mie_mtie) ||
+    (mip_seip && mie_seie) ||
+    (mip_ssip && mie_ssie) ||
+    (mip_stip && mie_stie)
 );
 wire may_trap = may_expt || may_interrupt;
 
@@ -525,6 +526,15 @@ if (csr_valid) begin
             mstatus_spie <= mstatus_sie;
             mstatus_sie  <= 0;
             mstatus_spp  <= mode[0];
+        end
+        // interruptならmipを0にする
+        if (!may_expt) begin
+                 if (mip_meip && mie_meie) mip_meip <= 0;
+            else if (mip_msip && mie_msie) mip_msip <= 0;
+            else if (mip_mtip && mie_mtie) mip_mtip <= 0;
+            else if (mip_seip && mie_seie) mip_seip <= 0;
+            else if (mip_ssip && mie_ssie) mip_ssip <= 0;
+            else if (mip_stip && mie_stie) mip_stip <= 0;
         end
     end else begin
         // pending registerを更新する
