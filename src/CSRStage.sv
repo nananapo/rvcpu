@@ -552,73 +552,74 @@ if (csr_valid) begin
                 trap_vector     <= sepc;
             end
             default: begin end
-        endcase 
-    end
-    if (can_write && cmd_is_write) begin
-        case (addr)
-            // Machine Trap Setup
-            ADDR_MSTATUS: begin
-                mstatus_mpp  <= wdata[12:11];
-                mstatus_spp  <= wdata[8];
-                mstatus_mpie <= wdata[7];
-                mstatus_spie <= wdata[5];
-                mstatus_mie  <= wdata[3];
-                mstatus_sie  <= wdata[1];
-            end
-            ADDR_MEDELEG: medeleg <= wdata;
-            ADDR_MIDELEG: begin
-                mideleg_custom <= wdata[31:16];
-                mideleg_meip <= wdata[11];
-                mideleg_seip <= wdata[9];
-                mideleg_mtip <= wdata[7];
-                mideleg_stip <= wdata[5];
-                mideleg_msip <= wdata[3];
-                mideleg_ssip <= wdata[1];
-            end
-            ADDR_MIE: begin
-                mie_meie <= wdata[11];
-                mie_seie <= wdata[9];
-                mie_mtie <= wdata[7];
-                mie_stie <= wdata[5];
-                mie_msie <= wdata[3];
-                mie_ssie <= wdata[1];
-            end
-            ADDR_MTVEC: mtvec <= wdata;
-            // Machine Trap Handling
-            ADDR_MSCRATCH:  mscratch <= wdata;
-            ADDR_MEPC:      mepc     <= {wdata[31:2], 2'b00};
-            ADDR_MCAUSE:    mcause   <= wdata;
-            ADDR_MIP: begin
-                mip_seip <= wdata[9];
-                mip_stip <= wdata[5];
-                mip_ssip <= wdata[1];
-            end
-            ADDR_MTVAL2: mtvec2 <= wdata;
-            // Supervisor Trap Setup
-            ADDR_SSTATUS: begin
-                mstatus_spp <= wdata[8];
-                mstatus_spie<= wdata[5];
-                mstatus_sie <= wdata[1];
-            end
-            ADDR_SIE: begin
-                mie_seie <= wdata[9];
-                mie_stie <= wdata[5];
-                mie_ssie <= wdata[1];
-            end
-            ADDR_STVEC: stvec   <= wdata;
-            // Supervisor Trap Handling
-            ADDR_SSCRATCH: sscratch <= wdata;
-            ADDR_SEPC:     sepc <= wdata;
-            ADDR_SCAUSE:   scause <= wdata;
-            ADDR_SIP: begin
-                mip_seip <= wdata[9];
-                mip_stip <= wdata[5];
-                mip_ssip <= wdata[1];
-            end
-            // Supervisor Protection and Translation
-            ADDR_SATP: satp <= wdata; 
-            default: begin end
         endcase
+
+        if (can_write && cmd_is_write) begin
+            case (addr)
+                // Machine Trap Setup
+                ADDR_MSTATUS: begin
+                    mstatus_mpp  <= wdata[12:11];
+                    mstatus_spp  <= wdata[8];
+                    mstatus_mpie <= wdata[7];
+                    mstatus_spie <= wdata[5];
+                    mstatus_mie  <= wdata[3];
+                    mstatus_sie  <= wdata[1];
+                end
+                ADDR_MEDELEG: medeleg <= wdata;
+                ADDR_MIDELEG: begin
+                    mideleg_custom <= wdata[31:16];
+                    mideleg_meip <= wdata[11];
+                    mideleg_seip <= wdata[9];
+                    mideleg_mtip <= wdata[7];
+                    mideleg_stip <= wdata[5];
+                    mideleg_msip <= wdata[3];
+                    mideleg_ssip <= wdata[1];
+                end
+                ADDR_MIE: begin
+                    mie_meie <= wdata[11];
+                    mie_seie <= wdata[9];
+                    mie_mtie <= wdata[7];
+                    mie_stie <= wdata[5];
+                    mie_msie <= wdata[3];
+                    mie_ssie <= wdata[1];
+                end
+                ADDR_MTVEC: mtvec <= wdata;
+                // Machine Trap Handling
+                ADDR_MSCRATCH:  mscratch <= wdata;
+                ADDR_MEPC:      mepc     <= {wdata[31:2], 2'b00};
+                ADDR_MCAUSE:    mcause   <= wdata;
+                ADDR_MIP: begin
+                    mip_seip <= wdata[9];
+                    mip_stip <= wdata[5];
+                    mip_ssip <= wdata[1];
+                end
+                ADDR_MTVAL2: mtvec2 <= wdata;
+                // Supervisor Trap Setup
+                ADDR_SSTATUS: begin
+                    mstatus_spp <= wdata[8];
+                    mstatus_spie<= wdata[5];
+                    mstatus_sie <= wdata[1];
+                end
+                ADDR_SIE: begin
+                    mie_seie <= wdata[9];
+                    mie_stie <= wdata[5];
+                    mie_ssie <= wdata[1];
+                end
+                ADDR_STVEC: stvec   <= wdata;
+                // Supervisor Trap Handling
+                ADDR_SSCRATCH: sscratch <= wdata;
+                ADDR_SEPC:     sepc <= wdata;
+                ADDR_SCAUSE:   scause <= wdata;
+                ADDR_SIP: begin
+                    mip_seip <= wdata[9];
+                    mip_stip <= wdata[5];
+                    mip_ssip <= wdata[1];
+                end
+                // Supervisor Protection and Translation
+                ADDR_SATP: satp <= wdata; 
+                default: begin end
+            endcase
+        end
     end
 end
 end
