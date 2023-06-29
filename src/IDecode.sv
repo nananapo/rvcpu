@@ -92,12 +92,13 @@ assign {
     ctrl.csr_cmd
 } = decode(inst);
 
+wire [6:0] funct7       = inst[31:25];
 wire [2:0] funct3       = inst[14:12];
 wire [6:0] opcode       = inst[6:0];
 
 assign ctrl.wb_addr     = inst[11:7];
 assign ctrl.jmp_pc_flg  = opcode == INST_JAL_OPCODE;
 assign ctrl.jmp_reg_flg = funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE;
-assign ctrl.svinval     = opcode == INST_SVINVAL_OPCODE;
+assign ctrl.svinval     = (funct7 == INST_SVINVAL_SFENCE_FUNCT7 || funct7 == INST_SVINVAL_SINVAL_VMA_FUNCT7) && funct3 == INST_SVINVAL_FUNCT3 && opcode == INST_SVINVAL_OPCODE;
 
 endmodule
