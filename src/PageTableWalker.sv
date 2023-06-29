@@ -137,4 +137,17 @@ else if (sv32_enable) begin
 end
 end
 
+`ifdef PRINT_DEBUGINFO
+always @(posedge clk) begin
+    if (sv32_enable) begin
+        $display("data,fetchstage.ptw.state,d,%b", state);
+        $display("data,fetchstage.ptw.satp,h,%b", csr_satp);
+        $display("data,fetchstage.ptw.mode,d,%b", csr_mode);
+        $display("data,fetchstage.ptw.proc_pc,h,%b", state == IDLE ? ireq.addr : s_req_addr);
+        $display("data,fetchstage.ptw.next_addr,h,%b", next_addr[31:0]);
+        $display("data,fetchstage.ptw.memresp,h,%b", memresp.inst);
+    end
+end    
+`endif
+
 endmodule
