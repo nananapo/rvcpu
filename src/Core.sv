@@ -322,6 +322,25 @@ always @(posedge clk) begin
     updateio.target <= exe_branch_target;
 end
 
+`ifdef PRINT_BRANCH_ACCURACY
+int all_br_count = 0;
+int fail_count = 0;
+
+// 予測の成功率を求める
+always @(posedge clk) begin
+    if (exe_valid && exe_inst_id != exe_last_inst_id && (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg)) begin
+        if (all_br_count >= 100000) begin
+            $display("%d%% (%d / %d)", (all_br_count - fail_count) * 100 / all_br_count, all_br_count - fail_count, all_br_count);
+            all_br_count = 0;
+            fail_count  = 0;
+        end else begin
+            fail_count += branch_fail ? 1 : 0;
+            all_br_count += 1;
+        end
+    end
+end
+`endif
+
 // mem -> wb logic
 always @(posedge clk) begin
     // WBステージは1サイクルで終わる
