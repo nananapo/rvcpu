@@ -309,10 +309,12 @@ initial begin
 end
 
 iidtype exe_last_inst_id = INST_ID_RANDOM;
-// 分岐予測の更新
+// 分岐情報を渡す
 always @(posedge clk) begin
     if (exe_valid) exe_last_inst_id <= exe_inst_id;
-    updateio.valid  <= exe_valid && exe_inst_id != exe_last_inst_id;
+    updateio.valid  <=  exe_valid &&
+                        exe_inst_id != exe_last_inst_id &&
+                        (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg);
     updateio.pc     <= exe_pc;
     updateio.is_br  <= exe_ctrl.br_exe != BR_X;
     updateio.is_jmp <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg;
