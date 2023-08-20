@@ -54,12 +54,14 @@ dm:
 	vvp debug.o
 
 dv:
+	echo "$$VERILATOR_ROOT is ${VERILATOR_ROOT}"
 	rm -rf obj_dir
 	verilator --cc $(DEFINE_DEBUG) $(OPTION) -DFAST_UART test_verilator.sv --exe test_kenel_verilator_main.cpp
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
 	obj_dir/Vtest_verilator
 
 dvrv:
+	echo "$$VERILATOR_ROOT is ${VERILATOR_ROOT}"
 	rm -rf obj_dir
 	verilator --cc $(DEFINE_DEBUG) $(OPTION) -DPRINT_DEBUGINFO $(DEFINE_RISCV_TESTS) -DFAST_UART test_verilator.sv --exe test_kenel_verilator_main.cpp
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
