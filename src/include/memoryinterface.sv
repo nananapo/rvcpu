@@ -21,7 +21,8 @@ typedef struct packed {
 typedef struct packed {
     logic           valid;  // 予測を更新するかどうか
     logic [31:0]    pc;     // 更新したいpcのアドレス
-    logic           is_br;  // 分岐,ジャンプ命令なら1, 分岐命令ではない場合は0
+    logic           is_br;  // 分岐命令か
+    logic           is_jmp; // ジャンプ命令か
     logic           taken;  // 分岐したかどうか。ジャンプ命令なら常に1
     logic [31:0]    target; // 分岐先
 } IUpdatePredictionIO;
