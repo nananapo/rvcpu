@@ -78,38 +78,68 @@ wire [19:0] last_imm_j          = {
 wire [31:0] last_imm_j_sext     = {{11{last_imm_j[19]}}, last_imm_j, 1'b0};
 
 wire [6:0]  last_inst_opcode    = last_fetched_inst[6:0];
+wire [2:0]  last_inst_funct3    = last_fetched_inst[14:12];
 
 wire        last_inst_is_jal    = last_inst_opcode == INST_JAL_OPCODE;
 wire [31:0] last_jal_target     = last_fetched_pc + last_imm_j_sext;
 
+wire        last_inst_is_jalr_or_br = (
+    (last_inst_opcode == INST_JALR_OPCODE && last_inst_funct3 == INST_JALR_FUNCT3) || 
+    last_inst_opcode == INST_BR_OPCODE
+);
+
 wire jal_hazard = last_inst_is_jal && requested && request_pc != last_jal_target;
 // TODO ここまで
 
-`ifdef EXCLUDE_PREDICTION_MODULE
-    // 分岐予測を行わない場合はpc + 4を予測とする
-    `ifdef DEBUG
-        wire [31:0] __next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
-        assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
-    `else
-        assign next_pc = last_inst_is_jal ? last_jal_target + 4 : pc + 4;
-    `endif
-`else
-    wire [31:0] next_pc_tbc;
+
+
+
+
+
+// 分岐予測
+wire [31:0] next_pc_pred;
+
+`ifdef PRED_TBC
     TwoBitCounter #(
-        .ADDR_SIZE(32)
-    ) tbc (
+        .ADDR_WIDTH(10)
+    ) bp (
         .clk(clk),
         .pc(pc),
-        .next_pc(next_pc_tbc),
+        .next_pc(next_pc_pred),
         .updateio(updateio)
     );
-    `ifdef DEBUG
-        wire [31:0] __next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
-        assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
-    `else
-        assign next_pc = last_inst_is_jal ? last_jal_target + 4 : next_pc_tbc;
-    `endif
+`elsif PRED_LOCAL
+    LocalHistory2bit #() bp (
+        .clk(clk),
+        .pc(pc),
+        .next_pc(next_pc_pred),
+        .updateio(updateio)
+    );
+    initial $display("local");
+`elsif PRED_GLOBAL
+    GlobalHistory2bit #() bp (
+        .clk(clk),
+        .pc(pc),
+        .next_pc(next_pc_pred),
+        .updateio(updateio)
+    );
+    initial $display("global");
+`else
+    assign next_pc_pred = pc + 4; 
 `endif
+
+`ifdef DEBUG
+    wire [31:0] __next_pc = last_inst_is_jal && !last_inst_is_jalr_or_br ? last_jal_target + 4 : next_pc_pred;
+    assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
+`else
+    assign next_pc = last_inst_is_jal && !last_inst_is_jalr_or_br ? last_jal_target + 4 : next_pc_pred;
+`endif
+
+
+
+
+
+
 
 assign memreq.valid = buf_wready_next;
 assign memreq.addr  = pc;

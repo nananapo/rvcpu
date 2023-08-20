@@ -10,7 +10,7 @@ module TwoBitCounter #(
     input wire IUpdatePredictionIO updateio
 );
 
-localparam ADD_SIZE = 2 ** ADDR_WIDTH;
+localparam ADDR_SIZE = 2 ** ADDR_WIDTH;
 
 localparam DEFAULT_COUNTER_VALUE = 2'b0;
 

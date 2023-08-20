@@ -28,6 +28,8 @@
         <File path="src/PageTableWalker.sv" type="file.verilog" enable="1"/>
         <File path="src/SyncQueue.sv" type="file.verilog" enable="1"/>
         <File path="src/FastSyncQueue.sv" type="file.verilog" enable="1"/>
+        <File path="src/LocalHistory2bit.sv" type="file.verilog" enable="1"/>
+        <File path="src/GlobalHistory2bit.sv" type="file.verilog" enable="1"/>
         <File path="src/TwoBitCounter.sv" type="file.verilog" enable="1"/>
         <File path="src/Uart_rx.sv" type="file.verilog" enable="1"/>
         <File path="src/Uart_tx.sv" type="file.verilog" enable="1"/>

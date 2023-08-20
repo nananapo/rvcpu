@@ -23,6 +23,8 @@ FILES = test.sv \
 		PageTableWalker.sv \
 		WriteBackStage.sv \
 		TwoBitCounter.sv \
+		LocalHistory2bit.sv \
+		GlobalHistory2bit.sv \
 		SyncQueue.sv \
 		FastSyncQueue.sv \
 		Uart_rx.sv \
