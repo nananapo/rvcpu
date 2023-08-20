@@ -102,16 +102,16 @@ MemMapCntr #(
 `elsif DEBUG
     // make d
     .MEMORY_SIZE(2097152),
-    //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
-    //.MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-    //.MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
+    // .MEMORY_FILE("../tinyos/kernel.bin.aligned")
+    // .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
+    // .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
+    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
 `else
     // build
     .MEMORY_SIZE(1024 * 8), // 8 * 8Kb
-    //.MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    //.MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
-    .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
+    // .MEMORY_FILE("../tinyos/kernel.bin.aligned")
+    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
+    // .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
 `endif
 ) memmapcntr (
     .clk(clkConstrained),
