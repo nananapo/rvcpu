@@ -73,8 +73,11 @@ wire [31:0]     csr_satp;
 
 wire IRequest   ireq_mem;
 wire IResponse  iresp_mem;
+
+/* verilator lint_off UNOPTFLAT */
 wire IRequest   ireq_ptw;
 wire IResponse  iresp_ptw;
+/* verilator lint_on UNOPTFLAT */
 wire IRequest   ireq_iq;
 wire IResponse  iresp_iq;
 
