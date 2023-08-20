@@ -6,7 +6,7 @@ localparam INST_LHU_FUNCT3      = 3'b101;
 localparam INST_LW_FUNCT3       = 3'b010;
 
 
-localparam INST_STORE_OPCODE    = 7'b0000011;
+localparam INST_STORE_OPCODE    = 7'b0100011;
 localparam INST_SB_FUNCT3       = 3'b000;
 localparam INST_SH_FUNCT3       = 3'b001;
 localparam INST_SW_FUNCT3       = 3'b010;
