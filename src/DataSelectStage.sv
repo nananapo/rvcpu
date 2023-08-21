@@ -57,8 +57,8 @@ assign dh_stall_flg = ds_valid && (
     (/*dh_wb_fw.valid  && */!dh_wb_fw.can_forward  && (dh_wb_rs1  || dh_wb_rs2 ))
     );
 
-function [31:0] gen_op1data(
-    input [3:0]    op1_sel,
+function [$bits(UIntX)-1:0] gen_op1data(
+    input Op1Sel   op1_sel,
     input InstPc   pc,
     input UIntX    imm_z
 );
@@ -69,9 +69,9 @@ case(op1_sel)
 endcase
 endfunction
 
-function [31:0] gen_op2data(
-    input [3:0]     op2_sel,
-    input [4:0]     rs2_addr,
+function [$bits(UIntX)-1:0] gen_op2data(
+    input Op2Sel   op2_sel,
+    input [4:0]    rs2_addr,
     input UIntX    imm_i,
     input UIntX    imm_s,
     input UIntX    imm_j,

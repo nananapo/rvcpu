@@ -86,7 +86,7 @@ function [
         {M_F7   , X_X, M_REM_F3     , X_5, M_OP}    : decode = {ALU_REM   , BR_X    , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU, CSR_X};
         {M_F7   , X_X, M_REMU_F3    , X_5, M_OP}    : decode = {ALU_REMU  , BR_X    , OP1_RS1, OP2_RS2W, MEN_X , REN_S, WB_ALU, CSR_X};
 
-        default : decode = {ALU_ADD, BR_X, ALU_X, OP1_X, OP2_X, MEN_X, SIZE_X, REN_X, WB_X, CSR_X};
+        default : decode = {ALU_ADD, BR_X, OP1_X, OP2_X, MEN_X, REN_X, WB_X, CSR_X};
     endcase
 endfunction
 
