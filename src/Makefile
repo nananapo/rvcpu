@@ -1,40 +1,41 @@
 FILES = test.sv \
 		main.sv \
-		Core.sv \
-		ALU.sv \
-		CSRStage.sv \
-		DAccessCntr.sv \
-		DivNbit.sv \
-		DivUnsignedNbit.sv \
+		Uart_rx.sv \
+		Uart_tx.sv \
 		Memory.sv \
-		InstQueue.sv \
+		Core.sv \
 		IDecode.sv \
 		ImmDecode.sv \
-		DataSelectStage.sv \
-		ExecuteStage.sv \
-		MemoryStage.sv \
+		InstQueue.sv \
+		SyncQueue.sv \
 		MemCmdCntr.sv \
 		MemMapCntr.sv \
 		MemoryMapped_MachineTimeRegister.sv \
 		MemoryMappedIO_Uart_rx.sv \
 		MemoryMappedIO_Uart_tx.sv \
+		PageTableWalker.sv \
+		DAccessCntr.sv \
+		#ALU.sv \
+		CSRStage.sv \
+		DivNbit.sv \
+		DivUnsignedNbit.sv \
+		DataSelectStage.sv \
+		ExecuteStage.sv \
+		MemoryStage.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
-		PageTableWalker.sv \
 		WriteBackStage.sv \
 		TwoBitCounter.sv \
 		LocalHistory2bit.sv \
 		GlobalHistory2bit.sv \
-		SyncQueue.sv \
 		FastSyncQueue.sv \
-		Uart_rx.sv \
-		Uart_tx.sv
 
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TEST -DPRINT_DEBUGINFO
 DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
 
 OPTION=""
+
 
 d:
 	iverilog $(DEFINE_DEBUG) $(OPTION) -DPRINT_DEBUGINFO -g2005-sv -o debug.o -s test $(FILES)

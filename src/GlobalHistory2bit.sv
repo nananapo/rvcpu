@@ -1,6 +1,6 @@
 module GlobalHistory2bit #(
-    parameter WIDTH_PC = 5,
-    parameter WIDTH_HIST = 10
+    parameter WIDTH_PC = 20,
+    parameter WIDTH_HIST = 20
 )(
     input wire          clk,
     input wire [31:0]   pc,         // 予測したいアドレス

@@ -1,5 +1,3 @@
-`include "include/memoryinterface.sv"
-
 module DAccessCntr (
     input wire              clk,
     inout wire DRequest     dreq,

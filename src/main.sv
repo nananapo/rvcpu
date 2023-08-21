@@ -1,4 +1,6 @@
 `default_nettype none
+
+`include "include/basic.svh"
 `include "include/memoryinterface.sv"
 
 module main #(
@@ -22,6 +24,7 @@ module main #(
     output wire[31:0]   gp
 `endif
 );
+
 
 `ifndef DEBUG
     wire         exit;

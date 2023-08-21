@@ -1,3 +1,4 @@
+
 module InstQueue #(
     parameter QUEUE_SIZE = 16
 ) (
@@ -11,13 +12,13 @@ module InstQueue #(
     input wire IUpdatePredictionIO updateio
 );
 
+`include "include/basicparams.svh"
 `include "include/inst.sv"
-`include "include/core.sv"
 
 typedef struct packed {
     logic [31:0] addr;
     logic [31:0] inst;
-    iidtype inst_id;
+    IId inst_id;
 } BufType;
 
 wire buf_kill;
@@ -32,7 +33,7 @@ assign buf_kill         = branch_hazard;
 assign buf_wvalid       = !jal_hazard && requested && memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.inst;
-assign buf_wdata.inst_id= inst_id - INST_ID_ONE;
+assign buf_wdata.inst_id= inst_id - IID_ONE;
 
 assign iresp.addr       = buf_rdata.addr;
 assign iresp.inst       = buf_rdata.inst;
@@ -56,7 +57,7 @@ SyncQueue #(
 );
 
 reg [31:0]  pc          = 32'd0;
-iidtype     inst_id     = INST_ID_ZERO;
+IId     inst_id     = IID_ZERO;
 
 reg         requested   = 0;
 reg [31:0]  request_pc  = 32'd0;

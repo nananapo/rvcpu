@@ -5,8 +5,8 @@ module ExecuteStage
     input wire          exe_valid,
     input wire [31:0]   exe_pc,
     input wire [31:0]   exe_inst,
-    input wire iidtype  exe_inst_id,
-    input wire ctrltype exe_ctrl,
+    input wire IId  exe_inst_id,
+    input wire Ctrl exe_ctrl,
     input wire [31:0]   exe_imm_b,
     input wire [31:0]   exe_imm_j,
     input wire [31:0]   exe_op1_data,
@@ -16,8 +16,8 @@ module ExecuteStage
     output wire             exe_mem_valid,
     output wire [31:0]      exe_mem_pc,
     output wire [31:0]      exe_mem_inst,
-    output wire iidtype     exe_mem_inst_id,
-    output wire ctrltype    exe_mem_ctrl,
+    output wire IId     exe_mem_inst_id,
+    output wire Ctrl    exe_mem_ctrl,
     output wire [31:0]      exe_mem_alu_out,
     output wire [31:0]      exe_mem_rs2_data,
     
@@ -27,15 +27,13 @@ module ExecuteStage
     output wire         calc_stall_flg
 );
 
-`include "include/core.sv"
-
 wire [31:0] pc          = exe_pc;
 wire [31:0] inst        = exe_inst;
-wire iidtype inst_id    = exe_inst_id;
-wire ctrltype ctrl      = exe_ctrl;
+wire IId inst_id    = exe_inst_id;
+wire Ctrl ctrl      = exe_ctrl;
 
-wire alui_exe_type i_exe= exe_ctrl.i_exe;
-wire br_exe_type br_exe = exe_ctrl.br_exe;
+wire AluSel i_exe= exe_ctrl.i_exe;
+wire BrSel br_exe = exe_ctrl.br_exe;
 wire alum_exe_type m_exe= exe_ctrl.m_exe;
 wire [31:0] op1_data    = exe_op1_data;
 wire [31:0] op2_data    = exe_op2_data;
@@ -90,7 +88,7 @@ wire        is_mul              = m_exe == ALUM_MUL || m_exe == ALUM_MULH || m_e
 reg         calc_started        = 0; // 複数サイクルかかる計算を開始済みか
 reg         is_calculated       = 0; // 複数サイクルかかる計算が終了しているか
 
-iidtype     saved_inst_id       = INST_ID_RANDOM;
+IId     saved_inst_id       = IID_RANDOM;
 wire        may_start_m         = !is_calculated || saved_inst_id != inst_id; // 複数サイクルかかる計算を始める可能性があるか
 
 wire        divm_start          = exe_valid && is_div && may_start_m && divm_ready;
@@ -173,7 +171,7 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,exestage.valid,b,%b", exe_valid);
-    $display("data,exestage.inst_id,h,%b", exe_valid ? exe_inst_id : INST_ID_NOP);
+    $display("data,exestage.inst_id,h,%b", exe_valid ? exe_inst_id : IID_X);
     if (exe_valid) begin
         $display("data,exestage.pc,h,%b", exe_pc);
         $display("data,exestage.inst,h,%b", exe_inst);

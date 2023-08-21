@@ -4,8 +4,8 @@ module MemoryStage(
     input wire          mem_valid,
     input wire [31:0]   mem_pc,
     input wire [31:0]   mem_inst,
-    input wire iidtype  mem_inst_id,
-    input wire ctrltype mem_ctrl,
+    input wire IId  mem_inst_id,
+    input wire Ctrl mem_ctrl,
     input wire [31:0]   mem_alu_out,
     input wire [31:0]   mem_csr_rdata,
     input wire [31:0]   mem_rs2_data,
@@ -13,8 +13,8 @@ module MemoryStage(
     output wire             mem_wb_valid,
     output wire [31:0]      mem_wb_pc,
     output wire [31:0]      mem_wb_inst,
-    output wire iidtype     mem_wb_inst_id,
-    output wire ctrltype    mem_wb_ctrl,
+    output wire IId     mem_wb_inst_id,
+    output wire Ctrl    mem_wb_ctrl,
     output wire [31:0]      mem_wb_alu_out,
     output wire [31:0]      mem_wb_mem_rdata,
     output wire [31:0]      mem_wb_csr_rdata,
@@ -25,9 +25,6 @@ module MemoryStage(
     inout wire DResponse    dresp
 );
 
-`include "include/core.sv"
-`include "include/memoryinterface.sv"
-
 typedef enum reg [1:0]
 {
     IDLE, WAIT_READY, WAIT_VALID 
@@ -37,19 +34,19 @@ statetype state = IDLE;
 
 wire [31:0]     pc          = mem_pc;
 wire [31:0]     inst        = mem_inst;
-wire iidtype    inst_id     = mem_inst_id;
-wire ctrltype   ctrl        = mem_ctrl;
+wire IId    inst_id     = mem_inst_id;
+wire Ctrl   ctrl        = mem_ctrl;
 wire [31:0]     rs2_data    = mem_rs2_data;
 wire [31:0]     alu_out     = mem_alu_out;
 
 reg     is_cmd_executed = 0;
-iidtype saved_inst_id   = INST_ID_RANDOM;
+IId saved_inst_id   = IID_RANDOM;
 wire    may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 
-men_type_type replace_mem_wen = MEN_X;
-wire men_type_type mem_wen  = men_type_type'(!mem_valid ? MEN_X : 
+MemSel replace_mem_wen = MEN_X;
+wire MemSel mem_wen  = MemSel'(!mem_valid ? MEN_X : 
                                 saved_inst_id != inst_id ? ctrl.mem_wen : replace_mem_wen);
-wire sizetype mem_size = ctrl.mem_size;
+wire MemSize mem_size = ctrl.mem_size;
 
 wire is_store   = mem_wen == MEN_S;
 wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU;
@@ -70,8 +67,8 @@ assign memory_unit_stall = mem_valid &&
 reg [31:0]  saved_mem_rdata;
 
 function [31:0] mem_rdata_func(
-    input men_type_type mem_type,
-    input sizetype      mem_size,
+    input MemSel mem_type,
+    input MemSize      mem_size,
     input               mem_valid,
     input [31:0]        mem_rdata
 );
@@ -143,7 +140,7 @@ end
 always @(posedge clk) begin
     $display("data,memstage.valid,b,%b", mem_valid);
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : INST_ID_NOP);
+    $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : IID_X);
     if (mem_valid) begin
         $display("data,memstage.pc,h,%b", pc);
         $display("data,memstage.inst,h,%b", inst);

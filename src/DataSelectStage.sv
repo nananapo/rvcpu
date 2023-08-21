@@ -6,8 +6,8 @@ module DataSelectStage
     input wire          ds_valid,
     input wire [31:0]   ds_pc,
     input wire [31:0]   ds_inst,
-    input wire iidtype  ds_inst_id,
-    input wire ctrltype ds_ctrl,
+    input wire IId  ds_inst_id,
+    input wire Ctrl ds_ctrl,
     input wire [31:0]   ds_imm_i,
     input wire [31:0]   ds_imm_s,
     input wire [31:0]   ds_imm_b,
@@ -18,8 +18,8 @@ module DataSelectStage
     output wire             ds_exe_valid,
     output wire [31:0]      ds_exe_pc,
     output wire [31:0]      ds_exe_inst,
-    output wire iidtype     ds_exe_inst_id,
-    output wire ctrltype    ds_exe_ctrl,
+    output wire IId     ds_exe_inst_id,
+    output wire Ctrl    ds_exe_ctrl,
     output wire [31:0]      ds_exe_imm_i,
     output wire [31:0]      ds_exe_imm_b,
     output wire [31:0]      ds_exe_imm_j,
@@ -28,16 +28,14 @@ module DataSelectStage
     output wire [31:0]      ds_exe_rs2_data,
 
     output wire             dh_stall_flg,
-    input wire fw_ctrltype  dh_exe_fw,
-    input wire fw_ctrltype  dh_mem_fw,
-    input wire fw_ctrltype  dh_wb_fw
+    input wire fw_Ctrl  dh_exe_fw,
+    input wire fw_Ctrl  dh_mem_fw,
+    input wire fw_Ctrl  dh_wb_fw
 );
-
-`include "include/core.sv"
 
 wire [31:0] pc      = ds_pc;
 wire [31:0] inst    = ds_inst;
-wire iidtype inst_id= ds_inst_id;
+wire IId inst_id= ds_inst_id;
 
 wire [4:0] rs1_addr = inst[19:15];
 wire [4:0] rs2_addr = inst[24:20];
@@ -134,7 +132,7 @@ assign ds_exe_rs2_data  = rs2_data;
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,datastage.valid,b,%b", ds_valid);
-    $display("data,datastage.inst_id,h,%b", ds_valid ? inst_id : INST_ID_NOP);
+    $display("data,datastage.inst_id,h,%b", ds_valid ? inst_id : IID_X);
     if (ds_valid) begin
         $display("data,datastage.pc,h,%b", pc);
         $display("data,datastage.inst,h,%b", inst);

@@ -6,8 +6,8 @@ module WriteBackStage(
     input wire          wb_valid,
     input wire [31:0]   wb_pc,
     input wire [31:0]   wb_inst,
-    input iidtype       wb_inst_id,
-    input ctrltype      wb_ctrl,
+    input IId       wb_inst_id,
+    input Ctrl      wb_ctrl,
     input wire [31:0]   wb_alu_out,
     input wire [31:0]   wb_mem_rdata,
     input wire [31:0]   wb_csr_rdata,
@@ -16,12 +16,10 @@ module WriteBackStage(
     output wire         exit
 );
 
-`include "include/core.sv"
-
 wire [31:0] pc              = wb_pc;
 wire [31:0] inst            = wb_inst;
-wire iidtype inst_id        = wb_inst_id;
-wire ctrltype ctrl          = wb_ctrl;
+wire IId inst_id        = wb_inst_id;
+wire Ctrl ctrl          = wb_ctrl;
 wire [31:0] alu_out         = wb_alu_out;
 wire [31:0] memory_rdata    = wb_mem_rdata;
 wire [31:0] csr_rdata       = wb_csr_rdata;
@@ -47,7 +45,7 @@ wire [31:0] csr_rdata       = wb_csr_rdata;
 // WB STAGE
 function [31:0] wb_data_func(
     input [31:0]    pc,
-    input wb_sel_type   wb_sel,
+    input WbSel   wb_sel,
     input [31:0]    alu_out,
     input [31:0]    csr_rdata,
     input [31:0]    memory_rdata
@@ -64,7 +62,7 @@ wire [31:0] wb_data = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_r
 assign wb_wdata_out = wb_data;
 
 reg [31:0] inst_count = 0;
-iidtype    saved_inst_id = INST_ID_RANDOM;
+IId    saved_inst_id = IID_RANDOM;
 
 wire is_new_inst = wb_valid && saved_inst_id != inst_id;
 
@@ -81,7 +79,7 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,wbstage.valid,b,%b", wb_valid);
-    $display("data,wbstage.inst_id,h,%b", is_new_inst ? inst_id : INST_ID_NOP);
+    $display("data,wbstage.inst_id,h,%b", is_new_inst ? inst_id : IID_X);
     if (wb_valid) begin
         $display("data,wbstage.pc,h,%b", pc);
         $display("data,wbstage.inst,h,%b", inst);

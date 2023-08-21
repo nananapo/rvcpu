@@ -6,8 +6,8 @@ module CSRStage #(
     input wire          csr_valid,
     input wire [31:0]   csr_pc,
     input wire [31:0]   csr_inst,
-    input wire iidtype  csr_inst_id,
-    input wire ctrltype csr_ctrl,
+    input wire IId  csr_inst_id,
+    input wire Ctrl csr_ctrl,
     input wire [31:0]   csr_imm_i,
     input wire [31:0]   csr_op1_data,
 
@@ -27,10 +27,8 @@ module CSRStage #(
     output wire          satp_change_hazard
 );
 
-`include "include/core.sv"
-
 wire [31:0]  pc         = csr_pc;
-wire iidtype inst_id    = csr_inst_id;
+wire IId inst_id    = csr_inst_id;
 wire [2:0]   csr_cmd    = csr_ctrl.csr_cmd;
 wire [31:0]  op1_data   = csr_op1_data;
 
@@ -470,13 +468,12 @@ wire can_access = addr[9:8] <= mode;
 wire can_read   = can_access;
 wire can_write  = can_access && addr[11:10] != 2'b11;
 
-iidtype saved_inst_id = INST_ID_RANDOM;
+IId saved_inst_id = IID_RANDOM;
 always @(posedge clk) begin
     if (csr_valid)
         saved_inst_id <= csr_inst_id;
 end
 
-// defined in include/core.sv
 wire cmd_is_2clock  = csr_cmd[2] != 1'b0;
 wire cmd_is_trap    = csr_cmd[2] == 1'b1;
 wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
@@ -639,7 +636,7 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", csr_valid);
-    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? INST_ID_NOP : inst_id);
+    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? IID_X : inst_id);
     if (csr_valid && (csr_cmd != CSR_X || may_trap)) begin
         $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", csr_inst);
