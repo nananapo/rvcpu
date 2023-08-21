@@ -2,28 +2,30 @@ module MemoryStage(
     input wire          clk,
 
     input wire          mem_valid,
-    input wire [31:0]   mem_pc,
-    input wire [31:0]   mem_inst,
+    input wire InstPc   mem_pc,
+    input wire Inst   mem_inst,
     input wire IId  mem_inst_id,
     input wire Ctrl mem_ctrl,
-    input wire [31:0]   mem_alu_out,
-    input wire [31:0]   mem_csr_rdata,
-    input wire [31:0]   mem_rs2_data,
+    input wire UIntX  mem_alu_out,
+    input wire UIntX  mem_csr_rdata,
+    input wire UIntX  mem_rs2_data,
 
     output wire             mem_wb_valid,
-    output wire [31:0]      mem_wb_pc,
-    output wire [31:0]      mem_wb_inst,
+    output wire InstPc     mem_wb_pc,
+    output wire Inst      mem_wb_inst,
     output wire IId     mem_wb_inst_id,
     output wire Ctrl    mem_wb_ctrl,
-    output wire [31:0]      mem_wb_alu_out,
-    output wire [31:0]      mem_wb_mem_rdata,
-    output wire [31:0]      mem_wb_csr_rdata,
+    output wire UIntX      mem_wb_alu_out,
+    output wire UIntX      mem_wb_mem_rdata,
+    output wire UIntX      mem_wb_csr_rdata,
 
     output reg          memory_unit_stall,
 
     inout wire DRequest     dreq,
     inout wire DResponse    dresp
 );
+
+`include "include/basicparams.svh"
 
 typedef enum reg [1:0]
 {
@@ -32,12 +34,12 @@ typedef enum reg [1:0]
 
 statetype state = IDLE;
 
-wire [31:0]     pc          = mem_pc;
-wire [31:0]     inst        = mem_inst;
+wire InstPc     pc          = mem_pc;
+wire Inst     inst        = mem_inst;
 wire IId    inst_id     = mem_inst_id;
 wire Ctrl   ctrl        = mem_ctrl;
-wire [31:0]     rs2_data    = mem_rs2_data;
-wire [31:0]     alu_out     = mem_alu_out;
+wire UIntX    rs2_data    = mem_rs2_data;
+wire UIntX    alu_out     = mem_alu_out;
 
 reg     is_cmd_executed = 0;
 IId saved_inst_id   = IID_RANDOM;
@@ -53,7 +55,7 @@ wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU;
 
 wire        memu_cmd_ready   = dreq.ready;
 wire        memu_valid       = dresp.valid;
-wire [31:0] memu_rdata       = dresp.rdata;
+wire UIntX memu_rdata       = dresp.rdata;
 
 assign dreq.valid       = state == WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
 assign dreq.wen         = is_store;
@@ -64,13 +66,13 @@ assign dreq.wmask       = mem_size;
 assign memory_unit_stall = mem_valid && 
                             (state != IDLE || (may_start_m && mem_wen != MEN_X));
 
-reg [31:0]  saved_mem_rdata;
+reg UIntX  saved_mem_rdata;
 
-function [31:0] mem_rdata_func(
+function [$bits(UIntX)-1:0] mem_rdata_func(
     input MemSel mem_type,
     input MemSize      mem_size,
     input               mem_valid,
-    input [31:0]        mem_rdata
+    input UIntX        mem_rdata
 );
 if (mem_type == MEN_LS) begin
     if (mem_size == SIZE_B) // lb

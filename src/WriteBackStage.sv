@@ -1,54 +1,56 @@
 module WriteBackStage(
     input wire          clk,
 
-    output reg [31:0]   regfile[31:0],
+    output UIntX   regfile[31:0],
 
-    input wire          wb_valid,
-    input wire [31:0]   wb_pc,
-    input wire [31:0]   wb_inst,
-    input IId       wb_inst_id,
-    input Ctrl      wb_ctrl,
-    input wire [31:0]   wb_alu_out,
-    input wire [31:0]   wb_mem_rdata,
-    input wire [31:0]   wb_csr_rdata,
+    input wire         wb_valid,
+    input wire InstPc  wb_pc,
+    input wire Inst    wb_inst,
+    input wire IId     wb_inst_id,
+    input wire Ctrl    wb_ctrl,
+    input wire UIntX   wb_alu_out,
+    input wire UIntX   wb_mem_rdata,
+    input wire UIntX   wb_csr_rdata,
 
-    output wire [31:0]  wb_wdata_out,
+    output wire UIntX  wb_wdata_out,
     output wire         exit
 );
 
-wire [31:0] pc              = wb_pc;
-wire [31:0] inst            = wb_inst;
+`include "include/basicparams.svh"
+
+wire InstPc pc              = wb_pc;
+wire Inst inst            = wb_inst;
 wire IId inst_id        = wb_inst_id;
 wire Ctrl ctrl          = wb_ctrl;
-wire [31:0] alu_out         = wb_alu_out;
-wire [31:0] memory_rdata    = wb_mem_rdata;
-wire [31:0] csr_rdata       = wb_csr_rdata;
+wire UIntX alu_out         = wb_alu_out;
+wire UIntX memory_rdata    = wb_mem_rdata;
+wire UIntX csr_rdata       = wb_csr_rdata;
 
 `ifdef RISCV_TEST
     integer loop_i;
     initial begin
         for (loop_i = 0; loop_i < 32; loop_i = loop_i + 1)
-            regfile[loop_i] = 32'hffffffff;
+            regfile[loop_i] = PC_MAX;
     end
     assign exit = pc == 32'h00000044;
 `else
     integer loop_i;
     initial begin
-        regfile[1] = 32'hffffffff;
+        regfile[1] = PC_MAX;
         regfile[2] = 32'h00007500;
         for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
-            regfile[loop_i] = 32'hffffffff;
+            regfile[loop_i] = PC_MAX;
     end
     assign exit = pc == 32'hffffff00;
 `endif
 
 // WB STAGE
-function [31:0] wb_data_func(
-    input [31:0]    pc,
+function [$bits(UIntX)-1:0] wb_data_func(
+    input InstPc    pc,
     input WbSel   wb_sel,
-    input [31:0]    alu_out,
-    input [31:0]    csr_rdata,
-    input [31:0]    memory_rdata
+    input UIntX    alu_out,
+    input UIntX    csr_rdata,
+    input UIntX    memory_rdata
 );
     case (wb_sel)
         WB_MEM  : wb_data_func = memory_rdata;
@@ -58,11 +60,11 @@ function [31:0] wb_data_func(
     endcase
 endfunction
 
-wire [31:0] wb_data = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
+wire UIntX wb_data = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
 assign wb_wdata_out = wb_data;
 
-reg [31:0] inst_count = 0;
-IId    saved_inst_id = IID_RANDOM;
+UIntX inst_count = 0;
+IId   saved_inst_id = IID_RANDOM;
 
 wire is_new_inst = wb_valid && saved_inst_id != inst_id;
 

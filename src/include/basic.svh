@@ -1,11 +1,11 @@
 `ifndef BASIC_SVH
-
 `define BASIC_SVH
 
-`define XLEN 64
-`define XLEN64
-// `define XLEN 32
-// `define XLEN32
+// `define XLEN 64
+// `define XLEN64
+`define XLEN 32
+`define XLEN32
+
 `define IALIGN 32
 `define ILEN 32
 
@@ -16,9 +16,9 @@
 `endif
 
 
-typedef logic [ILEN-1:0] Inst;
-typedef logic [XLEN-1:0] InstPc;
-typedef logic [XLEN-1:0] UIntX;
+typedef logic [`ILEN-1:0] Inst;
+typedef logic [`XLEN-1:0] InstPc;
+typedef logic [`XLEN-1:0] UIntX;
 
 typedef enum logic [4:0] {
     ALU_X,
@@ -130,11 +130,12 @@ typedef struct packed
     logic        valid;
     logic        can_forward;
     logic [4:0]  addr;
-    logic [31:0] wdata;
+    UIntX       wdata;
 } FwCtrl;
 
+`define IID_LEN 64
 typedef struct packed {
-    logic [IID_LEN-1:0] id;
+    logic [`IID_LEN-1:0] id;
 } IId;
 
 typedef enum logic [1:0] {

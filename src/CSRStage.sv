@@ -4,18 +4,18 @@ module CSRStage #(
     input  wire         clk,
 
     input wire          csr_valid,
-    input wire [31:0]   csr_pc,
-    input wire [31:0]   csr_inst,
+    input wire InstPc   csr_pc,
+    input wire Inst   csr_inst,
     input wire IId  csr_inst_id,
     input wire Ctrl csr_ctrl,
-    input wire [31:0]   csr_imm_i,
-    input wire [31:0]   csr_op1_data,
+    input wire UIntX   csr_imm_i,
+    input wire UIntX   csr_op1_data,
 
-    output wire [31:0]  csr_mem_csr_rdata,
+    output wire UIntX  csr_mem_csr_rdata,
 
     output wire         csr_stall_flg,
     output wire         csr_trap_flg,
-    output wire [31:0]  csr_trap_vector,
+    output wire InstPc  csr_trap_vector,
 
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
@@ -23,14 +23,16 @@ module CSRStage #(
     input wire [63:0]   reg_mtimecmp,
 
     output wire modetype output_mode,
-    output wire [31:0]   output_satp,
+    output wire InstPc   output_satp,
     output wire          satp_change_hazard
 );
 
-wire [31:0]  pc         = csr_pc;
-wire IId inst_id    = csr_inst_id;
-wire [2:0]   csr_cmd    = csr_ctrl.csr_cmd;
-wire [31:0]  op1_data   = csr_op1_data;
+`include "include/basicparams.svh"
+
+wire InstPc pc = csr_pc;
+wire IId inst_id = csr_inst_id;
+wire CsrCmd csr_cmd    = csr_ctrl.csr_cmd;
+wire UIntX op1_data   = csr_op1_data;
 
 // Table 3.6
                                                                                            // I ECODE Description 

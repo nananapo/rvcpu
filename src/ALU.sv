@@ -10,26 +10,28 @@ module ALU #(
     output wire         branch_take
 );
 
+`include "include/basicparams.svh"
+
 // alu_out
-function [$bits(UIntX)-1:0] alui_func(
+function [$bits(UIntX)-1:0] alu_func(
     input AluSel fun,
     input UIntX  op1_data,
     input UIntX  op2_data
 );
     case (fun) 
-        ALUI_ADD    : alui_func = op1_data + op2_data;
-        ALUI_SUB    : alui_func = op1_data - op2_data;
-        ALUI_AND    : alui_func = op1_data & op2_data;
-        ALUI_OR     : alui_func = op1_data | op2_data;
-        ALUI_XOR    : alui_func = op1_data ^ op2_data;
-        ALUI_SLL    : alui_func = op1_data << op2_data[4:0];
-        ALUI_SRL    : alui_func = op1_data >> op2_data[4:0];
-        ALUI_SRA    : alui_func = $signed($signed(op1_data) >>> op2_data[4:0]);
-        ALUI_SLT    : alui_func = {{XLEN{1'b0}}, ($signed(op1_data) < $signed(op2_data))};
-        ALUI_SLTU   : alui_func = {{XLEN{1'b0}}, op1_data < op2_data};
-        ALUI_JALR   : alui_func = (op1_data + op2_data) & (~1);
-        ALUI_COPY1  : alui_func = op1_data;
-        default     : alui_func = DATA_X;
+        ALU_ADD  : alu_func = op1_data + op2_data;
+        ALU_SUB  : alu_func = op1_data - op2_data;
+        ALU_AND  : alu_func = op1_data & op2_data;
+        ALU_OR   : alu_func = op1_data | op2_data;
+        ALU_XOR  : alu_func = op1_data ^ op2_data;
+        ALU_SLL  : alu_func = op1_data << op2_data[4:0];
+        ALU_SRL  : alu_func = op1_data >> op2_data[4:0];
+        ALU_SRA  : alu_func = $signed($signed(op1_data) >>> op2_data[4:0]);
+        ALU_SLT  : alu_func = {{`XLEN-1{1'b0}}, ($signed(op1_data) < $signed(op2_data))};
+        ALU_SLTU : alu_func = {{`XLEN-1{1'b0}}, op1_data < op2_data};
+        ALU_JALR : alu_func = (op1_data + op2_data) & (~1);
+        ALU_COPY1: alu_func = op1_data;
+        default  : alu_func = DATA_X;
     endcase
 endfunction
 
@@ -49,7 +51,7 @@ function br_func(
     endcase
 endfunction
 
-assign alu_out      = ENABLE_ALU    == 1'b0 ? DATA_X : alui_func(i_exe, op1_data, op2_data);
+assign alu_out      = ENABLE_ALU    == 1'b0 ? DATA_X : alu_func(i_exe, op1_data, op2_data);
 assign branch_take  = ENABLE_BRANCH == 1'b0 ? 1'bx  : br_func(br_exe, op1_data, op2_data);
 
 endmodule
