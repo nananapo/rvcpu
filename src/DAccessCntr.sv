@@ -6,7 +6,7 @@ module DAccessCntr (
     inout wire DResponse    memresp
 );
 
-typedef enum reg [3:0] {
+typedef enum logic [3:0] {
     IDLE,
     LOAD_READY,
     LOAD_VALID,
@@ -67,13 +67,13 @@ wire require_load = (!sis_w || saddr_lb != 2'b00);
 // この命令は2回loadする必要があるか
 wire is_load_twice = (sis_w && saddr_lb != 2'b00) || (sis_h && saddr_lb == 2'd3);
 
-reg [31:0]  saved_rdata1;
-reg [31:0]  saved_rdata2;
+logic [31:0]  saved_rdata1;
+logic [31:0]  saved_rdata2;
 
-reg [31:0]  store_wdata1;
-reg [31:0]  store_wdata2;
+logic [31:0]  store_wdata1;
+logic [31:0]  store_wdata2;
 
-reg [31:0]  load_result;
+logic [31:0]  load_result;
 
 assign memreq.valid = state == LOAD_READY || state == LOAD_READY2 || state == STORE_READY || state == STORE_READY2;
 assign memreq.addr  = state == LOAD_READY || state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;

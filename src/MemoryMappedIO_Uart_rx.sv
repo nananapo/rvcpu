@@ -9,7 +9,7 @@ module MemoryMappedIO_Uart_rx #(
     output wire         output_cmd_ready,
     
     input  wire [31:0]  input_addr,
-    output reg  [31:0]  output_rdata,
+    output logic  [31:0]  output_rdata,
     output wire         output_rdata_valid,
     input  wire [31:0]  input_wdata
 );
@@ -22,9 +22,9 @@ localparam STATE_READBUF_AFTER_RX           = 2;
 localparam STATE_READBUF_BEFORE_WRITE_MEM   = 3;
 
 // メモリ
-reg [31:0] buffer[255:0];
-reg [9:0]  buffer_tail  = 0;
-reg [31:0] buffer_count = 0;
+logic [31:0] buffer[255:0];
+logic [9:0]  buffer_tail  = 0;
+logic [31:0] buffer_count = 0;
 
 `ifdef DEBUG
 initial begin
@@ -69,12 +69,12 @@ wire [7:0] read_addr    = func_read_addr(state, rx_rdata_valid, buffer_tail, inp
 wire [7:0] write_addr   = buffer_tail[9:2];
 
 // 状態
-reg [1:0] state = STATE_IDLE;
+logic [1:0] state = STATE_IDLE;
 
 // バッファから読んだデータ
-reg [31:0] buf_rdata = 0;
+logic [31:0] buf_rdata = 0;
 // UART
-reg [7:0] uart_rdata = 0;
+logic [7:0] uart_rdata = 0;
 
 function [31:0] func_buf_wdata(
     input [31:0] buf_rdata,
@@ -97,8 +97,8 @@ assign output_rdata_valid   = is_tail_addr || is_count_addr || (
         : 0
 );
 
-reg save_input_cmd_start = 0;
-reg save_input_cmd_write = 0;
+logic save_input_cmd_start = 0;
+logic save_input_cmd_write = 0;
 
 always @(posedge clk) begin
 

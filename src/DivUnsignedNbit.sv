@@ -10,20 +10,20 @@ module DivUnsignedNbit #(
 
     input wire [SIZE-1:0]   dividend,   // 被除数
     input wire [SIZE-1:0]   divisor,    // 除数
-    output reg [SIZE-1:0]   quotient,   // 商
-    output reg [SIZE-1:0]   remainder   // 余り
+    output logic [SIZE-1:0]   quotient,   // 商
+    output logic [SIZE-1:0]   remainder   // 余り
 );
 
-typedef enum reg [2:0] { 
+typedef enum logic [2:0] { 
     IDLE, DONE, DONE_ERROR, FIND_ONE, DIVIDE
-} name;
+} statetype;
 
-reg [2:0] state = IDLE;
+statetype state = IDLE;
 
-reg [SIZE-1:0] count;
-reg [SIZE + SIZE - 1:0] shifted_divisor;
+logic [SIZE-1:0] count;
+logic [SIZE + SIZE - 1:0] shifted_divisor;
 
-reg [SIZE-1:0] save_divisor;
+logic [SIZE-1:0] save_divisor;
 
 assign ready = state == IDLE;
 assign valid = state == DONE || state == DONE_ERROR;

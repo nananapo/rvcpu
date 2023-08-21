@@ -24,7 +24,7 @@ module MemMapCntr #(
 
 `include "include/memorymap.sv"
 
-reg [31:0] saved_addr = 32'h0; // これはメモリの最初のアドレスで初期化する必要がある
+logic [31:0] saved_addr = 32'h0; // これはメモリの最初のアドレスで初期化する必要がある
 always @(posedge clk) begin
     if (input_cmd_start && output_cmd_ready)
         saved_addr <= input_addr;

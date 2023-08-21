@@ -8,12 +8,12 @@ module MemoryMapped_MachineTimeRegister #(
     output wire         output_cmd_ready,
     
     input  wire [31:0]  input_addr,
-    output reg  [31:0]  output_rdata,
+    output logic  [31:0]  output_rdata,
     output wire         output_rdata_valid,
     input  wire [31:0]  input_wdata,
 
     input wire  [63:0]  mtime,
-    output reg  [63:0]  mtimecmp
+    output logic  [63:0]  mtimecmp
 );
 
 `include "include/memorymap.sv"
@@ -31,9 +31,9 @@ wire is_mtimecmp    = input_addr == MACHINETIMEREG_MTIMECMP;
 wire is_mtimecmph   = input_addr == MACHINETIMEREG_MTIMECMPH;
 wire is_debugreg    = input_addr == MACHINETIMEREG_DEBUG;
 
-reg nopr = 0;
-reg nopw = 0;
-reg [31:0] debugreg = 0;
+logic nopr = 0;
+logic nopw = 0;
+logic [31:0] debugreg = 0;
 
 always @(posedge clk) begin
     case (input_addr) 

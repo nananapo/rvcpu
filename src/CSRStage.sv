@@ -58,7 +58,7 @@ localparam MCAUSE_INSTRUCTION_PAGE_FAULT        = 32'b1100; // 0 12    Instructi
 localparam MCAUSE_LOAD_PAGE_FAULT               = 32'b1101; // 0 13    Load page fault
 localparam MCAUSE_STORE_AMO_PAGE_FAULT          = 32'b1111; // 0 15    Store/AMO page fault
 
-typedef enum reg [11:0] { 
+typedef enum logic [11:0] { 
     // Counters and Timers
     ADDR_CYCLE      = 12'hc00,
     ADDR_TIME       = 12'hc01,
@@ -127,7 +127,7 @@ typedef enum reg [11:0] {
     ADDR_MINSTRETH  = 12'hb82
 } csr_addr_type;
 
-typedef enum reg [1:0] { 
+typedef enum logic [1:0] { 
     XTVEC_DIRECT   = 2'b00,
     XTVEC_VECTORED = 2'b01
 } xtvec_mode_type;
@@ -144,14 +144,14 @@ wire mstatus_sum = 0; // 3.1.6.3 サポートしない
 wire mstatus_mprv= 0; // 3.1.6.3 サポートしない
 wire [1:0] mstatus_xs = 0; // 3.1.6.6 サポートしない
 wire [1:0] mstatus_fs = 0; // 3.1.6.6 サポートしない
-reg [1:0] mstatus_mpp = M_MODE; // S-modeでtrapしても書き込まれない // 初期値をM-modeにする
+logic [1:0] mstatus_mpp = M_MODE; // S-modeでtrapしても書き込まれない // 初期値をM-modeにする
 wire [1:0] mstatus_vs = 0; // 3.1.6.6 サポートしない
-reg mstatus_spp  = 0; // S-modeでtrapしたとき、アクティブなモードが書き込まれる
-reg mstatus_mpie = 0; // S-modeでtrapしても書き込まれない
+logic mstatus_spp  = 0; // S-modeでtrapしたとき、アクティブなモードが書き込まれる
+logic mstatus_mpie = 0; // S-modeでtrapしても書き込まれない
 wire mstatus_ube = 0; // 3.1.6.4 サポートしない
-reg mstatus_spie = 0; // S-modeでtrapした時、sieが書き込まれる
-reg mstatus_mie  = 0; // M-modeでtrapしたとき、クリアされる
-reg mstatus_sie  = 0; // S-modeでtrapしたとき、クリアされる
+logic mstatus_spie = 0; // S-modeでtrapした時、sieが書き込まれる
+logic mstatus_mie  = 0; // M-modeでtrapしたとき、クリアされる
+logic mstatus_sie  = 0; // S-modeでtrapしたとき、クリアされる
 
 wire mstatush_mbe = 0; // 3.1.6.4 サポートしない
 wire mstatush_sbe = 0; // 3.1.6.4 サポートしない
@@ -203,7 +203,7 @@ wire [31:0] mstatush = {26'b0, mstatush_mbe, mstatush_sbe, 4'b0};
 //                     32     ZYXWVUTSRQPONMLKJIHGFEDCBA
 wire [31:0] misa = 32'b01_000_00000000000001000100000001;
 
-reg [31:0] medeleg = 0;
+logic [31:0] medeleg = 0;
 // 9.4.2. Machine Interrupt Delegation Register (mideleg)
 // When the hypervisor extension is implemented, bits 10, 6, and 2 of mideleg (corresponding to the
 // standard VS-level interrupts) are each read-only one. Furthermore, if any guest external interrupts are
@@ -212,17 +212,17 @@ reg [31:0] medeleg = 0;
 // past M-mode to HS-mode
 // 
 // 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
-reg [15:0] mideleg_custom = 0;
+logic [15:0] mideleg_custom = 0;
 wire mideleg_sgeip  = 0; // any guest external interruptsをサポートする
-reg mideleg_meip    = 0;
+logic mideleg_meip    = 0;
 wire mideleg_vseip  = 0; // hypervisor extensionをサポートしない
-reg mideleg_seip    = 0;
-reg mideleg_mtip    = 0;
+logic mideleg_seip    = 0;
+logic mideleg_mtip    = 0;
 wire mideleg_vstip  = 0; // hypervisor extensionをサポートしない
-reg mideleg_stip    = 0;
-reg mideleg_msip    = 0;
+logic mideleg_stip    = 0;
+logic mideleg_msip    = 0;
 wire mideleg_vssip  = 0; // hypervisor extensionをサポートしない
-reg mideleg_ssip    = 0;
+logic mideleg_ssip    = 0;
 wire [31:0] mideleg = {
     mideleg_custom,
     3'b0,
@@ -241,12 +241,12 @@ wire [31:0] mideleg = {
     1'b0
 };
 
-reg mie_meie = 0; // external interrupt
-reg mie_seie = 0;
-reg mie_mtie = 0; // timer interrupt
-reg mie_stie = 0;
-reg mie_msie = 0; // software interrupt
-reg mie_ssie = 0;
+logic mie_meie = 0; // external interrupt
+logic mie_seie = 0;
+logic mie_mtie = 0; // timer interrupt
+logic mie_stie = 0;
+logic mie_msie = 0; // software interrupt
+logic mie_ssie = 0;
 
 wire [31:0] mie = {
     16'b0, 4'b0,
@@ -264,18 +264,18 @@ wire [31:0] sie = {
     mie_ssie, 1'b0
 };
 
-reg [31:0] mtvec = 0;
+logic [31:0] mtvec = 0;
 
-reg [31:0] mscratch = 0;
-reg [31:0] mepc     = 0;
-reg [31:0] mcause   = 0;
+logic [31:0] mscratch = 0;
+logic [31:0] mepc     = 0;
+logic [31:0] mcause   = 0;
 
-reg mip_meip = 0;
-reg mip_seip = 0;
-reg mip_mtip = 0;
-reg mip_stip = 0;
-reg mip_msip = 0;
-reg mip_ssip = 0;
+logic mip_meip = 0;
+logic mip_seip = 0;
+logic mip_mtip = 0;
+logic mip_stip = 0;
+logic mip_msip = 0;
+logic mip_ssip = 0;
 wire [31:0] mip = {
     20'b0,
     mip_meip, 1'b0,
@@ -294,20 +294,20 @@ wire [31:0] sip = {
     mip_ssip, 1'b0
 };
 
-reg [31:0] mtinst   = 0;
-reg [31:0] mtvec2   = 0;
+logic [31:0] mtinst   = 0;
+logic [31:0] mtvec2   = 0;
 
-reg [31:0] stvec    = 0;
-reg [31:0] sscratch = 0;
-reg [31:0] sepc     = 0;
-reg [31:0] scause   = 0;
+logic [31:0] stvec    = 0;
+logic [31:0] sscratch = 0;
+logic [31:0] sepc     = 0;
+logic [31:0] scause   = 0;
 // 5.1.11
 // MODE(1) | ASID(9) | PPN(22)
 // Table 23
 // MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
 //            0ではないなら動作はUNSPECIFIED！こわいね 
 // MODE = 1 : Sv32, ページングが有効
-reg [31:0] satp     = 0;
+logic [31:0] satp     = 0;
 
 // 3.1.7
 // MODE = Direct(0)  : BASE
@@ -491,7 +491,7 @@ assign satp_change_hazard = csr_valid && ((can_write && cmd_is_write && addr == 
 
 // mret, sret, ecallのtrap_vectorはレジスタ経由で渡す
 // 割り込み、例外はワイヤで渡す
-reg [31:0] trap_vector;
+logic [31:0] trap_vector;
 assign csr_trap_vector = may_trap ? (trap_to_mmode ? mtvec_addr : stvec_addr) : trap_vector;
 
 always @(posedge clk) begin

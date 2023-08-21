@@ -86,8 +86,8 @@ MultNbit #(
 wire        is_div              = i_exe == ALU_DIV || i_exe == ALU_DIVU || i_exe == ALU_REM || i_exe == ALU_REMU;
 wire        is_mul              = i_exe == ALU_MUL || i_exe == ALU_MULH || i_exe == ALU_MULHU || i_exe == ALU_MULHSU;
 
-reg         calc_started        = 0; // 複数サイクルかかる計算を開始済みか
-reg         is_calculated       = 0; // 複数サイクルかかる計算が終了しているか
+logic         calc_started        = 0; // 複数サイクルかかる計算を開始済みか
+logic         is_calculated       = 0; // 複数サイクルかかる計算が終了しているか
 
 IId         saved_inst_id       = IID_RANDOM;
 wire        may_start_m         = !is_calculated || saved_inst_id != inst_id; // 複数サイクルかかる計算を始める可能性があるか

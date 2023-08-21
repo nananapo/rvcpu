@@ -19,7 +19,7 @@ module Core #(
     output wire modetype    csr_mode,
     output wire InstPc      csr_satp,
 
-    output reg          exit,
+    output logic           exit,
     output UIntX   gp
 );
 
@@ -46,7 +46,7 @@ wire UIntX  id_ds_imm_z;
 
 
 // ds reg
-reg     ds_valid = 0;
+logic   ds_valid = 0;
 InstPc  ds_pc;
 Inst    ds_inst;
 IId     ds_inst_id;
@@ -75,7 +75,7 @@ wire UIntX     ds_exe_op2_data;
 wire UIntX     ds_exe_rs2_data;
 
 // exe, csr reg
-reg     exe_valid = 0;
+logic   exe_valid = 0;
 InstPc  exe_pc;
 Inst    exe_inst;
 IId     exe_inst_id;
@@ -111,7 +111,7 @@ wire UIntX     csr_mem_csr_rdata;
 wire            satp_change_hazard;
 
 // mem reg
-reg             mem_valid = 0;
+logic   mem_valid = 0;
 InstPc      mem_pc;
 Inst      mem_inst;
 IId         mem_inst_id;
@@ -134,7 +134,7 @@ wire UIntX     mem_wb_mem_rdata;
 wire UIntX     mem_wb_csr_rdata;
 
 // wb reg
-reg            wb_valid = 0;
+logic            wb_valid = 0;
 InstPc      wb_pc;
 Inst      wb_inst;
 IId         wb_inst_id;
@@ -194,8 +194,8 @@ assign iresp.ready  = !exited && !if_stall;
 
 // 最後のクロックでの分岐ハザード状態
 // このレジスタを介してireqすることで、EXEステージとinstqueueが直接つながらないようにする。
-reg branch_hazard_last_clock        = 0;
-reg [31:0] branch_target_last_clock = 32'h0;
+logic branch_hazard_last_clock        = 0;
+logic [31:0] branch_target_last_clock = 32'h0;
 
 // branchするとき(分岐予測に失敗したとき)はireq経由でリクエストする
 // ireq.validをtrueにすると、キューがリセットされる。
@@ -544,8 +544,7 @@ always @(posedge clk) begin
     end
 end
 
-reg [31:0] clk_count = 0;
-integer reg_i;
+int clk_count = 0;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
     $display("clock,%d", clk_count);
@@ -557,7 +556,7 @@ always @(negedge clk) begin
     $display("data,core.gp,h,%b", gp);
     $display("data,core.exit,b,%b", exit);
     `ifdef PRINT_REG
-    for (reg_i = 1; reg_i < 32; reg_i = reg_i + 1) begin
+    for (int i = 1; i < 32; i = i + 1) begin
         $display("data,core.regfile[%d],h,%b", reg_i, regfile[reg_i]);
     end
     `endif

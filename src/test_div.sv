@@ -1,15 +1,15 @@
 `default_nettype none
 
 module test_div();
-  reg clk = 1;
+  logic clk = 1;
 
-  reg           start;
-  reg           is_signed;
+  logic           start;
+  logic           is_signed;
   wire          ready;
   wire          valid;
   wire          error;
-  reg signed  [31:0]   dividend; 
-  reg signed  [31:0]   divisor;  
+  logic signed  [31:0]   dividend; 
+  logic signed  [31:0]   divisor;  
   wire signed [31:0]   quotient; 
   wire signed [31:0]   remainder;
 

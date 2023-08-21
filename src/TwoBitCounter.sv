@@ -16,14 +16,14 @@ localparam DEFAULT_COUNTER_VALUE = 2'b0;
 
 // 本当のpc (pc[ADDR_WIDTH + 2 - 1: 2]をindexにする。
 // 下位2bitはC拡張の命令でもない限り0となる)
-reg [31:0]  pc_keys         [ADDR_SIZE-1:0];
+logic [31:0]  pc_keys         [ADDR_SIZE-1:0];
 // ジャンプ先 (成立時), 非成立時はもちろんpc + 4 (あたりまえ体操)
-reg [31:0]  targets_taken   [ADDR_SIZE-1:0];
+logic [31:0]  targets_taken   [ADDR_SIZE-1:0];
 // 2bitのカウンタ。値によって成立するかどうかを決める
 // 失敗したら、正しい方向に1bit進める
 // take      <-> not take
 // 11 <-> 10 <-> 01 <-> 0
-reg [1:0]   counters        [ADDR_SIZE-1:0];
+logic [1:0]   counters        [ADDR_SIZE-1:0];
 
 IUpdatePredictionIO saved_updateio;
 initial begin

@@ -18,16 +18,16 @@ module Uart_tx
 
 localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
 
-reg [3:0]   txState     = 0;
-reg [31:0]  txCounter   = 0;
-reg [2:0]   txBitNumber = 0;
+logic [3:0]   txState     = 0;
+logic [31:0]  txCounter   = 0;
+logic [2:0]   txBitNumber = 0;
 
-reg [7:0]   dataCopy    = 0;
+logic [7:0]   dataCopy    = 0;
 
-reg txPin = 1;
+logic txPin = 1;
 assign uart_tx = txPin;
 
-reg readyPin = 1;
+logic readyPin = 1;
 assign ready = readyPin;
 
 localparam TX_STATE_IDLE        = 0;

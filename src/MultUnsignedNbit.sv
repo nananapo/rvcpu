@@ -9,19 +9,19 @@ module MultUnsignedNbit #(
 
     input wire [SIZE-1:0]   multiplicand,   // 被乗数
     input wire [SIZE-1:0]   multiplier,     // 乗数
-    output reg [SIZE*2-1:0] product         // 積
+    output logic [SIZE*2-1:0] product         // 積
 );
 
-typedef enum reg [1:0] { 
+typedef enum logic [1:0] { 
     IDLE, EXECUTE, DONE
 } statetype;
 
 statetype state = IDLE;
 
-reg [9:0] count = 0;
+logic [9:0] count = 0;
 
-reg [SIZE*2-1:0] save_multiplicand;
-reg [SIZE-1:0] save_multiplier;
+logic [SIZE*2-1:0] save_multiplicand;
+logic [SIZE-1:0] save_multiplier;
 
 assign ready = state == IDLE;
 assign valid = state == DONE;

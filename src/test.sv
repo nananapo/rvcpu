@@ -1,11 +1,11 @@
 `default_nettype none
 
 module test();
-  reg clk = 1;
-  reg exit;
-  reg [31:0] gp;
-  reg uart_rx = 0;
-  reg uart_tx;
+  logic clk = 1;
+  logic exit;
+  logic [31:0] gp;
+  logic uart_rx = 0;
+  logic uart_tx;
 
   main #() m(
     .clk27MHz(clk),

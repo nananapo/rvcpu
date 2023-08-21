@@ -56,19 +56,19 @@ SyncQueue #(
     .rdata(buf_rdata)
 );
 
-reg [31:0]  pc          = 32'd0;
+logic [31:0]  pc          = 32'd0;
 IId     inst_id     = IID_ZERO;
 
-reg         requested   = 0;
-reg [31:0]  request_pc  = 32'd0;
+logic         requested   = 0;
+logic [31:0]  request_pc  = 32'd0;
 
 wire branch_hazard      = ireq.valid;
 
 wire [31:0] next_pc;
 
 // TODO この処理を適切な場所に移動したい。
-reg [31:0] last_fetched_pc     = 32'hffffffff;
-reg [31:0] last_fetched_inst   = 32'hffffffff;
+logic [31:0] last_fetched_pc     = 32'hffffffff;
+logic [31:0] last_fetched_inst   = 32'hffffffff;
 
 wire [19:0] last_imm_j          = {
                                     last_fetched_inst[31],

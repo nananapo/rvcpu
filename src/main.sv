@@ -16,7 +16,7 @@ module main #(
     input  wire         uart_rx,
     output wire         uart_tx,
     
-    output reg [5:0]    led
+    output logic [5:0]    led
 
 `ifdef DEBUG
     ,
@@ -45,7 +45,7 @@ wire clkConstrained;
     assign clkConstrained = clk27MHz;
 `endif
 
-reg exited = 0;
+logic exited = 0;
 always @(posedge clkConstrained) begin
     if (exit) begin
         exited <= 1;
@@ -54,11 +54,11 @@ always @(posedge clkConstrained) begin
 end
 
 // Counter and Timers
-reg [63:0]  reg_cycle    = 0;
-reg [63:0]  reg_time     = 0;
+logic [63:0]  reg_cycle    = 0;
+logic [63:0]  reg_time     = 0;
 wire[63:0]  reg_mtimecmp;
 
-reg [31:0]  timecounter = 0;
+logic [31:0]  timecounter = 0;
 always @(posedge clkConstrained) begin
     // cycleは毎クロックインクリメント
     reg_cycle   <= reg_cycle + 1;

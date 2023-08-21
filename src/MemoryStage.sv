@@ -19,7 +19,7 @@ module MemoryStage(
     output wire UIntX      mem_wb_mem_rdata,
     output wire UIntX      mem_wb_csr_rdata,
 
-    output reg          memory_unit_stall,
+    output logic          memory_unit_stall,
 
     inout wire DRequest     dreq,
     inout wire DResponse    dresp
@@ -27,7 +27,7 @@ module MemoryStage(
 
 `include "include/basicparams.svh"
 
-typedef enum reg [1:0]
+typedef enum logic [1:0]
 {
     IDLE, WAIT_READY, WAIT_VALID 
 } statetype;
@@ -41,7 +41,7 @@ wire Ctrl   ctrl        = mem_ctrl;
 wire UIntX    rs2_data    = mem_rs2_data;
 wire UIntX    alu_out     = mem_alu_out;
 
-reg     is_cmd_executed = 0;
+logic     is_cmd_executed = 0;
 IId saved_inst_id   = IID_RANDOM;
 wire    may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 
@@ -66,7 +66,7 @@ assign dreq.wmask       = mem_size;
 assign memory_unit_stall = mem_valid && 
                             (state != IDLE || (may_start_m && mem_wen != MEN_X));
 
-reg UIntX  saved_mem_rdata;
+UIntX  saved_mem_rdata;
 
 function [$bits(UIntX)-1:0] mem_rdata_func(
     input MemSel mem_type,

@@ -7,7 +7,7 @@ module Uart_rx
     input  wire         clk,        // system clock
 
     input  wire         uart_rx,    // serial
-    output reg  [7:0]   rdata,      // rdata
+    output logic  [7:0]   rdata,      // rdata
     output wire         rdata_valid // rdata is valid(1)
 );
 
@@ -25,11 +25,11 @@ localparam RX_STATE_READ        = 2;
 localparam RX_STATE_STOP_BIT    = 3;
 localparam RX_STATE_DEBOUNCE    = 4;
 
-reg [3:0]   rxState     = RX_STATE_IDLE;
-reg [31:0]  rxCounter   = 0;
-reg [2:0]   rxBitNumber = 0;
+logic [3:0]   rxState     = RX_STATE_IDLE;
+logic [31:0]  rxCounter   = 0;
+logic [2:0]   rxBitNumber = 0;
 
-reg [7:0]   dataBuf     = 0;
+logic [7:0]   dataBuf     = 0;
 
 wire        rxPin       = uart_rx;
 

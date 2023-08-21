@@ -9,16 +9,16 @@ module MemoryMappedIO_Uart_tx #(
     output wire         output_cmd_ready,
     
     input  wire [31:0]  input_addr,
-    output reg  [31:0]  output_rdata,
+    output logic  [31:0]  output_rdata,
     output wire         output_rdata_valid,
     input  wire [31:0]  input_wdata
 );
 
 `include "include/memorymap.sv"
 
-reg [31:0]  buffer[63:0];
-reg  [7:0]  queue_tail  = 0;
-reg  [7:0]  queue_head  = 0;
+logic [31:0]  buffer[63:0];
+logic  [7:0]  queue_tail  = 0;
+logic  [7:0]  queue_head  = 0;
 
 integer loop_i;
 initial begin
@@ -53,8 +53,8 @@ always @(posedge clk) begin
 end
 
 // UART
-reg         tx_start    = 0;
-reg [7:0]   tx_data     = 0;
+logic         tx_start    = 0;
+logic [7:0]   tx_data     = 0;
 wire        tx_ready;
 
 Uart_tx #(
@@ -76,10 +76,10 @@ wire [1:0] addr_mod = queue_head[1:0]; // queue_head % 4
 localparam STATE_IDLE       = 0;
 localparam STATE_WAIT_READY = 1;
 
-reg state = STATE_IDLE;
+logic state = STATE_IDLE;
 
 // バッファから読んだデータ
-reg [31:0] rdata = 0;
+logic [31:0] rdata = 0;
 
 always @(posedge clk) begin
     case (state)

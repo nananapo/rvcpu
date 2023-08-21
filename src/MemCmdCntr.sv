@@ -16,7 +16,7 @@ module MemCmdCntr (
     input wire          mem_resp_valid
 );
 
-typedef enum reg [1:0] {
+typedef enum logic [1:0] {
     WAIT_CMD, WAIT_READY, WAIT_READ_VALID
 } statetype;
 

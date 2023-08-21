@@ -14,15 +14,15 @@ localparam SIZE_HIST = 2 ** WIDTH_HIST;
 localparam DEFAULT_COUNTER_VALUE = 2'b0;
 localparam DEFAULT_HISTORY_VALUE = {WIDTH_HIST{1'b0}};
 
-reg [1:0]  counters [SIZE_HIST-1:0]; // hist -> counter
-reg [31:0] targets [SIZE_PC-1:0]; // pc -> target
+logic [1:0]  counters [SIZE_HIST-1:0]; // hist -> counter
+logic [31:0] targets [SIZE_PC-1:0]; // pc -> target
 
 initial begin
     for (int i = 0; i < SIZE_HIST; i++)
         counters[i] = DEFAULT_COUNTER_VALUE;
 end
 
-reg [WIDTH_HIST-1:0] hist = DEFAULT_HISTORY_VALUE; 
+logic [WIDTH_HIST-1:0] hist = DEFAULT_HISTORY_VALUE; 
 
 wire [WIDTH_PC-1:0] pci   = pc[WIDTH_PC+2-1:2];
 wire [WIDTH_PC-1:0] u_pci = updateio.pc[WIDTH_PC+2-1:2];

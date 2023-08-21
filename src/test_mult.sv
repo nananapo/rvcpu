@@ -1,16 +1,16 @@
 `default_nettype none
 
 module test_mult();
-  reg clk = 1;
+  logic clk = 1;
 
-  reg           start;
-  reg           is_signed;
+  logic           start;
+  logic           is_signed;
   wire          ready;
   wire          valid;
 
   wire signed [63:0] product;
-  reg signed [31:0] multiplicand;
-  reg signed [31:0] multiplier;
+  logic signed [31:0] multiplicand;
+  logic signed [31:0] multiplier;
 
   MultNbit #() m(
     .clk(clk),

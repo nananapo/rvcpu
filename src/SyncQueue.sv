@@ -19,9 +19,9 @@ module SyncQueue #(
 
 localparam QUEUE_WIDTH = $clog2(QUEUE_SIZE);
 
-reg [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
-reg [QUEUE_WIDTH-1:0] head = 0;
-reg [QUEUE_WIDTH-1:0] tail = 0;
+logic [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
+logic [QUEUE_WIDTH-1:0] head = 0;
+logic [QUEUE_WIDTH-1:0] tail = 0;
 
 assign wready       = tail + {{QUEUE_WIDTH-1{1'd0}}, 1'd1} != head;
 assign wready_next  = wready && tail + {{QUEUE_WIDTH-2{1'd0}}, 2'b10} != head;

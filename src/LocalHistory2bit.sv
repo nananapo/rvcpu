@@ -16,9 +16,9 @@ localparam SIZE_PC      = 2 ** WIDTH_PC;
 localparam SIZE_HIST    = 2 ** WIDTH_HIST;
 localparam SIZE_COUNTER = 2 ** (WIDTH_PC + WIDTH_HIST);
 
-reg [WIDTH_HIST-1:0] history [SIZE_PC-1:0]; // pc -> hist
-reg [1:0]  counters [SIZE_COUNTER-1:0];         // hist + pc -> counter
-reg [31:0] targets [SIZE_PC-1:0];           // pc -> target
+logic [WIDTH_HIST-1:0] history [SIZE_PC-1:0]; // pc -> hist
+logic [1:0]  counters [SIZE_COUNTER-1:0];         // hist + pc -> counter
+logic [31:0] targets [SIZE_PC-1:0];           // pc -> target
 
 initial begin
     for (int i = 0; i < SIZE_COUNTER; i++)

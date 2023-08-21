@@ -10,16 +10,16 @@ module MultNbit #(
     input wire                      is_signed,      // signedかどうか
     input wire signed [SIZE-1:0]    multiplicand,   // 被乗数
     input wire signed [SIZE-1:0]    multiplier,     // 乗数
-    output reg signed [SIZE*2-1:0]  product         // 積
+    output logic signed [SIZE*2-1:0]  product         // 積
 );
 
-typedef enum reg { 
+typedef enum logic { 
     IDLE, WAIT
 } statetype;
 
 statetype state = IDLE;
 
-reg result_is_minus = 0;
+logic result_is_minus = 0;
 
 // mod(ified)_*
 // signedでマイナスな計算をunsignedでできるようにする

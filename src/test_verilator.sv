@@ -3,11 +3,11 @@
 module test(
     input wire clk
 );
-  reg exit;
-  reg [31:0] gp;
-  reg [5:0] led;
-  reg uart_rx = 0;
-  reg uart_tx;
+  logic exit;
+  logic [31:0] gp;
+  logic [5:0] led;
+  logic uart_rx = 0;
+  logic uart_tx;
 
   main #() m(
     .clk27MHz(clk),

@@ -18,7 +18,7 @@ localparam PTESIZE_WIDTH  = 2;
 
 // 単純にするため、
 // * IDLEからとりあえずREADYに遷移
-typedef enum reg [2:0] {
+typedef enum logic [2:0] {
     IDLE, WALK_READY, WALK_VALID, IF_READY, IF_VALID, IF_END
 } statetype;
 
@@ -47,13 +47,13 @@ assign iresp.inst    = sv32_enable ? sv32_resp_inst  : memresp.inst;
 // assign iresp.inst_id = x // inst_idはInstQueueで設定する
 
 // ireqがリクエストしたアドレス
-reg [31:0]  s_req_addr;
+logic [31:0]  s_req_addr;
 // ページのレベル
-reg [1:0]   level;
+logic [1:0]   level;
 // 次にアクセスするアドレス
-reg [33:0]  next_addr;
+logic [33:0]  next_addr;
 // 結果
-reg [31:0]  result_inst;
+logic [31:0]  result_inst;
 // 保存されたアドレスのvpn, offset
 wire [9:0]  s_vpn1          = s_req_addr[31:22];
 wire [9:0]  s_vpn0          = s_req_addr[21:12];

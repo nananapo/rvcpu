@@ -10,13 +10,13 @@ module Memory #(
     output wire         output_cmd_ready,
 
     input  wire [31:0]  input_addr,
-    output reg  [31:0]  output_rdata,
+    output logic  [31:0]  output_rdata,
     output wire         output_rdata_valid,
     input  wire [31:0]  input_wdata
 );
 
 // memory
-reg [31:0] mem [MEMORY_SIZE-1:0];
+logic [31:0] mem [MEMORY_SIZE-1:0];
 
 integer l = 0;
 

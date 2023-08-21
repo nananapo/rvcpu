@@ -11,18 +11,18 @@ module DivNbit #(
     input wire                      is_signed,  // signedかどうか
     input wire signed [SIZE-1:0]    dividend,   // 被除数
     input wire signed [SIZE-1:0]    divisor,    // 除数
-    output reg signed [SIZE-1:0]    quotient,   // 商
-    output reg signed [SIZE-1:0]    remainder   // 余り
+    output logic signed [SIZE-1:0]    quotient,   // 商
+    output logic signed [SIZE-1:0]    remainder   // 余り
 );
 
-typedef enum reg {
+typedef enum logic {
     IDLE, WAIT
 } statetype;
 
-reg state = IDLE;
+statetype state = IDLE;
 
-reg result_div_is_minus = 0;
-reg result_rem_is_minus = 0;
+logic result_div_is_minus = 0;
+logic result_rem_is_minus = 0;
 
 // mod(ified)_*
 // unsignedで計算するために、signedでマイナスならマイナスをかけている
