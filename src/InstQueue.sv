@@ -13,7 +13,7 @@ module InstQueue #(
 );
 
 `include "include/basicparams.svh"
-`include "include/inst.sv"
+`include "include/inst.svh"
 
 typedef struct packed {
     logic [31:0] addr;
@@ -56,13 +56,13 @@ SyncQueue #(
     .rdata(buf_rdata)
 );
 
-logic [31:0]  pc          = 32'd0;
+logic [31:0]  pc    = 32'd0;
 IId     inst_id     = IID_ZERO;
 
 logic         requested   = 0;
 logic [31:0]  request_pc  = 32'd0;
 
-wire branch_hazard      = ireq.valid;
+wire branch_hazard  = ireq.valid;
 
 wire [31:0] next_pc;
 
@@ -81,52 +81,59 @@ wire [31:0] last_imm_j_sext     = {{11{last_imm_j[19]}}, last_imm_j, 1'b0};
 wire [6:0]  last_inst_opcode    = last_fetched_inst[6:0];
 wire [2:0]  last_inst_funct3    = last_fetched_inst[14:12];
 
-wire        last_inst_is_jal    = last_inst_opcode == INST_JAL_OPCODE;
+wire        last_inst_is_jal    = last_inst_opcode == JAL_OP;
 wire [31:0] last_jal_target     = last_fetched_pc + last_imm_j_sext;
 
 wire        last_inst_is_jalr_or_br = (
-    (last_inst_opcode == INST_JALR_OPCODE && last_inst_funct3 == INST_JALR_FUNCT3) || 
-    last_inst_opcode == INST_BR_OPCODE
+    (last_inst_opcode == JALR_OP && last_inst_funct3 == JALR_F3) || 
+    last_inst_opcode == BR_OP
 );
 
 wire jal_hazard = last_inst_is_jal && requested && request_pc != last_jal_target;
 // TODO ここまで
 
 
-
+`ifdef RISCV_TEST
+    `define PRED_LOCAL
+`endif
 
 
 
 // 分岐予測
 wire [31:0] next_pc_pred;
+wire [31:0] pred_pc_base =  branch_hazard ? ireq.addr : 
+                            jal_hazard ? last_jal_target :
+                            pc;
 
 `ifdef PRED_TBC
     TwoBitCounter #(
         .ADDR_WIDTH(10)
     ) bp (
         .clk(clk),
-        .pc(pc),
+        .pc(pred_pc_base),
         .next_pc(next_pc_pred),
         .updateio(updateio)
     );
+    initial $display("branch pred : two bit counter");
 `elsif PRED_LOCAL
     LocalHistory2bit #() bp (
         .clk(clk),
-        .pc(pc),
+        .pc(pred_pc_base),
         .next_pc(next_pc_pred),
         .updateio(updateio)
     );
-    initial $display("local");
+    initial $display("branch pred : local history");
 `elsif PRED_GLOBAL
     GlobalHistory2bit #() bp (
         .clk(clk),
-        .pc(pc),
+        .pc(pred_pc_base),
         .next_pc(next_pc_pred),
         .updateio(updateio)
     );
-    initial $display("global");
+    initial $display("branch pred : global history");
 `else
-    assign next_pc_pred = pc + 4; 
+    assign next_pc_pred = pred_pc_base + 4; 
+    initial $display("no branch prediction module is selected");
 `endif
 
 `ifdef DEBUG
@@ -225,6 +232,30 @@ always @(posedge clk) begin
     // $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
     $display("data,fetchstage.requested,b,%b", requested);
     $display("data,fetchstage.request_pc,h,%b", request_pc);
+end
+`endif
+
+`ifdef PRINT_DEBUGINFO
+
+reg  [31:0] last_pc_pred_req;
+always @(posedge clk) begin
+    last_pc_pred_req <= pc;
+end
+
+always @(posedge clk) begin
+    $display("data,btb.update.valid,b,%b", updateio.valid);
+    $display("data,btb.update.pc,h,%b", updateio.pc);
+    $display("data,btb.update.is_br,b,%b", updateio.is_br);
+    $display("data,btb.update.is_jmp,b,%b", updateio.is_jmp);
+    $display("data,btb.update.taken,b,%b", updateio.taken);
+    $display("data,btb.update.target,h,%b", updateio.target);
+    `ifdef DEBUG
+        $display("data,btb.update.fail,b,%b", updateio.fail);
+    `endif
+
+    $display("data,btb.pred.use_prediction,b,%b", last_inst_is_jalr_or_br);
+    $display("data,btb.pred.pc,h,%b", pred_pc_base);
+    $display("data,btb.pred.pred_pc,h,%b", next_pc_pred);
 end
 `endif
 

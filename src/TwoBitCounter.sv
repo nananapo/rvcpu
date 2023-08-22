@@ -76,12 +76,6 @@ always @(posedge clk) begin
     $display("data,btb.pc_index,b,%b", pc2i);
     $display("data,btb.pc_keys[i],b,%b", pc_keys[pc2i]);
     $display("data,btb.counters[i],b,%b", counters[pc2i]);
-    $display("data,btb.update.valid,b,%b", saved_updateio.valid);
-    $display("data,btb.update.pc,b,%b", saved_updateio.pc);
-    $display("data,btb.update.pc_index,b,%b", upc2i);
-    $display("data,btb.update.is_br,b,%b", saved_updateio.is_br);
-    $display("data,btb.update.taken,b,%b", saved_updateio.taken);
-    $display("data,btb.update.target,b,%b", saved_updateio.target);
 end
 `endif
 */

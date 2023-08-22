@@ -319,6 +319,9 @@ always @(posedge clk) begin
     updateio.is_jmp <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg;
     updateio.taken  <= exe_branch_taken;
     updateio.target <= exe_branch_target;
+    `ifdef DEBUG
+        updateio.fail <= branch_fail;
+    `endif
 end
 
 `ifdef PRINT_BRANCH_ACCURACY

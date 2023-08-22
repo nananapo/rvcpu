@@ -23,6 +23,9 @@ typedef struct packed {
     logic   is_jmp; // ジャンプ命令か
     logic   taken;  // 分岐したかどうか。ジャンプ命令なら常に1
     InstPc  target; // 分岐先
+    `ifdef DEBUG
+    logic   fail;   // 予測に成功したかどうか
+    `endif
 } IUpdatePredictionIO;
 
 typedef struct packed {
