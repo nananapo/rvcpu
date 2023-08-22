@@ -560,7 +560,7 @@ always @(negedge clk) begin
     $display("data,core.exit,b,%b", exit);
     `ifdef PRINT_REG
     for (int i = 1; i < 32; i = i + 1) begin
-        $display("data,core.regfile[%d],h,%b", reg_i, regfile[reg_i]);
+        $display("data,core.regfile[%d],h,%b", i, wb_regfile[i]);
     end
     `endif
 end

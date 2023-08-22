@@ -74,10 +74,10 @@ end
 wire modetype   csr_mode;
 wire [31:0]     csr_satp;
 
+/* verilator lint_off UNOPTFLAT */
 wire IRequest   ireq_mem;
 wire IResponse  iresp_mem;
 
-/* verilator lint_off UNOPTFLAT */
 wire IRequest   ireq_ptw;
 wire IResponse  iresp_ptw;
 /* verilator lint_on UNOPTFLAT */
@@ -104,7 +104,8 @@ MemMapCntr #(
 `ifdef RISCV_TEST
     // make riscv-tests
     .MEMORY_SIZE(2097152),
-    .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+    // .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
+    .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
 `elsif DEBUG
     // make d
     .MEMORY_SIZE(2097152),

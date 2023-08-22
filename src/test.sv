@@ -21,7 +21,9 @@ module test();
   initial begin
     `ifdef PRINT_DEBUGINFO
         $display("START_DEBUG_LOG");
-        #20001 $finish;
+        `ifndef INFINITE_LOG
+            #50001 $finish;
+        `endif
     `endif
   end
 

@@ -125,7 +125,7 @@ always @(posedge clk) begin
             if (ireq.valid || dreq.valid) begin
                 if (!mem_req_ready)  state <= WAIT_READY;
                 else if (ireq.valid) state <= WAIT_READ_VALID;
-                else if (dreq.valid) state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
+                else /*if (dreq.valid)*/ state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
             end
         end
         WAIT_READY: begin
@@ -134,6 +134,8 @@ always @(posedge clk) begin
                     state <= WAIT_READ_VALID;
                 else if(saved_dreq.valid)
                     state <= statetype'(saved_dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
+                else
+                    state <= WAIT_READY;
             end
         end
         WAIT_READ_VALID: begin
@@ -150,7 +152,7 @@ always @(posedge clk) begin
                         saved_dreq  <= dreq;
                         if (!mem_req_ready)  state <= WAIT_READY;
                         else if (ireq.valid) state <= WAIT_READ_VALID;
-                        else if (dreq.valid) state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
+                        else /*if (dreq.valid)*/ state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
                     end else
                         state       <= WAIT_CMD;
                 // dreqが終わった => 新しく始める
@@ -160,7 +162,7 @@ always @(posedge clk) begin
                         saved_dreq  <= dreq;
                         if (!mem_req_ready)  state <= WAIT_READY;
                         else if (ireq.valid) state <= WAIT_READ_VALID;
-                        else if (dreq.valid) state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
+                        else /*if (dreq.valid)*/ state <= statetype'(dreq.wen ? WAIT_CMD : WAIT_READ_VALID);
                     end else
                         state       <= WAIT_CMD;
                 end

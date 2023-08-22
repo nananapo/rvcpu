@@ -96,19 +96,35 @@ always @(posedge clk) begin
                 case (addr_mod)
                     0: begin
                         tx_data  <= rdata[7:0];
-                        $write("%c", rdata[7:0]);
+                        `ifndef PRINT_DEBUGINFO
+                            $write("%c", rdata[7:0]);
+                        `else
+                            // $display("data,uart_tx.out,b,%b", rdata[7:0]);
+                        `endif
                     end
                     1: begin 
                         tx_data  <= rdata[15:8];
-                        $write("%c", rdata[15:8]);
+                        `ifndef PRINT_DEBUGINFO
+                            $write("%c", rdata[15:8]);
+                        `else
+                            // $display("data,uart_tx.out,b,%b", rdata[15:8]);
+                        `endif
                     end
                     2: begin 
                         tx_data  <= rdata[23:16];
-                        $write("%c", rdata[23:16]);
+                        `ifndef PRINT_DEBUGINFO
+                            $write("%c", rdata[23:16]);
+                        `else
+                            // $display("data,uart_tx.out,b,%b", rdata[23:16]);
+                        `endif
                     end
                     3: begin 
                         tx_data  <= rdata[31:24];
-                        $write("%c", rdata[31:24]);
+                        `ifndef PRINT_DEBUGINFO
+                            $write("%c", rdata[31:24]);
+                        `else
+                            // $display("data,uart_tx.out,b,%b", rdata[31:24]);
+                        `endif
                     end
                 endcase
                 $fflush();
@@ -119,12 +135,14 @@ always @(posedge clk) begin
     endcase
 end
 
+
+
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    // $display("info,memmapio.uart_tx.queue,queue: %d -> %d", queue_head, queue_tail);
-    // if (state == STATE_WAIT_READY && tx_ready) begin
-    //     $display("info,memmapio.uart_tx.send,send : 0x%h : %d", rdata, addr_mod);
-    // end
+    $display("info,memmapio.uart_tx.queue,queue: %d -> %d", queue_head, queue_tail);
+    if (state == STATE_WAIT_READY && tx_ready) begin
+        $display("info,memmapio.uart_tx.send,send : 0x%h (%d) : %d", rdata, rdata, addr_mod);
+    end
 end
 `endif
 

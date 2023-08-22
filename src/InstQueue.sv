@@ -1,6 +1,7 @@
 
 module InstQueue #(
-    parameter QUEUE_SIZE = 16
+    parameter QUEUE_SIZE = 16,
+    parameter INITIAL_ADDR = 32'h0
 ) (
     input wire          clk,
 
@@ -29,8 +30,7 @@ wire BufType buf_wdata;
 wire BufType buf_rdata;
 
 assign buf_kill         = branch_hazard;
-// TODO さらにレジスタをはさんでjal_hazardを消したい
-assign buf_wvalid       = !jal_hazard && requested && memresp.valid;
+assign buf_wvalid       = requested && memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.inst;
 assign buf_wdata.inst_id= inst_id - IID_ONE;
@@ -56,7 +56,7 @@ SyncQueue #(
     .rdata(buf_rdata)
 );
 
-logic [31:0]  pc    = 32'd0;
+logic [31:0]  pc    = INITIAL_ADDR;
 IId     inst_id     = IID_ZERO;
 
 logic         requested   = 0;
@@ -66,44 +66,41 @@ wire branch_hazard  = ireq.valid;
 
 wire [31:0] next_pc;
 
+
+
+logic [31:0] last_fetched_pc = 32'h0;
+logic [31:0] last_fetched_inst = 32'h0;
+
+
 // TODO この処理を適切な場所に移動したい。
-logic [31:0] last_fetched_pc     = 32'hffffffff;
-logic [31:0] last_fetched_inst   = 32'hffffffff;
+wire [31:0] fetched_pc     = requested ? memresp.addr : last_fetched_pc;
+wire [31:0] fetched_inst   = requested ? memresp.inst : last_fetched_inst;
 
-wire [19:0] last_imm_j          = {
-                                    last_fetched_inst[31],
-                                    last_fetched_inst[19:12],
-                                    last_fetched_inst[20],
-                                    last_fetched_inst[30:21]
-                                  };
-wire [31:0] last_imm_j_sext     = {{11{last_imm_j[19]}}, last_imm_j, 1'b0};
+wire [19:0] imm_j           = { fetched_inst[31],
+                                fetched_inst[19:12],
+                                fetched_inst[20],
+                                fetched_inst[30:21]};
+wire [31:0] imm_j_sext      = {{11{imm_j[19]}}, imm_j, 1'b0};
 
-wire [6:0]  last_inst_opcode    = last_fetched_inst[6:0];
-wire [2:0]  last_inst_funct3    = last_fetched_inst[14:12];
+wire [6:0]  inst_opcode     = fetched_inst[6:0];
+wire [2:0]  inst_funct3     = fetched_inst[14:12];
 
-wire        last_inst_is_jal    = last_inst_opcode == JAL_OP;
-wire [31:0] last_jal_target     = last_fetched_pc + last_imm_j_sext;
+wire        inst_is_jal     = inst_opcode == JAL_OP;
+wire [31:0] jal_target      = fetched_pc + imm_j_sext;
 
-wire        last_inst_is_jalr_or_br = (
-    (last_inst_opcode == JALR_OP && last_inst_funct3 == JALR_F3) || 
-    last_inst_opcode == BR_OP
-);
+wire inst_is_jalr = inst_opcode == JALR_OP && inst_funct3 == JALR_F3;
+wire inst_is_br = inst_opcode == BR_OP;
 
-wire jal_hazard = last_inst_is_jal && requested && request_pc != last_jal_target;
+wire jal_hazard = inst_is_jal && /* requested &&*/ request_pc != jal_target;
 // TODO ここまで
 
 
-`ifdef RISCV_TEST
-    `define PRED_LOCAL
-`endif
 
 
 
 // 分岐予測
+wire [31:0] pred_pc_base = request_pc;
 wire [31:0] next_pc_pred;
-wire [31:0] pred_pc_base =  branch_hazard ? ireq.addr : 
-                            jal_hazard ? last_jal_target :
-                            pc;
 
 `ifdef PRED_TBC
     TwoBitCounter #(
@@ -132,15 +129,20 @@ wire [31:0] pred_pc_base =  branch_hazard ? ireq.addr :
     );
     initial $display("branch pred : global history");
 `else
+    `define NO_PREDICITION_MODULE
     assign next_pc_pred = pred_pc_base + 4; 
     initial $display("no branch prediction module is selected");
 `endif
 
 `ifdef DEBUG
-    wire [31:0] __next_pc = last_inst_is_jal && !last_inst_is_jalr_or_br ? last_jal_target + 4 : next_pc_pred;
+    wire [31:0] __next_pc = jal_hazard ? jal_target + 4 :
+                            inst_is_br ? next_pc_pred + 4: 
+                            pc + 4;
     assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
 `else
-    assign next_pc = last_inst_is_jal && !last_inst_is_jalr_or_br ? last_jal_target + 4 : next_pc_pred;
+    assign next_pc =    jal_hazard ? jal_target + 4 :
+                        inst_is_br ? next_pc_pred + 4: 
+                        pc + 4;
 `endif
 
 
@@ -149,8 +151,25 @@ wire [31:0] pred_pc_base =  branch_hazard ? ireq.addr :
 
 
 
+`ifdef PRINT_MEMPERF
+int perf_counter = 0;
+int clk_count = 0;
+always @(posedge clk) begin
+    perf_counter += {31'b0, requested && (memresp.valid && memresp.addr == request_pc)};
+    if (clk_count % 10_000_000 == 0) begin
+        $display("iperf : %d", perf_counter);
+        perf_counter = 0;
+    end
+    clk_count += 1;
+end
+`endif
+
 assign memreq.valid = buf_wready_next;
-assign memreq.addr  = pc;
+assign memreq.addr  =   jal_hazard ? jal_target :
+                        inst_is_br ? next_pc_pred :
+                        pc;
+
+logic firstClk = 1;
 
 always @(posedge clk) begin
     // 分岐予測に失敗
@@ -160,32 +179,24 @@ always @(posedge clk) begin
         `endif
         pc          <= ireq.addr;
         requested   <= 0;
-
-        last_fetched_pc     <= 32'hffffffff;
-        last_fetched_inst   <= 32'hffffffff;
-    // jalの先読み失敗
-    end else if (jal_hazard) begin
-        requested   <= 0;
-        pc          <= last_jal_target;
-
-        `ifdef PRINT_DEBUGINFO
-            $display("info,fetchstage.event.jal_detect,jal hazard");
-        `endif
-
-        last_fetched_pc     <= 32'hffffffff;
-        last_fetched_inst   <= 32'hffffffff;
+        request_pc  <= ireq.addr;
     end else begin
+        if (jal_hazard) begin
+            `ifdef PRINT_DEBUGINFO
+                $display("info,fetchstage.event.jal_detect,jal hazard");
+            `endif
+        end
         if (requested) begin
             // リクエストが完了した
             if (memresp.valid && memresp.addr == request_pc) begin
-                last_fetched_pc         <= memresp.addr;
-                last_fetched_inst       <= memresp.inst;
-
                 `ifdef PRINT_DEBUGINFO
                     $display("info,fetchstage.event.fetch_end,fetch end");
                     $display("data,fetchstage.event.pc,h,%b", memresp.addr);
                     $display("data,fetchstage.event.inst,h,%b", memresp.inst);
                 `endif
+
+                last_fetched_pc <= memresp.addr;
+                last_fetched_inst <= memresp.inst;
 
                 // メモリがreadyかつmemreq.validならリクエストしてる
                 if (memreq.ready && memreq.valid) begin
@@ -197,7 +208,7 @@ always @(posedge clk) begin
                         $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
                     `endif
                 end else
-                    requested           <= 0;
+                    requested   <= 0;
             end
         end else begin
             // メモリがreadyかつmemreq.validならリクエストしてる
@@ -230,17 +241,14 @@ always @(posedge clk) begin
     // $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
     // $display("data,fetchstage.memresp.addr,h,%b", memresp.addr);
     // $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
-    $display("data,fetchstage.requested,b,%b", requested);
-    $display("data,fetchstage.request_pc,h,%b", request_pc);
+    $display("data,fetchstage.requested_pc,h,%b", request_pc);
+    $display("data,fetchstage.requesting_pc,h,%b", memreq.addr);
+    $display("data,fetchstage.requested_pc,h,%b", request_pc);
+    $display("data,fetchstage.memresp.inst_is_br,b,%b", inst_is_br);
 end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-
-reg  [31:0] last_pc_pred_req;
-always @(posedge clk) begin
-    last_pc_pred_req <= pc;
-end
 
 always @(posedge clk) begin
     $display("data,btb.update.valid,b,%b", updateio.valid);
@@ -253,7 +261,12 @@ always @(posedge clk) begin
         $display("data,btb.update.fail,b,%b", updateio.fail);
     `endif
 
-    $display("data,btb.pred.use_prediction,b,%b", last_inst_is_jalr_or_br);
+    $display("data,btb.pred.inst,h,%b", fetched_inst);
+    $display("data,btb.pred.inst_is_jal,h,%b", inst_is_jal);
+    $display("data,btb.pred.inst_is_jalr,h,%b", inst_is_jalr);
+    $display("data,btb.pred.inst_is_br,h,%b", inst_is_br);
+
+    $display("data,btb.pred.use_prediction,b,%b", !branch_hazard && !jal_hazard && inst_is_br);
     $display("data,btb.pred.pc,h,%b", pred_pc_base);
     $display("data,btb.pred.pred_pc,h,%b", next_pc_pred);
 end

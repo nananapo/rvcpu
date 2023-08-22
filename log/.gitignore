@@ -3,3 +3,4 @@ debug.*
 *.log
 __pycache__
 output/
+*.txt

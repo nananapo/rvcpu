@@ -138,6 +138,19 @@ always @(posedge clk) begin
     endcase
 end
 
+`ifdef PRINT_MEMPERF
+int memperf_counter = 0;
+int clk_count = 0;
+always @(posedge clk) begin
+    memperf_counter += {31'b0, state == WAIT_READY || state == WAIT_VALID};
+    if (clk_count % 10_000_000 == 0) begin
+        $display("memperf : %d", memperf_counter);
+        memperf_counter = 0;
+    end
+    clk_count += 1;
+end
+`endif
+
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,memstage.valid,b,%b", mem_valid);
