@@ -31,6 +31,8 @@ function [$bits(UIntX)-1:0] alu_func(
         ALU_SLTU : alu_func = {{`XLEN-1{1'b0}}, op1_data < op2_data};
         ALU_JALR : alu_func = (op1_data + op2_data) & (~1);
         ALU_COPY1: alu_func = op1_data;
+        ALU_CZERO_EQ: alu_func = op2_data == DATA_ZERO ? op1_data : DATA_ZERO;
+        ALU_CZERO_NE: alu_func = op2_data != DATA_ZERO ? op1_data : DATA_ZERO;
         default  : alu_func = DATA_X;
     endcase
 endfunction
