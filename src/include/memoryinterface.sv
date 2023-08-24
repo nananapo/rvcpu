@@ -14,6 +14,7 @@ typedef struct packed {
     InstPc  addr;
     Inst    inst;
     IId     inst_id;
+    logic   is_c;
 } IResponse;
 
 typedef struct packed {
