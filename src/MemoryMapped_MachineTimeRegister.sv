@@ -8,12 +8,12 @@ module MemoryMapped_MachineTimeRegister #(
     output wire         output_cmd_ready,
     
     input  wire [31:0]  input_addr,
-    output logic  [31:0]  output_rdata,
+    output logic [31:0] output_rdata,
     output wire         output_rdata_valid,
     input  wire [31:0]  input_wdata,
 
-    input wire  [63:0]  mtime,
-    output logic  [63:0]  mtimecmp
+    input wire [63:0]   mtime,
+    output logic [63:0] mtimecmp
 );
 
 `include "include/memorymap.sv"

@@ -3,12 +3,12 @@
 module test_mult();
   logic clk = 1;
 
-  logic           start;
-  logic           is_signed;
-  wire          ready;
-  wire          valid;
+  logic start;
+  logic is_signed;
+  wire  ready;
+  wire  valid;
 
-  wire signed [63:0] product;
+  wire signed [63:0]  product;
   logic signed [31:0] multiplicand;
   logic signed [31:0] multiplier;
 
@@ -41,10 +41,10 @@ module test_mult();
 
   initial begin
     #0 begin
-        start           = 1;
-        is_signed       = 1;
-        multiplier      = -2147483647;
-        multiplicand    = 4;
+        start         = 1;
+        is_signed     = 1;
+        multiplier    = -2147483647;
+        multiplicand  = 4;
     end
   end
 endmodule

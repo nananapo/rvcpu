@@ -6,17 +6,17 @@
 module main #(
     parameter FMAX_MHz = 27
 )(
-    input  wire         clk27MHz,
+    input  wire clk27MHz,
 
     // メモリにUARTを使うときに使うピン
-    input  wire         mem_uart_rx,
-    output wire         mem_uart_tx,
+    input  wire mem_uart_rx,
+    output wire mem_uart_tx,
 
     // メモリにマップされるUARTのピン
-    input  wire         uart_rx,
-    output wire         uart_tx,
+    input  wire uart_rx,
+    output wire uart_tx,
     
-    output logic [5:0]    led
+    output logic [5:0]  led
 
 `ifdef DEBUG
     ,
@@ -54,9 +54,9 @@ always @(posedge clkConstrained) begin
 end
 
 // Counter and Timers
-logic [63:0]  reg_cycle    = 0;
-logic [63:0]  reg_time     = 0;
-wire[63:0]  reg_mtimecmp;
+logic [63:0]    reg_cycle = 0;
+logic [63:0]    reg_time  = 0;
+wire [63:0]     reg_mtimecmp;
 
 logic [31:0]  timecounter = 0;
 always @(posedge clkConstrained) begin
@@ -140,7 +140,6 @@ MemMapCntr #(
     .output_rdata_valid(memcntr_memmap_resp_valid)
 );
 
-
 MemCmdCntr #() memcmdcntr (
     .clk(clkConstrained),
     .exit(exited),
@@ -160,7 +159,7 @@ MemCmdCntr #() memcmdcntr (
 );
 
 // PTW
-PageTableWalker #() ptw (
+PageTableWalker #() iptw (
     .clk(clkConstrained),
     .ireq(ireq_ptw),
     .iresp(iresp_ptw),

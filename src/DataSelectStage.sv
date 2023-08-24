@@ -5,39 +5,39 @@ module DataSelectStage
 
     input wire          ds_valid,
     input wire InstPc   ds_pc,
-    input wire Inst   ds_inst,
-    input wire IId  ds_inst_id,
-    input wire Ctrl ds_ctrl,
-    input wire UIntX   ds_imm_i,
-    input wire UIntX   ds_imm_s,
-    input wire UIntX   ds_imm_b,
-    input wire UIntX   ds_imm_j,
-    input wire UIntX   ds_imm_u,
-    input wire UIntX   ds_imm_z,
+    input wire Inst     ds_inst,
+    input wire IId      ds_inst_id,
+    input wire Ctrl     ds_ctrl,
+    input wire UIntX    ds_imm_i,
+    input wire UIntX    ds_imm_s,
+    input wire UIntX    ds_imm_b,
+    input wire UIntX    ds_imm_j,
+    input wire UIntX    ds_imm_u,
+    input wire UIntX    ds_imm_z,
     
-    output wire             ds_exe_valid,
-    output wire InstPc      ds_exe_pc,
-    output wire Inst      ds_exe_inst,
+    output wire         ds_exe_valid,
+    output wire InstPc  ds_exe_pc,
+    output wire Inst    ds_exe_inst,
     output wire IId     ds_exe_inst_id,
     output wire Ctrl    ds_exe_ctrl,
-    output wire UIntX      ds_exe_imm_i,
-    output wire UIntX      ds_exe_imm_b,
-    output wire UIntX      ds_exe_imm_j,
-    output wire UIntX      ds_exe_op1_data,
-    output wire UIntX      ds_exe_op2_data,
-    output wire UIntX      ds_exe_rs2_data,
+    output wire UIntX   ds_exe_imm_i,
+    output wire UIntX   ds_exe_imm_b,
+    output wire UIntX   ds_exe_imm_j,
+    output wire UIntX   ds_exe_op1_data,
+    output wire UIntX   ds_exe_op2_data,
+    output wire UIntX   ds_exe_rs2_data,
 
-    output wire             dh_stall_flg,
-    input wire FwCtrl  dh_exe_fw,
-    input wire FwCtrl  dh_mem_fw,
-    input wire FwCtrl  dh_wb_fw
+    output wire         dh_stall_flg,
+    input wire FwCtrl   dh_exe_fw,
+    input wire FwCtrl   dh_mem_fw,
+    input wire FwCtrl   dh_wb_fw
 );
 
 `include "include/basicparams.svh"
 
 wire InstPc pc      = ds_pc;
-wire Inst inst    = ds_inst;
-wire IId inst_id= ds_inst_id;
+wire Inst   inst    = ds_inst;
+wire IId    inst_id = ds_inst_id;
 
 wire [4:0] rs1_addr = inst[19:15];
 wire [4:0] rs2_addr = inst[24:20];

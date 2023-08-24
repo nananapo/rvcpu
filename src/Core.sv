@@ -3,8 +3,8 @@
 module Core #(
     parameter FMAX_MHz = 27
 )(
-    input wire          clk,
-    input wire          exited,
+    input wire  clk,
+    input wire  exited,
 
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
@@ -19,8 +19,8 @@ module Core #(
     output wire modetype    csr_mode,
     output wire InstPc      csr_satp,
 
-    output logic           exit,
-    output UIntX   gp
+    output logic    exit,
+    output UIntX    gp
 );
 
 `include "include/basicparams.svh"
@@ -68,11 +68,11 @@ wire Inst   ds_exe_inst;
 wire IId    ds_exe_inst_id;
 wire Ctrl   ds_exe_ctrl;
 wire UIntX  ds_exe_imm_i;
-wire UIntX     ds_exe_imm_j;
-wire UIntX     ds_exe_imm_b;
-wire UIntX     ds_exe_op1_data;
-wire UIntX     ds_exe_op2_data;
-wire UIntX     ds_exe_rs2_data;
+wire UIntX  ds_exe_imm_j;
+wire UIntX  ds_exe_imm_b;
+wire UIntX  ds_exe_op1_data;
+wire UIntX  ds_exe_op2_data;
+wire UIntX  ds_exe_rs2_data;
 
 // exe, csr reg
 logic   exe_valid = 0;
@@ -88,63 +88,63 @@ UIntX   exe_op2_data;
 UIntX   exe_rs2_data;
 
 // exe wire
-wire            exe_branch_taken;
-wire InstPc     exe_branch_target;
-wire            exe_calc_stall;
+wire        exe_branch_taken;
+wire InstPc exe_branch_target;
+wire        exe_calc_stall;
 
 // csr wire
-wire            csr_csr_trap_flg;
-wire InstPc     csr_trap_vector;
-wire            csr_stall_flg;
+wire        csr_csr_trap_flg;
+wire InstPc csr_trap_vector;
+wire        csr_stall_flg;
 
 // exe -> mem wire
-wire            exe_mem_valid;
-wire InstPc     exe_mem_pc;
-wire Inst       exe_mem_inst;
+wire        exe_mem_valid;
+wire InstPc exe_mem_pc;
+wire Inst   exe_mem_inst;
 wire IId    exe_mem_inst_id;
 wire Ctrl   exe_mem_ctrl;
-wire UIntX     exe_mem_alu_out;
-wire UIntX     exe_mem_rs2_data;
+wire UIntX  exe_mem_alu_out;
+wire UIntX  exe_mem_rs2_data;
 
 // csr -> mem wire
-wire UIntX     csr_mem_csr_rdata;
-wire            satp_change_hazard;
+wire UIntX  csr_mem_csr_rdata;
+wire        satp_change_hazard;
 
 // mem reg
 logic   mem_valid = 0;
-InstPc      mem_pc;
-Inst      mem_inst;
-IId         mem_inst_id;
-Ctrl        mem_ctrl;
-UIntX      mem_alu_out;
-UIntX      mem_csr_rdata;
-UIntX      mem_rs2_data;
+InstPc  mem_pc;
+Inst    mem_inst;
+IId     mem_inst_id;
+Ctrl    mem_ctrl;
+UIntX   mem_alu_out;
+UIntX   mem_csr_rdata;
+UIntX   mem_rs2_data;
 
 // mem wire
-wire            mem_memory_unit_stall;
+wire    mem_memory_unit_stall;
 
 // mem -> wb wire
-wire            mem_wb_valid;
-wire InstPc     mem_wb_pc;
-wire Inst     mem_wb_inst;
+wire        mem_wb_valid;
+wire InstPc mem_wb_pc;
+wire Inst   mem_wb_inst;
 wire IId    mem_wb_inst_id;
 wire Ctrl   mem_wb_ctrl;
-wire UIntX     mem_wb_alu_out;
-wire UIntX     mem_wb_mem_rdata;
-wire UIntX     mem_wb_csr_rdata;
+wire UIntX  mem_wb_alu_out;
+wire UIntX  mem_wb_mem_rdata;
+wire UIntX  mem_wb_csr_rdata;
 
 // wb reg
-logic            wb_valid = 0;
-InstPc      wb_pc;
-Inst      wb_inst;
-IId         wb_inst_id;
-Ctrl        wb_ctrl;
-UIntX     wb_alu_out;
-UIntX     wb_mem_rdata;
-UIntX     wb_csr_rdata;
+logic   wb_valid = 0;
+InstPc  wb_pc;
+Inst    wb_inst;
+IId     wb_inst_id;
+Ctrl    wb_ctrl;
+UIntX   wb_alu_out;
+UIntX   wb_mem_rdata;
+UIntX   wb_csr_rdata;
 
-wire UIntX     wb_wdata_out;
-wire UIntX     wb_regfile[31:0];
+wire UIntX  wb_wdata_out;
+wire UIntX  wb_regfile[31:0];
 
 // for debug
 assign gp = wb_regfile[3];

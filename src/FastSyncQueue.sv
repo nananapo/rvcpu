@@ -5,22 +5,22 @@ module FastQueue #(
     parameter DATA_SIZE = 32,
     parameter QUEUE_SIZE = 32
 )(
-    input wire clk,
-    input wire kill,
+    input wire  clk,
+    input wire  kill,
 
     output wire wready,
     output wire wready_next,
-    input wire wvalid,
+    input wire  wvalid,
     input wire [DATA_SIZE-1:0] wdata,
 
-    input wire rready,
+    input wire  rready,
     output wire rvalid,
     output wire [DATA_SIZE-1:0] rdata
 );
 
 localparam QUEUE_WIDTH = $clog2(QUEUE_SIZE);
 
-logic [DATA_SIZE-1:0] queue[QUEUE_WIDTH-1:0];
+logic [DATA_SIZE-1:0]   queue[QUEUE_WIDTH-1:0];
 logic [QUEUE_WIDTH-1:0] head = 0;
 logic [QUEUE_WIDTH-1:0] tail = 0;
 

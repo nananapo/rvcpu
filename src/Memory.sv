@@ -18,11 +18,9 @@ module Memory #(
 // memory
 logic [31:0] mem [MEMORY_SIZE-1:0];
 
-integer l = 0;
-
 initial begin
     `ifdef MEM_ZERO_CLEAR
-    for (l = 0; l < MEMORY_SIZE; l++)
+    for (int l = 0; l < MEMORY_SIZE; l++)
         mem[l] = 32'b0;     
     `endif
     if (MEMORY_FILE != "") begin

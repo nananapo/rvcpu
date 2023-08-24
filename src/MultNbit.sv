@@ -10,7 +10,7 @@ module MultNbit #(
     input wire                      is_signed,      // signedかどうか
     input wire signed [SIZE-1:0]    multiplicand,   // 被乗数
     input wire signed [SIZE-1:0]    multiplier,     // 乗数
-    output logic signed [SIZE*2-1:0]  product         // 積
+    output logic signed [SIZE*2-1:0]product         // 積
 );
 
 typedef enum logic { 
@@ -47,8 +47,8 @@ always @(posedge clk) begin
     case (state)
         IDLE: begin
             if (start) begin
-                state               <= WAIT;
-                result_is_minus     <= is_signed && ($signed(multiplier) < $signed({SIZE{1'b0}})) != ($signed(multiplicand) < $signed({SIZE{1'b0}}));
+                state           <= WAIT;
+                result_is_minus <= is_signed && ($signed(multiplier) < $signed({SIZE{1'b0}})) != ($signed(multiplicand) < $signed({SIZE{1'b0}}));
             end
         end
         WAIT:

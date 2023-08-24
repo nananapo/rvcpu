@@ -10,8 +10,8 @@ module DivUnsignedNbit #(
 
     input wire [SIZE-1:0]   dividend,   // 被除数
     input wire [SIZE-1:0]   divisor,    // 除数
-    output logic [SIZE-1:0]   quotient,   // 商
-    output logic [SIZE-1:0]   remainder   // 余り
+    output logic [SIZE-1:0] quotient,   // 商
+    output logic [SIZE-1:0] remainder   // 余り
 );
 
 typedef enum logic [2:0] { 

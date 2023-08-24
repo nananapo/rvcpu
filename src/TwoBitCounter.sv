@@ -17,7 +17,7 @@ localparam DEFAULT_COUNTER_VALUE = 2'b0;
 // 失敗したら、正しい方向に1bit進める
 // take      <-> not take
 // 11 <-> 10 <-> 01 <-> 0
-logic [1:0]   counters        [ADDR_SIZE-1:0];
+logic [1:0] counters [ADDR_SIZE-1:0];
 
 IUpdatePredictionIO saved_updateio;
 initial begin

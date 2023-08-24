@@ -1,17 +1,17 @@
 module CSRStage #(
     parameter FMAX_MHz = 27
 ) (
-    input  wire         clk,
+    input wire clk,
 
     input wire          csr_valid,
     input wire InstPc   csr_pc,
-    input wire Inst   csr_inst,
-    input wire IId  csr_inst_id,
-    input wire Ctrl csr_ctrl,
-    input wire UIntX   csr_imm_i,
-    input wire UIntX   csr_op1_data,
+    input wire Inst     csr_inst,
+    input wire IId      csr_inst_id,
+    input wire Ctrl     csr_ctrl,
+    input wire UIntX    csr_imm_i,
+    input wire UIntX    csr_op1_data,
 
-    output wire UIntX  csr_mem_csr_rdata,
+    output wire UIntX   csr_mem_csr_rdata,
 
     output wire         csr_stall_flg,
     output wire         csr_trap_flg,
@@ -29,10 +29,10 @@ module CSRStage #(
 
 `include "include/basicparams.svh"
 
-wire InstPc pc = csr_pc;
-wire IId inst_id = csr_inst_id;
-wire CsrCmd csr_cmd    = csr_ctrl.csr_cmd;
-wire UIntX op1_data   = csr_op1_data;
+wire InstPc pc      = csr_pc;
+wire IId    inst_id = csr_inst_id;
+wire CsrCmd csr_cmd = csr_ctrl.csr_cmd;
+wire UIntX  op1_data= csr_op1_data;
 
 // Table 3.6
                                                                                            // I ECODE Description 

@@ -9,7 +9,7 @@ module MemoryMappedIO_Uart_rx #(
     output wire         output_cmd_ready,
     
     input  wire [31:0]  input_addr,
-    output logic  [31:0]  output_rdata,
+    output logic [31:0] output_rdata,
     output wire         output_rdata_valid,
     input  wire [31:0]  input_wdata
 );

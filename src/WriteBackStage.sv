@@ -1,30 +1,30 @@
 module WriteBackStage(
-    input wire          clk,
+    input wire clk,
 
-    output UIntX   regfile[31:0],
+    output UIntX regfile[31:0],
 
-    input wire         wb_valid,
-    input wire InstPc  wb_pc,
-    input wire Inst    wb_inst,
-    input wire IId     wb_inst_id,
-    input wire Ctrl    wb_ctrl,
-    input wire UIntX   wb_alu_out,
-    input wire UIntX   wb_mem_rdata,
-    input wire UIntX   wb_csr_rdata,
+    input wire          wb_valid,
+    input wire InstPc   wb_pc,
+    input wire Inst     wb_inst,
+    input wire IId      wb_inst_id,
+    input wire Ctrl     wb_ctrl,
+    input wire UIntX    wb_alu_out,
+    input wire UIntX    wb_mem_rdata,
+    input wire UIntX    wb_csr_rdata,
 
-    output wire UIntX  wb_wdata_out,
+    output wire UIntX   wb_wdata_out,
     output wire         exit
 );
 
 `include "include/basicparams.svh"
 
-wire InstPc pc              = wb_pc;
-wire Inst inst            = wb_inst;
+wire InstPc pc          = wb_pc;
+wire Inst inst          = wb_inst;
 wire IId inst_id        = wb_inst_id;
 wire Ctrl ctrl          = wb_ctrl;
-wire UIntX alu_out         = wb_alu_out;
-wire UIntX memory_rdata    = wb_mem_rdata;
-wire UIntX csr_rdata       = wb_csr_rdata;
+wire UIntX alu_out      = wb_alu_out;
+wire UIntX memory_rdata = wb_mem_rdata;
+wire UIntX csr_rdata    = wb_csr_rdata;
 
 `ifdef RISCV_TEST
     integer loop_i;
@@ -60,13 +60,13 @@ function [$bits(UIntX)-1:0] wb_data_func(
     endcase
 endfunction
 
-wire UIntX wb_data = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
+wire UIntX wb_data  = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
 assign wb_wdata_out = wb_data;
 
-UIntX inst_count = 0;
+UIntX inst_count    = 0;
 IId   saved_inst_id = IID_RANDOM;
 
-wire is_new_inst = wb_valid && saved_inst_id != inst_id;
+wire is_new_inst    = wb_valid && saved_inst_id != inst_id;
 
 always @(posedge clk) begin
     if (wb_valid)

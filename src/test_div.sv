@@ -3,13 +3,13 @@
 module test_div();
   logic clk = 1;
 
-  logic           start;
-  logic           is_signed;
-  wire          ready;
-  wire          valid;
-  wire          error;
-  logic signed  [31:0]   dividend; 
-  logic signed  [31:0]   divisor;  
+  logic start;
+  logic is_signed;
+  wire  ready;
+  wire  valid;
+  wire  error;
+  logic signed [31:0]  dividend; 
+  logic signed [31:0]  divisor;  
   wire signed [31:0]   quotient; 
   wire signed [31:0]   remainder;
 

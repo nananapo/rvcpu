@@ -3,7 +3,7 @@ module InstQueue #(
     parameter QUEUE_SIZE = 16,
     parameter INITIAL_ADDR = 32'h0
 ) (
-    input wire          clk,
+    input wire clk,
 
     inout wire IRequest     ireq,
     inout wire IResponse    iresp,

@@ -185,8 +185,6 @@ always @(posedge clk) begin
     $display("data,dmemucntr.dreq.ready,b,%b", dreq.ready);
     $display("data,dmemucntr.dreq.valid,b,%b", dreq.valid);
     $display("data,dmemucntr.dresp.valid,b,%b", dresp.valid);
-    $display("data,dmemucntr.ireq.ready,b,%b", ireq.ready);
-    $display("data,dmemucntr.ireq.valid,b,%b", ireq.valid);
     $display("data,dmemucntr.iresp.valid,b,%b", iresp.valid);
     */
 end
