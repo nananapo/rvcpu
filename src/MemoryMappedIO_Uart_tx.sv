@@ -22,8 +22,8 @@ logic  [7:0]  queue_head  = 0;
 
 integer loop_i;
 initial begin
-    for (loop_i = 0; loop_i < 64; loop_i = loop_i + 1)
-        buffer[loop_i] = 32'b0;
+    for (int i = 0; i < 64; i++)
+        buffer[i] = 32'b0;
 end
 
 assign output_cmd_ready     = 1;

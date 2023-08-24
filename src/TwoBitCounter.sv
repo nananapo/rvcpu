@@ -25,10 +25,9 @@ initial begin
 end
 
 // カウンタの初期化
-int loop_i;
 initial begin
-    for (loop_i = 0; loop_i < ADDR_SIZE; loop_i = loop_i + 1) begin
-        counters[loop_i] = DEFAULT_COUNTER_VALUE;
+    for (int i = 0; i < ADDR_SIZE; i++) begin
+        counters[i] = DEFAULT_COUNTER_VALUE;
     end
 end
 

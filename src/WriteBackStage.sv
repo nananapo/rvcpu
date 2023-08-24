@@ -27,19 +27,17 @@ wire UIntX memory_rdata = wb_mem_rdata;
 wire UIntX csr_rdata    = wb_csr_rdata;
 
 `ifdef RISCV_TEST
-    integer loop_i;
     initial begin
-        for (loop_i = 0; loop_i < 32; loop_i = loop_i + 1)
-            regfile[loop_i] = PC_MAX;
+        for (int i = 0; i < 32; i++)
+            regfile[i] = PC_MAX;
     end
     assign exit = pc == 32'h00000044;
 `else
-    integer loop_i;
     initial begin
         regfile[1] = PC_MAX;
         regfile[2] = 32'h00007500;
-        for (loop_i = 3; loop_i < 32; loop_i = loop_i + 1)
-            regfile[loop_i] = PC_MAX;
+        for (int i = 3; i < 32; i++)
+            regfile[i] = PC_MAX;
     end
     assign exit = pc == 32'hffffff00;
 `endif
@@ -47,10 +45,10 @@ wire UIntX csr_rdata    = wb_csr_rdata;
 // WB STAGE
 function [$bits(UIntX)-1:0] wb_data_func(
     input InstPc    pc,
-    input WbSel   wb_sel,
-    input UIntX    alu_out,
-    input UIntX    csr_rdata,
-    input UIntX    memory_rdata
+    input WbSel     wb_sel,
+    input UIntX     alu_out,
+    input UIntX     csr_rdata,
+    input UIntX     memory_rdata
 );
     case (wb_sel)
         WB_MEM  : wb_data_func = memory_rdata;
