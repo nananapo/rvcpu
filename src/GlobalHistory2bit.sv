@@ -4,7 +4,7 @@ module GlobalHistory2bit #(
 )(
     input wire          clk,
     input wire [31:0]   pc,         // 予測したいアドレス
-    output wire [31:0]  next_pc,    // pcから予測された次のアドレス
+    output wire         pred_taken,
     input wire IUpdatePredictionIO updateio
 );
 
@@ -15,7 +15,6 @@ localparam DEFAULT_COUNTER_VALUE = 2'b0;
 localparam DEFAULT_HISTORY_VALUE = {WIDTH_HIST{1'b0}};
 
 logic [1:0]  counters [SIZE_HIST-1:0]; // hist -> counter
-logic [31:0] targets [SIZE_PC-1:0]; // pc -> target
 
 initial begin
     for (int i = 0; i < SIZE_HIST; i++)
@@ -31,18 +30,11 @@ wire [WIDTH_PC-1:0] u_pci = updateio.pc[WIDTH_PC+2-1:2];
 wire [1:0] count    = counters[hist];
 wire [1:0] u_count  = counters[hist]; // ここ
 
-wire [31:0] target_untaken = pc + 4;
-wire [31:0] target_taken   = targets[pci];
-assign next_pc = count[1] == 1'b1 ? target_taken : target_untaken;
+assign pred_taken = count[1] == 1'b1;
 
 always @(posedge clk) begin
     if (updateio.valid) begin
         hist <= {hist[WIDTH_HIST-2:0], updateio.taken};
-
-        if (updateio.taken) begin
-            targets[u_pci] <= updateio.target;
-        end
-
         if (!(u_count == 2'b11 && updateio.taken) && 
             !(u_count == 2'b00 && !updateio.taken)) begin
             if (updateio.taken)

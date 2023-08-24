@@ -19,10 +19,9 @@ def numprefix(data, prefix):
 
 local_history = defaultdict(lambda:LOCAL_INITIAL_HISORY)
 local_counters = defaultdict(lambda:LOCAL_INITIAL_COUNTER)
-local_targets = dict()
 
 def get_pc_data(pc):
-    pc_index = pc & (2 ** 5 - 1)
+    pc_index = (pc >> 2) & (2 ** 5 - 1)
 
     hist = local_history[pc_index]
     cindex =  (hist << WIDTH_PC) + pc_index
@@ -38,22 +37,17 @@ def update_history(pc, target, taken):
 
     if not((oldcount == 3 and taken) or (oldcount == 0 and not taken)):
         local_counters[cindex] = oldcount + (1 if taken else -1)
-    if taken:
-        local_targets[pc_index] = target
 
 # TODO failを消す
 def predictate(pc):
     (pc_index, cindex, hist, count) = get_pc_data(pc)
-    if count == 0 or count == 1:
-        return pc + 4
-    else:
-        return local_targets[pc_index]
+    return count == 2 or count == 3
 
 def printdebug(pc):
     (pi, ci, h, c) = get_pc_data(pc)
     print("--------")
     print(pi, ci, h, c)
-    # print(bin(pi), bin(ci), bin(h), bin(c))
+    print(bin(pi), bin(ci), bin(h), bin(c))
 
 """
 def test():
@@ -83,17 +77,20 @@ for (clock, allNumberData, allTextData) in readClockCycle(True):
         print("in clock", clock)
         print("Invalid Log")
         exit()
-    
+
     if brdata["use_prediction"][1] == 1:
         pc = int(brdata["pc"][1][2:], 16)
+        when_pc_taken = int(brdata["when_pc_taken"][1][2:], 16)
+
         predpc_cpu = int(brdata["pred_pc"][1][2:], 16)
-        predpc_sim = predictate(pc)
+        predpc_sim = when_pc_taken if predictate(pc) else pc + 4
         
         if predpc_cpu != predpc_sim:
             print("in clock", clock)
             print("prediction fail :", hex(pc))
             print("expect : ", hex(predpc_sim))
             print("actual : ", hex(predpc_cpu))
+            printdebug(pc)
             exit()
     
     # 更新
@@ -114,5 +111,8 @@ for (clock, allNumberData, allTextData) in readClockCycle(True):
         #     print("taken : ", taken)
         #     print(local_targets)
         #     printdebug(pc)
+    
+    if (clock + 1) % 10000 == 0:
+        print(clock + 1, "correct operations")
 
 #"""

@@ -73,14 +73,20 @@ logic [31:0] last_fetched_inst = 32'h0;
 
 
 // TODO この処理を適切な場所に移動したい。
-wire [31:0] fetched_pc     = requested ? memresp.addr : last_fetched_pc;
-wire [31:0] fetched_inst   = requested ? memresp.inst : last_fetched_inst;
+wire [31:0] fetched_pc      = requested ? memresp.addr : last_fetched_pc;
+wire [31:0] fetched_inst    = requested ? memresp.inst : last_fetched_inst;
 
-wire [19:0] imm_j           = { fetched_inst[31],
+wire [19:0] imm_j_g         = { fetched_inst[31],
                                 fetched_inst[19:12],
                                 fetched_inst[20],
                                 fetched_inst[30:21]};
-wire [31:0] imm_j_sext      = {{11{imm_j[19]}}, imm_j, 1'b0};
+wire [11:0] imm_b_g         = { fetched_inst[31],
+                                fetched_inst[7],
+                                fetched_inst[30:25],
+                                fetched_inst[11:8]};
+
+wire [31:0] imm_j_sext      = {{11{imm_j_g[19]}}, imm_j_g, 1'b0};
+wire [31:0] imm_b_sext      = {{19{imm_b_g[11]}}, imm_b_g, 1'b0};
 
 wire [6:0]  inst_opcode     = fetched_inst[6:0];
 wire [2:0]  inst_funct3     = fetched_inst[14:12];
@@ -99,7 +105,9 @@ wire jal_hazard = inst_is_jal && /* requested &&*/ request_pc != jal_target;
 
 // 分岐予測
 wire [31:0] pred_pc_base = request_pc;
-wire [31:0] next_pc_pred;
+wire pred_taken;
+wire [31:0] pred_taken_pc = pred_pc_base + imm_b_sext;
+wire [31:0] next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
 
 `ifdef PRED_TBC
     TwoBitCounter #(
@@ -107,7 +115,7 @@ wire [31:0] next_pc_pred;
     ) bp (
         .clk(clk),
         .pc(pred_pc_base),
-        .next_pc(next_pc_pred),
+        .pred_taken(pred_taken),
         .updateio(updateio)
     );
     initial $display("branch pred : two bit counter");
@@ -115,7 +123,7 @@ wire [31:0] next_pc_pred;
     LocalHistory2bit #() bp (
         .clk(clk),
         .pc(pred_pc_base),
-        .next_pc(next_pc_pred),
+        .pred_taken(pred_taken),
         .updateio(updateio)
     );
     initial $display("branch pred : local history");
@@ -123,13 +131,13 @@ wire [31:0] next_pc_pred;
     GlobalHistory2bit #() bp (
         .clk(clk),
         .pc(pred_pc_base),
-        .next_pc(next_pc_pred),
+        .pred_taken(pred_taken),
         .updateio(updateio)
     );
     initial $display("branch pred : global history");
 `else
     `define NO_PREDICITION_MODULE
-    assign next_pc_pred = pred_pc_base + 4; 
+    assign pred_taken = 0; 
     initial $display("no branch prediction module is selected");
 `endif
 
@@ -139,6 +147,8 @@ wire [31:0] next_pc_pred;
                             pc + 4;
     assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
 `else
+    // ここではbranch_hazard時のpcを指定しない。
+    // branch_hazardはalways内で処理
     assign next_pc =    jal_hazard ? jal_target + 4 :
                         inst_is_br ? next_pc_pred + 4: 
                         pc + 4;
@@ -164,7 +174,8 @@ end
 `endif
 
 assign memreq.valid = buf_wready_next;
-assign memreq.addr  =   jal_hazard ? jal_target :
+assign memreq.addr  =   branch_hazard ? ireq.addr :
+                        jal_hazard ? jal_target :
                         inst_is_br ? next_pc_pred :
                         pc;
 
@@ -179,6 +190,8 @@ always @(posedge clk) begin
         pc          <= ireq.addr;
         requested   <= 0;
         request_pc  <= ireq.addr;
+        last_fetched_pc  <= 32'h0;
+        last_fetched_inst <= 32'h0;
     end else begin
         if (jal_hazard) begin
             `ifdef PRINT_DEBUGINFO
@@ -261,6 +274,7 @@ always @(posedge clk) begin
     `endif
 
     $display("data,btb.pred.inst,h,%b", fetched_inst);
+    $display("data,btb.pred.when_pc_taken,h,%b", pred_taken_pc);
     $display("data,btb.pred.inst_is_jal,h,%b", inst_is_jal);
     $display("data,btb.pred.inst_is_jalr,h,%b", inst_is_jalr);
     $display("data,btb.pred.inst_is_br,h,%b", inst_is_br);

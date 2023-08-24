@@ -4,7 +4,7 @@ module LocalHistory2bit #(
 )(
     input wire          clk,
     input wire [31:0]   pc,         // 予測したいアドレス
-    output wire [31:0]  next_pc,    // pcから予測された次のアドレス
+    output wire         pred_taken,
     input wire IUpdatePredictionIO updateio
 );
 
@@ -18,7 +18,6 @@ localparam SIZE_COUNTER = 2 ** (WIDTH_PC + WIDTH_HIST);
 
 logic [WIDTH_HIST-1:0] history [SIZE_PC-1:0]; // pc -> hist
 logic [1:0]  counters [SIZE_COUNTER-1:0];         // hist + pc -> counter
-logic [31:0] targets [SIZE_PC-1:0];           // pc -> target
 
 initial begin
     for (int i = 0; i < SIZE_COUNTER; i++)
@@ -35,16 +34,10 @@ wire [WIDTH_COUNTER-1:0] u_phti = {history[u_histi], u_histi};
 wire [1:0] count    = counters[phti];
 wire [1:0] u_count  = counters[u_phti];
 
-wire [31:0] target_untaken = pc + 4;
-wire [31:0] target_taken   = targets[histi];
-
-assign next_pc = count[1] == 1'b1 ? target_taken : target_untaken;
+assign pred_taken = count[1] == 1'b1;
 
 always @(posedge clk) begin
     if (updateio.valid) begin
-        if (updateio.taken) begin
-            targets[u_histi] <= updateio.target;
-        end
         if (!(u_count == 2'b11 && updateio.taken) && 
             !(u_count == 2'b00 && !updateio.taken)) begin
             if (updateio.taken)
@@ -58,19 +51,17 @@ always @(posedge clk) begin
 end
 
 
-/*
+
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,fetchstage.lpht.pc,h,%b", pc);
-
     $display("data,fetchstage.lpht.histi,h,%b", histi);
     $display("data,fetchstage.lpht.phti,b,%b", phti);
     $display("data,fetchstage.lpht.history,b,%b", history[histi]);
     $display("data,fetchstage.lpht.count,b,%b", count);
-
-    $display("data,fetchstage.lpht.next_pc,h,%b", next_pc);
+    $display("data,fetchstage.lpht.taken,h,%b", pred_taken);
 end
 `endif 
-*/
+
 
 endmodule
