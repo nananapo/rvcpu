@@ -93,10 +93,6 @@ wire jal_hazard = last_inst_is_jal && requested && request_pc != last_jal_target
 // TODO ここまで
 
 
-`ifdef RISCV_TEST
-    `define PRED_LOCAL
-`endif
-
 
 
 // 分岐予測

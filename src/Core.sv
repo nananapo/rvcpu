@@ -326,18 +326,27 @@ end
 
 `ifdef PRINT_BRANCH_ACCURACY
 int all_br_count = 0;
+int all_inst_count = 0;
 int fail_count = 0;
+
+localparam COUNT = 1000000;
 
 // 予測の成功率を求める
 always @(posedge clk) begin
-    if (exe_valid && exe_inst_id != exe_last_inst_id && (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg)) begin
-        if (all_br_count >= 100000) begin
-            $display("%d%% (%d / %d)", (all_br_count - fail_count) * 100 / all_br_count, all_br_count - fail_count, all_br_count);
+    if (exe_valid && exe_inst_id != exe_last_inst_id) begin
+        if (all_inst_count >= COUNT) begin
+            // $display("%d%% (%d / 1000)", (COUNT - fail_count) * 100 / COUNT, fail_count / (COUNT / 1000));
+            $display("MPKI : %d , %d%%", fail_count / (COUNT / 1000), (all_br_count - fail_count) * 100 / all_br_count);
+            // $display("%d", fail_count);
+            fail_count = 0;
+            all_inst_count = 0;
             all_br_count = 0;
-            fail_count  = 0;
         end else begin
-            fail_count += branch_fail ? 1 : 0;
-            all_br_count += 1;
+            if (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg) begin
+                fail_count += branch_fail ? 1 : 0;
+                all_br_count += 1;
+            end
+            all_inst_count = all_inst_count + 1;
         end
     end
 end
