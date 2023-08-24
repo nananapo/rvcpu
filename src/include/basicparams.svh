@@ -2,10 +2,12 @@
     localparam PC_MAX   = 64'hffffffff_ffffffff;
     localparam PC_X     = 64'hx;
     localparam DATA_X   = 64'hx;
+    localparam DATA_ZERO = 64'h0;
 `else
     localparam PC_MAX   = 32'hffffffff;
     localparam PC_X     = 32'hx;
     localparam DATA_X   = 32'hx;
+    localparam DATA_ZERO = 32'h0;
 `endif
 
 localparam INST_NOP = 32'h00000033; // TODO ILEN

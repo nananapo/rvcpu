@@ -97,7 +97,6 @@ wire jal_hazard = inst_is_jal && /* requested &&*/ request_pc != jal_target;
 
 
 
-
 // 分岐予測
 wire [31:0] pred_pc_base = request_pc;
 wire [31:0] next_pc_pred;

@@ -42,7 +42,10 @@ typedef enum logic [4:0] {
     ALU_DIV,
     ALU_DIVU,
     ALU_REM,
-    ALU_REMU
+    ALU_REMU,
+
+    ALU_CZERO_EQ,
+    ALU_CZERO_NE
 } AluSel;
 
 typedef enum logic [2:0] {
