@@ -31,12 +31,12 @@ end
 wire DReq dreq  = state == IDLE ? dreq_in : s_dreq;
 
 `include "include/memorymap.sv"
-wire is_uart_tx     = UART_TX_OFFSET <= dreq.addr   && dreq.addr <= UART_TX_END;
+wire is_uart_tx     = MMIO_ADDR_UART_TX == dreq.addr;
 wire is_uart_rx     = UART_RX_OFFSET <= dreq.addr   && dreq.addr <= UART_RX_END;
 wire is_clint       = CLINT_OFFSET   <= dreq.addr   && dreq.addr <= CLINT_END;
 wire is_memory      = !is_uart_tx && !is_uart_rx && !is_clint;
 
-wire s_is_uart_tx   = UART_TX_OFFSET <= s_dreq.addr && s_dreq.addr <= UART_TX_END;
+wire s_is_uart_tx   = MMIO_ADDR_UART_TX == s_dreq.addr;
 wire s_is_uart_rx   = UART_RX_OFFSET <= s_dreq.addr && s_dreq.addr <= UART_RX_END;
 wire s_is_clint     = CLINT_OFFSET   <= s_dreq.addr && s_dreq.addr <= CLINT_END;
 wire s_is_memory    = !s_is_uart_tx && !s_is_uart_rx && !s_is_clint;
@@ -95,7 +95,6 @@ wire UInt32 cmd_clint_rdata;
 wire        cmd_uart_tx_start = is_uart_tx && cmd_start;
 wire        cmd_uart_rx_start = is_uart_rx && cmd_start;
 wire        cmd_clint_start   = is_clint && cmd_start;
-wire Addr   cmd_uart_tx_addr  = dreq.addr - UART_TX_OFFSET;
 wire Addr   cmd_uart_rx_addr  = dreq.addr - UART_RX_OFFSET;
 wire Addr   cmd_clint_addr    = dreq.addr - CLINT_OFFSET;
 
@@ -122,7 +121,7 @@ MMIO_uart_tx #(
 
     .req_ready(cmd_uart_tx_ready),
     .req_valid(cmd_uart_tx_start),
-    .req_addr(cmd_uart_tx_addr),
+    .req_addr(0),
     .req_wen(dreq.wen),
     .req_wdata(dreq.wdata),
     .resp_valid(cmd_uart_tx_rvalid),
