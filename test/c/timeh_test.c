@@ -1,7 +1,4 @@
-#define UART_TX_TAILPTR ((volatile char *)(0xff000100))
-#define UART_TX_HEADPTR ((volatile char *)(0xff000104))
-#define UART_TX_DATAPTR ((volatile char *)(0xff000000))
-#define UART_TX_BUFSIZE 256
+#define UART_TX_PTR ((volatile int *)(0xff000000))
 
 void uart_send_char(char c);
 void send_int(int value);
@@ -23,21 +20,14 @@ int main(void)
     }
 }
 
-#ifndef DEBUG
 void uart_send_char(char c)
 {
-    int tail = *UART_TX_TAILPTR;
-    int tailTo = (tail + 1) % UART_TX_BUFSIZE;
-    UART_TX_DATAPTR[tail] = c;
-    *UART_TX_TAILPTR = tailTo;
-    while (*UART_TX_HEADPTR != tailTo); // 送信完了を待つ
+    #ifndef DEBUG
+        *UART_TX_PTR = c;
+    #else
+        printf("%c", c);
+    #endif
 }
-#else
-void uart_send_char(char c)
-{
-    printf("%c", c);
-}
-#endif
 
 void send_int(int value)
 {

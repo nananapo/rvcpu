@@ -18,6 +18,8 @@ module MMIO_uart_rx #(
 localparam BUF_LEN = 2**BUF_WIDTH;
 typedef logic [BUF_WIDTH-1:0] BufWidth;
 
+// TODO キューのモジュールを使う
+
 UInt8       buffer[BUF_LEN-1:0];
 BufWidth    head = 0;
 BufWidth    tail = 0;
@@ -45,7 +47,7 @@ always @(posedge clk) begin
     end
     if (req_valid) begin
         if (head != tail) begin
-            resp_rdata <= buffer[head];
+            resp_rdata <= {24'b0, buffer[head]};
             head <= head + 1;
         end else begin
             resp_rdata <= 0;

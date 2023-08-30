@@ -16,6 +16,7 @@ module MMIO_uart_tx #(
 
 `include "include/memorymap.sv"
 
+// TODO キューにためる
 typedef enum logic {
     IDLE,
     WAIT_READY
