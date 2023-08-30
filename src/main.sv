@@ -59,11 +59,13 @@ wire modetype   csr_mode;
 wire UIntX      csr_satp;
 
 wire BrInfo brinfo;
-wire MemBusReq  mbreq_dcache;
-wire MemBusResp mbresp_dcache;
-wire ICacheReq  icreq_dcache;
-wire ICacheResp icresp_dcache;
+wire MemBusReq  mbreq_icache;
+wire MemBusResp mbresp_icache;
+wire ICacheReq  icreq_cache;
+wire ICacheResp icresp_cache;
+/* verilator lint_off UNOPTFLAT */
 wire ICacheReq  icreq_ptw;
+/* verilator lint_on UNOPTFLAT */
 wire ICacheResp icresp_ptw;
 wire IReq   ireq_iq;
 wire IResp  iresp_iq;
@@ -77,27 +79,27 @@ wire DResp  dresp_mmio_cntr;
 wire DReq   dreq_unaligned;
 wire DResp  dresp_unaligned;
 
-`ifndef MEMORY_FILE_NAME
-    `define MEMORY_FILE_NAME "../test/riscv-tests/rv32ui-p-add.bin.aligned"
-    initial $display("WARN : initial memory file (MEMORY_FILE_NAME) is not set. default to %s", `MEMORY_FILE_NAME);
+`ifndef MEM_FILE
+    `define MEM_FILE "../test/riscv-tests/rv32ui-p-add.bin.aligned"
+    initial $display("WARN : initial memory file (MEM_FILE) is not set. default to %s", `MEM_FILE);
 `endif
 `ifndef MEMORY_SIZE
     `define MEMORY_SIZE 2 ** 20
-    initial $display("WARN : memory size (MEMORY_SIZE) is not set. default to %s", `MEMORY_SIZE);
+    initial $display("WARN : memory size (MEMORY_SIZE) is not set. default to %d", `MEMORY_SIZE);
 `endif
 
 Memory #(
-    .FILEPATH(`MEMORY_FILE_NAME),
+    .FILEPATH(`MEM_FILE),
     .SIZE(`MEMORY_SIZE)
 ) memory (
     .clk(clk_in),
-    .req_ready(mbreq.ready),
-    .req_valid(mbreq.valid),
-    .req_addr(mbreq.addr),
-    .req_wen(mbreq.wen),
-    .req_wdata(mbreq.wdata),
-    .resp_valid(mbresp.valid),
-    .resp_rdata(mbresp.rdata)
+    .req_ready(mbreq_mem.ready),
+    .req_valid(mbreq_mem.valid),
+    .req_addr(mbreq_mem.addr),
+    .req_wen(mbreq_mem.wen),
+    .req_wdata(mbreq_mem.wdata),
+    .resp_valid(mbresp_mem.valid),
+    .resp_rdata(mbresp_mem.rdata)
 );
 
 MemBusCntr #() membuscntr (
@@ -113,8 +115,8 @@ MemBusCntr #() membuscntr (
 /* ---- Inst ---- */
 MemICache #() memicache (
     .clk(clk_in),
-    .ireq(icreq_ex),
-    .iresp(icresp_ex),
+    .ireq_in(icreq_cache),
+    .iresp(icresp_cache),
     .busreq(mbreq_icache),
     .busresp(mbresp_icache)
 );
@@ -123,8 +125,8 @@ PageTableWalker #() iptw (
     .clk(clk_in),
     .ireq(icreq_ptw),
     .iresp(icresp_ptw),
-    .memreq(icreq_dcache),
-    .memresp(icresp_dcache),
+    .memreq(icreq_cache),
+    .memresp(icresp_cache),
     .csr_mode(csr_mode),
     .csr_satp(csr_satp),
     .kill(ireq_iq.valid) // 分岐ロジックと同じになってしまっているので、分離する svinval
@@ -141,8 +143,8 @@ InstQueue #() instqueue (
 
 /* ---- Data ---- */
 MemDCache #() memdcache (
-    .clk(clk),
-    .dreq(dcreq_cntr_cache),
+    .clk(clk_in),
+    .dreq_in(dcreq_cntr_cache),
     .dresp(dcresp_cntr_cache),
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache)
@@ -156,10 +158,10 @@ MMIO_Cntr #(
     .uart_tx(uart_tx),
     .mtime(reg_time),
     .mtimecmp(reg_mtimecmp),
-    .dreq(dreq_mmio_cntr),
-    .dresp(dresp_mmio_cnt),
-    .creq(dcreq_cntr_cache),
-    .cresp(dcresp_cntr_cache)
+    .dreq_in(dreq_mmio_cntr),
+    .dresp_in(dresp_mmio_cntr),
+    .creq_in(dcreq_cntr_cache),
+    .cresp_in(dcresp_cntr_cache)
 );
 
 DAccessCntr #() daccesscntr (
@@ -167,7 +169,7 @@ DAccessCntr #() daccesscntr (
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),
     .memreq(dreq_mmio_cntr),
-    .memresp(dresp_mmio_cnt)
+    .memresp(dresp_mmio_cntr)
 );
 
 /* ---- Core ---- */

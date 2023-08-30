@@ -27,13 +27,13 @@ module Core #(
 
 // id reg
 logic   id_valid    = 0;
-Addr   id_pc       = PC_X;
+Addr    id_pc       = PC_X;
 Inst    id_inst     = INST_NOP;
 IId     id_inst_id;
 
 // id -> ds wire
 wire        id_ds_valid    = id_valid;
-wire Addr  id_ds_pc        = id_pc;
+wire Addr   id_ds_pc       = id_pc;
 wire Inst   id_ds_inst     = id_inst;
 wire IId    id_ds_inst_id  = id_inst_id;
 wire Ctrl   id_ds_ctrl;
@@ -59,7 +59,7 @@ UIntX   ds_imm_u;
 UIntX   ds_imm_z;
 
 // ds wire
-wire            ds_dh_stall; // datahazard
+wire    ds_dh_stall; // datahazard
 
 // ds -> exe wire
 wire        ds_exe_valid;
@@ -108,7 +108,6 @@ wire UIntX  exe_mem_rs2_data;
 
 // csr -> mem wire
 wire UIntX  csr_mem_csr_rdata;
-wire        satp_change_hazard;
 
 // mem reg
 logic   mem_valid = 0;
@@ -280,7 +279,7 @@ wire branch_fail = exe_valid && (
                     );
 
 // csrはトラップするときに1クロックストールする
-wire branch_hazard_now = !csr_stall_flg && (csr_csr_trap_flg || branch_fail || satp_change_hazard);
+wire branch_hazard_now = !csr_stall_flg && (csr_csr_trap_flg || branch_fail);
 // 分岐ハザードよりもCSRのトラップを優先する
 wire Addr  branch_target = csr_csr_trap_flg ? csr_trap_vector : 
                             exe_branch_taken ? exe_branch_target : exe_pc + 4;
@@ -477,8 +476,7 @@ CSRStage #(
     .reg_mtimecmp(reg_mtimecmp),
 
     .output_mode(csr_mode),
-    .output_satp(csr_satp),
-    .satp_change_hazard(satp_change_hazard)
+    .output_satp(csr_satp)
 );
 
 MemoryStage #() memorystage

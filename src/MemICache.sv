@@ -6,7 +6,7 @@ module MemICache #(
 )(
     input wire clk,
 
-    inout wire ICacheReq    ireq,
+    inout wire ICacheReq    ireq_in,
     inout wire ICacheResp   iresp,
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
@@ -28,7 +28,13 @@ logic [31:0] cache_data  [CACHE_LENGTH * LINE_INST_COUNT -1:0]; // 1列
 logic [31:0] cache_addrs [CACHE_LENGTH-1:0];
 logic cache_valid[CACHE_LENGTH-1:0];
 
-typedef enum [1:0] {
+initial begin
+    for (int i = 0; i < CACHE_LENGTH; i++) begin
+        cache_valid[i] = 0;
+    end
+end
+
+typedef enum logic [1:0] {
     IDLE,
     MEM_WAIT_READY,
     MEM_READ_VALID,
@@ -45,25 +51,28 @@ function [31:0] normalize_addr( input [31:0] addr );
     normalize_addr = {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
 endfunction
 
-// リクエストの保存
-ICacheReq s_req;
+
+ICacheReq s_ireq;
+wire ICacheReq ireq = state == IDLE ? ireq_in : s_ireq;
+
 // addrのキャッシュラインのindex
-wire CacheIndex req_index = calc_cache_addr(state == IDLE ? ireq.addr : s_req.addr);
+wire CacheIndex req_index = calc_cache_addr(ireq.addr);
+
 // addrがキャッシュラインに存在し、validであるかどうか
-wire req_addr_in_valid_cache = cache_addrs[req_index] == ireq.addr && cache_valid[req_index];
+wire req_addr_in_valid_cache = cache_addrs[req_index] == normalize_addr(ireq_in.addr) && cache_valid[req_index];
 
 wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index_base = {req_index, {LINE_INST_WIDTH{1'b0}}};
-wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index = req_mem_index_base + s_req.addr[LINE_INST_WIDTH+2-1:2];
+wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index = req_mem_index_base + {{LINE_DATA_ADDR_WIDTH - LINE_INST_WIDTH{1'b0}}, ireq.addr[LINE_INST_WIDTH+2-1:2]};
 
-logic ireq_valid_reg;
-Inst  ireq_rdata_reg;
+logic iresp_valid_reg = 0;
+Inst  iresp_rdata_reg;
 
-assign ireq.ready   = state == IDLE;
-assign ireq.valid   = ireq_valid_reg;
-assign ireq.rdata   = ireq_rdata_reg;
+assign ireq_in.ready= state == IDLE;
+assign iresp.valid  = iresp_valid_reg;
+assign iresp.rdata  = iresp_rdata_reg;
 
 assign busreq.valid = state == MEM_WAIT_READY;
-assign busreq.addr  = normalize_addr(s_req.addr) + read_count * 4;
+assign busreq.addr  = normalize_addr(ireq.addr) + read_count * 4;
 assign busreq.wen   = 0;
 assign busreq.wdata = 32'hz;
 
@@ -71,15 +80,15 @@ assign busreq.wdata = 32'hz;
 logic [LINE_INST_WIDTH-1:0] read_count;
 
 always @(posedge clk) begin
-    ireq_valid_reg  <=  (state == IDLE && ireq.valid && req_addr_in_valid_cache) ||
+    iresp_valid_reg <=  (state == IDLE && ireq_in.valid && req_addr_in_valid_cache) ||
                         (state == MEM_RESP_VALID);
-    ireq_rdata_reg  <= cache_data[req_mem_index];
+    iresp_rdata_reg <= cache_data[req_mem_index];
     
     case (state)
     IDLE: begin
         read_count  <= 0;
-        s_req       <= ireq;
-        if (ireq.valid && !req_addr_in_valid_cache) begin
+        s_ireq       <= ireq_in;
+        if (ireq_in.valid && !req_addr_in_valid_cache) begin
             state <= MEM_WAIT_READY;
             cache_valid[req_index] <= 0;
         end
@@ -92,12 +101,15 @@ always @(posedge clk) begin
     MEM_READ_VALID: begin
         if (busresp.valid) begin
             read_count <= read_count + 1;
-            if (read_count == LINE_INST_COUNT - 1) begin
-                state <= MEM_RESP_VALID;
-                cache_addr[req_index]  <= normalize_addr(sreq.addr);
-                cache_valid[req_index] <= 1;
-            end
+            /* verilator lint_off WIDTH */
             cache_data[req_mem_index_base + read_count] <= busresp.rdata;
+            if (read_count == LINE_INST_COUNT - 1) begin
+            /* verilator lint_on WIDTH */
+                state <= MEM_RESP_VALID;
+                cache_addrs[req_index] <= normalize_addr(ireq.addr);
+                cache_valid[req_index] <= 1;
+            end else
+                state <= MEM_WAIT_READY;
         end
     end
     MEM_RESP_VALID: state <= IDLE;
@@ -107,5 +119,24 @@ always @(posedge clk) begin
     end
     endcase
 end
+
+`ifdef PRINT_DEBUGINFO
+always @(posedge clk) begin
+    $display("data,fetchstage.i$.state,d,%b", state);
+    $display("data,fetchstage.i$.read_count,d,%b", read_count);
+
+    if (ireq_in.valid && state == IDLE) begin
+        $display("data,fetchstage.i$.req.addr,h,%b", ireq_in.addr);
+        $display("data,fetchstage.i$.req.addr_base,h,%b", normalize_addr(ireq_in.addr));
+        $display("data,fetchstage.i$.req.cache_hit,d,%b", req_addr_in_valid_cache);
+    end
+
+    $display("data,fetchstage.i$.busreq.ready,d,%b", busreq.ready);
+    $display("data,fetchstage.i$.busreq.valid,d,%b", busreq.valid);
+    $display("data,fetchstage.i$.busreq.addr,h,%b", busreq.addr);
+    $display("data,fetchstage.i$.busresp.valid,d,%b", busresp.valid);
+    $display("data,fetchstage.i$.busresp.rdata,h,%b", busresp.rdata);
+end
+`endif
 
 endmodule

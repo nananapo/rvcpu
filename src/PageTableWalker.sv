@@ -40,9 +40,7 @@ wire [31:0] sv32_resp_rdata;
 assign ireq.ready    = sv32_enable ? sv32_req_ready : memreq.ready;
 assign memreq.valid  = sv32_enable ? sv32_req_valid : ireq.valid;
 assign memreq.addr   = sv32_enable ? sv32_req_addr  : ireq.addr;
-// assign memresp.ready = sv32_enable ? sv32_resp_ready : iresp.ready; // ここでは使用していない
 assign iresp.valid   = sv32_enable ? sv32_resp_valid : memresp.valid;
-assign iresp.addr    = sv32_enable ? sv32_resp_addr  : memresp.addr;
 assign iresp.rdata   = sv32_enable ? sv32_resp_rdata  : memresp.rdata;
 
 // ireqがリクエストしたアドレス

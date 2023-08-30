@@ -8,7 +8,7 @@ module InstQueue #(
     inout wire IReq     ireq,
     inout wire IResp    iresp,
     inout wire ICacheReq    memreq,
-    inout wire ICacheRes    memresp,
+    inout wire ICacheResp   memresp,
 
     input wire BrInfo   brinfo
 );
@@ -241,26 +241,31 @@ end
 always @(posedge clk) begin
     $display("data,fetchstage.pc,h,%b", pc);
     $display("data,fetchstage.next_pc,h,%b", next_pc);
-    // $display("data,fetchstage.ireq.valid,b,%b", ireq.valid);
-    // $display("data,fetchstage.ireq.addr,h,%b", ireq.addr);
+    $display("data,fetchstage.requested_pc,h,%b", request_pc);
+    $display("data,fetchstage.requesting_pc,h,%b", memreq.addr);
+    $display("data,fetchstage.requested_pc,h,%b", request_pc);
+
+    $display("data,fetchstage.ireq.valid,b,%b", ireq.valid);
+    if (ireq.valid) begin
+        $display("data,fetchstage.ireq.addr,h,%b", ireq.addr);
+    end
+    
     $display("data,fetchstage.iresp.valid,b,%b", iresp.valid);
-    $display("data,fetchstage.iresp.ready,b,%b", iresp.ready);
-    $display("data,fetchstage.iresp.addr,h,%b", iresp.addr);
-    $display("data,fetchstage.iresp.inst,h,%b", iresp.inst);
+    if (iresp.valid) begin
+        $display("data,fetchstage.iresp.ready,b,%b", iresp.ready);
+        $display("data,fetchstage.iresp.addr,h,%b", iresp.addr);
+        $display("data,fetchstage.iresp.inst,h,%b", iresp.inst);
+    end
     // $display("data,fetchstage.memreq.ready,b,%b", memreq.ready);
     // $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
     // $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
     // $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
     // $display("data,fetchstage.memresp.inst,h,%b", memresp.rdata);
-    $display("data,fetchstage.requested_pc,h,%b", request_pc);
-    $display("data,fetchstage.requesting_pc,h,%b", memreq.addr);
-    $display("data,fetchstage.requested_pc,h,%b", request_pc);
-    $display("data,fetchstage.memresp.inst_is_br,b,%b", inst_is_br);
+    // $display("data,fetchstage.memresp.inst_is_br,b,%b", inst_is_br);
 end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-
 always @(posedge clk) begin
     $display("data,btb.update.valid,b,%b", brinfo.valid);
     $display("data,btb.update.pc,h,%b", brinfo.pc);

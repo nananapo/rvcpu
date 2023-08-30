@@ -1,7 +1,6 @@
-/* verilator lint_off WIDTH */
 module Memory #(
-    parameter SIZE = 2048,
-    parameter FILEPATH = ""
+    parameter FILEPATH = "",
+    parameter SIZE = 2048
 )(
     input  wire clk,
 
@@ -21,6 +20,7 @@ assign resp_valid   = 1;
 logic [31:0] mem [SIZE-1:0];
 
 initial begin
+    $display("Memory : %s", FILEPATH);
     `ifdef MEM_ZERO_CLEAR
     for (int l = 0; l < SIZE; l++)
         mem[l] = 32'b0;     
@@ -50,4 +50,3 @@ always @(posedge clk) begin
     end
 end
 endmodule
-/* verilator lint_on WIDTH */

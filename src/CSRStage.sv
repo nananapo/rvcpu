@@ -23,8 +23,7 @@ module CSRStage #(
     input wire [63:0]   reg_mtimecmp,
 
     output wire modetype output_mode,
-    output wire Addr     output_satp,
-    output wire          satp_change_hazard
+    output wire Addr     output_satp
 );
 
 `include "include/basicparams.svh"
@@ -487,7 +486,6 @@ assign csr_trap_flg  = csr_valid && (may_trap || cmd_is_trap);
 
 assign output_mode = mode;
 assign output_satp = satp;
-assign satp_change_hazard = csr_valid && ((can_write && cmd_is_write && addr == ADDR_SATP) || csr_ctrl.svinval); // SVINVALはsatpを変えてしまったものとして扱うことでflushする
 
 // mret, sret, ecallのtrap_vectorはレジスタ経由で渡す
 // 割り込み、例外はワイヤで渡す

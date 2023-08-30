@@ -78,14 +78,14 @@ typedef struct packed {
     logic   valid;
     Addr    addr;
     logic   wen;
-    UInt32  wdata; // TODO rv64対応してない
+    UInt32  wdata; // TODO rv64対応してない / しない
 } DCacheReq;
 
 typedef struct packed {
     // logic   ready;
     logic   valid;
     // TODO エラー
-    UInt32  rdata; // TODO rv64対応してない
+    UInt32  rdata; // TODO rv64対応してない / しない
 } DCacheResp;
 
 `endif

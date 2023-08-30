@@ -8,8 +8,9 @@ FILES = test.sv \
 		ImmDecode.sv \
 		InstQueue.sv \
 		SyncQueue.sv \
-		MemICmdConverter.sv \
-		MemDCmdConverter.sv \
+		MemBusCntr.sv \
+		MemICache.sv \
+		MemDCache.sv \
 		MMIO_Cntr.sv \
 		MMIO_clint.sv \
 		MMIO_uart_rx.sv \

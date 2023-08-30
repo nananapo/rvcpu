@@ -6,7 +6,7 @@ module MMIO_Cntr #(
     input  wire uart_rx,
     output wire uart_tx,
     input  wire UInt64  mtime,
-    output wire Uint64  mtimecmp,
+    output wire UInt64  mtimecmp,
 
     inout  wire DReq    dreq_in,
     inout  wire DResp   dresp_in,
@@ -14,7 +14,7 @@ module MMIO_Cntr #(
     inout  wire DCacheResp  cresp_in
 );
 
-typedef enum [1:0] {
+typedef enum logic [1:0] {
     IDLE,
     WAIT_READY,
     READ_VALID
@@ -46,16 +46,19 @@ wire cmd_ready  =   is_uart_tx ? cmd_uart_tx_ready :
                     is_uart_rx ? cmd_uart_rx_ready :
                     is_clint   ? cmd_clint_ready :
                     creq_in.ready;
-
+                    
+/* verilator lint_off UNOPTFLAT */
 wire s_rvalid   = s_dreq.valid && (
                     (s_is_memory  && cresp_in.valid) ||
                     (s_is_uart_tx && cmd_uart_tx_rvalid) || 
                     (s_is_uart_rx && cmd_uart_rx_rvalid) || 
                     (s_is_clint   && cmd_clint_rvalid) );
-wire [31:0] s_rdata =   s_is_memory  ? s_is_memory :
-                        s_is_uart_tx ? cmd_uart_tx_rvalid :
-                        s_is_uart_rx ? cmd_uart_rx_rvalid :
-                        /*s_is_clint   ?*/cmd_clint_rvalid /*: 32'bx */;
+/* verilator lint_on UNOPTFLAT */
+
+wire [31:0] s_rdata =   s_is_memory  ? cresp_in.rdata :
+                        s_is_uart_tx ? cmd_uart_tx_rdata :
+                        s_is_uart_rx ? cmd_uart_rx_rdata :
+                        /*s_is_clint   ?*/cmd_clint_rdata /*: 32'bx */;
 
 assign dreq_in.ready    = state == IDLE || (state == READ_VALID && s_rvalid);
 
@@ -76,6 +79,7 @@ always @(posedge clk) begin
         end
         WAIT_READY: if (cmd_ready) state <= dreq.wen ? IDLE : READ_VALID;
         READ_VALID: if (s_rvalid) state <= IDLE;
+        default: state <= IDLE;
     endcase
 end
 
@@ -107,7 +111,7 @@ MMIO_uart_rx #(
     .req_wen(dreq.wen),
     .req_wdata(dreq.wdata),
     .resp_valid(cmd_uart_rx_rvalid),
-    .resp_rdata(cmd_cmd_uart_rx_rdata)
+    .resp_rdata(cmd_uart_rx_rdata)
 );
 
 MMIO_uart_tx #(

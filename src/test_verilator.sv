@@ -13,8 +13,6 @@ module test(
     .clk27MHz(clk),
     .uart_tx(uart_tx),
     .uart_rx(uart_rx),
-    .mem_uart_tx(uart_tx),
-    .mem_uart_rx(uart_rx),
     .exit(exit),
     .led(led),
     .gp(gp)
