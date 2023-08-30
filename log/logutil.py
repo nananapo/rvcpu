@@ -30,6 +30,13 @@ IF_BRANCH_HAZARD    = "fetchstage.event.branch_hazard"
 ID_PIPELINE_FLUSH   = "decodestage.event.pipeline_flush"
 DS_PIPELINE_FLUSH   = "datastage.event.pipeline_flush"
 
+def filter_prefix(d, prefix):
+    r = dict()
+    for k in d.keys():
+        if k.startswith(prefix):
+            r[k] = d[k]
+    return r
+
 # ログを1クロックサイクルごとのデータにまとめる
 def readClockCycle(bintoint = False):
     clockCount = None
