@@ -17,8 +17,10 @@
 
 
 typedef logic [`ILEN-1:0] Inst;
-typedef logic [`XLEN-1:0] InstPc;
+typedef logic [`XLEN-1:0] Addr;
 typedef logic [`XLEN-1:0] UIntX;
+typedef logic [31:0]      UInt32;
+typedef logic [63:0]      UInt64;
 
 typedef enum logic [4:0] {
     ALU_X,
@@ -130,9 +132,9 @@ typedef struct packed
 
 typedef struct packed
 {
-    logic        valid;
-    logic        can_forward;
-    logic [4:0]  addr;
+    logic       valid;
+    logic       can_forward;
+    logic [4:0] addr;
     UIntX       wdata;
 } FwCtrl;
 

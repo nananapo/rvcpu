@@ -4,7 +4,7 @@ module WriteBackStage(
     output UIntX regfile[31:0],
 
     input wire          wb_valid,
-    input wire InstPc   wb_pc,
+    input wire Addr     wb_pc,
     input wire Inst     wb_inst,
     input wire IId      wb_inst_id,
     input wire Ctrl     wb_ctrl,
@@ -18,7 +18,7 @@ module WriteBackStage(
 
 `include "include/basicparams.svh"
 
-wire InstPc pc          = wb_pc;
+wire Addr  pc           = wb_pc;
 wire Inst inst          = wb_inst;
 wire IId inst_id        = wb_inst_id;
 wire Ctrl ctrl          = wb_ctrl;
@@ -44,7 +44,7 @@ wire UIntX csr_rdata    = wb_csr_rdata;
 
 // WB STAGE
 function [$bits(UIntX)-1:0] wb_data_func(
-    input InstPc    pc,
+    input Addr      pc,
     input WbSel     wb_sel,
     input UIntX     alu_out,
     input UIntX     csr_rdata,

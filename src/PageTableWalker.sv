@@ -3,10 +3,10 @@ module PageTableWalker
 (
     input wire clk,
 
-    inout wire IRequest     ireq,
-    inout wire IResponse    iresp,
-    inout wire IRequest     memreq,
-    inout wire IResponse    memresp,
+    inout wire ICacheReq    ireq,
+    inout wire ICacheResp   iresp,
+    inout wire ICacheReq    memreq,
+    inout wire ICacheResp   memresp,
 
     input wire modetype     csr_mode,
     input wire [31:0]       csr_satp,
@@ -35,7 +35,7 @@ wire        sv32_req_valid;
 wire [31:0] sv32_req_addr;
 wire        sv32_resp_valid;
 wire [31:0] sv32_resp_addr;
-wire [31:0] sv32_resp_inst;
+wire [31:0] sv32_resp_rdata;
 
 assign ireq.ready    = sv32_enable ? sv32_req_ready : memreq.ready;
 assign memreq.valid  = sv32_enable ? sv32_req_valid : ireq.valid;
@@ -43,8 +43,7 @@ assign memreq.addr   = sv32_enable ? sv32_req_addr  : ireq.addr;
 // assign memresp.ready = sv32_enable ? sv32_resp_ready : iresp.ready; // ここでは使用していない
 assign iresp.valid   = sv32_enable ? sv32_resp_valid : memresp.valid;
 assign iresp.addr    = sv32_enable ? sv32_resp_addr  : memresp.addr;
-assign iresp.inst    = sv32_enable ? sv32_resp_inst  : memresp.inst;
-// assign iresp.inst_id = x // inst_idはInstQueueで設定する
+assign iresp.rdata   = sv32_enable ? sv32_resp_rdata  : memresp.rdata;
 
 // ireqがリクエストしたアドレス
 logic [31:0]  s_req_addr;
@@ -53,7 +52,7 @@ logic [1:0]   level;
 // 次にアクセスするアドレス
 logic [33:0]  next_addr;
 // 結果
-logic [31:0]  result_inst;
+logic [31:0]  result_rdata;
 // 保存されたアドレスのvpn, offset
 wire [9:0]  s_vpn1          = s_req_addr[31:22];
 wire [9:0]  s_vpn0          = s_req_addr[21:12];
@@ -61,18 +60,18 @@ wire [11:0] s_page_offset   = s_req_addr[11:0];
 // ireqのvpn1 (IDLEで使う)
 wire [9:0]  idleonly_vpn1   = ireq.addr[31:22];
 // D A G U X W R V
-wire validonly_pte_R    = memresp.inst[1];
-wire validonly_pte_X    = memresp.inst[3]; 
-wire [11:0] validonly_pte_ppn1 = memresp.inst[31:20];
-wire [9:0]  validonly_pte_ppn0 = memresp.inst[19:10];
-wire [21:0] validonly_pte_ppn  = memresp.inst[31:10];
+wire validonly_pte_R    = memresp.rdata[1];
+wire validonly_pte_X    = memresp.rdata[3]; 
+wire [11:0] validonly_pte_ppn1 = memresp.rdata[31:20];
+wire [9:0]  validonly_pte_ppn0 = memresp.rdata[19:10];
+wire [21:0] validonly_pte_ppn  = memresp.rdata[31:10];
 
 assign sv32_req_ready   = state == IDLE;
 assign sv32_req_valid   = state == WALK_READY || state == IF_READY;
 assign sv32_req_addr    = next_addr[31:0];
 assign sv32_resp_valid  = state == IF_END;
 assign sv32_resp_addr   = s_req_addr;
-assign sv32_resp_inst   = result_inst;
+assign sv32_resp_rdata  = result_rdata;
 
 always @(posedge clk) begin
 if (kill)
@@ -127,7 +126,7 @@ else if (sv32_enable) begin
     IF_VALID: begin
         if (memresp.valid) begin
             state <= IF_END;
-            result_inst <= memresp.inst;
+            result_rdata <= memresp.rdata;
         end
     end
     default:/*IF_END:*/ begin
@@ -145,7 +144,7 @@ always @(posedge clk) begin
         $display("data,fetchstage.ptw.mode,d,%b", csr_mode);
         $display("data,fetchstage.ptw.proc_pc,h,%b", state == IDLE ? ireq.addr : s_req_addr);
         $display("data,fetchstage.ptw.next_addr,h,%b", next_addr[31:0]);
-        $display("data,fetchstage.ptw.memresp,h,%b", memresp.inst);
+        $display("data,fetchstage.ptw.memresp,h,%b", memresp.rdata);
     end
 end    
 `endif

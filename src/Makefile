@@ -8,11 +8,12 @@ FILES = test.sv \
 		ImmDecode.sv \
 		InstQueue.sv \
 		SyncQueue.sv \
-		MemCmdCntr.sv \
-		MemMapCntr.sv \
-		MemoryMapped_MachineTimeRegister.sv \
-		MemoryMappedIO_Uart_rx.sv \
-		MemoryMappedIO_Uart_tx.sv \
+		MemICmdConverter.sv \
+		MemDCmdConverter.sv \
+		MMIO_Cntr.sv \
+		MMIO_clint.sv \
+		MMIO_uart_rx.sv \
+		MMIO_uart_tx.sv \
 		PageTableWalker.sv \
 		DAccessCntr.sv \
 		ALU.sv \

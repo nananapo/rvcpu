@@ -5,7 +5,7 @@ module LocalHistory2bit #(
     input wire          clk,
     input wire [31:0]   pc,         // 予測したいアドレス
     output wire         pred_taken,
-    input wire IUpdatePredictionIO updateio
+    input wire BrInfo   brinfo
 );
 
 localparam WIDTH_COUNTER = WIDTH_PC + WIDTH_HIST;
@@ -26,7 +26,7 @@ initial begin
         history[i] = DEFAULT_HISTORY_VALUE;
 end
 wire [WIDTH_PC-1:0] histi   = pc[WIDTH_PC+2-1:2];
-wire [WIDTH_PC-1:0] u_histi = updateio.pc[WIDTH_PC+2-1:2];
+wire [WIDTH_PC-1:0] u_histi = brinfo.pc[WIDTH_PC+2-1:2];
 
 wire [WIDTH_COUNTER-1:0] phti   = {history[histi], histi};
 wire [WIDTH_COUNTER-1:0] u_phti = {history[u_histi], u_histi};
@@ -37,16 +37,15 @@ wire [1:0] u_count  = counters[u_phti];
 assign pred_taken = count[1] == 1'b1;
 
 always @(posedge clk) begin
-    if (updateio.valid) begin
-        if (!(u_count == 2'b11 && updateio.taken) && 
-            !(u_count == 2'b00 && !updateio.taken)) begin
-            if (updateio.taken)
+    if (brinfo.valid) begin
+        if (!(u_count == 2'b11 && brinfo.taken) && 
+            !(u_count == 2'b00 && !brinfo.taken)) begin
+            if (brinfo.taken)
                 counters[u_phti] <= u_count + 2'b1;
             else
                 counters[u_phti] <= u_count - 2'b1;
         end
-        history[u_histi] <= {history[u_histi][WIDTH_HIST-2:0], updateio.taken};
-        // $display("info,fetchstage.lhpt.update,updated %h %b %d %d %d", updateio.target,  u_phti,  updateio.taken, updateio.is_br, updateio.is_jmp);
+        history[u_histi] <= {history[u_histi][WIDTH_HIST-2:0], brinfo.taken};
     end
 end
 

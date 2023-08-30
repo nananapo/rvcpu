@@ -7,17 +7,10 @@ module main #(
     parameter FMAX_MHz = 27
 )(
     input  wire clk27MHz,
-
-    // メモリにUARTを使うときに使うピン
-    input  wire mem_uart_rx,
-    output wire mem_uart_tx,
-
-    // メモリにマップされるUARTのピン
     input  wire uart_rx,
     output wire uart_tx,
     
     output logic [5:0]  led
-
 `ifdef DEBUG
     ,
     output wire         exit,
@@ -25,28 +18,15 @@ module main #(
 `endif
 );
 
-
 `ifndef DEBUG
     wire         exit;
     wire[31:0]   gp;
 `endif
 
-// クロックの生成
-wire clkConstrained;
-`ifdef DEBUG
-    assign clkConstrained = clk27MHz;
-`else
-    /*
-    Gowin_rPLL rpll_clk(
-        .clkout(clkConstrained), //output clkout
-        .clkin(clk27MHz) //input clkin
-    );
-    */
-    assign clkConstrained = clk27MHz;
-`endif
+wire clk_in = clk27MHz;
 
 logic exited = 0;
-always @(posedge clkConstrained) begin
+always @(posedge clk_in) begin
     if (exit) begin
         exited <= 1;
     end
@@ -54,12 +34,12 @@ always @(posedge clkConstrained) begin
 end
 
 // Counter and Timers
-logic [63:0]    reg_cycle = 0;
-logic [63:0]    reg_time  = 0;
-wire [63:0]     reg_mtimecmp;
+UInt64 reg_cycle = 0;
+UInt64 reg_time  = 0;
+wire UInt64 reg_mtimecmp;
 
 logic [31:0]  timecounter = 0;
-always @(posedge clkConstrained) begin
+always @(posedge clk_in) begin
     // cycleは毎クロックインクリメント
     reg_cycle   <= reg_cycle + 1;
     // timeをμ秒ごとにインクリメント
@@ -71,128 +51,125 @@ always @(posedge clkConstrained) begin
     end
 end
 
+/* ---- Mem ---- */
+wire MemBusReq  mbreq_mem;
+wire MemBusResp mbresp_mem;
+
 wire modetype   csr_mode;
 wire [31:0]     csr_satp;
 
-/* verilator lint_off UNOPTFLAT */
-wire IRequest   ireq_mem;
-wire IResponse  iresp_mem;
+wire BrInfo brinfo;
+wire MemBusReq  mbreq_dcache;
+wire MemBusResp mbresp_dcache;
+wire ICacheReq  icreq_dcache;
+wire ICacheResp icresp_dcache;
+wire ICacheReq  icreq_ptw;
+wire ICacheResp icresp_ptw;
+wire IReq   ireq_iq;
+wire IResp  iresp_iq;
 
-wire IRequest   ireq_ptw;
-wire IResponse  iresp_ptw;
-/* verilator lint_on UNOPTFLAT */
-wire IRequest   ireq_iq;
-wire IResponse  iresp_iq;
+wire MemBusReq  mbreq_dcache;
+wire MemBusResp mbresp_dcache;
+wire DCacheReq  dcreq_cntr_cache;
+wire DCacheResp dcresp_cntr_cache;
+wire DReq   dreq_mmio_cntr;
+wire DResp  dresp_mmio_cntr;
+wire DReq   dreq_unaligned;
+wire DResp  dresp_unaligned;
 
-wire DRequest   dreq_mem;
-wire DResponse  dresp_mem;
-wire DRequest   dreq_unaligned;
-wire DResponse  dresp_unaligned;
-
-wire IUpdatePredictionIO    updateio;
-
-wire        memcntr_memmap_req_ready;
-wire        memcntr_memmap_req_valid;
-wire [31:0] memcntr_memmap_req_addr;
-wire        memcntr_memmap_req_wen;
-wire [31:0] memcntr_memmap_req_wdata;
-wire [31:0] memcntr_memmap_resp_rdata;
-wire        memcntr_memmap_resp_valid;
-
-MemMapCntr #(
-    .FMAX_MHz(FMAX_MHz),
-`ifdef RISCV_TEST
-    // make riscv-tests
-    .MEMORY_SIZE(2097152),
-    // .MEMORY_FILE("../test/riscv-tests/MEMORY_FILE_NAME")
-    .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-`elsif DEBUG
-    // make d
-    .MEMORY_SIZE(2097152),
-    // .MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    // .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
-    // .MEMORY_FILE("../test/riscv-tests/rv32ui-p-add.bin.aligned")
-    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
-`else
-    // build
-    .MEMORY_SIZE(1024 * 8), // 8 * 8Kb
-    // .MEMORY_FILE("../tinyos/kernel.bin.aligned")
-    .MEMORY_FILE("../test/bench/coremark/output/code.bin.aligned")
-    // .MEMORY_FILE("../test/csr/m_timerinterrupt.c.bin.aligned")
+`ifndef MEMORY_FILE_NAME
+    `define MEMORY_FILE_NAME "../test/riscv-tests/rv32ui-p-add.bin.aligned"
+    initial $display("WARN : initial memory file (MEMORY_FILE_NAME) is not set. default to %s", `MEMORY_FILE_NAME);
 `endif
-) memmapcntr (
-    .clk(clkConstrained),
+`ifndef MEMORY_SIZE
+    `define MEMORY_SIZE 2 ** 20
+    initial $display("WARN : memory size (MEMORY_SIZE) is not set. default to %s", `MEMORY_SIZE);
+`endif
 
-    .uart_rx(uart_rx),
-    .uart_tx(uart_tx),
-    .mem_uart_rx(mem_uart_rx),
-    .mem_uart_tx(mem_uart_tx),
-
-    .mtime(reg_time),
-    .mtimecmp(reg_mtimecmp),
-
-    .output_cmd_ready(memcntr_memmap_req_ready),
-    .input_cmd_start(memcntr_memmap_req_valid),
-    .input_addr(memcntr_memmap_req_addr),
-    .input_cmd_write(memcntr_memmap_req_wen),
-    .input_wdata(memcntr_memmap_req_wdata),
-    .output_rdata(memcntr_memmap_resp_rdata),
-    .output_rdata_valid(memcntr_memmap_resp_valid)
+MemoryBus #(
+    .FILEPATH(`MEMORY_FILE_NAME),
+    .SIZE(`MEMORY_SIZE)
+) memory (
+    .clk(clk_in),
+    .req(mbreq_mem),
+    .resp(mbresp_mem)
 );
 
-MemCmdCntr #() memcmdcntr (
-    .clk(clkConstrained),
-    .exit(exited),
-
-    .ireq(ireq_mem),
-    .iresp(iresp_mem),
-    .dreq(dreq_mem),
-    .dresp(dresp_mem),
-
-    .mem_req_ready(memcntr_memmap_req_ready),
-    .mem_req_valid(memcntr_memmap_req_valid),
-    .mem_req_addr(memcntr_memmap_req_addr),
-    .mem_req_wen(memcntr_memmap_req_wen),
-    .mem_req_wdata(memcntr_memmap_req_wdata),
-    .mem_resp_rdata(memcntr_memmap_resp_rdata),
-    .mem_resp_valid(memcntr_memmap_resp_valid)
+MemBusCntr #() membuscntr (
+    .clk(clk_in),
+    .dreq(mbreq_dcache),
+    .dresp(mbresp_dcache),
+    .ireq(mbreq_icache),
+    .iresp(mbresp_icache),
+    .memreq(mbreq_mem),
+    .memresp(mbresp_mem)
 );
 
-// PTW
+/* ---- Inst ---- */
+MemICache #() memicache (
+    .clk(clk_in),
+    .ireq(icreq_ex),
+    .iresp(icresp_ex),
+    .busreq(mbreq_icache),
+    .busresp(mbresp_icache)
+);
+
 PageTableWalker #() iptw (
-    .clk(clkConstrained),
-    .ireq(ireq_ptw),
-    .iresp(iresp_ptw),
-    .memreq(ireq_mem),
-    .memresp(iresp_mem),
+    .clk(clk_in),
+    .ireq(icreq_ptw),
+    .iresp(icresp_ptw),
+    .memreq(icreq_dcache),
+    .memresp(icresp_dcache),
     .csr_mode(csr_mode),
     .csr_satp(csr_satp),
-    .kill(ireq_iq.valid) // 分岐のロジック再利用
+    .kill(ireq_iq.valid) // 分岐ロジックと同じになってしまっているので、分離する svinval
 );
 
-// IF/ID Stage <-> InstQueue <-> MemCmdCntr
 InstQueue #() instqueue (
-    .clk(clkConstrained),
+    .clk(clk_in),
     .ireq(ireq_iq),
     .iresp(iresp_iq),
-    .memreq(ireq_ptw),
-    .memresp(iresp_ptw),
-    .updateio(updateio)
+    .memreq(icreq_ptw),
+    .memresp(icresp_ptw),
+    .brinfo(brinfo)
 );
 
-// MEM Stage <-> DAccessCntr <-> MemCmdCntr
-DAccessCntr #() dunalignedaccesscontroller (
-    .clk(clkConstrained),
+/* ---- Data ---- */
+MemDCache #() memdcache (
+    .clk(clk),
+    .dreq(dcreq_cntr_cache),
+    .dresp(dcresp_cntr_cache),
+    .busreq(mbreq_dcache),
+    .busresp(mbresp_dcache)
+);
+
+MMIO_Cntr #(
+    .FMAX_MHz(FMAX_MHz)
+) memmapcntr (
+    .clk(clk_in),
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx),
+    .mtime(reg_time),
+    .mtimecmp(reg_mtimecmp),
+    .dreq(dreq_mmio_cntr),
+    .dresp(dresp_mmio_cnt),
+    .creq(dcreq_cntr_cache),
+    .cresp(dcresp_cntr_cache)
+);
+
+DAccessCntr #() daccesscntr (
+    .clk(clk_in),
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),
-    .memreq(dreq_mem),
-    .memresp(dresp_mem)
+    .memreq(dreq_mmio_cntr),
+    .memresp(dresp_mmio_cnt)
 );
 
+/* ---- Core ---- */
 Core #(
     .FMAX_MHz(FMAX_MHz)
 ) core (
-    .clk(clkConstrained),
+    .clk(clk_in),
     
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
@@ -201,7 +178,7 @@ Core #(
 
     .ireq(ireq_iq),
     .iresp(iresp_iq),
-    .updateio(updateio),
+    .brinfo(brinfo),
     .dreq(dreq_unaligned),
     .dresp(dresp_unaligned),
     .csr_mode(csr_mode),

@@ -4,7 +4,7 @@ module CSRStage #(
     input wire clk,
 
     input wire          csr_valid,
-    input wire InstPc   csr_pc,
+    input wire Addr     csr_pc,
     input wire Inst     csr_inst,
     input wire IId      csr_inst_id,
     input wire Ctrl     csr_ctrl,
@@ -15,7 +15,7 @@ module CSRStage #(
 
     output wire         csr_stall_flg,
     output wire         csr_trap_flg,
-    output wire InstPc  csr_trap_vector,
+    output wire Addr    csr_trap_vector,
 
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
@@ -23,13 +23,13 @@ module CSRStage #(
     input wire [63:0]   reg_mtimecmp,
 
     output wire modetype output_mode,
-    output wire InstPc   output_satp,
+    output wire Addr     output_satp,
     output wire          satp_change_hazard
 );
 
 `include "include/basicparams.svh"
 
-wire InstPc pc      = csr_pc;
+wire Addr   pc      = csr_pc;
 wire IId    inst_id = csr_inst_id;
 wire CsrCmd csr_cmd = csr_ctrl.csr_cmd;
 wire UIntX  op1_data= csr_op1_data;

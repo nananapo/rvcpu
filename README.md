@@ -68,7 +68,7 @@ https://github.com/users/nananapo/projects/1/views/2
 ```txt
     Memory  UART(TX/RX) MemoryMappedRegister
        |         |                |
-       -----MemMapCntr-------------
+       -----MMIO_Cntr-------------
                  |
         ----MemCmdCntr-------
         |                   |

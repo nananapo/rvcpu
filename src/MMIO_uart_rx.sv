@@ -1,4 +1,4 @@
-module MemoryMappedIO_Uart_rx #(
+module MMIO_uart_rx #(
     parameter FMAX_MHz = 27
 )(
     input  wire         clk,

@@ -1,7 +1,7 @@
 module RVCConverter(
     input wire clk,
-    inout wire IResponce iresp,
-    inout wire IResponce memresp
+    inout wire IResp iresp,
+    inout wire IResp memresp
 );
 
 `include "include/basicparams.svh"

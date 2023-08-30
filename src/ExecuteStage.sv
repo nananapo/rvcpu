@@ -3,7 +3,7 @@ module ExecuteStage
     input wire          clk,
 
     input wire          exe_valid,
-    input wire InstPc   exe_pc,
+    input wire Addr     exe_pc,
     input wire Inst     exe_inst,
     input wire IId      exe_inst_id,
     input wire Ctrl     exe_ctrl,
@@ -14,7 +14,7 @@ module ExecuteStage
     input wire UIntX    exe_rs2_data,
 
     output wire         exe_mem_valid,
-    output wire InstPc  exe_mem_pc,
+    output wire Addr    exe_mem_pc,
     output wire Inst    exe_mem_inst,
     output wire IId     exe_mem_inst_id,
     output wire Ctrl    exe_mem_ctrl,
@@ -22,16 +22,16 @@ module ExecuteStage
     output wire UIntX   exe_mem_rs2_data,
     
     output wire         branch_taken,
-    output wire InstPc  branch_target,
+    output wire Addr    branch_target,
 
     output wire         calc_stall_flg
 );
 
 `include "include/basicparams.svh"
 
-wire InstPc pc      = exe_pc;
+wire Addr pc        = exe_pc;
 wire Inst inst      = exe_inst;
-wire IId inst_id    = exe_inst_id;
+wire IId  inst_id   = exe_inst_id;
 wire Ctrl ctrl      = exe_ctrl;
 
 wire AluSel i_exe   = exe_ctrl.i_exe;

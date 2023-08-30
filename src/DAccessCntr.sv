@@ -1,9 +1,9 @@
 module DAccessCntr (
     input wire              clk,
-    inout wire DRequest     dreq,
-    inout wire DResponse    dresp,
-    inout wire DRequest     memreq,
-    inout wire DResponse    memresp
+    inout wire DReq     dreq,
+    inout wire DResp    dresp,
+    inout wire DReq     memreq,
+    inout wire DResp    memresp
 );
 
 typedef enum logic [3:0] {
@@ -21,7 +21,7 @@ typedef enum logic [3:0] {
 
 statetype state = IDLE;
 
-DRequest sdreq;
+DReq sdreq;
 initial begin
     sdreq.valid = 1'b0;
     sdreq.wen = 0;

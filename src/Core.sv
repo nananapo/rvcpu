@@ -6,18 +6,18 @@ module Core #(
     input wire  clk,
     input wire  exited,
 
-    input wire [63:0]   reg_cycle,
-    input wire [63:0]   reg_time,
-    input wire [63:0]   reg_mtime,
-    input wire [63:0]   reg_mtimecmp,
+    input wire UInt64   reg_cycle,
+    input wire UInt64   reg_time,
+    input wire UInt64   reg_mtime,
+    input wire UInt64   reg_mtimecmp,
 
-    inout wire IRequest     ireq,
-    inout wire IResponse    iresp,
-    output IUpdatePredictionIO  updateio, // reg
-    inout wire DRequest     dreq,
-    inout wire DResponse    dresp,
+    inout wire IReq     ireq,
+    inout wire IResp    iresp,
+    output BrInfo       brinfo,
+    inout wire DReq     dreq,
+    inout wire DResp    dresp,
     output wire modetype    csr_mode,
-    output wire InstPc      csr_satp,
+    output wire Addr        csr_satp,
 
     output logic    exit,
     output UIntX    gp
@@ -27,13 +27,13 @@ module Core #(
 
 // id reg
 logic   id_valid    = 0;
-InstPc  id_pc       = PC_X;
+Addr   id_pc       = PC_X;
 Inst    id_inst     = INST_NOP;
 IId     id_inst_id;
 
 // id -> ds wire
 wire        id_ds_valid    = id_valid;
-wire InstPc id_ds_pc       = id_pc;
+wire Addr  id_ds_pc        = id_pc;
 wire Inst   id_ds_inst     = id_inst;
 wire IId    id_ds_inst_id  = id_inst_id;
 wire Ctrl   id_ds_ctrl;
@@ -47,7 +47,7 @@ wire UIntX  id_ds_imm_z;
 
 // ds reg
 logic   ds_valid = 0;
-InstPc  ds_pc;
+Addr   ds_pc;
 Inst    ds_inst;
 IId     ds_inst_id;
 Ctrl    ds_ctrl;
@@ -63,7 +63,7 @@ wire            ds_dh_stall; // datahazard
 
 // ds -> exe wire
 wire        ds_exe_valid;
-wire InstPc ds_exe_pc;
+wire Addr   ds_exe_pc;
 wire Inst   ds_exe_inst;
 wire IId    ds_exe_inst_id;
 wire Ctrl   ds_exe_ctrl;
@@ -76,7 +76,7 @@ wire UIntX  ds_exe_rs2_data;
 
 // exe, csr reg
 logic   exe_valid = 0;
-InstPc  exe_pc;
+Addr    exe_pc;
 Inst    exe_inst;
 IId     exe_inst_id;
 Ctrl    exe_ctrl;
@@ -89,17 +89,17 @@ UIntX   exe_rs2_data;
 
 // exe wire
 wire        exe_branch_taken;
-wire InstPc exe_branch_target;
+wire Addr   exe_branch_target;
 wire        exe_calc_stall;
 
 // csr wire
 wire        csr_csr_trap_flg;
-wire InstPc csr_trap_vector;
+wire Addr   csr_trap_vector;
 wire        csr_stall_flg;
 
 // exe -> mem wire
 wire        exe_mem_valid;
-wire InstPc exe_mem_pc;
+wire Addr   exe_mem_pc;
 wire Inst   exe_mem_inst;
 wire IId    exe_mem_inst_id;
 wire Ctrl   exe_mem_ctrl;
@@ -112,7 +112,7 @@ wire        satp_change_hazard;
 
 // mem reg
 logic   mem_valid = 0;
-InstPc  mem_pc;
+Addr    mem_pc;
 Inst    mem_inst;
 IId     mem_inst_id;
 Ctrl    mem_ctrl;
@@ -125,7 +125,7 @@ wire    mem_memory_unit_stall;
 
 // mem -> wb wire
 wire        mem_wb_valid;
-wire InstPc mem_wb_pc;
+wire Addr   mem_wb_pc;
 wire Inst   mem_wb_inst;
 wire IId    mem_wb_inst_id;
 wire Ctrl   mem_wb_ctrl;
@@ -135,7 +135,7 @@ wire UIntX  mem_wb_csr_rdata;
 
 // wb reg
 logic   wb_valid = 0;
-InstPc  wb_pc;
+Addr    wb_pc;
 Inst    wb_inst;
 IId     wb_inst_id;
 Ctrl    wb_ctrl;
@@ -282,7 +282,7 @@ wire branch_fail = exe_valid && (
 // csrはトラップするときに1クロックストールする
 wire branch_hazard_now = !csr_stall_flg && (csr_csr_trap_flg || branch_fail || satp_change_hazard);
 // 分岐ハザードよりもCSRのトラップを優先する
-wire InstPc branch_target = csr_csr_trap_flg ? csr_trap_vector : 
+wire Addr  branch_target = csr_csr_trap_flg ? csr_trap_vector : 
                             exe_branch_taken ? exe_branch_target : exe_pc + 4;
 
 // exe -> mem logic
@@ -304,23 +304,23 @@ end
 
 // invalidで初期化
 initial begin
-    updateio.valid = 0;
+    brinfo.valid = 0;
 end
 
 IId exe_last_inst_id = IID_RANDOM;
 // 分岐情報を渡す
 always @(posedge clk) begin
     if (exe_valid) exe_last_inst_id <= exe_inst_id;
-    updateio.valid  <=  exe_valid &&
+    brinfo.valid    <=  exe_valid &&
                         exe_inst_id != exe_last_inst_id &&
                         (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg);
-    updateio.pc     <= exe_pc;
-    updateio.is_br  <= exe_ctrl.br_exe != BR_X;
-    updateio.is_jmp <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg;
-    updateio.taken  <= exe_branch_taken;
-    updateio.target <= exe_branch_target;
+    brinfo.pc       <= exe_pc;
+    brinfo.is_br    <= exe_ctrl.br_exe != BR_X;
+    brinfo.is_jmp   <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg;
+    brinfo.taken    <= exe_branch_taken;
+    brinfo.target   <= exe_branch_target;
     `ifdef DEBUG
-        updateio.fail <= branch_fail;
+        brinfo.fail <= branch_fail;
     `endif
 end
 

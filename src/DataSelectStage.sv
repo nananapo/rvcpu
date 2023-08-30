@@ -4,7 +4,7 @@ module DataSelectStage
     input wire UIntX    regfile[31:0],
 
     input wire          ds_valid,
-    input wire InstPc   ds_pc,
+    input wire Addr     ds_pc,
     input wire Inst     ds_inst,
     input wire IId      ds_inst_id,
     input wire Ctrl     ds_ctrl,
@@ -16,7 +16,7 @@ module DataSelectStage
     input wire UIntX    ds_imm_z,
     
     output wire         ds_exe_valid,
-    output wire InstPc  ds_exe_pc,
+    output wire Addr    ds_exe_pc,
     output wire Inst    ds_exe_inst,
     output wire IId     ds_exe_inst_id,
     output wire Ctrl    ds_exe_ctrl,
@@ -35,7 +35,7 @@ module DataSelectStage
 
 `include "include/basicparams.svh"
 
-wire InstPc pc      = ds_pc;
+wire Addr   pc      = ds_pc;
 wire Inst   inst    = ds_inst;
 wire IId    inst_id = ds_inst_id;
 
@@ -59,7 +59,7 @@ assign dh_stall_flg = ds_valid && (
 
 function [$bits(UIntX)-1:0] gen_op1data(
     input Op1Sel   op1_sel,
-    input InstPc   pc,
+    input Addr     pc,
     input UIntX    imm_z
 );
 case(op1_sel) 

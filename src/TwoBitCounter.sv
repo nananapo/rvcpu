@@ -6,7 +6,7 @@ module TwoBitCounter #(
     input wire          clk,
     input wire [31:0]   pc,         // 予測したいアドレス
     output wire         pred_taken,
-    input wire IUpdatePredictionIO updateio
+    input wire BrInfo   brinfo
 );
 
 localparam ADDR_SIZE = 2 ** ADDR_WIDTH;
@@ -19,9 +19,9 @@ localparam DEFAULT_COUNTER_VALUE = 2'b0;
 // 11 <-> 10 <-> 01 <-> 0
 logic [1:0] counters [ADDR_SIZE-1:0];
 
-IUpdatePredictionIO saved_updateio;
+BrInfo saved_brinfo;
 initial begin
-    saved_updateio.valid = 0;
+    saved_brinfo.valid = 0;
 end
 
 // カウンタの初期化
@@ -32,22 +32,22 @@ initial begin
 end
 
 // pcをindexに変換する
-wire [ADDR_WIDTH-1:0]   pc2i  =                pc[ADDR_WIDTH + 2 - 1:2];
-wire [ADDR_WIDTH-1:0]   upc2i = saved_updateio.pc[ADDR_WIDTH + 2 - 1:2];
+wire [ADDR_WIDTH-1:0]   pc2i  =              pc[ADDR_WIDTH + 2 - 1:2];
+wire [ADDR_WIDTH-1:0]   upc2i = saved_brinfo.pc[ADDR_WIDTH + 2 - 1:2];
 
 // 11と10がtakeなので、上位bitが1ならtake。それ以外ならpc + 4
 assign pred_taken  = counters[pc2i][1] == 1'b1;
 
 always @(posedge clk) begin
-    saved_updateio <= updateio;
-    if (saved_updateio.valid) begin
-        if (!saved_updateio.is_br) begin
+    saved_brinfo <= brinfo;
+    if (saved_brinfo.valid) begin
+        if (!saved_brinfo.is_br) begin
             counters[upc2i]  <= DEFAULT_COUNTER_VALUE;
         end else begin
             // 端ではなければ動かす
-            if (!(counters[upc2i] == 2'b11 && saved_updateio.taken) &&
-                !(counters[upc2i] == 2'b00 && !saved_updateio.taken)) begin
-                counters[upc2i] = counters[upc2i] + (saved_updateio.taken ? 1 : -1); 
+            if (!(counters[upc2i] == 2'b11 && saved_brinfo.taken) &&
+                !(counters[upc2i] == 2'b00 && !saved_brinfo.taken)) begin
+                counters[upc2i] = counters[upc2i] + (saved_brinfo.taken ? 1 : -1); 
             end 
         end
     end

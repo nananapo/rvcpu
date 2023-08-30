@@ -2,7 +2,7 @@ module MemoryStage(
     input wire          clk,
 
     input wire          mem_valid,
-    input wire InstPc   mem_pc,
+    input wire Addr     mem_pc,
     input wire Inst     mem_inst,
     input wire IId      mem_inst_id,
     input wire Ctrl     mem_ctrl,
@@ -11,7 +11,7 @@ module MemoryStage(
     input wire UIntX    mem_rs2_data,
 
     output wire         mem_wb_valid,
-    output wire InstPc  mem_wb_pc,
+    output wire Addr    mem_wb_pc,
     output wire Inst    mem_wb_inst,
     output wire IId     mem_wb_inst_id,
     output wire Ctrl    mem_wb_ctrl,
@@ -21,8 +21,8 @@ module MemoryStage(
 
     output logic        memory_unit_stall,
 
-    inout wire DRequest     dreq,
-    inout wire DResponse    dresp
+    inout wire DReq     dreq,
+    inout wire DResp    dresp
 );
 
 `include "include/basicparams.svh"
@@ -34,7 +34,7 @@ typedef enum logic [1:0]
 
 statetype state = IDLE;
 
-wire InstPc pc          = mem_pc;
+wire Addr   pc          = mem_pc;
 wire Inst   inst        = mem_inst;
 wire IId    inst_id     = mem_inst_id;
 wire Ctrl   ctrl        = mem_ctrl;

@@ -5,7 +5,7 @@ module GlobalHistory2bit #(
     input wire          clk,
     input wire [31:0]   pc,         // 予測したいアドレス
     output wire         pred_taken,
-    input wire IUpdatePredictionIO updateio
+    input wire BrInfo   brinfo
 );
 
 localparam SIZE_PC = 2 ** WIDTH_PC;
@@ -24,7 +24,7 @@ end
 logic [WIDTH_HIST-1:0] hist = DEFAULT_HISTORY_VALUE; 
 
 wire [WIDTH_PC-1:0] pci   = pc[WIDTH_PC+2-1:2];
-wire [WIDTH_PC-1:0] u_pci = updateio.pc[WIDTH_PC+2-1:2];
+wire [WIDTH_PC-1:0] u_pci = brinfo.pc[WIDTH_PC+2-1:2];
 
 // TODO フェッチした時のhistが欲しいが、持ってこれない
 wire [1:0] count    = counters[hist];
@@ -33,11 +33,11 @@ wire [1:0] u_count  = counters[hist]; // ここ
 assign pred_taken = count[1] == 1'b1;
 
 always @(posedge clk) begin
-    if (updateio.valid) begin
-        hist <= {hist[WIDTH_HIST-2:0], updateio.taken};
-        if (!(u_count == 2'b11 && updateio.taken) && 
-            !(u_count == 2'b00 && !updateio.taken)) begin
-            if (updateio.taken)
+    if (brinfo.valid) begin
+        hist <= {hist[WIDTH_HIST-2:0], brinfo.taken};
+        if (!(u_count == 2'b11 && brinfo.taken) && 
+            !(u_count == 2'b00 && !brinfo.taken)) begin
+            if (brinfo.taken)
                 counters[hist] <= u_count + 2'b1;
             else
                 counters[hist] <= u_count - 2'b1;

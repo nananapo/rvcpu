@@ -17,11 +17,12 @@
         <File path="src/ExecuteStage.sv" type="file.verilog" enable="1"/>
         <File path="src/InstQueue.sv" type="file.verilog" enable="1"/>
         <File path="src/Memory.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemCmdCntr.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemMapCntr.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMappedIO_Uart_rx.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMappedIO_Uart_tx.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMapped_MachineTimeRegister.sv" type="file.verilog" enable="1"/>
+        <File path="src/MemICmdConverter.sv" type="file.verilog" enable="1"/>
+        <File path="src/MemDCmdConverter.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_Cntr.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_uart_rx.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_uart_tx.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_clint.sv" type="file.verilog" enable="1"/>
         <File path="src/MemoryStage.sv" type="file.verilog" enable="1"/>
         <File path="src/MultNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/MultUnsignedNbit.sv" type="file.verilog" enable="1"/>

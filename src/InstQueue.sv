@@ -5,12 +5,12 @@ module InstQueue #(
 ) (
     input wire clk,
 
-    inout wire IRequest     ireq,
-    inout wire IResponse    iresp,
-    inout wire IRequest     memreq,
-    inout wire IResponse    memresp,
+    inout wire IReq     ireq,
+    inout wire IResp    iresp,
+    inout wire ICacheReq    memreq,
+    inout wire ICacheRes    memresp,
 
-    input wire IUpdatePredictionIO updateio
+    input wire BrInfo   brinfo
 );
 
 `include "include/basicparams.svh"
@@ -32,7 +32,7 @@ wire BufType buf_rdata;
 assign buf_kill         = branch_hazard;
 assign buf_wvalid       = requested && memresp.valid;
 assign buf_wdata.addr   = request_pc;
-assign buf_wdata.inst   = memresp.inst;
+assign buf_wdata.inst   = memresp.rdata;
 assign buf_wdata.inst_id= inst_id - IID_ONE;
 
 assign iresp.addr       = buf_rdata.addr;
@@ -73,8 +73,8 @@ logic [31:0] last_fetched_inst = 32'h0;
 
 
 // TODO この処理を適切な場所に移動したい。
-wire [31:0] fetched_pc      = requested ? memresp.addr : last_fetched_pc;
-wire [31:0] fetched_inst    = requested ? memresp.inst : last_fetched_inst;
+wire [31:0] fetched_pc      = requested ? request_pc : last_fetched_pc;
+wire [31:0] fetched_inst    = requested ? memresp.rdata : last_fetched_inst;
 
 wire [19:0] imm_j_g         = { fetched_inst[31],
                                 fetched_inst[19:12],
@@ -116,7 +116,7 @@ wire [31:0] next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .clk(clk),
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
-        .updateio(updateio)
+        .brinfo(brinfo)
     );
     initial $display("branch pred : two bit counter");
 `elsif PRED_LOCAL
@@ -124,7 +124,7 @@ wire [31:0] next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .clk(clk),
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
-        .updateio(updateio)
+        .brinfo(brinfo)
     );
     initial $display("branch pred : local history");
 `elsif PRED_GLOBAL
@@ -132,7 +132,7 @@ wire [31:0] next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .clk(clk),
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
-        .updateio(updateio)
+        .brinfo(brinfo)
     );
     initial $display("branch pred : global history");
 `else
@@ -164,7 +164,7 @@ wire [31:0] next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
 int perf_counter = 0;
 int clk_count = 0;
 always @(posedge clk) begin
-    perf_counter += {31'b0, requested && (memresp.valid && memresp.addr == request_pc)};
+    perf_counter += {31'b0, requested && memresp.valid};
     if (clk_count % 10_000_000 == 0) begin
         $display("iperf : %d", perf_counter);
         perf_counter = 0;
@@ -200,15 +200,15 @@ always @(posedge clk) begin
         end
         if (requested) begin
             // リクエストが完了した
-            if (memresp.valid && memresp.addr == request_pc) begin
+            if (memresp.valid) begin
                 `ifdef PRINT_DEBUGINFO
                     $display("info,fetchstage.event.fetch_end,fetch end");
-                    $display("data,fetchstage.event.pc,h,%b", memresp.addr);
-                    $display("data,fetchstage.event.inst,h,%b", memresp.inst);
+                    $display("data,fetchstage.event.pc,h,%b", request_pc);
+                    $display("data,fetchstage.event.inst,h,%b", memresp.rdata);
                 `endif
 
-                last_fetched_pc <= memresp.addr;
-                last_fetched_inst <= memresp.inst;
+                last_fetched_pc   <= request_pc;
+                last_fetched_inst <= memresp.rdata;
 
                 // メモリがreadyかつmemreq.validならリクエストしてる
                 if (memreq.ready && memreq.valid) begin
@@ -251,8 +251,7 @@ always @(posedge clk) begin
     // $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
     // $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
     // $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
-    // $display("data,fetchstage.memresp.addr,h,%b", memresp.addr);
-    // $display("data,fetchstage.memresp.inst,h,%b", memresp.inst);
+    // $display("data,fetchstage.memresp.inst,h,%b", memresp.rdata);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
     $display("data,fetchstage.requesting_pc,h,%b", memreq.addr);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
@@ -263,14 +262,14 @@ end
 `ifdef PRINT_DEBUGINFO
 
 always @(posedge clk) begin
-    $display("data,btb.update.valid,b,%b", updateio.valid);
-    $display("data,btb.update.pc,h,%b", updateio.pc);
-    $display("data,btb.update.is_br,b,%b", updateio.is_br);
-    $display("data,btb.update.is_jmp,b,%b", updateio.is_jmp);
-    $display("data,btb.update.taken,b,%b", updateio.taken);
-    $display("data,btb.update.target,h,%b", updateio.target);
+    $display("data,btb.update.valid,b,%b", brinfo.valid);
+    $display("data,btb.update.pc,h,%b", brinfo.pc);
+    $display("data,btb.update.is_br,b,%b", brinfo.is_br);
+    $display("data,btb.update.is_jmp,b,%b", brinfo.is_jmp);
+    $display("data,btb.update.taken,b,%b", brinfo.taken);
+    $display("data,btb.update.target,h,%b", brinfo.target);
     `ifdef DEBUG
-        $display("data,btb.update.fail,b,%b", updateio.fail);
+        $display("data,btb.update.fail,b,%b", brinfo.fail);
     `endif
 
     $display("data,btb.pred.inst,h,%b", fetched_inst);
