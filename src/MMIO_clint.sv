@@ -3,18 +3,21 @@ module MMIO_clint #(
 )(
     input  wire         clk,
 
-    input  wire         input_cmd_start,
-    input  wire         input_cmd_write,
-    output wire         output_cmd_ready,
+    output wire         req_ready,
+    input  wire         req_valid,
+    input  wire UIntX   req_addr,
+    input  wire         req_wen,
+    input  wire UInt32  req_wdata,
     
-    input  wire [31:0]  input_addr,
-    output logic [31:0] output_rdata,
-    output wire         output_rdata_valid,
-    input  wire [31:0]  input_wdata,
+    output wire     resp_valid,
+    output UInt32   resp_rdata,
 
-    input wire [63:0]   mtime,
-    output logic [63:0] mtimecmp
+    input wire UInt64   mtime,
+    output UInt64       mtimecmp
 );
+
+assign req_ready    = 1;
+assign resp_valid   = 1;
 
 `include "include/memorymap.sv"
 
@@ -22,34 +25,31 @@ initial begin
     mtimecmp = 64'hffff_ffff_ffff_ffff;
 end
 
-assign output_cmd_ready     = 1;
-assign output_rdata_valid   = 1;
-
-wire is_mtime       = input_addr == CLINT_MTIME;
-wire is_mtimeh      = input_addr == CLINT_MTIMEH;
-wire is_mtimecmp    = input_addr == CLINT_MTIMECMP;
-wire is_mtimecmph   = input_addr == CLINT_MTIMECMPH;
-wire is_debugreg    = input_addr == CLINT_DEBUG;
+wire is_mtime       = req_addr == CLINT_MTIME;
+wire is_mtimeh      = req_addr == CLINT_MTIMEH;
+wire is_mtimecmp    = req_addr == CLINT_MTIMECMP;
+wire is_mtimecmph   = req_addr == CLINT_MTIMECMPH;
+wire is_debugreg    = req_addr == CLINT_DEBUG;
 
 logic nopr = 0;
 logic nopw = 0;
 logic [31:0] debugreg = 0;
 
 always @(posedge clk) begin
-    case (input_addr) 
-        CLINT_MTIME:       output_rdata <= mtime[31:0];
-        CLINT_MTIMEH:      output_rdata <= mtime[63:32];
-        CLINT_MTIMECMP:    output_rdata <= mtimecmp[31:0];
-        CLINT_MTIMECMPH:   output_rdata <= mtimecmp[63:32];
-        CLINT_DEBUG:       output_rdata <= debugreg;
+    case (req_addr) 
+        CLINT_MTIME:       resp_rdata <= mtime[31:0];
+        CLINT_MTIMEH:      resp_rdata <= mtime[63:32];
+        CLINT_MTIMECMP:    resp_rdata <= mtimecmp[31:0];
+        CLINT_MTIMECMPH:   resp_rdata <= mtimecmp[63:32];
+        CLINT_DEBUG:       resp_rdata <= debugreg;
         default:                    nopr <= 0;
     endcase
 
-    if (input_cmd_write) begin
-        case (input_addr) 
-            CLINT_MTIMECMP:    mtimecmp[31:0]  <= input_wdata;
-            CLINT_MTIMECMPH:   mtimecmp[63:32] <= input_wdata;
-            CLINT_DEBUG:       debugreg <= input_wdata;
+    if (req_wen) begin
+        case (req_addr) 
+            CLINT_MTIMECMP:    mtimecmp[31:0]  <= req_wdata;
+            CLINT_MTIMECMPH:   mtimecmp[63:32] <= req_wdata;
+            CLINT_DEBUG:       debugreg <= req_wdata;
             default:                    nopw <= 0;
         endcase
     end

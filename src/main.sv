@@ -14,13 +14,13 @@ module main #(
 `ifdef DEBUG
     ,
     output wire         exit,
-    output wire[31:0]   gp
+    output wire UIntX   gp
 `endif
 );
 
 `ifndef DEBUG
-    wire         exit;
-    wire[31:0]   gp;
+    wire        exit;
+    wire UIntX  gp;
 `endif
 
 wire clk_in = clk27MHz;
@@ -38,7 +38,7 @@ UInt64 reg_cycle = 0;
 UInt64 reg_time  = 0;
 wire UInt64 reg_mtimecmp;
 
-logic [31:0]  timecounter = 0;
+int timecounter = 0;
 always @(posedge clk_in) begin
     // cycleは毎クロックインクリメント
     reg_cycle   <= reg_cycle + 1;
@@ -56,7 +56,7 @@ wire MemBusReq  mbreq_mem;
 wire MemBusResp mbresp_mem;
 
 wire modetype   csr_mode;
-wire [31:0]     csr_satp;
+wire UIntX      csr_satp;
 
 wire BrInfo brinfo;
 wire MemBusReq  mbreq_dcache;
@@ -86,23 +86,28 @@ wire DResp  dresp_unaligned;
     initial $display("WARN : memory size (MEMORY_SIZE) is not set. default to %s", `MEMORY_SIZE);
 `endif
 
-MemoryBus #(
+Memory #(
     .FILEPATH(`MEMORY_FILE_NAME),
     .SIZE(`MEMORY_SIZE)
 ) memory (
     .clk(clk_in),
-    .req(mbreq_mem),
-    .resp(mbresp_mem)
+    .req_ready(mbreq.ready),
+    .req_valid(mbreq.valid),
+    .req_addr(mbreq.addr),
+    .req_wen(mbreq.wen),
+    .req_wdata(mbreq.wdata),
+    .resp_valid(mbresp.valid),
+    .resp_rdata(mbresp.rdata)
 );
 
 MemBusCntr #() membuscntr (
     .clk(clk_in),
-    .dreq(mbreq_dcache),
-    .dresp(mbresp_dcache),
-    .ireq(mbreq_icache),
-    .iresp(mbresp_icache),
-    .memreq(mbreq_mem),
-    .memresp(mbresp_mem)
+    .ireq_in(mbreq_icache),
+    .iresp_in(mbresp_icache),
+    .dreq_in(mbreq_dcache),
+    .dresp_in(mbresp_dcache),
+    .memreq_in(mbreq_mem),
+    .memresp_in(mbresp_mem)
 );
 
 /* ---- Inst ---- */

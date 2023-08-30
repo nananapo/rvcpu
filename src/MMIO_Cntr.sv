@@ -14,7 +14,6 @@ module MMIO_Cntr #(
     inout  wire DCacheResp  cresp_in
 );
 
-
 typedef enum [1:0] {
     IDLE,
     WAIT_READY,
@@ -48,19 +47,19 @@ wire cmd_ready  =   is_uart_tx ? cmd_uart_tx_ready :
                     is_clint   ? cmd_clint_ready :
                     creq_in.ready;
 
-wire s_rdata_valid  = s_dreq.valid && (
-                        (s_is_memory  && cresp_in.valid) ||
-                        (s_is_uart_tx && cmd_uart_tx_rvalid) || 
-                        (s_is_uart_rx && cmd_uart_rx_rvalid) || 
-                        (s_is_clint   && cmd_clint_rvalid) );
-wire [31:0] s_rdata = s_is_memory  ? s_is_memory :
+wire s_rvalid   = s_dreq.valid && (
+                    (s_is_memory  && cresp_in.valid) ||
+                    (s_is_uart_tx && cmd_uart_tx_rvalid) || 
+                    (s_is_uart_rx && cmd_uart_rx_rvalid) || 
+                    (s_is_clint   && cmd_clint_rvalid) );
+wire [31:0] s_rdata =   s_is_memory  ? s_is_memory :
                         s_is_uart_tx ? cmd_uart_tx_rvalid :
                         s_is_uart_rx ? cmd_uart_rx_rvalid :
                         /*s_is_clint   ?*/cmd_clint_rvalid /*: 32'bx */;
 
-assign dreq_in.ready    = state == IDLE || (state == READ_VALID && s_rdata_valid);
+assign dreq_in.ready    = state == IDLE || (state == READ_VALID && s_rvalid);
 
-assign dresp_in.valid   = s_rdata_valid;
+assign dresp_in.valid   = s_rvalid;
 assign dresp_in.addr    = s_dreq.addr;
 assign dresp_in.rdata   = s_rdata;
 
@@ -76,7 +75,7 @@ always @(posedge clk) begin
             state   <= cmd_ready ? (dreq.wen ? IDLE : READ_VALID) : WAIT_READY;
         end
         WAIT_READY: if (cmd_ready) state <= dreq.wen ? IDLE : READ_VALID;
-        READ_VALID: if (s_rdata_valid) state <= IDLE;
+        READ_VALID: if (s_rvalid) state <= IDLE;
     endcase
 end
 
@@ -102,13 +101,13 @@ MMIO_uart_rx #(
     .clk(clk),
     .uart_rx(uart_rx),
 
-    .input_cmd_start(cmd_uart_rx_start),
-    .input_cmd_write(dreq.wen),
-    .output_cmd_ready(cmd_uart_rx_ready),
-    .input_addr(cmd_uart_rx_addr),
-    .output_rdata(cmd_cmd_uart_rx_rdata),
-    .output_rdata_valid(cmd_uart_rx_rvalid),
-    .input_wdata(dreq.wdata)
+    .req_ready(cmd_uart_rx_ready),
+    .req_valid(cmd_uart_rx_start),
+    .req_addr(cmd_uart_rx_addr),
+    .req_wen(dreq.wen),
+    .req_wdata(dreq.wdata),
+    .resp_valid(cmd_uart_rx_rvalid),
+    .resp_rdata(cmd_cmd_uart_rx_rdata)
 );
 
 MMIO_uart_tx #(
@@ -117,13 +116,13 @@ MMIO_uart_tx #(
     .clk(clk),
     .uart_tx(uart_tx),
 
-    .input_cmd_start(cmd_uart_tx_start),
-    .input_cmd_write(dreq.wen),
-    .output_cmd_ready(cmd_uart_tx_ready),
-    .input_addr(cmd_uart_tx_addr),
-    .output_rdata(cmd_uart_tx_rdata),
-    .output_rdata_valid(cmd_uart_tx_rvalid),
-    .input_wdata(dreq.wdata)
+    .req_ready(cmd_uart_tx_ready),
+    .req_valid(cmd_uart_tx_start),
+    .req_addr(cmd_uart_tx_addr),
+    .req_wen(dreq.wen),
+    .req_wdata(dreq.wdata),
+    .resp_valid(cmd_uart_tx_rvalid),
+    .resp_rdata(cmd_uart_tx_rdata)
 );
 
 MMIO_clint #(
@@ -131,13 +130,13 @@ MMIO_clint #(
 ) memmap_clint (
     .clk(clk),
 
-    .input_cmd_start(cmd_clint_start),
-    .input_cmd_write(dreq.wen),
-    .output_cmd_ready(cmd_clint_ready),
-    .input_addr(cmd_clint_addr),
-    .output_rdata(cmd_clint_rdata),
-    .output_rdata_valid(cmd_clint_rvalid),
-    .input_wdata(dreq.wdata),
+    .req_ready(cmd_clint_ready),
+    .req_valid(cmd_clint_start),
+    .req_addr(cmd_clint_addr),
+    .req_wen(dreq.wen),
+    .req_wdata(dreq.wdata),
+    .resp_valid(cmd_clint_rvalid),
+    .resp_rdata(cmd_clint_rdata),
 
     .mtime(mtime),
     .mtimecmp(mtimecmp)

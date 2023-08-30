@@ -9,7 +9,7 @@ module MultUnsignedNbit #(
 
     input wire [SIZE-1:0]   multiplicand,   // 被乗数
     input wire [SIZE-1:0]   multiplier,     // 乗数
-    output logic [SIZE*2-1:0] product         // 積
+    output logic [SIZE*2-1:0] product       // 積
 );
 
 typedef enum logic [1:0] { 

@@ -8,7 +8,7 @@ module Uart_rx
 
     input  wire         uart_rx,    // serial
     output logic [7:0]  rdata,// rdata
-    output wire         rdata_valid // rdata is valid(1)
+    output wire         rvalid // rdata is valid(1)
 );
 
 `ifdef FAST_UART
@@ -33,7 +33,7 @@ logic [7:0]   dataBuf     = 0;
 
 wire rxPin = uart_rx;
 
-assign rdata_valid = rxState == RX_STATE_DEBOUNCE;
+assign rvalid = rxState == RX_STATE_DEBOUNCE;
 
 always @(posedge clk) begin
     case (rxState)

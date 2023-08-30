@@ -1,18 +1,21 @@
 module MMIO_uart_tx #(
     parameter FMAX_MHz = 27
 )(
-    input  wire         clk,
-    output wire         uart_tx,
+    input  wire clk,
+    output wire uart_tx,
 
-    input  wire         input_cmd_start,
-    input  wire         input_cmd_write,
-    output wire         output_cmd_ready,
+    output wire         req_ready,
+    input  wire         req_valid,
+    input  wire UIntX   req_addr,
+    input  wire         req_wen,
+    input  wire UInt32  req_wdata,
     
-    input  wire [31:0]  input_addr,
-    output logic [31:0] output_rdata,
-    output wire         output_rdata_valid,
-    input  wire [31:0]  input_wdata
+    output wire     resp_valid,
+    output UInt32   resp_rdata
 );
+
+assign req_ready    = 1;
+assign resp_valid   = 1;
 
 `include "include/memorymap.sv"
 
@@ -26,35 +29,32 @@ initial begin
         buffer[i] = 32'b0;
 end
 
-assign output_cmd_ready     = 1;
-assign output_rdata_valid   = 1;
+wire [5:0] buffer_addr  = req_addr[7:2];
 
-wire [5:0] buffer_addr  = input_addr[7:2];
-
-wire is_queue_head_addr = input_addr == UART_TX_QUEUE_HEAD_OFFSET;
-wire is_queue_tail_addr = input_addr == UART_TX_QUEUE_TAIL_OFFSET;
+wire is_queue_head_addr = req_addr == UART_TX_QUEUE_HEAD_OFFSET;
+wire is_queue_tail_addr = req_addr == UART_TX_QUEUE_TAIL_OFFSET;
 wire is_buffer_addr     = !is_queue_head_addr && !is_queue_tail_addr; 
 
 // メモリ
 always @(posedge clk) begin
     if (is_buffer_addr)
-        output_rdata <= buffer[buffer_addr];
+        resp_rdata <= buffer[buffer_addr];
     else if (is_queue_head_addr)
-        output_rdata <= {24'b0, queue_head};
+        resp_rdata <= {24'b0, queue_head};
     else if (is_queue_tail_addr)
-        output_rdata <= {24'b0, queue_tail};
+        resp_rdata <= {24'b0, queue_tail};
 
-    if (input_cmd_start && input_cmd_write) begin
+    if (req_valid && req_wen) begin
         if (is_buffer_addr)
-            buffer[buffer_addr] <= input_wdata;
+            buffer[buffer_addr] <= req_wdata;
         else if (is_queue_tail_addr)
-            queue_tail          <= input_wdata[7:0];
+            queue_tail  <= req_wdata[7:0];
     end        
 end
 
 // UART
-logic         tx_start    = 0;
-logic [7:0]   tx_data     = 0;
+logic       tx_start  = 0;
+logic [7:0] tx_data   = 0;
 wire        tx_ready;
 
 Uart_tx #(
