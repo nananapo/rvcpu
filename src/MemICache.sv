@@ -74,7 +74,7 @@ assign iresp.rdata  = iresp_rdata_reg;
 assign busreq.valid = state == MEM_WAIT_READY;
 assign busreq.addr  = normalize_addr(ireq.addr) + read_count * 4;
 assign busreq.wen   = 0;
-assign busreq.wdata = 32'hz;
+assign busreq.wdata = 32'hx;
 
 // キャッシュラインの何個まで読んだか
 logic [LINE_INST_WIDTH-1:0] read_count;

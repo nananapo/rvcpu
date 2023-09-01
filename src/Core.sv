@@ -157,7 +157,7 @@ wire FwCtrl wb_fw_ctrl;
 assign exe_fw_ctrl.valid        = exe_valid && exe_ctrl.rf_wen == REN_S;
 assign exe_fw_ctrl.can_forward  = 0;
 assign exe_fw_ctrl.addr         = exe_ctrl.wb_addr;
-assign exe_fw_ctrl.wdata        = 32'bz;
+assign exe_fw_ctrl.wdata        = 32'bx;
 // load命令ではないならフォワーディングできる
 assign mem_fw_ctrl.valid        = mem_valid && mem_ctrl.rf_wen == REN_S;
 assign mem_fw_ctrl.can_forward  = mem_ctrl.wb_sel == WB_ALU ||
