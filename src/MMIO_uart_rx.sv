@@ -9,7 +9,7 @@ module MMIO_uart_rx #(
     input  wire         req_valid,
     input  wire UIntX   req_addr,
     input  wire         req_wen,
-    input  wire UInt32  req_wdata,
+    input  wire UIntX   req_wdata,
     
     output wire     resp_valid,
     output UInt32   resp_rdata
@@ -48,8 +48,7 @@ always @(posedge clk) begin
     end
     if (req_valid) begin
         if (head != tail) begin
-            resp_rdata <= {24'b0, buffer[head]};
-            head <= head + 1;
+            resp_rdata <= {{`XLEN-8{1'b0}}, buffer[head]};
         end else begin
             resp_rdata <= 0;
         end

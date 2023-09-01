@@ -7,7 +7,7 @@ module MMIO_clint #(
     input  wire         req_valid,
     input  wire Addr    req_addr,
     input  wire         req_wen,
-    input  wire UInt32  req_wdata,
+    input  wire UIntX   req_wdata,
     
     output wire     resp_valid,
     output UInt32   resp_rdata,
@@ -16,50 +16,42 @@ module MMIO_clint #(
     output UInt64       mtimecmp
 );
 
+`include "include/memorymap.sv"
+
 assign req_ready    = 1;
 assign resp_valid   = 1;
 
-`include "include/memorymap.sv"
-
-initial begin
-    mtimecmp = 64'hffff_ffff_ffff_ffff;
-end
-
-wire is_mtime       = req_addr == CLINT_MTIME;
-wire is_mtimeh      = req_addr == CLINT_MTIMEH;
-wire is_mtimecmp    = req_addr == CLINT_MTIMECMP;
-wire is_mtimecmph   = req_addr == CLINT_MTIMECMPH;
-wire is_debugreg    = req_addr == CLINT_DEBUG;
-
-logic nopr = 0;
-logic nopw = 0;
-logic [31:0] debugreg = 0; // TODO
+initial mtimecmp = 64'hffff_ffff_ffff_ffff;
 
 always @(posedge clk) begin
-    case (req_addr) 
-        CLINT_MTIME:       resp_rdata <= mtime[31:0];
-        CLINT_MTIMEH:      resp_rdata <= mtime[63:32];
-        CLINT_MTIMECMP:    resp_rdata <= mtimecmp[31:0];
-        CLINT_MTIMECMPH:   resp_rdata <= mtimecmp[63:32];
-        CLINT_DEBUG:       resp_rdata <= debugreg;
-        default:                    nopr <= 0;
-    endcase
-
-    if (req_wen) begin
+    `ifdef XLEN32
         case (req_addr) 
-            CLINT_MTIMECMP:    mtimecmp[31:0]  <= req_wdata;
-            CLINT_MTIMECMPH:   mtimecmp[63:32] <= req_wdata;
-            CLINT_DEBUG:       debugreg <= req_wdata;
-            default:                    nopw <= 0;
+            CLINT_MTIME:    resp_rdata <= mtime[31:0];
+            CLINT_MTIMEH:   resp_rdata <= mtime[63:32];
+            CLINT_MTIMECMP: resp_rdata <= mtimecmp[31:0];
+            CLINT_MTIMECMPH:resp_rdata <= mtimecmp[63:32];
+            default: begin end
         endcase
-    end
+        if (req_wen) begin
+            case (req_addr) 
+                CLINT_MTIMECMP: mtimecmp[31:0]  <= req_wdata;
+                CLINT_MTIMECMPH:mtimecmp[63:32] <= req_wdata;
+                default: begin end
+            endcase
+        end
+    `elsif XLEN64
+        case (req_addr) 
+            CLINT_MTIME:    resp_rdata <= mtime;
+            CLINT_MTIMECMP: resp_rdata <= mtimecmp;
+            default: begin end
+        endcase
+        if (req_wen) begin
+            case (req_addr) 
+                CLINT_MTIMECMP: mtimecmp <= req_wdata;
+                default: begin end
+            endcase
+        end
+    `endif
 end
-
-`ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
-    $display("data,debug.isdebugreg,b,%b", is_debugreg);
-    $display("data,debug.debugreg,h,%b", debugreg);
-end
-`endif
 
 endmodule

@@ -55,7 +55,7 @@ wire s_rvalid   = s_dreq.valid && (
                     (s_is_clint   && cmd_clint_rvalid) );
 /* verilator lint_on UNOPTFLAT */
 
-wire [31:0] s_rdata =   s_is_memory  ? cresp_in.rdata :
+wire UIntX s_rdata  =   s_is_memory  ? cresp_in.rdata :
                         s_is_uart_tx ? cmd_uart_tx_rdata :
                         s_is_uart_rx ? cmd_uart_rx_rdata :
                         /*s_is_clint   ?*/cmd_clint_rdata /*: 32'bx */;
@@ -89,9 +89,9 @@ wire        cmd_clint_ready;
 wire        cmd_uart_tx_rvalid;
 wire        cmd_uart_rx_rvalid;
 wire        cmd_clint_rvalid;
-wire UInt32 cmd_uart_tx_rdata;
-wire UInt32 cmd_uart_rx_rdata;
-wire UInt32 cmd_clint_rdata;
+wire UIntX  cmd_uart_tx_rdata;
+wire UIntX  cmd_uart_rx_rdata;
+wire UIntX  cmd_clint_rdata;
 wire        cmd_uart_tx_start = is_uart_tx && cmd_start;
 wire        cmd_uart_rx_start = is_uart_rx && cmd_start;
 wire        cmd_clint_start   = is_clint && cmd_start;

@@ -8,24 +8,26 @@ module MMIO_uart_tx #(
     input  wire         req_valid,
     input  wire UIntX   req_addr,
     input  wire         req_wen,
-    input  wire UInt32  req_wdata,
+    input  wire UIntX   req_wdata,
     
     output wire         resp_valid,
-    output wire UInt32  resp_rdata
+    output wire UIntX   resp_rdata
 );
 
+`include "include/basicparams.svh"
 `include "include/memorymap.sv"
 
-// TODO キューにためる
+// TODO キューにためて、ためられない時だけready=0にする
 typedef enum logic {
     IDLE,
     WAIT_READY
 } statetype;
+
 statetype state = IDLE;
 
 assign req_ready    = state == IDLE;
 assign resp_valid   = 1;
-assign resp_rdata   = 32'h0;
+assign resp_rdata   = DATA_ZERO;
 
 logic   tx_start = 0;
 UInt8   tx_data = 0;
