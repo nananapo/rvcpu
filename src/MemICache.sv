@@ -121,22 +121,22 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
-    $display("data,fetchstage.i$.state,d,%b", state);
-    $display("data,fetchstage.i$.read_count,d,%b", read_count);
+// always @(posedge clk) begin
+//     $display("data,fetchstage.i$.state,d,%b", state);
+//     $display("data,fetchstage.i$.read_count,d,%b", read_count);
 
-    if (ireq_in.valid && state == IDLE) begin
-        $display("data,fetchstage.i$.req.addr,h,%b", ireq_in.addr);
-        $display("data,fetchstage.i$.req.addr_base,h,%b", normalize_addr(ireq_in.addr));
-        $display("data,fetchstage.i$.req.cache_hit,d,%b", req_addr_in_valid_cache);
-    end
+//     if (ireq_in.valid && state == IDLE) begin
+//         $display("data,fetchstage.i$.req.addr,h,%b", ireq_in.addr);
+//         $display("data,fetchstage.i$.req.addr_base,h,%b", normalize_addr(ireq_in.addr));
+//         $display("data,fetchstage.i$.req.cache_hit,d,%b", req_addr_in_valid_cache);
+//     end
 
-    $display("data,fetchstage.i$.busreq.ready,d,%b", busreq.ready);
-    $display("data,fetchstage.i$.busreq.valid,d,%b", busreq.valid);
-    $display("data,fetchstage.i$.busreq.addr,h,%b", busreq.addr);
-    $display("data,fetchstage.i$.busresp.valid,d,%b", busresp.valid);
-    $display("data,fetchstage.i$.busresp.rdata,h,%b", busresp.rdata);
-end
+//     $display("data,fetchstage.i$.busreq.ready,d,%b", busreq.ready);
+//     $display("data,fetchstage.i$.busreq.valid,d,%b", busreq.valid);
+//     $display("data,fetchstage.i$.busreq.addr,h,%b", busreq.addr);
+//     $display("data,fetchstage.i$.busresp.valid,d,%b", busresp.valid);
+//     $display("data,fetchstage.i$.busresp.rdata,h,%b", busresp.rdata);
+// end
 `endif
 
 endmodule

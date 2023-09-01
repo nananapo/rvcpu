@@ -4,11 +4,13 @@ module MemDCache #(
 ) (
     input wire clk,
 
-    inout wire DCacheReq    dreq_in, // TODO rename
+    inout wire DCacheReq    dreq_in,
     inout wire DCacheResp   dresp, // TODO rename
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
 );
+
+`include "include/basicparams.svh"
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
 
@@ -26,11 +28,11 @@ end
 
 typedef enum logic [2:0] {
     IDLE,
-    MEM_READ_READY,
-    MEM_READ_VALID,
-    MEM_RESP_VALID,
-    MEM_WRITE_READY
-    // ,MEM_WRITE_BACK
+    READ_READY,
+    READ_VALID,
+    RESP_VALID,
+    WRITE_READY
+    // ,WRITE_BACK
 } statetype;
 
 statetype   state = IDLE;
@@ -38,7 +40,8 @@ DCacheReq   s_dreq;
 
 wire DCacheReq dreq = state == IDLE ? dreq_in : s_dreq;
 
-logic [31:0] writeback_data;
+UIntX   wb_addr;
+UInt32  wb_data;
 
 logic       dresp_valid_reg;
 logic[31:0] dresp_rdata_reg;
@@ -47,89 +50,115 @@ assign dreq_in.ready= state == IDLE;
 assign dresp.valid  = dresp_valid_reg;
 assign dresp.rdata  = dresp_rdata_reg;
 
-assign busreq.valid = state == MEM_READ_READY || state == MEM_WRITE_READY;
-assign busreq.addr  = dreq.addr;
-assign busreq.wen   = dreq.wen;
-assign busreq.wdata = writeback_data;
+assign busreq.valid = state == READ_READY || state == WRITE_READY;
+assign busreq.addr  = state == READ_READY ? dreq.addr : wb_addr;
+assign busreq.wen   = state == WRITE_READY ? 1'b1 : dreq.wen;
+assign busreq.wdata = wb_data;
 
-wire [CACHE_WIDTH-1:0] req_addr_index = dreq.addr[CACHE_WIDTH + 2 - 1 : 2];
-wire req_addr_in_valid_cache =  cache_valid[req_addr_index] && cache_addrs[req_addr_index] == dreq.addr;
-wire req_addr_is_modified = cache_modified[req_addr_index];
+wire [CACHE_WIDTH-1:0] info_index = dreq.addr[CACHE_WIDTH + 2 - 1 : 2];
+wire cache_hit  = cache_valid[info_index] && cache_addrs[info_index] == dreq.addr;
+wire need_wb    = cache_valid[info_index] && cache_modified[info_index];
 
-wire [CACHE_WIDTH-1:0] req_mem_index = req_addr_index;
+wire [CACHE_WIDTH-1:0] mem_index = info_index;
 
 always @(posedge clk) begin
     
-    dresp_valid_reg <= (state == IDLE && req_addr_in_valid_cache) || state == MEM_RESP_VALID;
-    dresp_rdata_reg <= cache_data[req_mem_index];
+    dresp_valid_reg <= (state == IDLE && cache_hit) 
+                        || state == RESP_VALID;
+    dresp_rdata_reg <= cache_data[mem_index];
     
     case (state)
     IDLE: begin
         s_dreq <= dreq_in;
         if (dreq.valid) begin
-            if (req_addr_in_valid_cache) begin
+            if (cache_hit) begin
+                // 上書き
                 if (dreq.wen) begin
-                    cache_data[req_mem_index]       <= dreq.wdata;
-                    cache_modified[req_addr_index]  <= 1;
+                    cache_data[mem_index]       <= dreq.wdata;
+                    cache_modified[info_index]  <= 1;
                 end
             end else begin
-                if (dreq.wen) begin
-                    if (req_addr_is_modified) begin
-                        state <= MEM_WRITE_READY;
-                        writeback_data <= cache_data[req_mem_index];
-                    end else begin
-                        cache_data[req_mem_index]       <= dreq.wdata;
-                        cache_addrs[req_addr_index]     <= dreq.addr;
-                        cache_valid[req_addr_index]     <= 1;
-                        cache_modified[req_addr_index]  <= 1;
-                    end
+                if (need_wb) begin
+                    // ライトバック
+                    state   <= WRITE_READY;
+                    wb_addr <= cache_addrs[info_index];
+                    wb_data <= cache_data[mem_index];
+                    // 
+                    cache_data[mem_index]       <= 32'hx;
+                    cache_addrs[info_index]     <= dreq.addr;
+                    cache_valid[info_index]     <= 0;
+                    cache_modified[info_index]  <= 0;
                 end else begin
-                    if (req_addr_is_modified) begin
-                        state <= MEM_WRITE_READY;
-                        writeback_data <= cache_data[req_mem_index];
+                    if (dreq.wen) begin
+                        // 上書きする
+                        cache_data[mem_index]       <= dreq.wdata;
+                        cache_addrs[info_index]     <= dreq.addr;
+                        cache_valid[info_index]     <= 1;
+                        cache_modified[info_index]  <= 1;
                     end else begin
-                        state <= MEM_READ_READY;
+                        // 読む
+                        state <= READ_READY;
+                        cache_data[mem_index]       <= 32'hx;
+                        cache_addrs[info_index]     <= dreq.addr;
+                        cache_valid[info_index]     <= 0;
+                        cache_modified[info_index]  <= 0;
                     end
                 end
             end
         end
     end
-    MEM_READ_READY: begin
-        if (busreq.ready) begin
-            state <= MEM_READ_VALID;
-            cache_addrs[req_addr_index]     <= dreq.addr;
-            cache_valid[req_addr_index]     <= 0;
-            cache_modified[req_addr_index]  <= 0;
-        end
-    end
-    MEM_READ_VALID: begin
+    READ_READY: if (busreq.ready) state <= READ_VALID;
+    READ_VALID: begin
         if (busresp.valid) begin
-            state <= MEM_RESP_VALID;
-            cache_data[req_mem_index]   <= busresp.rdata;
-            cache_valid[req_addr_index] <= 1;
+            state <= RESP_VALID;
+            cache_data[mem_index]       <= busresp.rdata;
+            cache_valid[info_index]     <= 1;
+            cache_modified[info_index]  <= 0;
         end
     end
-    MEM_RESP_VALID: state <= IDLE;
-    MEM_WRITE_READY: begin
+    RESP_VALID: state <= IDLE;
+    WRITE_READY: begin
         if (busreq.ready) begin
-            if (dreq.wen) begin // ライトバック -> modifiedとして書き込みで終わり
+            if (dreq.wen) begin
+                // ライトバック -> write
+                // modifiedとして書き込みで終わり
                 state <= IDLE;
-                cache_data[req_mem_index]       <= dreq.wdata;
-                cache_addrs[req_addr_index]     <= dreq.addr;
-                cache_valid[req_addr_index]     <= 1;
-                cache_modified[req_addr_index]  <= 1;
-            end else begin // ライトバック -> read
-                state <= MEM_READ_READY;
-                cache_valid[req_addr_index]     <= 0;
-                cache_modified[req_addr_index]  <= 0;
+                cache_data[mem_index]       <= dreq.wdata;
+                cache_addrs[info_index]     <= dreq.addr;
+                cache_valid[info_index]     <= 1;
+                cache_modified[info_index]  <= 1;
+            end else begin
+                // ライトバック -> read
+                state <= READ_READY;
             end
         end
     end
     default: begin
-        $display("MemICache : Unknown state");
+        $display("MemDCache : Unknown state");
         $finish;
     end
     endcase
 end
+
+`ifdef PRINT_DEBUGINFO
+always @(posedge clk) begin
+    $display("data,memstage.d$.state,d,%b", state);
+    if (dreq_in.valid && state == IDLE) begin
+        $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);
+        $display("data,memstage.d$.req.addr_index,h,%b", info_index);
+        $display("data,memstage.d$.req.cache_hit,d,%b", cache_hit);
+        $display("data,memstage.d$.req.cache_data,h,%b", cache_data[mem_index]);
+        $display("data,memstage.d$.req.wen,b,%b", dreq_in.wen);
+        $display("data,memstage.d$.req.wdata,h,%b", dreq_in.wdata);
+    end
+    if (busreq.valid) begin
+        $display("data,memstage.d$.busreq.ready,d,%b", busreq.ready);
+        $display("data,memstage.d$.busreq.valid,d,%b", busreq.valid);
+        $display("data,memstage.d$.busreq.addr,h,%b", busreq.addr);
+    end
+    $display("data,memstage.d$.busresp.valid,d,%b", busresp.valid);
+    $display("data,memstage.d$.busresp.rdata,h,%b", busresp.rdata);
+end
+`endif
 
 endmodule
