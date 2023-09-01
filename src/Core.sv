@@ -27,7 +27,7 @@ module Core #(
 
 // id reg
 logic   id_valid    = 0;
-Addr    id_pc       = PC_X;
+Addr    id_pc       = ADDR_X;
 Inst    id_inst     = INST_NOP;
 IId     id_inst_id;
 

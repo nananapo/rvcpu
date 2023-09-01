@@ -29,15 +29,15 @@ wire UIntX csr_rdata    = wb_csr_rdata;
 `ifdef RISCV_TEST
     initial begin
         for (int i = 0; i < 32; i++)
-            regfile[i] = PC_MAX;
+            regfile[i] = ADDR_MAX;
     end
     assign exit = pc == 32'h00000044;
 `else
     initial begin
-        regfile[1] = PC_MAX;
+        regfile[1] = ADDR_MAX;
         regfile[2] = 32'h00007500;
         for (int i = 3; i < 32; i++)
-            regfile[i] = PC_MAX;
+            regfile[i] = ADDR_MAX;
     end
     assign exit = pc == 32'hffffff00;
 `endif
