@@ -156,19 +156,18 @@ always @(posedge clk) begin
     $display("data,memstage.valid,b,%b", mem_valid);
     $display("data,memstage.state,d,%b", state);
     $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : IID_X);
+
     if (mem_valid) begin
         $display("data,memstage.pc,h,%b", pc);
         $display("data,memstage.inst,h,%b", inst);
-        $display("data,memstage.rs2_data,h,%b", rs2_data);
         $display("data,memstage.alu_out,h,%b", alu_out);
+        $display("data,memstage.rs2_data,h,%b", rs2_data);
         $display("data,memstage.mem_wen,d,%b", mem_wen);
         $display("data,memstage.mem_size,d,%b", mem_size);
-        
-        $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
-
         $display("data,memstage.is_load,b,%b", is_load);
         $display("data,memstage.is_store,b,%b", is_store);
         $display("data,memstage.memory_unit_stall,b,%b", memory_unit_stall);
+        $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
 
         // $display("data,memstage.memu.cmd.s,b,%b", memu_cmd_start);
         // $display("data,memstage.memu.cmd.w,b,%b", memu_cmd_write);

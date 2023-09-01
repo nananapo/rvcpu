@@ -19,6 +19,7 @@ localparam BUF_LEN = 2**BUF_WIDTH;
 typedef logic [BUF_WIDTH-1:0] BufWidth;
 
 // TODO キューのモジュールを使う
+// TODO 割り込み
 
 UInt8       buffer[BUF_LEN-1:0];
 BufWidth    head = 0;

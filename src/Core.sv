@@ -328,7 +328,7 @@ int all_br_count = 0;
 int all_inst_count = 0;
 int fail_count = 0;
 
-localparam COUNT = 1000000;
+localparam COUNT = 1_000_000;
 
 // 予測の成功率を求める
 always @(posedge clk) begin

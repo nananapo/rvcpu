@@ -140,25 +140,25 @@ always @(posedge clk) begin
     endcase
 end
 
-`ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
-    $display("data,memstage.d$.state,d,%b", state);
-    if (dreq_in.valid && state == IDLE) begin
-        $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);
-        $display("data,memstage.d$.req.addr_index,h,%b", info_index);
-        $display("data,memstage.d$.req.cache_hit,d,%b", cache_hit);
-        $display("data,memstage.d$.req.cache_data,h,%b", cache_data[mem_index]);
-        $display("data,memstage.d$.req.wen,b,%b", dreq_in.wen);
-        $display("data,memstage.d$.req.wdata,h,%b", dreq_in.wdata);
-    end
-    if (busreq.valid) begin
-        $display("data,memstage.d$.busreq.ready,d,%b", busreq.ready);
-        $display("data,memstage.d$.busreq.valid,d,%b", busreq.valid);
-        $display("data,memstage.d$.busreq.addr,h,%b", busreq.addr);
-    end
-    $display("data,memstage.d$.busresp.valid,d,%b", busresp.valid);
-    $display("data,memstage.d$.busresp.rdata,h,%b", busresp.rdata);
-end
-`endif
+// `ifdef PRINT_DEBUGINFO
+// always @(posedge clk) begin
+//     $display("data,memstage.d$.state,d,%b", state);
+//     if (dreq_in.valid && state == IDLE) begin
+//         $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);
+//         $display("data,memstage.d$.req.addr_index,h,%b", info_index);
+//         $display("data,memstage.d$.req.cache_hit,d,%b", cache_hit);
+//         $display("data,memstage.d$.req.cache_data,h,%b", cache_data[mem_index]);
+//         $display("data,memstage.d$.req.wen,b,%b", dreq_in.wen);
+//         $display("data,memstage.d$.req.wdata,h,%b", dreq_in.wdata);
+//     end
+//     if (busreq.valid) begin
+//         $display("data,memstage.d$.busreq.ready,d,%b", busreq.ready);
+//         $display("data,memstage.d$.busreq.valid,d,%b", busreq.valid);
+//         $display("data,memstage.d$.busreq.addr,h,%b", busreq.addr);
+//     end
+//     $display("data,memstage.d$.busresp.valid,d,%b", busresp.valid);
+//     $display("data,memstage.d$.busresp.rdata,h,%b", busresp.rdata);
+// end
+// `endif
 
 endmodule

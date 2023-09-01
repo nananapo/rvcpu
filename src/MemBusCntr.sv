@@ -28,9 +28,10 @@ statetype state = CHECK_I;
 assign ireq_in.ready    = state == CHECK_I;
 assign dreq_in.ready    = state == CHECK_D;
 
+// TODO レジスタを介さない
 assign memreq_in.valid  = state == I_WAIT_READY || state == D_WAIT_READY;
-assign memreq_in.addr   = state == I_WAIT_READY ? s_ireq.addr : s_dreq.addr;
-assign memreq_in.wen    = state == I_WAIT_READY ? s_ireq.wen : s_dreq.wen;
+assign memreq_in.addr   = state == I_WAIT_READY ? s_ireq.addr  : s_dreq.addr;
+assign memreq_in.wen    = state == I_WAIT_READY ? s_ireq.wen   : s_dreq.wen;
 assign memreq_in.wdata  = state == I_WAIT_READY ? s_ireq.wdata : s_dreq.wdata;
 
 logic   reg_iresp_valid;
@@ -38,11 +39,13 @@ logic   reg_dresp_valid;
 UIntX   reg_resp_addr;
 UInt32  reg_resp_rdata;
 
+// TODO レジスタを介さない
 assign iresp_in.valid = reg_iresp_valid;
-assign dresp_in.valid = reg_dresp_valid;
 assign iresp_in.addr  = reg_resp_addr;
-assign dresp_in.addr  = reg_resp_addr;
 assign iresp_in.rdata = reg_resp_rdata;
+
+assign dresp_in.valid = reg_dresp_valid;
+assign dresp_in.addr  = reg_resp_addr;
 assign dresp_in.rdata = reg_resp_rdata;
 
 always @(posedge clk) begin
@@ -90,11 +93,13 @@ end
 // `ifdef PRINT_DEBUGINFO
 // always @(posedge clk) begin
 //     $display("data,fetchstage.buscntr.state,d,%b", state);
-//     $display("data,fetchstage.buscntr.memreq.ready,d,%b", memreq_in.ready);
-//     $display("data,fetchstage.buscntr.memreq.valid,d,%b", memreq_in.valid);
-//     $display("data,fetchstage.buscntr.memreq.addr,h,%b", memreq_in.addr);
-//     $display("data,fetchstage.buscntr.memreq.wen,d,%b", memreq_in.wen);
-//     $display("data,fetchstage.buscntr.memreq.wdata,h,%b", memreq_in.wdata);
+//     if (memreq_in.valid) begin
+//         $display("data,fetchstage.buscntr.memreq.ready,d,%b", memreq_in.ready);
+//         $display("data,fetchstage.buscntr.memreq.valid,d,%b", memreq_in.valid);
+//         $display("data,fetchstage.buscntr.memreq.addr,h,%b", memreq_in.addr);
+//         $display("data,fetchstage.buscntr.memreq.wen,d,%b", memreq_in.wen);
+//         $display("data,fetchstage.buscntr.memreq.wdata,h,%b", memreq_in.wdata);
+//     end
 //     $display("data,fetchstage.buscntr.memresp.valid,d,%b", memresp_in.valid);
 //     $display("data,fetchstage.buscntr.memresp.rdata,h,%b", memresp_in.rdata);
 //     $display("data,fetchstage.buscntr.reg_iresp_valid,b,%b", reg_iresp_valid);
