@@ -5,7 +5,7 @@ module MMIO_clint #(
 
     output wire         req_ready,
     input  wire         req_valid,
-    input  wire UIntX   req_addr,
+    input  wire Addr    req_addr,
     input  wire         req_wen,
     input  wire UInt32  req_wdata,
     
@@ -33,7 +33,7 @@ wire is_debugreg    = req_addr == CLINT_DEBUG;
 
 logic nopr = 0;
 logic nopw = 0;
-logic [31:0] debugreg = 0;
+logic [31:0] debugreg = 0; // TODO
 
 always @(posedge clk) begin
     case (req_addr) 

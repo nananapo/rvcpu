@@ -39,8 +39,8 @@ wire Addr   pc      = ds_pc;
 wire Inst   inst    = ds_inst;
 wire IId    inst_id = ds_inst_id;
 
-wire [4:0] rs1_addr = inst[19:15];
-wire [4:0] rs2_addr = inst[24:20];
+wire UInt5 rs1_addr = inst[19:15];
+wire UInt5 rs2_addr = inst[24:20];
 
 // データハザード判定
 wire dh_exe_rs1 = dh_exe_fw.valid && dh_exe_fw.addr == rs1_addr && rs1_addr != 0;
@@ -70,12 +70,12 @@ endcase
 endfunction
 
 function [$bits(UIntX)-1:0] gen_op2data(
-    input Op2Sel   op2_sel,
-    input [4:0]    rs2_addr,
-    input UIntX    imm_i,
-    input UIntX    imm_s,
-    input UIntX    imm_j,
-    input UIntX    imm_u
+    input Op2Sel    op2_sel,
+    input UInt5     rs2_addr,
+    input UIntX     imm_i,
+    input UIntX     imm_s,
+    input UIntX     imm_j,
+    input UIntX     imm_u
 );
 case(op2_sel) 
     OP2_IMI : gen_op2data = imm_i;

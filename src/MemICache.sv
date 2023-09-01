@@ -24,9 +24,9 @@ localparam CACHE_LENGTH     = 2 ** ADDR_WIDTH;
 
 typedef logic [ADDR_WIDTH-1:0] CacheIndex;
 
-logic [31:0] cache_data  [CACHE_LENGTH * LINE_INST_COUNT -1:0]; // 1列
-logic [31:0] cache_addrs [CACHE_LENGTH-1:0];
-logic cache_valid[CACHE_LENGTH-1:0];
+UInt32  cache_data[CACHE_LENGTH * LINE_INST_COUNT -1:0]; // 1列
+Addr    cache_addrs[CACHE_LENGTH-1:0];
+logic   cache_valid[CACHE_LENGTH-1:0];
 
 initial begin
     for (int i = 0; i < CACHE_LENGTH; i++) begin
@@ -43,11 +43,11 @@ typedef enum logic [1:0] {
 
 statetype state = IDLE;
 
-function [$bits(CacheIndex)-1:0] calc_cache_addr( input [31:0] addr );
+function [$bits(CacheIndex)-1:0] calc_cache_addr( input UIntX addr );
     calc_cache_addr = addr[ADDR_WIDTH-1 + ADDR_DISMISS_WIDTH:ADDR_DISMISS_WIDTH];
 endfunction
 
-function [31:0] normalize_addr( input [31:0] addr );
+function [$bits(UIntX)-1:0] normalize_addr( input UIntX addr );
     normalize_addr = {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
 endfunction
 

@@ -18,13 +18,13 @@ module WriteBackStage(
 
 `include "include/basicparams.svh"
 
-wire Addr  pc           = wb_pc;
-wire Inst inst          = wb_inst;
-wire IId inst_id        = wb_inst_id;
-wire Ctrl ctrl          = wb_ctrl;
-wire UIntX alu_out      = wb_alu_out;
-wire UIntX memory_rdata = wb_mem_rdata;
-wire UIntX csr_rdata    = wb_csr_rdata;
+wire Addr   pc          = wb_pc;
+wire Inst   inst        = wb_inst;
+wire IId    inst_id     = wb_inst_id;
+wire Ctrl   ctrl        = wb_ctrl;
+wire UIntX  alu_out     = wb_alu_out;
+wire UIntX  memory_rdata= wb_mem_rdata;
+wire UIntX  csr_rdata   = wb_csr_rdata;
 
 `ifdef RISCV_TEST
     initial begin
@@ -44,11 +44,11 @@ wire UIntX csr_rdata    = wb_csr_rdata;
 
 // WB STAGE
 function [$bits(UIntX)-1:0] wb_data_func(
-    input Addr      pc,
-    input WbSel     wb_sel,
-    input UIntX     alu_out,
-    input UIntX     csr_rdata,
-    input UIntX     memory_rdata
+    input Addr  pc,
+    input WbSel wb_sel,
+    input UIntX alu_out,
+    input UIntX csr_rdata,
+    input UIntX memory_rdata
 );
     case (wb_sel)
         WB_MEM  : wb_data_func = memory_rdata;

@@ -14,10 +14,10 @@ module MemDCache #(
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
 
-logic [31:0] cache_data  [CACHE_SIZE-1:0];
-logic [31:0] cache_addrs [CACHE_SIZE-1:0];
-logic cache_valid[CACHE_SIZE-1:0];
-logic cache_modified[CACHE_SIZE-1:0];
+UInt32  cache_data[CACHE_SIZE-1:0];
+Addr    cache_addrs[CACHE_SIZE-1:0];
+logic   cache_valid[CACHE_SIZE-1:0];
+logic   cache_modified[CACHE_SIZE-1:0];
 
 initial begin
     for (int i = 0; i < CACHE_SIZE; i++) begin
@@ -40,11 +40,11 @@ DCacheReq   s_dreq;
 
 wire DCacheReq dreq = state == IDLE ? dreq_in : s_dreq;
 
-UIntX   wb_addr;
+Addr    wb_addr;
 UInt32  wb_data;
 
-logic       dresp_valid_reg;
-logic[31:0] dresp_rdata_reg;
+logic   dresp_valid_reg;
+UInt32  dresp_rdata_reg;
 
 assign dreq_in.ready= state == IDLE;
 assign dresp.valid  = dresp_valid_reg;

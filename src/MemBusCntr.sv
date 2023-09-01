@@ -36,7 +36,7 @@ assign memreq_in.wdata  = state == I_WAIT_READY ? s_ireq.wdata : s_dreq.wdata;
 
 logic   reg_iresp_valid;
 logic   reg_dresp_valid;
-UIntX   reg_resp_addr;
+Addr    reg_resp_addr;
 UInt32  reg_resp_rdata;
 
 // TODO レジスタを介さない

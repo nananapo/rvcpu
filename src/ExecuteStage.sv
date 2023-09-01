@@ -35,9 +35,9 @@ wire IId  inst_id   = exe_inst_id;
 wire Ctrl ctrl      = exe_ctrl;
 
 wire AluSel i_exe   = exe_ctrl.i_exe;
-wire BrSel br_exe   = exe_ctrl.br_exe;
-wire UIntX op1_data = exe_op1_data;
-wire UIntX op2_data = exe_op2_data;
+wire BrSel  br_exe  = exe_ctrl.br_exe;
+wire UIntX  op1_data= exe_op1_data;
+wire UIntX  op2_data= exe_op2_data;
 
 wire UIntX alu_out;
 wire alu_branch_take;

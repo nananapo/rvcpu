@@ -1,6 +1,6 @@
 module ALU #(
-    parameter       ENABLE_ALU      = 1'b0,
-    parameter       ENABLE_BRANCH   = 1'b0 
+    parameter ENABLE_ALU    = 1'b0,
+    parameter ENABLE_BRANCH = 1'b0 
 )(
     input wire AluSel   i_exe,
     input wire BrSel    br_exe,

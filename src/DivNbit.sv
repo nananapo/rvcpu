@@ -15,6 +15,7 @@ module DivNbit #(
     output logic signed [SIZE-1:0]  remainder   // 余り
 );
 
+typedef logic [SIZE-1:0] UIntS;
 typedef enum logic {
     IDLE, WAIT
 } statetype;
@@ -26,10 +27,10 @@ logic result_rem_is_minus = 0;
 
 // mod(ified)_*
 // unsignedで計算するために、signedでマイナスならマイナスをかけている
-wire [SIZE-1:0] mod_dividend    = is_signed ? (dividend > $signed({SIZE{1'b0}}) ? dividend : 0 - dividend) : dividend;
-wire [SIZE-1:0] mod_divisor     = is_signed ? (divisor  > $signed({SIZE{1'b0}}) ? divisor  : 0 - divisor)  : divisor;
-wire [SIZE-1:0] mod_quotient;
-wire [SIZE-1:0] mod_remainder;
+wire UIntS mod_dividend = is_signed ? (dividend > $signed({SIZE{1'b0}}) ? dividend : 0 - dividend) : dividend;
+wire UIntS mod_divisor  = is_signed ? (divisor  > $signed({SIZE{1'b0}}) ? divisor  : 0 - divisor)  : divisor;
+wire UIntS mod_quotient;
+wire UIntS mod_remainder;
 
 assign quotient     = !error && result_div_is_minus ? $signed($signed(0) - $signed(mod_quotient)) : mod_quotient;
 assign remainder    = !error && result_rem_is_minus ? $signed($signed(0) - $signed(mod_remainder)) : mod_remainder;

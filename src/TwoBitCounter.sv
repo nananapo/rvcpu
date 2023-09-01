@@ -4,7 +4,7 @@ module TwoBitCounter #(
     parameter ADDR_WIDTH = 12
 )(
     input wire          clk,
-    input wire [31:0]   pc,         // 予測したいアドレス
+    input wire Addr     pc,         // 予測したいアドレス
     output wire         pred_taken,
     input wire BrInfo   brinfo
 );

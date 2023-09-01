@@ -17,9 +17,9 @@ module InstQueue #(
 `include "include/inst.svh"
 
 typedef struct packed {
-    logic [31:0] addr;
-    logic [31:0] inst;
-    IId inst_id;
+    Addr    addr;
+    Inst    inst;
+    IId     inst_id;
 } BufType;
 
 wire buf_kill;
@@ -56,25 +56,25 @@ SyncQueue #(
     .rdata(buf_rdata)
 );
 
-logic [31:0]  pc    = INITIAL_ADDR;
-IId     inst_id     = IID_ZERO;
+Addr    pc      = INITIAL_ADDR;
+IId     inst_id = IID_ZERO;
 
-logic         requested   = 0;
-logic [31:0]  request_pc  = 32'd0;
+logic   requested   = 0;
+Addr    request_pc  = ADDR_ZERO;
 
 wire branch_hazard  = ireq.valid;
 
-wire [31:0] next_pc;
+wire Addr next_pc;
 
 
 
-logic [31:0] last_fetched_pc = 32'h0;
-logic [31:0] last_fetched_inst = 32'h0;
+Addr last_fetched_pc = 32'h0;
+Inst last_fetched_inst = 32'h0;
 
 
 // TODO この処理を適切な場所に移動したい。
-wire [31:0] fetched_pc      = requested ? request_pc : last_fetched_pc;
-wire [31:0] fetched_inst    = requested ? memresp.rdata : last_fetched_inst;
+wire Addr fetched_pc      = requested ? request_pc : last_fetched_pc;
+wire Inst fetched_inst    = requested ? memresp.rdata : last_fetched_inst;
 
 wire [19:0] imm_j_g         = { fetched_inst[31],
                                 fetched_inst[19:12],
@@ -85,14 +85,14 @@ wire [11:0] imm_b_g         = { fetched_inst[31],
                                 fetched_inst[30:25],
                                 fetched_inst[11:8]};
 
-wire [31:0] imm_j_sext      = {{11{imm_j_g[19]}}, imm_j_g, 1'b0};
-wire [31:0] imm_b_sext      = {{19{imm_b_g[11]}}, imm_b_g, 1'b0};
+wire UIntX  imm_j_sext      = {{11{imm_j_g[19]}}, imm_j_g, 1'b0};
+wire UIntX  imm_b_sext      = {{19{imm_b_g[11]}}, imm_b_g, 1'b0};
 
 wire [6:0]  inst_opcode     = fetched_inst[6:0];
 wire [2:0]  inst_funct3     = fetched_inst[14:12];
 
 wire        inst_is_jal     = inst_opcode == JAL_OP;
-wire [31:0] jal_target      = fetched_pc + imm_j_sext;
+wire Addr   jal_target      = fetched_pc + imm_j_sext;
 
 wire inst_is_jalr = inst_opcode == JALR_OP && inst_funct3 == JALR_F3;
 wire inst_is_br = inst_opcode == BR_OP;
@@ -104,10 +104,10 @@ wire jal_hazard = inst_is_jal && /* requested &&*/ request_pc != jal_target;
 
 
 // 分岐予測
-wire [31:0] pred_pc_base = request_pc;
+wire Addr pred_pc_base = request_pc;
 wire pred_taken;
-wire [31:0] pred_taken_pc = pred_pc_base + imm_b_sext;
-wire [31:0] next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
+wire Addr pred_taken_pc = pred_pc_base + imm_b_sext;
+wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
 
 `ifdef PRED_TBC
     TwoBitCounter #(
@@ -142,7 +142,7 @@ wire [31:0] next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
 `endif
 
 `ifdef DEBUG
-    wire [31:0] __next_pc = jal_hazard ? jal_target + 4 :
+    wire Addr __next_pc = jal_hazard ? jal_target + 4 :
                             inst_is_br ? next_pc_pred + 4: 
                             pc + 4;
     assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
@@ -273,9 +273,6 @@ always @(posedge clk) begin
     $display("data,btb.update.is_jmp,b,%b", brinfo.is_jmp);
     $display("data,btb.update.taken,b,%b", brinfo.taken);
     $display("data,btb.update.target,h,%b", brinfo.target);
-    `ifdef DEBUG
-        $display("data,btb.update.fail,b,%b", brinfo.fail);
-    `endif
 
     $display("data,btb.pred.inst,h,%b", fetched_inst);
     $display("data,btb.pred.when_pc_taken,h,%b", pred_taken_pc);

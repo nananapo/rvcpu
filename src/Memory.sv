@@ -6,7 +6,7 @@ module Memory #(
 
     output wire         req_ready,
     input  wire         req_valid,
-    input  wire UIntX   req_addr,
+    input  wire Addr    req_addr,
     input  wire         req_wen,
     input  wire UInt32  req_wdata,
     output wire     resp_valid,
@@ -31,7 +31,7 @@ initial begin
     resp_rdata = 0;
 end
 
-wire [31:0] addr_shift = (req_addr >> 2) % SIZE;
+Addr addr_shift = (req_addr >> 2) % SIZE;
 
 always @(posedge clk) begin
     resp_rdata <= {

@@ -47,7 +47,7 @@ wire UIntX  id_ds_imm_z;
 
 // ds reg
 logic   ds_valid = 0;
-Addr   ds_pc;
+Addr    ds_pc;
 Inst    ds_inst;
 IId     ds_inst_id;
 Ctrl    ds_ctrl;
@@ -194,7 +194,7 @@ assign iresp.ready  = !exited && !if_stall;
 // 最後のクロックでの分岐ハザード状態
 // このレジスタを介してireqすることで、EXEステージとinstqueueが直接つながらないようにする。
 logic branch_hazard_last_clock        = 0;
-logic [31:0] branch_target_last_clock = 32'h0;
+UIntX branch_target_last_clock = 32'h0;
 
 // branchするとき(分岐予測に失敗したとき)はireq経由でリクエストする
 // ireq.validをtrueにすると、キューがリセットされる。
@@ -318,9 +318,6 @@ always @(posedge clk) begin
     brinfo.is_jmp   <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg;
     brinfo.taken    <= exe_branch_taken;
     brinfo.target   <= exe_branch_target;
-    `ifdef DEBUG
-        brinfo.fail <= branch_fail;
-    `endif
 end
 
 `ifdef PRINT_BRANCH_ACCURACY
@@ -334,9 +331,7 @@ localparam COUNT = 1_000_000;
 always @(posedge clk) begin
     if (exe_valid && exe_inst_id != exe_last_inst_id) begin
         if (all_inst_count >= COUNT) begin
-            // $display("%d%% (%d / 1000)", (COUNT - fail_count) * 100 / COUNT, fail_count / (COUNT / 1000));
             $display("MPKI : %d , %d%%", fail_count / (COUNT / 1000), (all_br_count - fail_count) * 100 / all_br_count);
-            // $display("%d", fail_count);
             fail_count = 0;
             all_inst_count = 0;
             all_br_count = 0;

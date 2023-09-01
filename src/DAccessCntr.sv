@@ -1,5 +1,6 @@
+// TODO 64bit loadを32bit load2回に変換する
 module DAccessCntr (
-    input wire              clk,
+    input wire clk,
     inout wire DReq     dreq,
     inout wire DResp    dresp,
     inout wire DReq     memreq,
@@ -28,29 +29,19 @@ initial begin
     sdreq.wmask = SIZE_W;
 end
 
-// Storeの場合、投げっぱなし
-// 4 byteアラインされていない、またはbyte, half命令は必ず先読みする。
-//
-// 4byteアラインされているかつbyte, half
-// -> loadは1回
-// 4byteアラインされていない、かつword
-// -> loadは必ず2回
-// 4byteアラインされていない、かつhalf
-// -> addr % 4 == 1 or 2ならloadは1回
-// -> addr % 4 == 3ならloadは2回
-// 4byteアラインされていない、かつbyte
-// -> loadは1回 
-//
-// 先読みするなら、LOAD(4 or 6) + STORE(3)、よって7 or 9クロック以上
-//  IDLE -> STORE_CHECK -> LOAD_READY -> ... -> LOAD_END -> STORE_READY
-// しないなら、3クロック以上
-//  IDLE -> STORE_CHECK -> STORE_READY
-
-// LOADの場合、
-// 4byteアラインされているなら、4クロック以上
-//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_END -> LOAD_PUSH
-// されていないなら、6クロック以上
-//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_READY2 -> LOAD_VALID2 -> LOAD_END -> LOAD_PUSH
+/*
+load byte 
+-> 0-3 アラインしてload、調整
+load half
+-> 0-2 アラインしてload、調整
+-> 3   2回load
+load word
+-> 0 1回load
+-> 1-3 2回load
+load dword
+-> 0 2回load
+-> 1-3 3回load
+*/
 
 // 下位2ビット
 wire [1:0]  saddr_lb = sdreq.addr[1:0];
