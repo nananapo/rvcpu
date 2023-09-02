@@ -1,4 +1,3 @@
-// TODO 64bit loadを32bit load2回に変換する
 module DAccessCntr (
     input wire clk,
     inout wire DReq     dreq,
@@ -66,8 +65,8 @@ logic [31:0]  store_wdata2;
 
 logic [31:0]  load_result;
 
-assign memreq.valid = state == LOAD_READY || state == LOAD_READY2 || state == STORE_READY || state == STORE_READY2;
-assign memreq.addr  = state == LOAD_READY || state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;
+assign memreq.valid = state == LOAD_READY  || state == LOAD_READY2 || state == STORE_READY || state == STORE_READY2;
+assign memreq.addr  = state == LOAD_READY  || state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;
 assign memreq.wen   = state == STORE_READY || state == STORE_READY2;
 assign memreq.wdata = state == STORE_READY ? store_wdata1 : store_wdata2;
 
@@ -172,12 +171,6 @@ always @(posedge clk) begin
     $display("data,dmemucntr.saved_rdata2,h,%b", saved_rdata2);
     $display("data,dmemucntr.load_result,h,%b", load_result);
     $display("data,dmemucntr.saddr_lb,h,%b", saddr_lb);
-    /*
-    $display("data,dmemucntr.dreq.ready,b,%b", dreq.ready);
-    $display("data,dmemucntr.dreq.valid,b,%b", dreq.valid);
-    $display("data,dmemucntr.dresp.valid,b,%b", dresp.valid);
-    $display("data,dmemucntr.iresp.valid,b,%b", iresp.valid);
-    */
 end
 `endif
 

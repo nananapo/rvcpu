@@ -150,6 +150,14 @@ MemDCache #() memdcache (
     .busresp(mbresp_dcache)
 );
 
+DAccessCntr #() daccesscntr (
+    .clk(clk_in),
+    .dreq(dreq_unaligned),
+    .dresp(dresp_unaligned),
+    .memreq(dreq_mmio_cntr),
+    .memresp(dresp_mmio_cntr)
+);
+
 MMIO_Cntr #(
     .FMAX_MHz(FMAX_MHz)
 ) memmapcntr (
@@ -162,14 +170,6 @@ MMIO_Cntr #(
     .dresp_in(dresp_mmio_cntr),
     .creq_in(dcreq_cntr_cache),
     .cresp_in(dcresp_cntr_cache)
-);
-
-DAccessCntr #() daccesscntr (
-    .clk(clk_in),
-    .dreq(dreq_unaligned),
-    .dresp(dresp_unaligned),
-    .memreq(dreq_mmio_cntr),
-    .memresp(dresp_mmio_cntr)
 );
 
 /* ---- Core ---- */

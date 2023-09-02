@@ -1,4 +1,3 @@
-// TLBはないです
 module PageTableWalker
 (
     input wire clk,
