@@ -44,18 +44,18 @@ typedef struct packed {
 
 
 typedef struct packed {
-    logic       ready;
-    logic       valid;
-    Addr        addr;
-    logic       wen;
-    logic[31:0] wdata;
+    logic   ready;
+    logic   valid;
+    Addr    addr;
+    logic   wen;
+    UInt32  wdata;
 } MemBusReq;
 
 typedef struct packed {
     // logic       ready;
-    logic       valid;
-    Addr        addr;
-    logic[31:0] rdata;
+    logic   valid;
+    Addr    addr;
+    UInt32  rdata;
 } MemBusResp;
 
 typedef struct packed {
@@ -75,14 +75,14 @@ typedef struct packed {
     logic   valid;
     Addr    addr;
     logic   wen;
-    UInt32  wdata; // TODO rv64対応してない / しない
+    UInt32  wdata;
 } DCacheReq;
 
 typedef struct packed {
     // logic   ready;
     logic   valid;
     // TODO エラー
-    UInt32  rdata; // TODO rv64対応してない / しない
+    UInt32  rdata;
 } DCacheResp;
 
 `endif

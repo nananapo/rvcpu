@@ -1,6 +1,6 @@
 module Memory #(
     parameter FILEPATH = "",
-    parameter SIZE = 2048
+    parameter ADDR_WIDTH = 16
 )(
     input  wire clk,
 
@@ -13,11 +13,16 @@ module Memory #(
     output UInt32   resp_rdata
 );
 
+localparam SIZE = 2 ** ADDR_WIDTH;
+typedef logic [ADDR_WIDTH-1:0] MemAddr;
+
+logic valid_old = 0;
+
 assign req_ready    = 1;
-assign resp_valid   = 1;
+assign resp_valid   = valid_old;
 
 // memory
-logic [31:0] mem [SIZE-1:0];
+UInt32 mem [SIZE-1:0];
 
 initial begin
     $display("Memory : %s", FILEPATH);
@@ -31,9 +36,10 @@ initial begin
     resp_rdata = 0;
 end
 
-Addr addr_shift = (req_addr >> 2) % SIZE;
+wire MemAddr addr_shift = req_addr[ADDR_WIDTH+2 -1:2];
 
 always @(posedge clk) begin
+    valid_old <= req_valid;
     resp_rdata <= {
         mem[addr_shift][7:0],
         mem[addr_shift][15:8],

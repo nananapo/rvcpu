@@ -14,6 +14,11 @@
     localparam DATA_ZERO= 32'h0;
 `endif
 
+localparam XBIT_32 = 32'hx;
+localparam XBIT_64 = 64'hx;
+
+
+
 localparam INST_NOP = 32'h00000033; // TODO ILEN
 
 `ifdef DEBUG

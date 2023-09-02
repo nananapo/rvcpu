@@ -84,13 +84,13 @@ wire DResp  dresp_unaligned;
     initial $display("WARN : initial memory file (MEM_FILE) is not set. default to %s", `MEM_FILE);
 `endif
 `ifndef MEMORY_SIZE
-    `define MEMORY_SIZE 2 ** 20
-    initial $display("WARN : memory size (MEMORY_SIZE) is not set. default to %d", `MEMORY_SIZE);
+    `define MEMORY_WIDTH 20
+    initial $display("WARN : memory width (MEMORY_WIDTH) is not set. default to %d", `MEMORY_WIDTH);
 `endif
 
 Memory #(
     .FILEPATH(`MEM_FILE),
-    .SIZE(`MEMORY_SIZE)
+    .ADDR_WIDTH(`MEMORY_WIDTH)
 ) memory (
     .clk(clk_in),
     .req_ready(mbreq_mem.ready),
