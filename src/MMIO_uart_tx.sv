@@ -15,62 +15,47 @@ module MMIO_uart_tx #(
 );
 
 `include "include/basicparams.svh"
-`include "include/memorymap.sv"
 
-// TODO キューにためて、ためられない時だけready=0にする
-typedef enum logic {
-    IDLE,
-    WAIT_READY
-} statetype;
+wire logic q_rready;
+wire logic q_rvalid;
+wire UInt8 q_rdata;
 
-statetype state = IDLE;
-
-assign req_ready    = state == IDLE;
-assign resp_valid   = 1;
-assign resp_rdata   = DATA_ZERO;
-
-logic   tx_start = 0;
-UInt8   tx_data = 0;
-wire    tx_ready;
+SyncQueue #(
+    .DATA_SIZE($bits(UInt8)),
+    .QUEUE_SIZE(1024)
+) queue (
+    .clk(clk),
+    .kill(1'b0),
+    .wready(req_ready),
+    .wvalid(req_valid && req_wen),
+    .wdata(req_wdata[7:0]),
+    .rready(q_rready),
+    .rvalid(q_rvalid),
+    .rdata(q_rdata)
+);
 
 Uart_tx #(
     .FMAX_MHz(FMAX_MHz)
 ) txModule(
     .clk(clk),
-    .start(tx_start),
-    .data(tx_data),
-    .ready(tx_ready),
-    .uart_tx(uart_tx)
+    .uart_tx(uart_tx),
+    .ready(q_rready),
+    .start(q_rvalid),
+    .data(q_rdata)
 );
 
-always @(posedge clk) begin
-    case (state)
-        IDLE: begin
-            tx_start<= 0;
-            if (req_valid) begin
-                state   <= WAIT_READY;
-                tx_data <= req_wdata[7:0];
-            end
-        end
-        WAIT_READY: begin
-            if (tx_ready) begin
-                state   <= IDLE;
-                tx_start<= 1;
-                `ifndef PRINT_DEBUGINFO
-                    $write("%c", tx_data[7:0]);
-                    $fflush();
-                `endif
-            end
-        end
-    endcase
-end
+assign resp_valid   = 1;
+assign resp_rdata   = DATA_Z;
 
-`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    if (state == WAIT_READY && tx_ready) begin
-        $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", tx_data, tx_data);
+    if (q_rready && q_rvalid) begin
+        `ifdef PRINT_DEBUGINFO
+            $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
+        `else
+            $write("%c", q_rdata);
+            $fflush();
+        `endif
     end
 end
-`endif
 
 endmodule

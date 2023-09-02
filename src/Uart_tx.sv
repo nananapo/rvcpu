@@ -5,11 +5,10 @@ module Uart_tx
 )
 (
     input  wire         clk,        // system clock
-    input  wire         start,      // set to 1 for start
-    input  wire [7:0]   data,       // byte to transmit
-    
     output wire         uart_tx,    // serial
-    output wire         ready       // ready (1), busy (0)
+    output wire         ready,      // ready (1), busy (0)
+    input  wire         start,      // set to 1 for start
+    input  wire [7:0]   data        // byte to transmit
 );
 
 `ifdef FAST_UART
