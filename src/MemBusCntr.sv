@@ -50,57 +50,40 @@ assign {
     memreq_in.addr, memreq_in.wen, memreq_in.wdata
 } = memcmd(state, ireq_in, dreq_in, s_ireq, s_dreq);
 
-logic   reg_iresp_valid = 0;
-logic   reg_dresp_valid = 0;
-Addr    reg_resp_addr;
-UInt32  reg_resp_rdata;
+assign iresp_in.valid = state == I_VALID && memresp_in.valid;
+assign iresp_in.addr  = s_ireq.addr;
+assign iresp_in.rdata = memresp_in.rdata;
 
-assign iresp_in.valid = reg_iresp_valid;
-assign iresp_in.addr  = reg_resp_addr;
-assign iresp_in.rdata = reg_resp_rdata;
+assign dresp_in.valid = state == D_VALID && memresp_in.valid;
+assign dresp_in.addr  = s_dreq.addr;
+assign dresp_in.rdata = memresp_in.rdata;
 
-assign dresp_in.valid = reg_dresp_valid;
-assign dresp_in.addr  = reg_resp_addr;
-assign dresp_in.rdata = reg_resp_rdata;
+logic [3:0] b_counter = 0;
 
 always @(posedge clk) begin
     case (state)
         I_CHECK: begin
-            reg_iresp_valid <= 0;
-            reg_dresp_valid <= 0;
-
             s_ireq  <= ireq_in;
             state   <=  !ireq_in.valid ? D_CHECK :
                         !memreq_in.ready ? I_READY :
                         (ireq_in.wen ? D_CHECK : I_VALID);
         end
+        I_READY: if (memreq_in.ready) state <= s_ireq.wen ? D_CHECK : I_VALID;
+        I_VALID: begin
+            if (memresp_in.valid) begin
+                b_counter   <= b_counter + 1;
+                state       <= b_counter == 7 ? D_CHECK : I_CHECK;
+            end
+        end
         D_CHECK: begin
-            reg_iresp_valid <= 0;
-            reg_dresp_valid <= 0;
-            
+            b_counter   <= 0;
             s_dreq  <= dreq_in;
             state   <=  !dreq_in.valid ? I_CHECK :
                         !memreq_in.ready ? D_READY :
                         (dreq_in.wen ? I_CHECK : D_VALID);
         end
-        I_READY: if (memreq_in.ready) state <= s_ireq.wen ? D_CHECK : I_VALID;
-        I_VALID: begin
-            if (memresp_in.valid) begin
-                state           <= D_CHECK;
-                reg_iresp_valid <= 1;
-                reg_resp_addr   <= s_ireq.addr;
-                reg_resp_rdata  <= memresp_in.rdata;
-            end
-        end
-        D_READY: if (memreq_in.ready) state <= s_dreq.wen ? I_CHECK : D_VALID;
-        D_VALID: begin
-            if (memresp_in.valid) begin
-                state           <= I_CHECK;
-                reg_dresp_valid <= 1;
-                reg_resp_addr   <= s_dreq.addr;
-                reg_resp_rdata  <= memresp_in.rdata;
-            end
-        end
+        D_READY: if (memreq_in.ready)  state <= s_dreq.wen ? I_CHECK : D_VALID;
+        D_VALID: if (memresp_in.valid) state <= I_CHECK;
         default: begin
             $display("MemBusCntr : Unknown state %d", state);
             $finish;
@@ -121,8 +104,6 @@ end
 //     end
 //     $display("data,fetchstage.buscntr.memresp.valid,d,%b", memresp_in.valid);
 //     $display("data,fetchstage.buscntr.memresp.rdata,h,%b", memresp_in.rdata);
-//     $display("data,fetchstage.buscntr.reg_iresp_valid,b,%b", reg_iresp_valid);
-//     $display("data,fetchstage.buscntr.reg_dresp_valid,b,%b", reg_dresp_valid);
 // end
 // `endif
 

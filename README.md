@@ -57,8 +57,8 @@ https://github.com/users/nananapo/projects/1/views/2
 | ---- | ---- |
 | mret | 2 |
 | sret | 2 |
-| store | 3 or 7 or 9 以上 |
-| load | 4 or 6 以上 |
+| store | 気分 |
+| load | 気分 |
 | mul | 32 |
 | div | 32 |
 | rem | 32 |
@@ -66,29 +66,33 @@ https://github.com/users/nananapo/projects/1/views/2
 
 簡単な図
 ```txt
-    Memory  UART(TX/RX) MemoryMappedRegister
-       |         |                |
-       -----MMIO_Cntr-------------
-                 |
-        ----MemCmdCntr-------
+      Memory
+        |
+    MemBusCntr--------------
+        |                   \
+        |                DCache
         |                   |
-    InstQueue           DAccessCntr
+     ICache            DAccessCntr
+        |                   |
+       PTW              MMIO_Cntr
+        |                   |
+    InstQueue              PTW
         |                   |
 Core---------------------------------
 |       |                   |
 |   IF/ID -> DS -> CSR -> MEM -> WB
 |               -> EXE ->
 |                   |
-|           MulNbit/DivNbit
+|            MulNbit/DivNbit
 ```
 
 
 ### メモリマップ
 ```
-00000000 - 00008000 : RAM
+00000000 - MEM_SIZE : RAM
 f0000000 - f0000007 : mtime
 f0000008 - f000000f : mtimecmp
-ff000000            : UART TX
+ff000000            : UART TX (storeで送信)
 ff000200            : UART RX (1024文字のキュー)
 ```
 
@@ -101,7 +105,7 @@ ff000200            : UART RX (1024文字のキュー)
 
 ## デバッグログについて
 
-$display、$writeで出力しているデバッグ情報は、機械で分析しやすくすることを目的として下記のフォーマットで出力しています。  
+$display、$writeで出力しているデバッグ情報は、分析しやすくすることを目的として下記のフォーマットで出力しています。  
 数字は必ず2進数で出力しているため、そのまま人が読むのは難しいです。人にとって読みやすい形にログを変換するには、log/convert2humanreadable.pyを使用します。
 
 ### フォーマット

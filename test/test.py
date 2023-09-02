@@ -15,7 +15,7 @@ def test(makecmd, filename):
     # run test
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
     cmd = "cd ../src/ && " + makecmd + " > " + resultFileName
-    # print(cmd)
+    print(cmd)
     system(cmd)
 
     with open(resultFileName, "r") as f:
