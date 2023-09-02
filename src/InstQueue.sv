@@ -24,7 +24,6 @@ typedef struct packed {
 
 wire buf_kill;
 wire buf_wready;
-wire buf_wready_next;
 wire buf_wvalid;
 wire BufType buf_wdata;
 wire BufType buf_rdata;
@@ -47,7 +46,6 @@ SyncQueue #(
     .kill(buf_kill),
 
     .wready(buf_wready),
-    .wready_next(buf_wready_next),
     .wvalid(buf_wvalid),
     .wdata(buf_wdata),
 
@@ -173,7 +171,7 @@ always @(posedge clk) begin
 end
 `endif
 
-assign memreq.valid = buf_wready_next;
+assign memreq.valid = buf_wready;
 assign memreq.addr  =   branch_hazard ? ireq.addr :
                         jal_hazard ? jal_target :
                         inst_is_br ? next_pc_pred :
