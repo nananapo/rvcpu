@@ -168,8 +168,8 @@ MMIO_Cntr #(
     .mtimecmp(reg_mtimecmp),
     .dreq_in(dreq_core_mmio),
     .dresp_in(dresp_core_mmio),
-    .creq_in(dreq_mmio_acntr),
-    .cresp_in(dresp_mmio_acntr)
+    .memreq_in(dreq_mmio_acntr),
+    .memresp_in(dresp_mmio_acntr)
 );
 
 /* ---- Core ---- */
