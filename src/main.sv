@@ -58,7 +58,7 @@ wire MemBusResp mbresp_mem;
 wire modetype   csr_mode;
 wire UIntX      csr_satp;
 
-wire BrInfo brinfo;
+wire BrInfo     brinfo;
 wire MemBusReq  mbreq_icache;
 wire MemBusResp mbresp_icache;
 wire ICacheReq  icreq_cache;
@@ -67,17 +67,17 @@ wire ICacheResp icresp_cache;
 wire ICacheReq  icreq_ptw;
 /* verilator lint_on UNOPTFLAT */
 wire ICacheResp icresp_ptw;
-wire IReq   ireq_iq;
-wire IResp  iresp_iq;
+wire IReq       ireq_iq;
+wire IResp      iresp_iq;
 
 wire MemBusReq  mbreq_dcache;
 wire MemBusResp mbresp_dcache;
-wire DCacheReq  dcreq_cntr_cache;
-wire DCacheResp dcresp_cntr_cache;
-wire DReq   dreq_mmio_cntr;
-wire DResp  dresp_mmio_cntr;
-wire DReq   dreq_unaligned;
-wire DResp  dresp_unaligned;
+wire DCacheReq  dcreq_acntr_dcache;
+wire DCacheResp dcresp_acntr_dcache;
+wire DReq       dreq_mmio_acntr;
+wire DResp      dresp_mmio_acntr;
+wire DReq       dreq_core_mmio;
+wire DResp      dresp_core_mmio;
 
 `ifndef MEM_FILE
     `define MEM_FILE "../test/riscv-tests/rv32ui-p-add.bin.aligned"
@@ -144,18 +144,18 @@ InstQueue #() instqueue (
 /* ---- Data ---- */
 MemDCache #() memdcache (
     .clk(clk_in),
-    .dreq_in(dcreq_cntr_cache),
-    .dresp(dcresp_cntr_cache),
+    .dreq_in(dcreq_acntr_dcache),
+    .dresp(dcresp_acntr_dcache),
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache)
 );
 
 DAccessCntr #() daccesscntr (
     .clk(clk_in),
-    .dreq(dreq_unaligned),
-    .dresp(dresp_unaligned),
-    .memreq(dreq_mmio_cntr),
-    .memresp(dresp_mmio_cntr)
+    .dreq(dreq_mmio_acntr),
+    .dresp(dresp_mmio_acntr),
+    .memreq(dcreq_acntr_dcache),
+    .memresp(dcresp_acntr_dcache)
 );
 
 MMIO_Cntr #(
@@ -166,10 +166,10 @@ MMIO_Cntr #(
     .uart_tx(uart_tx),
     .mtime(reg_time),
     .mtimecmp(reg_mtimecmp),
-    .dreq_in(dreq_mmio_cntr),
-    .dresp_in(dresp_mmio_cntr),
-    .creq_in(dcreq_cntr_cache),
-    .cresp_in(dcresp_cntr_cache)
+    .dreq_in(dreq_core_mmio),
+    .dresp_in(dresp_core_mmio),
+    .creq_in(dreq_mmio_acntr),
+    .cresp_in(dresp_mmio_acntr)
 );
 
 /* ---- Core ---- */
@@ -186,8 +186,8 @@ Core #(
     .ireq(ireq_iq),
     .iresp(iresp_iq),
     .brinfo(brinfo),
-    .dreq(dreq_unaligned),
-    .dresp(dresp_unaligned),
+    .dreq(dreq_core_mmio),
+    .dresp(dresp_core_mmio),
     .csr_mode(csr_mode),
     .csr_satp(csr_satp),
 
