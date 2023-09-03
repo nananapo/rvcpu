@@ -61,14 +61,14 @@ wire UIntX      csr_satp;
 wire BrInfo     brinfo;
 wire MemBusReq  mbreq_icache;
 wire MemBusResp mbresp_icache;
-wire ICacheReq  icreq_cache;
-wire ICacheResp icresp_cache;
+wire ICacheReq  icreq_ptw_cache;
+wire ICacheResp icresp_ptw_cache;
 /* verilator lint_off UNOPTFLAT */
-wire ICacheReq  icreq_ptw;
+wire ICacheReq  icreq_iq_ptw;
 /* verilator lint_on UNOPTFLAT */
-wire ICacheResp icresp_ptw;
-wire IReq       ireq_iq;
-wire IResp      iresp_iq;
+wire ICacheResp icresp_iq_ptw;
+wire IReq       ireq_core_iq;
+wire IResp      iresp_core_iq;
 
 wire MemBusReq  mbreq_dcache;
 wire MemBusResp mbresp_dcache;
@@ -115,29 +115,29 @@ MemBusCntr #() membuscntr (
 /* ---- Inst ---- */
 MemICache #() memicache (
     .clk(clk_in),
-    .ireq_in(icreq_cache),
-    .iresp(icresp_cache),
+    .ireq_in(icreq_ptw_cache),
+    .iresp(icresp_ptw_cache),
     .busreq(mbreq_icache),
     .busresp(mbresp_icache)
 );
 
 PageTableWalker #() iptw (
     .clk(clk_in),
-    .ireq(icreq_ptw),
-    .iresp(icresp_ptw),
-    .memreq(icreq_cache),
-    .memresp(icresp_cache),
+    .ireq(icreq_iq_ptw),
+    .iresp(icresp_iq_ptw),
+    .memreq(icreq_ptw_cache),
+    .memresp(icresp_ptw_cache),
     .csr_mode(csr_mode),
     .csr_satp(csr_satp),
-    .kill(ireq_iq.valid) // 分岐ロジックと同じになってしまっているので、分離する svinval
+    .kill(ireq_core_iq.valid) // 分岐ロジックと同じになってしまっているので、分離する svinval
 );
 
 InstQueue #() instqueue (
     .clk(clk_in),
-    .ireq(ireq_iq),
-    .iresp(iresp_iq),
-    .memreq(icreq_ptw),
-    .memresp(icresp_ptw),
+    .ireq(ireq_core_iq),
+    .iresp(iresp_core_iq),
+    .memreq(icreq_iq_ptw),
+    .memresp(icresp_iq_ptw),
     .brinfo(brinfo)
 );
 
@@ -183,8 +183,8 @@ Core #(
     .reg_mtime(reg_time),
     .reg_mtimecmp(reg_mtimecmp),
 
-    .ireq(ireq_iq),
-    .iresp(iresp_iq),
+    .ireq(ireq_core_iq),
+    .iresp(iresp_core_iq),
     .brinfo(brinfo),
     .dreq(dreq_core_mmio),
     .dresp(dresp_core_mmio),
