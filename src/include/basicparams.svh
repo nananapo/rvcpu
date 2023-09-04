@@ -16,6 +16,8 @@
 
 localparam XBIT_32 = 32'hx;
 localparam XBIT_64 = 64'hx;
+localparam ZBIT_32 = 32'hz;
+localparam ZBIT_64 = 64'hz;
 
 
 

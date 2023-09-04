@@ -2,8 +2,8 @@ module DAccessCntr (
     input wire clk,
     inout wire DReq     dreq,
     inout wire DResp    dresp,
-    inout wire DCacheReq    memreq,
-    inout wire DCacheResp   memresp
+    inout wire CacheReq     memreq,
+    inout wire CacheResp    memresp
 );
 
 typedef enum logic [3:0] {

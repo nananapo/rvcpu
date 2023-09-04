@@ -6,8 +6,8 @@ module MemICache #(
 )(
     input wire clk,
 
-    inout wire ICacheReq    ireq_in,
-    inout wire ICacheResp   iresp,
+    inout wire CacheReq     ireq_in,
+    inout wire CacheResp    iresp,
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
 );
@@ -52,8 +52,8 @@ function [$bits(UIntX)-1:0] normalize_addr( input UIntX addr );
 endfunction
 
 
-ICacheReq s_ireq;
-wire ICacheReq ireq = state == IDLE ? ireq_in : s_ireq;
+CacheReq s_ireq;
+wire CacheReq ireq = state == IDLE ? ireq_in : s_ireq;
 
 // addrのキャッシュラインのindex
 wire CacheIndex req_index = calc_cache_addr(ireq.addr);

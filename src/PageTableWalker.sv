@@ -2,10 +2,11 @@ module PageTableWalker
 (
     input wire clk,
 
-    inout wire ICacheReq    ireq,
-    inout wire ICacheResp   iresp,
-    inout wire ICacheReq    memreq,
-    inout wire ICacheResp   memresp,
+    // TODO wen
+    inout wire CacheReq     ireq,
+    inout wire CacheResp    iresp,
+    inout wire CacheReq     memreq,
+    inout wire CacheResp    memresp,
 
     input wire modetype     csr_mode,
     input wire [31:0]       csr_satp,

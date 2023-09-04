@@ -62,27 +62,15 @@ typedef struct packed {
     logic   ready;
     logic   valid;
     Addr    addr;
-} ICacheReq;
-
-typedef struct packed {
-    // logic   ready;
-    logic   valid;
-    Inst    rdata;
-} ICacheResp;
-
-typedef struct packed {
-    logic   ready;
-    logic   valid;
-    Addr    addr;
     logic   wen;
     UInt32  wdata;
-} DCacheReq;
+} CacheReq;
 
 typedef struct packed {
     // logic   ready;
     logic   valid;
     // TODO エラー
     UInt32  rdata;
-} DCacheResp;
+} CacheResp;
 
 `endif

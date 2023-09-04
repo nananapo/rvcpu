@@ -61,19 +61,19 @@ wire UIntX      csr_satp;
 wire BrInfo     brinfo;
 wire MemBusReq  mbreq_icache;
 wire MemBusResp mbresp_icache;
-wire ICacheReq  icreq_ptw_cache;
-wire ICacheResp icresp_ptw_cache;
+wire CacheReq   icreq_ptw_cache;
+wire CacheResp  icresp_ptw_cache;
 /* verilator lint_off UNOPTFLAT */
-wire ICacheReq  icreq_iq_ptw;
+wire CacheReq   icreq_iq_ptw;
 /* verilator lint_on UNOPTFLAT */
-wire ICacheResp icresp_iq_ptw;
+wire CacheResp  icresp_iq_ptw;
 wire IReq       ireq_core_iq;
 wire IResp      iresp_core_iq;
 
 wire MemBusReq  mbreq_dcache;
 wire MemBusResp mbresp_dcache;
-wire DCacheReq  dcreq_acntr_dcache;
-wire DCacheResp dcresp_acntr_dcache;
+wire CacheReq   dcreq_acntr_dcache;
+wire CacheResp  dcresp_acntr_dcache;
 wire DReq       dreq_mmio_acntr;
 wire DResp      dresp_mmio_acntr;
 wire DReq       dreq_core_mmio;

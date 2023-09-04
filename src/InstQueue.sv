@@ -7,8 +7,8 @@ module InstQueue #(
 
     inout wire IReq     ireq,
     inout wire IResp    iresp,
-    inout wire ICacheReq    memreq,
-    inout wire ICacheResp   memresp,
+    inout wire CacheReq     memreq,
+    inout wire CacheResp    memresp,
 
     input wire BrInfo   brinfo
 );
@@ -176,6 +176,8 @@ assign memreq.addr  =   branch_hazard ? ireq.addr :
                         jal_hazard ? jal_target :
                         inst_is_br ? next_pc_pred :
                         pc;
+assign memreq.wen   = 0;
+assign memreq.wdata = ZBIT_32;
 
 logic firstClk = 1;
 

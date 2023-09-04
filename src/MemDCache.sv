@@ -4,8 +4,8 @@ module MemDCache #(
 ) (
     input wire clk,
 
-    inout wire DCacheReq    dreq_in,
-    inout wire DCacheResp   dresp, // TODO rename
+    inout wire CacheReq     dreq_in,
+    inout wire CacheResp    dresp, // TODO rename
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
 );
@@ -36,9 +36,9 @@ typedef enum logic [2:0] {
 } statetype;
 
 statetype   state = IDLE;
-DCacheReq   s_dreq;
+CacheReq    s_dreq;
 
-wire DCacheReq dreq = state == IDLE ? dreq_in : s_dreq;
+wire CacheReq dreq = state == IDLE ? dreq_in : s_dreq;
 
 Addr    wb_addr;
 UInt32  wb_data;
