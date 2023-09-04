@@ -54,7 +54,6 @@ ALU #(
     .branch_take(alu_branch_take)
 );
 
-`ifndef EXCLUDE_RV32M
 DivNbit #(
     .SIZE(33) // オーバーフロー対策
 ) divnbitm(
@@ -81,7 +80,6 @@ MultNbit #(
     .multiplier(multm_multiplier),
     .product(multm_product)
 );
-`endif
 
 wire    is_div          = i_exe == ALU_DIV || i_exe == ALU_DIVU || i_exe == ALU_REM || i_exe == ALU_REMU;
 wire    is_mul          = i_exe == ALU_MUL || i_exe == ALU_MULH || i_exe == ALU_MULHU || i_exe == ALU_MULHSU;
