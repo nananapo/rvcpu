@@ -61,6 +61,30 @@ wire need_wb    = cache_valid[info_index] && cache_modified[info_index];
 
 wire [CACHE_WIDTH-1:0] mem_index = info_index;
 
+
+
+`ifdef PRINT_CACHE_MISS
+int cachemiss_count = 0;
+int cachehit_count  = 0;
+
+localparam CACHE_MISS_COUNT = 1000000;
+
+always @(posedge clk) begin
+    if (cachehit_count + cachemiss_count >= CACHE_MISS_COUNT) begin
+        $display("d cache miss : %d%% (%d / %d)", cachemiss_count * 100 / CACHE_MISS_COUNT, cachemiss_count, CACHE_MISS_COUNT);
+        cachehit_count  <= 0;
+        cachemiss_count <= 0;
+    end else if (state == IDLE && dreq.valid) begin
+        if (cache_hit) begin
+            cachehit_count  <= cachehit_count + 1;
+        end else begin
+            cachemiss_count <= cachemiss_count + 1;
+        end
+    end
+end
+`endif
+
+
 always @(posedge clk) begin
     
     dresp_valid_reg <= (state == IDLE && cache_hit) 

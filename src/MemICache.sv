@@ -79,6 +79,29 @@ assign busreq.wdata = 32'hx;
 // キャッシュラインの何個まで読んだか
 logic [LINE_INST_WIDTH-1:0] read_count;
 
+
+`ifdef PRINT_CACHE_MISS
+int cachemiss_count = 0;
+int cachehit_count  = 0;
+
+localparam CACHE_MISS_COUNT = 1000000;
+
+always @(posedge clk) begin
+    if (cachehit_count + cachemiss_count >= CACHE_MISS_COUNT) begin
+        $display("i cache miss : %d%% (%d / %d)", cachemiss_count * 100 / CACHE_MISS_COUNT, cachemiss_count, CACHE_MISS_COUNT);
+        cachehit_count  <= 0;
+        cachemiss_count <= 0;
+    end else if (state == IDLE && ireq_in.valid) begin
+        if (req_addr_in_valid_cache) begin
+            cachehit_count  <= cachehit_count + 1;
+        end else begin
+            cachemiss_count <= cachemiss_count + 1;
+        end
+    end
+end
+`endif
+
+
 always @(posedge clk) begin
     iresp_valid_reg <=  (state == IDLE && ireq_in.valid && req_addr_in_valid_cache) ||
                         (state == MEM_RESP_VALID);
@@ -88,9 +111,11 @@ always @(posedge clk) begin
     IDLE: begin
         read_count  <= 0;
         s_ireq       <= ireq_in;
-        if (ireq_in.valid && !req_addr_in_valid_cache) begin
-            state <= MEM_WAIT_READY;
-            cache_valid[req_index] <= 0;
+        if (ireq_in.valid) begin
+            if (!req_addr_in_valid_cache) begin
+                state <= MEM_WAIT_READY;
+                cache_valid[req_index] <= 0;
+            end
         end
     end
     MEM_WAIT_READY: begin
