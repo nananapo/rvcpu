@@ -87,10 +87,15 @@ wire DResp      dresp_core_mmio;
     `define MEMORY_WIDTH 20
     initial $display("WARN : memory width (MEMORY_WIDTH) is not set. default to %d", `MEMORY_WIDTH);
 `endif
+`ifndef MEMORY_DELAY
+    `define MEMORY_DELAY 4
+    initial $display("WARN : memory delay (MEMORY_DELAY) is not set. default to %d", `MEMORY_DELAY);
+`endif
 
 Memory #(
     .FILEPATH(`MEM_FILE),
-    .ADDR_WIDTH(`MEMORY_WIDTH)
+    .ADDR_WIDTH(`MEMORY_WIDTH),
+    .DELAY_CYCLE(`MEMORY_DELAY)
 ) memory (
     .clk(clk_in),
     .req_ready(mbreq_mem.ready),
