@@ -72,8 +72,10 @@ wire IResp      iresp_core_iq;
 
 wire MemBusReq  mbreq_dcache;
 wire MemBusResp mbresp_dcache;
-wire CacheReq   dcreq_acntr_dcache;
-wire CacheResp  dcresp_acntr_dcache;
+wire CacheReq   dcreq_ptw_cache;
+wire CacheResp  dcresp_ptw_cache;
+wire CacheReq   dcreq_acntr_ptw;
+wire CacheResp  dcresp_acntr_ptw;
 wire DReq       dreq_mmio_acntr;
 wire DResp      dresp_mmio_acntr;
 wire DReq       dreq_core_mmio;
@@ -134,7 +136,7 @@ PageTableWalker #() iptw (
     .memresp(icresp_ptw_cache),
     .csr_mode(csr_mode),
     .csr_satp(csr_satp),
-    .kill(ireq_core_iq.valid) // 分岐ロジックと同じになってしまっているので、分離する svinval
+    .kill(ireq_core_iq.valid)
 );
 
 InstQueue #() instqueue (
@@ -149,18 +151,29 @@ InstQueue #() instqueue (
 /* ---- Data ---- */
 MemDCache #() memdcache (
     .clk(clk_in),
-    .dreq_in(dcreq_acntr_dcache),
-    .dresp(dcresp_acntr_dcache),
+    .dreq_in(dcreq_ptw_cache),
+    .dresp(dcresp_ptw_cache),
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache)
+);
+
+PageTableWalker #() dptw (
+    .clk(clk_in),
+    .preq(dcreq_acntr_ptw),
+    .presp(dcresp_acntr_ptw),
+    .memreq(dcreq_ptw_cache),
+    .memresp(dcresp_ptw_cache),
+    .csr_mode(csr_mode),
+    .csr_satp(csr_satp),
+    .kill(ireq_core_iq.valid)
 );
 
 DAccessCntr #() daccesscntr (
     .clk(clk_in),
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
-    .memreq(dcreq_acntr_dcache),
-    .memresp(dcresp_acntr_dcache)
+    .memreq(dcreq_acntr_ptw),
+    .memresp(dcresp_acntr_ptw)
 );
 
 MMIO_Cntr #(
