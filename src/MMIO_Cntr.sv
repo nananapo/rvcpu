@@ -15,7 +15,7 @@ module MMIO_Cntr #(
 );
 
 `include "include/basicparams.svh"
-`include "include/memorymap.sv"
+`include "include/memorymap.svh"
 
 typedef enum logic [1:0] {
     IDLE,
