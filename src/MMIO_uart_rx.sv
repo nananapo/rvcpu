@@ -15,6 +15,8 @@ module MMIO_uart_rx #(
     output UInt32   resp_rdata
 );
 
+`include "include/basicparams.svh"
+
 localparam BUF_LEN = 2**BUF_WIDTH;
 typedef logic [BUF_WIDTH-1:0] BufWidth;
 
@@ -48,7 +50,7 @@ always @(posedge clk) begin
     end
     if (req_valid) begin
         if (head != tail) begin
-            resp_rdata <= {{`XLEN-8{1'b0}}, buffer[head]};
+            resp_rdata <= {{XLEN-8{1'b0}}, buffer[head]};
         end else begin
             resp_rdata <= 0;
         end

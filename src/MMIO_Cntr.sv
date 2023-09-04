@@ -14,6 +14,9 @@ module MMIO_Cntr #(
     inout  wire DResp   memresp_in
 );
 
+`include "include/basicparams.svh"
+`include "include/memorymap.sv"
+
 typedef enum logic [1:0] {
     IDLE,
     WAIT_READY,
@@ -23,14 +26,12 @@ typedef enum logic [1:0] {
 statetype state = IDLE;
 DReq  s_dreq;
 
-
 initial begin
     s_dreq.valid = 0;
 end
 
 wire DReq dreq  = state == IDLE ? dreq_in : s_dreq;
 
-`include "include/memorymap.sv"
 wire is_uart_tx     = dreq.addr == MMIO_ADDR_UART_TX;
 wire is_uart_rx     = dreq.addr == MMIO_ADDR_UART_RX;
 wire is_clint       = CLINT_OFFSET <= dreq.addr && dreq.addr <= CLINT_END;
@@ -96,7 +97,6 @@ wire UIntX  cmd_clint_rdata;
 wire        cmd_uart_tx_start = is_uart_tx && cmd_start;
 wire        cmd_uart_rx_start = is_uart_rx && cmd_start;
 wire        cmd_clint_start   = is_clint && cmd_start;
-wire Addr   cmd_clint_addr    = dreq.addr - CLINT_OFFSET;
 
 MMIO_uart_rx #(
     .FMAX_MHz(FMAX_MHz)
@@ -135,7 +135,7 @@ MMIO_clint #(
 
     .req_ready(cmd_clint_ready),
     .req_valid(cmd_clint_start),
-    .req_addr(cmd_clint_addr),
+    .req_addr({{XLEN-4{1'b0}}, dreq.addr[3:0]}),
     .req_wen(dreq.wen),
     .req_wdata(dreq.wdata),
     .resp_valid(cmd_clint_rvalid),

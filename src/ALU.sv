@@ -27,8 +27,8 @@ function [$bits(UIntX)-1:0] alu_func(
         ALU_SLL  : alu_func = op1_data << op2_data[4:0];
         ALU_SRL  : alu_func = op1_data >> op2_data[4:0];
         ALU_SRA  : alu_func = $signed($signed(op1_data) >>> op2_data[4:0]);
-        ALU_SLT  : alu_func = {{`XLEN-1{1'b0}}, ($signed(op1_data) < $signed(op2_data))};
-        ALU_SLTU : alu_func = {{`XLEN-1{1'b0}}, op1_data < op2_data};
+        ALU_SLT  : alu_func = {{XLEN-1{1'b0}}, ($signed(op1_data) < $signed(op2_data))};
+        ALU_SLTU : alu_func = {{XLEN-1{1'b0}}, op1_data < op2_data};
         ALU_JALR : alu_func = (op1_data + op2_data) & (~1);
         ALU_COPY1: alu_func = op1_data;
         ALU_CZERO_EQ: alu_func = op2_data == DATA_ZERO ? op1_data : DATA_ZERO;
