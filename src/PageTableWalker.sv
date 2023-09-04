@@ -1,10 +1,12 @@
-module PageTableWalker
-(
+// Sv32
+module PageTableWalker #(
+    parameter PAGESIZE_WIDTH = 12,
+    parameter PTESIZE_WIDTH  = 2
+) (
     input wire clk,
 
-    // TODO wen
-    inout wire CacheReq     ireq,
-    inout wire CacheResp    iresp,
+    inout wire CacheReq     preq,
+    inout wire CacheResp    presp,
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp,
 
@@ -13,13 +15,10 @@ module PageTableWalker
     input wire kill
 );
 
-localparam PAGESIZE_WIDTH = 12;
-localparam PTESIZE_WIDTH  = 2;
-
 // 単純にするため、
 // * IDLEからとりあえずREADYに遷移
 typedef enum logic [2:0] {
-    IDLE, WALK_READY, WALK_VALID, IF_READY, IF_VALID, IF_END
+    IDLE, WALK_READY, WALK_VALID, REQ_READY, REQ_VALID, REQ_END
 } statetype;
 
 wire       satp_mode = csr_satp[31];
@@ -29,7 +28,6 @@ wire [21:0] satp_ppn = csr_satp[21:0];
 statetype state  = IDLE;
 wire sv32_enable = csr_mode != M_MODE && satp_mode == 1;
 
-
 wire        sv32_req_ready;
 wire        sv32_req_valid;
 wire [31:0] sv32_req_addr;
@@ -37,14 +35,16 @@ wire        sv32_resp_valid;
 wire [31:0] sv32_resp_addr;
 wire [31:0] sv32_resp_rdata;
 
-assign ireq.ready    = sv32_enable ? sv32_req_ready : memreq.ready;
-assign memreq.valid  = sv32_enable ? sv32_req_valid : ireq.valid;
-assign memreq.addr   = sv32_enable ? sv32_req_addr  : ireq.addr;
-assign iresp.valid   = sv32_enable ? sv32_resp_valid : memresp.valid;
-assign iresp.rdata   = sv32_enable ? sv32_resp_rdata  : memresp.rdata;
+assign preq.ready   = sv32_enable ? sv32_req_ready  : memreq.ready;
+assign memreq.valid = sv32_enable ? sv32_req_valid  : preq.valid;
+assign memreq.addr  = sv32_enable ? sv32_req_addr   : preq.addr;
+assign memreq.wen   = sv32_enable ? s_req.wen       : preq.wen;
+assign memreq.wdata = sv32_enable ? s_req.wdata     : preq.wdata;
+assign presp.valid  = sv32_enable ? sv32_resp_valid : memresp.valid;
+assign presp.rdata  = sv32_enable ? sv32_resp_rdata : memresp.rdata;
 
-// ireqがリクエストしたアドレス
-logic [31:0]  s_req_addr;
+// preqがリクエストしたアドレス
+CacheReq s_req;
 // ページのレベル
 logic [1:0]   level;
 // 次にアクセスするアドレス
@@ -52,11 +52,11 @@ logic [33:0]  next_addr;
 // 結果
 logic [31:0]  result_rdata;
 // 保存されたアドレスのvpn, offset
-wire [9:0]  s_vpn1          = s_req_addr[31:22];
-wire [9:0]  s_vpn0          = s_req_addr[21:12];
-wire [11:0] s_page_offset   = s_req_addr[11:0];
-// ireqのvpn1 (IDLEで使う)
-wire [9:0]  idleonly_vpn1   = ireq.addr[31:22];
+wire [9:0]  s_vpn1          = s_req.addr[31:22];
+wire [9:0]  s_vpn0          = s_req.addr[21:12];
+wire [11:0] s_page_offset   = s_req.addr[11:0];
+// preqのvpn1 (IDLEで使う)
+wire [9:0]  idleonly_vpn1   = preq.addr[31:22];
 // D A G U X W R V
 wire validonly_pte_R    = memresp.rdata[1];
 wire validonly_pte_X    = memresp.rdata[3]; 
@@ -65,10 +65,10 @@ wire [9:0]  validonly_pte_ppn0 = memresp.rdata[19:10];
 wire [21:0] validonly_pte_ppn  = memresp.rdata[31:10];
 
 assign sv32_req_ready   = state == IDLE;
-assign sv32_req_valid   = state == WALK_READY || state == IF_READY;
+assign sv32_req_valid   = state == WALK_READY || state == REQ_READY;
 assign sv32_req_addr    = next_addr[31:0];
-assign sv32_resp_valid  = state == IF_END;
-assign sv32_resp_addr   = s_req_addr;
+assign sv32_resp_valid  = state == REQ_END;
+assign sv32_resp_addr   = s_req.addr;
 assign sv32_resp_rdata  = result_rdata;
 
 always @(posedge clk) begin
@@ -77,12 +77,12 @@ if (kill)
 else if (sv32_enable) begin
     case (state)
     IDLE: begin
-        if (ireq.valid) begin
-            state       <=  WALK_READY; 
-            s_req_addr  <= ireq.addr;
+        if (preq.valid) begin
+            state   <= WALK_READY; 
+            s_req   <= preq;
             // 5.3.2 step 3
-            level       <= 1; // level = 2 - 1 = 1スタート
-            next_addr<= {satp_ppn, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
+            level   <= 1; // level = 2 - 1 = 1スタート
+            next_addr <= {satp_ppn, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
         end
     end
     WALK_READY: begin
@@ -97,7 +97,7 @@ else if (sv32_enable) begin
             // RかXが1ならPTEが見つかった
             // level == 11 (-1 or 2)ならアウト
             if (level == 2'b11 || validonly_pte_R || validonly_pte_X) begin
-                state <= IF_READY;
+                state <= REQ_READY;
                 // 5.3.2 step 8
                 // Sv32 physical address
                 // ppn[1], ppn[0], page offset
@@ -116,18 +116,18 @@ else if (sv32_enable) begin
             end
         end
     end
-    IF_READY: begin
+    REQ_READY: begin
         if (memreq.ready && memreq.valid) begin
-            state <= IF_VALID;
+            state <= s_req.wen ? REQ_END : REQ_VALID;
         end
     end
-    IF_VALID: begin
+    REQ_VALID: begin
         if (memresp.valid) begin
-            state <= IF_END;
+            state <= REQ_END;
             result_rdata <= memresp.rdata;
         end
     end
-    default:/*IF_END:*/ begin
+    default:/*REQ_END:*/ begin
         state <= IDLE;
     end
     endcase
@@ -140,7 +140,7 @@ always @(posedge clk) begin
         $display("data,fetchstage.ptw.state,d,%b", state);
         $display("data,fetchstage.ptw.satp,h,%b", csr_satp);
         $display("data,fetchstage.ptw.mode,d,%b", csr_mode);
-        $display("data,fetchstage.ptw.proc_pc,h,%b", state == IDLE ? ireq.addr : s_req_addr);
+        $display("data,fetchstage.ptw.proc_pc,h,%b", state == IDLE ? preq.addr : s_req.addr);
         $display("data,fetchstage.ptw.next_addr,h,%b", next_addr[31:0]);
         $display("data,fetchstage.ptw.memresp,h,%b", memresp.rdata);
     end

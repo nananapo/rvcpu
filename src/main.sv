@@ -128,8 +128,8 @@ MemICache #() memicache (
 
 PageTableWalker #() iptw (
     .clk(clk_in),
-    .ireq(icreq_iq_ptw),
-    .iresp(icresp_iq_ptw),
+    .preq(icreq_iq_ptw),
+    .presp(icresp_iq_ptw),
     .memreq(icreq_ptw_cache),
     .memresp(icresp_ptw_cache),
     .csr_mode(csr_mode),

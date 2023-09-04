@@ -1,3 +1,5 @@
+localparam XLEN = `XLEN;
+
 `ifdef XLEN64
     localparam ADDR_MAX = 64'hffffffff_ffffffff;
     localparam ADDR_X   = 64'hx;
