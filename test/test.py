@@ -42,7 +42,7 @@ for fileName in sorted(os.listdir(TESTS_PATH)):
 
     if len(args) == 0 or fileName.find(args[0]) != -1:
         mcmd = MAKE_COMMAND_VERILATOR if verilator_mode else MAKE_COMMAND_IVERILOG
-        option = " OPTION=-DMEM_FILE=\\\\\\\""+abpath+"\\\\\\\""
+        option = " OPTION=\"-DMEM_FILE=\\\\\\\""+abpath+"\\\\\\\"\""
         test(mcmd + option, fileName)
 
 results = sorted(results)
