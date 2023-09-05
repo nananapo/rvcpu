@@ -89,17 +89,17 @@ function [
         {M_F7   , X_X, M_REM_F3     , X_5, M_OP}    : decode = {ALU_REM   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // REM
         {M_F7   , X_X, M_REMU_F3    , X_5, M_OP}    : decode = {ALU_REM   , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // REMU
 
-        {A_LR_W_F5      , X_2, A_LR_W_RS2, X_5, A_F3, X_5, A_OP}  : decode = {ALU_X, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_LR      , REN_S, WB_MEM, CSR_X}; // LR
-        {A_SC_W_F5      , X_2, X_5       , X_5, A_F3, X_5, A_OP}  : decode = {ALU_X, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_SC      , REN_S, WB_MEM, CSR_X}; // SC
+        {A_LR_W_F5      , X_2, A_LR_W_RS2, X_5, A_F3, X_5, A_OP}  : decode = {ALU_COPY1, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_LR      , REN_S, WB_MEM, CSR_X}; // LR
+        {A_SC_W_F5      , X_2, X_5       , X_5, A_F3, X_5, A_OP}  : decode = {ALU_COPY1, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_SC      , REN_S, WB_MEM, CSR_X}; // SC
         {A_AMOSWAP_W_F5 , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_SWAP, REN_S, WB_MEM, CSR_X}; // AMO.SWAP
         {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_ADD , REN_S, WB_MEM, CSR_X}; // AMO.ADD
-        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_XOR , REN_S, WB_MEM, CSR_X}; // AMO.XOR
-        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_AND , REN_S, WB_MEM, CSR_X}; // AMO.AND
-        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_OR  , REN_S, WB_MEM, CSR_X}; // AMO.OR
-        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MIN , REN_S, WB_MEM, CSR_X}; // AMO.MIN
-        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MAX , REN_S, WB_MEM, CSR_X}; // AMO.MAX
-        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MIN , REN_S, WB_MEM, CSR_X}; // AMO.MINU
-        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MAX , REN_S, WB_MEM, CSR_X}; // AMO.MAXU
+        {A_AMOXOR_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_XOR , REN_S, WB_MEM, CSR_X}; // AMO.XOR
+        {A_AMOAND_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_AND , REN_S, WB_MEM, CSR_X}; // AMO.AND
+        {A_AMOOR_W_F5   , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_OR  , REN_S, WB_MEM, CSR_X}; // AMO.OR
+        {A_AMOMIN_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MIN , REN_S, WB_MEM, CSR_X}; // AMO.MIN
+        {A_AMOMAX_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MAX , REN_S, WB_MEM, CSR_X}; // AMO.MAX
+        {A_AMOMINU_W_F5 , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MIN , REN_S, WB_MEM, CSR_X}; // AMO.MINU
+        {A_AMOMAXU_W_F5 , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MAX , REN_S, WB_MEM, CSR_X}; // AMO.MAXU
 
 
         {ZICOND_F7, X_X, ZICOND_CZERO_EQZ_F3, X_5, ZICOND_OP} : decode = {ALU_CZERO_EQ, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // CZERO.EQZ
