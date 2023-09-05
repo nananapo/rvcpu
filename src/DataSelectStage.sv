@@ -111,6 +111,7 @@ assign ds_exe_ctrl.op1_sel      = ds_ctrl.op1_sel;
 assign ds_exe_ctrl.op2_sel      = ds_ctrl.op2_sel;
 assign ds_exe_ctrl.mem_wen      = ds_ctrl.mem_wen;
 assign ds_exe_ctrl.mem_size     = ds_ctrl.mem_size;
+assign ds_exe_ctrl.a_sel        = ds_ctrl.a_sel;
 assign ds_exe_ctrl.rf_wen       = ds_ctrl.rf_wen;
 assign ds_exe_ctrl.wb_sel       = ds_ctrl.wb_sel;
 assign ds_exe_ctrl.wb_addr      = ds_ctrl.wb_addr;

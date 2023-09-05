@@ -90,7 +90,7 @@ localparam MRET = 32'b0011000_00010_00000_000_00000_1110011;
 localparam ZIFENCEI_FENCEI_OP = 7'b0001111;
 localparam ZIFENCEI_FENCEI_F3 = 3'b001;
 
-
+/*----------------32M-------------*/
 localparam M_OP = 7'b0110011;
 localparam M_F7 = 7'b0000001;
 localparam M_MUL_F3    = 3'b000;
@@ -102,10 +102,21 @@ localparam M_DIVU_F3   = 3'b101;
 localparam M_REM_F3    = 3'b110;
 localparam M_REMU_F3   = 3'b111;
 
-
-localparam A_OP            = 7'b0101111;
-localparam A_AMOSWAP_W_F3  = 3'b010;
-localparam A_AMOSWAP_W_FUNCT5  = 5'b00001;
+/*----------------32A-------------*/
+localparam A_OP = 7'b0101111;
+localparam A_F3 = 3'b010; // TODO RV64
+localparam A_LR_W_RS2       = 5'b0;
+localparam A_LR_W_F5        = 5'b00010;
+localparam A_SC_W_F5        = 5'b00011;
+localparam A_AMOSWAP_W_F5   = 5'b00001;
+localparam A_AMOADD_W_F5    = 5'b00000;
+localparam A_AMOXOR_W_F5    = 5'b00100;
+localparam A_AMOAND_W_F5    = 5'b01100;
+localparam A_AMOOR_W_F5     = 5'b01000;
+localparam A_AMOMIN_W_F5    = 5'b10000;
+localparam A_AMOMAX_W_F5    = 5'b10100;
+localparam A_AMOMINU_W_F5   = 5'b11000;
+localparam A_AMOMAXU_W_F5   = 5'b11100;
 
 /*----------------Svinal---------------*/
 localparam SVINVAL_OP = 7'b1110011;

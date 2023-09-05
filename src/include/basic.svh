@@ -76,7 +76,8 @@ typedef enum logic [2:0] {
 typedef enum logic [1:0] {
     MEN_X,  // x
     MEN_S,  // store
-    MEN_L   // load
+    MEN_L,  // load
+    MEN_A   // A-ext
 } MemSel;
 
 typedef enum logic {
@@ -113,6 +114,19 @@ typedef enum logic [2:0] {
     CSR_MRET 
 } CsrCmd;
 
+typedef enum logic [3:0] {
+    ASEL_X,
+    ASEL_LR,
+    ASEL_SC,
+    ASEL_AMO_SWAP,
+    ASEL_AMO_ADD,
+    ASEL_AMO_XOR,
+    ASEL_AMO_AND,
+    ASEL_AMO_OR,
+    ASEL_AMO_MAX,
+    ASEL_AMO_MIN
+} AextSel;
+
 typedef struct packed 
 {
     AluSel      i_exe;
@@ -129,6 +143,7 @@ typedef struct packed
     logic       jmp_pc_flg;
     logic       jmp_reg_flg;
     logic       svinval;
+    AextSel     a_sel;
 } Ctrl;
 
 typedef struct packed
