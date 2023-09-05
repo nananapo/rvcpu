@@ -35,18 +35,14 @@ typedef enum logic [4:0] {
     ALU_SRL,
     ALU_SRA,
     ALU_SLT,
-    ALU_SLTU,
     ALU_JALR,
     ALU_COPY1,
 
     ALU_MUL,
     ALU_MULH,
     ALU_MULHSU,
-    ALU_MULHU,
     ALU_DIV,
-    ALU_DIVU,
     ALU_REM,
-    ALU_REMU,
 
     ALU_CZERO_EQ,
     ALU_CZERO_NE
@@ -57,9 +53,7 @@ typedef enum logic [2:0] {
     BR_BEQ,
     BR_BNE,
     BR_BLT,
-    BR_BGE,
-    BR_BLTU,
-    BR_BGEU
+    BR_BGE
 } BrSel;
 
 typedef enum logic [1:0] {
@@ -82,9 +76,13 @@ typedef enum logic [2:0] {
 typedef enum logic [1:0] {
     MEN_X,  // x
     MEN_S,  // store
-    MEN_LS, // load signed
-    MEN_LU  // load unsigned
+    MEN_L   // load
 } MemSel;
+
+typedef enum logic {
+    OP_UNSIGNED,
+    OP_SIGNED
+} SignSel;
 
 typedef enum logic [1:0] {
     SIZE_B = 2'b00,
@@ -119,6 +117,7 @@ typedef struct packed
 {
     AluSel      i_exe;
     BrSel       br_exe;
+    SignSel     sign_sel;
     Op1Sel      op1_sel;
     Op2Sel      op2_sel;
     MemSel      mem_wen;

@@ -51,7 +51,7 @@ wire MemSel mem_wen     = MemSel'(!mem_valid ? MEN_X :
 wire MemSize mem_size   = ctrl.mem_size;
 
 wire is_store   = mem_wen == MEN_S;
-wire is_load    = mem_wen == MEN_LS || mem_wen == MEN_LU;
+wire is_load    = mem_wen == MEN_L;
 
 wire memu_cmd_ready   = dreq.ready;
 wire memu_valid       = dresp.valid;
@@ -71,21 +71,21 @@ UIntX  saved_mem_rdata;
 function [$bits(UIntX)-1:0] mem_rdata_func(
     input MemSel    mem_type,
     input MemSize   mem_size,
+    input SignSel   sign_sel,
     input           mem_valid,
     input UIntX     mem_rdata
 );
-if (mem_type == MEN_LS) begin
-    if (mem_size == SIZE_B) // lb
-        mem_rdata_func = {{24{mem_rdata[7]}}, mem_rdata[7:0]};
-    else if (mem_size == SIZE_H) // lh
-        mem_rdata_func = {{16{mem_rdata[15]}}, mem_rdata[15:0]};
-    else // lw
-        mem_rdata_func = mem_rdata;
-end else begin
-    if (mem_size == SIZE_B) // lbu
-        mem_rdata_func = {24'b0, mem_rdata[7:0]};
-    else // lhu
-        mem_rdata_func = {16'b0, mem_rdata[15:0]};
+if (mem_type != MEN_L)
+    mem_rdata_func = DATA_X;
+else begin
+    case ({sign_sel, mem_size})
+        {OP_SIGNED  , SIZE_B}: mem_rdata_func = {{24{mem_rdata[7]}}, mem_rdata[7:0]}; // lb
+        {OP_SIGNED  , SIZE_H}: mem_rdata_func = {{16{mem_rdata[15]}}, mem_rdata[15:0]}; // lh
+        {OP_SIGNED  , SIZE_W}: mem_rdata_func = mem_rdata; // lw
+        {OP_UNSIGNED, SIZE_B}: mem_rdata_func = {24'b0, mem_rdata[7:0]}; // lbu
+        {OP_UNSIGNED, SIZE_H}: mem_rdata_func = {16'b0, mem_rdata[15:0]}; // lhu
+        default: mem_rdata_func = DATA_X;
+    endcase
 end
 endfunction
 
@@ -95,7 +95,7 @@ assign mem_wb_inst      = mem_inst;
 assign mem_wb_inst_id   = mem_inst_id;
 assign mem_wb_ctrl      = mem_ctrl;
 assign mem_wb_alu_out   = mem_alu_out;
-assign mem_wb_mem_rdata = mem_rdata_func(ctrl.mem_wen, ctrl.mem_size, mem_valid, saved_mem_rdata);
+assign mem_wb_mem_rdata = mem_rdata_func(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, mem_valid, saved_mem_rdata);
 assign mem_wb_csr_rdata = mem_csr_rdata;
 
 always @(posedge clk) begin

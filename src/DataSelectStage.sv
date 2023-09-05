@@ -106,6 +106,7 @@ assign ds_exe_inst_id   = inst_id;
 // idからそのまま
 assign ds_exe_ctrl.i_exe        = ds_ctrl.i_exe;
 assign ds_exe_ctrl.br_exe       = ds_ctrl.br_exe;
+assign ds_exe_ctrl.sign_sel     = ds_ctrl.sign_sel;
 assign ds_exe_ctrl.op1_sel      = ds_ctrl.op1_sel;
 assign ds_exe_ctrl.op2_sel      = ds_ctrl.op2_sel;
 assign ds_exe_ctrl.mem_wen      = ds_ctrl.mem_wen;
