@@ -373,7 +373,7 @@ case (csr_cmd)
 endcase
 endfunction
 
-function [31:0] rdata_f(
+function [31:0] gen_rdata(
     input [11:0] addr,
     input [63:0] reg_cycle,
     input [63:0] reg_time,
@@ -399,46 +399,46 @@ function [31:0] rdata_f(
 );
 case (addr)
     // Counters and Timers
-    ADDR_CYCLE:     rdata_f = reg_cycle[31:0];
-    ADDR_TIME:      rdata_f = reg_time[31:0];
-    ADDR_CYCLEH:    rdata_f = reg_cycle[63:32];
-    ADDR_TIMEH:     rdata_f = reg_time[63:32];
+    ADDR_CYCLE:     gen_rdata = reg_cycle[31:0];
+    ADDR_TIME:      gen_rdata = reg_time[31:0];
+    ADDR_CYCLEH:    gen_rdata = reg_cycle[63:32];
+    ADDR_TIMEH:     gen_rdata = reg_time[63:32];
     // Machine Trap Setup
-    ADDR_MSTATUS:   rdata_f = mstatus;
-    ADDR_MISA:      rdata_f = misa;
-    ADDR_MEDELEG:   rdata_f = medeleg;
-    ADDR_MIDELEG:   rdata_f = mideleg;
-    ADDR_MIE:       rdata_f = mie;
-    ADDR_MTVEC:     rdata_f = mtvec;
-    ADDR_MSTATUSH:  rdata_f = mstatush;
+    ADDR_MSTATUS:   gen_rdata = mstatus;
+    ADDR_MISA:      gen_rdata = misa;
+    ADDR_MEDELEG:   gen_rdata = medeleg;
+    ADDR_MIDELEG:   gen_rdata = mideleg;
+    ADDR_MIE:       gen_rdata = mie;
+    ADDR_MTVEC:     gen_rdata = mtvec;
+    ADDR_MSTATUSH:  gen_rdata = mstatush;
     // Machine Trap Handling
-    ADDR_MSCRATCH:  rdata_f = mscratch;
-    ADDR_MEPC:      rdata_f = mepc;
-    ADDR_MCAUSE:    rdata_f = mcause;
-    ADDR_MIP:       rdata_f = mip;
-    ADDR_MTINST:    rdata_f = mtinst;
-    ADDR_MTVAL2:    rdata_f = mtvec2;
+    ADDR_MSCRATCH:  gen_rdata = mscratch;
+    ADDR_MEPC:      gen_rdata = mepc;
+    ADDR_MCAUSE:    gen_rdata = mcause;
+    ADDR_MIP:       gen_rdata = mip;
+    ADDR_MTINST:    gen_rdata = mtinst;
+    ADDR_MTVAL2:    gen_rdata = mtvec2;
     // Machine Counter/Timers
-    ADDR_MCYCLE:    rdata_f = reg_cycle[31:0];
-    ADDR_MCYCLEH:   rdata_f = reg_cycle[63:32];
+    ADDR_MCYCLE:    gen_rdata = reg_cycle[31:0];
+    ADDR_MCYCLEH:   gen_rdata = reg_cycle[63:32];
     // Supervisor Trap Setup
-    ADDR_SSTATUS:   rdata_f = sstatus;
-    ADDR_SIE:       rdata_f = sie;
-    ADDR_STVEC:     rdata_f = stvec;
+    ADDR_SSTATUS:   gen_rdata = sstatus;
+    ADDR_SIE:       gen_rdata = sie;
+    ADDR_STVEC:     gen_rdata = stvec;
     // Supervisor Trap Handling
-    ADDR_SSCRATCH:  rdata_f = sscratch;
-    ADDR_SEPC:      rdata_f = sepc;
-    ADDR_SCAUSE:    rdata_f = scause;
-    // ADDR_STVAL:     rdata_f = stval;
-    ADDR_SIP:       rdata_f = sip;
+    ADDR_SSCRATCH:  gen_rdata = sscratch;
+    ADDR_SEPC:      gen_rdata = sepc;
+    ADDR_SCAUSE:    gen_rdata = scause;
+    // ADDR_STVAL:     gen_rdata = stval;
+    ADDR_SIP:       gen_rdata = sip;
     // Supervisor Protection and Translation
-    ADDR_SATP:      rdata_f = satp; 
-    default:        rdata_f = 32'b0;
+    ADDR_SATP:      gen_rdata = satp; 
+    default:        gen_rdata = 32'b0;
 endcase
 endfunction
 
 wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
-wire [31:0] rdata = can_read ? rdata_f(
+wire [31:0] rdata = can_read ? gen_rdata(
     addr,
     reg_cycle,
     reg_time,
@@ -462,7 +462,8 @@ wire [31:0] rdata = can_read ? rdata_f(
     scause,
     satp
 ) : 32'b0;
-assign csr_mem_csr_rdata = rdata;
+UIntX rdata_saved;
+assign csr_mem_csr_rdata = csr_inst_id != saved_inst_id ? rdata : rdata_saved;
 
 // 2.1 CSR Address Mapping Conventions
 wire can_access = addr[9:8] <= mode;
@@ -493,7 +494,7 @@ logic [31:0] trap_vector;
 assign csr_trap_vector = may_trap ? (trap_to_mmode ? mtvec_addr : stvec_addr) : trap_vector;
 
 always @(posedge clk) begin
-if (csr_valid) begin
+if (csr_valid && csr_inst_id != saved_inst_id) begin
     // trapを起こす
     if (may_trap) begin
         `ifdef PRINT_DEBUGINFO
@@ -534,6 +535,9 @@ if (csr_valid) begin
             else if (mip_stip && mie_stie) mip_stip <= 0;
         end
     end else begin
+
+        rdata_saved <= rdata;
+
         // pending registerを更新する
         mip_mtip <= reg_mtime >= reg_mtimecmp;
         if (csr_inst_id != saved_inst_id) begin
@@ -645,7 +649,7 @@ always @(posedge clk) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
-        $display("data,csrstage.rdata,h,%b", rdata);
+        $display("data,csrstage.rdata,h,%b", csr_mem_csr_rdata);
         $display("data,csrstage.trap_vector,h,%b", trap_vector);
         $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
         $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
