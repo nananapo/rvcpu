@@ -1,6 +1,9 @@
 module MemoryStage(
     input wire          clk,
 
+    inout wire DReq     dreq,
+    inout wire DResp    dresp,
+
     input wire          mem_valid,
     input wire Addr     mem_pc,
     input wire Inst     mem_inst,
@@ -21,8 +24,7 @@ module MemoryStage(
 
     output logic        memory_unit_stall,
 
-    inout wire DReq     dreq,
-    inout wire DResp    dresp
+    output wire         exit
 );
 
 `include "include/basicparams.svh"
@@ -135,6 +137,13 @@ assign mem_wb_ctrl      = mem_ctrl;
 assign mem_wb_alu_out   = mem_alu_out;
 assign mem_wb_mem_rdata = gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
 assign mem_wb_csr_rdata = mem_csr_rdata;
+
+
+`ifdef RISCV_TEST
+    assign exit = mem_valid && is_store && alu_out == RISCVTESTS_EXIT_ADDR;
+`else
+    assign exit = 0;
+`endif
 
 always @(posedge clk) begin
     if (mem_valid)

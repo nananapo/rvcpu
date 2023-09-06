@@ -12,8 +12,7 @@ module WriteBackStage(
     input wire UIntX    wb_mem_rdata,
     input wire UIntX    wb_csr_rdata,
 
-    output wire UIntX   wb_wdata_out,
-    output wire         exit
+    output wire UIntX   wb_wdata_out
 );
 
 `include "include/basicparams.svh"
@@ -26,21 +25,15 @@ wire UIntX  alu_out     = wb_alu_out;
 wire UIntX  memory_rdata= wb_mem_rdata;
 wire UIntX  csr_rdata   = wb_csr_rdata;
 
+initial begin
 `ifdef RISCV_TEST
-    initial begin
-        for (int i = 0; i < 32; i++)
-            regfile[i] = ADDR_MAX;
-    end
-    assign exit = pc == 32'h00000044;
+    for (int i = 0; i < 32; i++) regfile[i] = ADDR_MAX;
 `else
-    initial begin
-        regfile[1] = ADDR_MAX;
-        regfile[2] = 32'h00007500;
-        for (int i = 3; i < 32; i++)
-            regfile[i] = ADDR_MAX;
-    end
-    assign exit = pc == 32'hffffff00;
+    regfile[1] = ADDR_MAX;
+    regfile[2] = 32'h00007500;
+    for (int i = 3; i < 32; i++) regfile[i] = ADDR_MAX;
 `endif
+end
 
 // WB STAGE
 function [$bits(UIntX)-1:0] wb_data_func(

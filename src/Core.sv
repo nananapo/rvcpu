@@ -499,7 +499,9 @@ MemoryStage #() memorystage
     .mem_wb_mem_rdata(mem_wb_mem_rdata),
     .mem_wb_csr_rdata(mem_wb_csr_rdata),
 
-    .memory_unit_stall(mem_memory_unit_stall)
+    .memory_unit_stall(mem_memory_unit_stall),
+
+    .exit(exit)
 );
 
 WriteBackStage #() wbstage(
@@ -516,8 +518,7 @@ WriteBackStage #() wbstage(
     .wb_mem_rdata(wb_mem_rdata),
     .wb_csr_rdata(wb_csr_rdata),
 
-    .wb_wdata_out(wb_wdata_out),
-    .exit(exit)
+    .wb_wdata_out(wb_wdata_out)
 );
 
 `ifdef PRINT_DEBUGINFO

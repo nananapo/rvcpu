@@ -7,6 +7,10 @@ localparam XLEN = `XLEN;
     localparam DATA_X   = 64'hx;
     localparam DATA_Z   = 64'hz;
     localparam DATA_ZERO= 64'h0;
+    
+    `ifdef RISCV_TEST
+        localparam RISCVTESTS_EXIT_ADDR = 64'h1000;
+    `endif
 `else
     localparam ADDR_MAX = 32'hffffffff;
     localparam ADDR_X   = 32'hx;
@@ -14,6 +18,10 @@ localparam XLEN = `XLEN;
     localparam DATA_X   = 32'hx;
     localparam DATA_Z   = 32'hz;
     localparam DATA_ZERO= 32'h0;
+
+    `ifdef RISCV_TEST
+        localparam RISCVTESTS_EXIT_ADDR = 32'h1000;
+    `endif
 `endif
 
 localparam XBIT_32 = 32'hx;
