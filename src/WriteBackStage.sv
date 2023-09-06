@@ -26,7 +26,7 @@ wire UIntX  memory_rdata= wb_mem_rdata;
 wire UIntX  csr_rdata   = wb_csr_rdata;
 
 initial begin
-`ifdef RISCV_TEST
+`ifdef RISCV_TESTS
     for (int i = 0; i < 32; i++) regfile[i] = ADDR_MAX;
 `else
     regfile[1] = ADDR_MAX;

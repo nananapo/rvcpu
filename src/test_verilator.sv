@@ -18,7 +18,7 @@ module test(
     .gp(gp)
   );
 
-`ifdef RISCV_TEST
+`ifdef RISCV_TESTS
   always @(posedge clk) begin
 	if (exit) begin
 		if (gp == 1)
