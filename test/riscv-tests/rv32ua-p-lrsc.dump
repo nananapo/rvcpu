@@ -146,12 +146,10 @@ Disassembly of section .text.init:
  1f0:	e1c50513          	addi	a0,a0,-484 # 2008 <foo>
  1f4:	40000593          	li	a1,1024
  1f8:	00160613          	addi	a2,a2,1
-
  1fc:	1005272f          	lr.w	a4,(a0)
  200:	00c70733          	add	a4,a4,a2
  204:	18e5272f          	sc.w	a4,a4,(a0)
  208:	fe071ae3          	bnez	a4,1fc <test_4+0x34>
- 
  20c:	fff58593          	addi	a1,a1,-1
  210:	fe0596e3          	bnez	a1,1fc <test_4+0x34>
  214:	00002517          	auipc	a0,0x2
