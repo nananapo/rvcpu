@@ -249,47 +249,45 @@ end
 
 // ds -> exe logic
 always @(posedge clk) begin
-    if (branch_hazard_now && !exe_stall)
-        exe_valid   <= 0;
-    else if (ds_stall && !exe_stall)
-        exe_valid   <= 0;
-    else if (!csr_stall_flg && csr_csr_trap_flg)
-        exe_valid   <= 0;
-    else if (!ds_stall && !exe_stall) begin
-        exe_valid   <= ds_exe_valid;
-        exe_pc      <= ds_exe_pc;
-        exe_inst    <= ds_exe_inst;
-        exe_inst_id <= ds_exe_inst_id;
-        exe_ctrl    <= ds_exe_ctrl;
-        exe_imm_i   <= ds_exe_imm_i;
-        exe_imm_b   <= ds_exe_imm_b;
-        exe_imm_j   <= ds_exe_imm_j;
-        exe_op1_data<= ds_exe_op1_data;
-        exe_op2_data<= ds_exe_op2_data;
-        exe_rs2_data<= ds_exe_rs2_data;
+    if (!exe_stall) begin
+        if (branch_hazard_now)
+            exe_valid   <= 0;
+        else if (ds_stall)
+            exe_valid   <= 0;
+        else if (!ds_stall) begin
+            exe_valid   <= ds_exe_valid;
+            exe_pc      <= ds_exe_pc;
+            exe_inst    <= ds_exe_inst;
+            exe_inst_id <= ds_exe_inst_id;
+            exe_ctrl    <= ds_exe_ctrl;
+            exe_imm_i   <= ds_exe_imm_i;
+            exe_imm_b   <= ds_exe_imm_b;
+            exe_imm_j   <= ds_exe_imm_j;
+            exe_op1_data<= ds_exe_op1_data;
+            exe_op2_data<= ds_exe_op2_data;
+            exe_rs2_data<= ds_exe_rs2_data;
+        end
     end
 end
 
-wire branch_fail = exe_valid && (
+wire branch_fail =  exe_valid && !csr_csr_trap_flg && (
                       ds_valid ?
                           (exe_branch_taken && ds_pc != exe_branch_target) || (!exe_branch_taken && ds_pc != exe_pc + 4)
                       : id_valid ?
                           (exe_branch_taken && id_pc != exe_branch_target) || (!exe_branch_taken && id_pc != exe_pc + 4)
-                      : 1'b0
-                    );
+                      : 1'b0);
 
 // csrはトラップするときに1クロックストールする
-wire branch_hazard_now = !csr_stall_flg && (csr_csr_trap_flg || branch_fail);
+wire branch_hazard_now      = !csr_stall_flg && (csr_csr_trap_flg || branch_fail);
 // 分岐ハザードよりもCSRのトラップを優先する
-wire Addr  branch_target = csr_csr_trap_flg ? csr_trap_vector : 
-                            exe_branch_taken ? exe_branch_target : exe_pc + 4;
+wire Addr  branch_target    =   csr_csr_trap_flg ? csr_trap_vector : 
+                                exe_branch_taken ? exe_branch_target : exe_pc + 4;
 
 // exe -> mem logic
-always @(posedge clk) begin
-    // exeがストールしていても、memがストールしていないならinvalidにして流す
-    if (exe_stall && !mem_stall)
+always @(posedge clk) if (!mem_stall) begin
+    if (exe_stall)
         mem_valid       <= 0;
-    else if (!exe_stall && !mem_stall) begin
+    else if (!exe_stall) begin
         mem_valid       <= exe_mem_valid;
         mem_pc          <= exe_mem_pc;
         mem_inst        <= exe_mem_inst;

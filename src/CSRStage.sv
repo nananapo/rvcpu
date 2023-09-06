@@ -471,19 +471,23 @@ wire can_read   = can_access;
 wire can_write  = can_access && addr[11:10] != 2'b11;
 
 IId saved_inst_id = IID_RANDOM;
+IId saved_iid_old = IID_RANDOM; // TODO HOTFIX
 always @(posedge clk) begin
     if (csr_valid)
         saved_inst_id <= csr_inst_id;
+    saved_iid_old <= saved_inst_id;
 end
 
 wire cmd_is_2clock  = csr_cmd[2] != 1'b0;
 wire cmd_is_trap    = csr_cmd[2] == 1'b1;
 wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
 
-assign csr_stall_flg = csr_valid &&
-                       cmd_is_2clock &&
-                       (csr_inst_id != saved_inst_id);
-assign csr_trap_flg  = csr_valid && (may_trap || cmd_is_trap);
+assign csr_stall_flg =  csr_valid &&
+                        cmd_is_2clock &&
+                        (csr_inst_id != saved_inst_id);
+assign csr_trap_flg  =  csr_valid && 
+                        (may_trap || cmd_is_trap) &&
+                        (!cmd_is_2clock || csr_inst_id != saved_iid_old); // TODO HOTFIX
 
 assign output_mode = mode;
 assign output_satp = satp;
