@@ -1,6 +1,6 @@
 # rvcpu
 
-Verilogで記述されたRISC-V(RV32IM)のCPUです。  
+Verilogで記述されたRISC-V(RV32IMA)のCPUです。  
 「RISC-VとChiselで学ぶ　はじめてのCPU自作」という本を参考に実装しはじめました  
 TangNano9Kで動くことを確認しています。
 
