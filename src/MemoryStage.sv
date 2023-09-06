@@ -94,7 +94,14 @@ wire UIntX memu_rdata = dresp.rdata;
 assign dreq.valid   = state == WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
 assign dreq.wen     = is_store;
 assign dreq.addr    = alu_out;
-assign dreq.wdata   =   ctrl.mem_wen != MEN_A ? rs2_data :
+
+
+
+assign dreq.wdata   = 
+                    `ifdef RISCV_TESTS
+                        alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
+                    `endif
+                        ctrl.mem_wen != MEN_A ? rs2_data :
                         ctrl.a_sel == ASEL_SC ? rs2_data :
                         gen_amo_wdata(ctrl.a_sel, ctrl.sign_sel, saved_mem_rdata, rs2_data);
 assign dreq.wmask   = mem_size;
@@ -135,12 +142,16 @@ assign mem_wb_inst      = mem_inst;
 assign mem_wb_inst_id   = mem_inst_id;
 assign mem_wb_ctrl      = mem_ctrl;
 assign mem_wb_alu_out   = mem_alu_out;
-assign mem_wb_mem_rdata = gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
+assign mem_wb_mem_rdata = 
+                        `ifdef RISCV_TESTS
+                            alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
+                        `endif
+                            gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
 assign mem_wb_csr_rdata = mem_csr_rdata;
 
 
-`ifdef RISCV_TEST
-    assign exit = mem_valid && is_store && alu_out == RISCVTESTS_EXIT_ADDR;
+`ifdef RISCV_TESTS
+    assign exit = mem_valid && is_store && alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] != 8'b0101_0000;
 `else
     assign exit = 0;
 `endif
@@ -162,6 +173,13 @@ always @(posedge clk) begin
                     state           <= IDLE;
                     replace_mem_wen <= MEN_X;
                     is_cmd_executed <= 1;
+
+                    `ifdef RISCV_TESTS
+                        // riscv-testsのデバッグ出力
+                        if (alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] == 8'b0101_0000) begin
+                            $write("%c", rs2_data[7:0]);
+                        end
+                    `endif
                 end else begin
                     state           <= WAIT_VALID;
                 end
