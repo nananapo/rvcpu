@@ -56,25 +56,4 @@ always @(posedge clk) begin
     endcase
 end
 
-
-`ifdef PRINT_DEBUGINFO
-`ifdef PRINT_ALU_MODULE
-always @(posedge clk) begin
-    $display("data,multnbit.input.start,b,%b", start);
-    $display("data,multnbit.input.ready,b,%b", ready);
-    $display("data,multnbit.input.valid,b,%b", valid);
-    $display("data,multnbit.input.is_signed,b,%b", is_signed);
-    $display("data,multnbit.input.multiplicand,d,%b", multiplicand);
-    $display("data,multnbit.input.multiplier,d,%b", multiplier);
-    $display("data,multnbit.output.product,d,%b", product);
-
-    $display("data,multnbit.state,%d", state);
-    $display("data,multnbit.result_is_minus,b,%b", result_is_minus);
-    $display("data,multnbit.mod.multiplicand,d,%b", mod_multiplicand);
-    $display("data,multnbit.mod.multiplier,d,%b", mod_multiplier);
-    $display("data,multnbit.mod.product,d,%b", mod_product);
-end
-`endif
-`endif
-
 endmodule

@@ -65,29 +65,4 @@ always @(posedge clk) begin
     endcase
 end
 
-
-`ifdef PRINT_DEBUGINFO
-`ifdef PRINT_ALU_MODULE
-always @(posedge clk) begin
-    $display("data,divnbit.output.ready,b,%b", ready);
-    $display("data,divnbit.output.valid,b,%b", valid);
-    $display("data,divnbit.output.error,b,%b", error);
-    $display("data,divnbit.input.start,b,%b", start);
-    $display("data,divnbit.input.is_signed,b,%b", is_signed);
-    $display("data,divnbit.input.dividend,d,%b", dividend);
-    $display("data,divnbit.input.divisor,d,%b", divisor);
-    $display("data,divnbit.output.quotient,d,%b", quotient);
-    $display("data,divnbit.output.remainder,d,%b", remainder);
-
-    $display("data,divnbit.state,d,%b", state);
-    $display("data,divnbit.div_is_minus,b,%b", result_div_is_minus);
-    $display("data,divnbit.rem_is_minus,b,%b", result_rem_is_minus);
-    $display("data,divnbit.mod.dividend,h,%b", mod_dividend);
-    $display("data,divnbit.mod.divisor,h,%b", mod_divisor);
-    $display("data,divnbit.mod.quotient,h,%b", mod_quotient);
-    $display("data,divnbit.mod.remainder,h,%b", mod_remainder);
-end
-`endif
-`endif
-
 endmodule
