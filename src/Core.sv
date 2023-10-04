@@ -16,14 +16,17 @@ module Core #(
     output BrInfo       brinfo,
     inout wire DReq     dreq,
     inout wire DResp    dresp,
+
     output wire modetype    csr_mode,
     output wire Addr        csr_satp,
+    // output wire             fencei_hazard,
+    // output wire             sfence_inval,
 
     output logic    exit,
     output UIntX    gp
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 // id reg
 logic   id_valid    = 0;

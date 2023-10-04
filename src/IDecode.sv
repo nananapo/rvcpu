@@ -3,7 +3,7 @@ module IDecode (
     output wire Ctrl ctrl
 );
 
-`include "include/inst.svh"
+`include "inst.svh"
 
 localparam X_2 = 2'bx;
 localparam X_3 = 3'bx;

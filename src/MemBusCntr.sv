@@ -8,7 +8,7 @@ module MemBusCntr (
     inout wire MemBusResp   memresp_in
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 MemBusReq   s_ireq;
 MemBusReq   s_dreq;

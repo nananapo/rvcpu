@@ -33,7 +33,7 @@ module DataSelectStage
     input wire FwCtrl   dh_wb_fw
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 wire Addr   pc      = ds_pc;
 wire Inst   inst    = ds_inst;

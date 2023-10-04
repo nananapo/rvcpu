@@ -27,7 +27,7 @@ module ExecuteStage
     output wire         calc_stall_flg
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 wire Addr pc        = exe_pc;
 wire Inst inst      = exe_inst;

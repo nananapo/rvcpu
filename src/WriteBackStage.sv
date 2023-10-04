@@ -15,7 +15,7 @@ module WriteBackStage(
     output wire UIntX   wb_wdata_out
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 wire Addr   pc          = wb_pc;
 wire Inst   inst        = wb_inst;

@@ -13,8 +13,8 @@ module InstQueue #(
     input wire BrInfo   brinfo
 );
 
-`include "include/basicparams.svh"
-`include "include/inst.svh"
+`include "basicparams.svh"
+`include "inst.svh"
 
 typedef struct packed {
     Addr    addr;

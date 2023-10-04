@@ -11,7 +11,7 @@ module ALU #(
     output wire         branch_take
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 // alu_out
 function [$bits(UIntX)-1:0] alu_func(

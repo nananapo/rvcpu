@@ -35,10 +35,10 @@
         <File path="src/Uart_rx.sv" type="file.verilog" enable="1"/>
         <File path="src/Uart_tx.sv" type="file.verilog" enable="1"/>
         <File path="src/WriteBackStage.sv" type="file.verilog" enable="1"/>
-        <File path="src/include/basic.svh" type="file.verilog" enable="1"/>
-        <File path="src/include/basicparams.svh" type="file.verilog" enable="1"/>
-        <File path="src/include/inst.svh" type="file.verilog" enable="1"/>
-        <File path="src/include/memoryinterface.sv" type="file.verilog" enable="1"/>
+        <File path="src/basic.svh" type="file.verilog" enable="1"/>
+        <File path="src/basicparams.svh" type="file.verilog" enable="1"/>
+        <File path="src/inst.svh" type="file.verilog" enable="1"/>
+        <File path="src/memoryinterface.sv" type="file.verilog" enable="1"/>
         <File path="src/main.sv" type="file.verilog" enable="1"/>
         <File path="src/test.sv" type="file.verilog" enable="1"/>
         <File path="src/tangnano9k.cst" type="file.cst" enable="1"/>

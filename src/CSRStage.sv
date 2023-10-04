@@ -26,7 +26,7 @@ module CSRStage #(
     output wire Addr     output_satp
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 wire Addr   pc      = csr_pc;
 wire IId    inst_id = csr_inst_id;

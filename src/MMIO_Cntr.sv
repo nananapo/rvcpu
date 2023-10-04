@@ -14,8 +14,8 @@ module MMIO_Cntr #(
     inout  wire DResp   memresp_in
 );
 
-`include "include/basicparams.svh"
-`include "include/memorymap.svh"
+`include "basicparams.svh"
+`include "memorymap.svh"
 
 typedef enum logic [1:0] {
     IDLE,

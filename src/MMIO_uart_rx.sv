@@ -15,7 +15,7 @@ module MMIO_uart_rx #(
     output UInt32   resp_rdata
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 localparam BUF_LEN = 2**BUF_WIDTH;
 typedef logic [BUF_WIDTH-1:0] BufWidth;

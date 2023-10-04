@@ -14,7 +14,7 @@ module MMIO_uart_tx #(
     output wire UIntX   resp_rdata
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 wire logic q_rready;
 wire logic q_rvalid;

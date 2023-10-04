@@ -27,7 +27,7 @@ module MemoryStage(
     output wire         exit
 );
 
-`include "include/basicparams.svh"
+`include "basicparams.svh"
 
 typedef enum logic [1:0]
 {

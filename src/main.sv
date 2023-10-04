@@ -1,7 +1,7 @@
 `default_nettype none
 
-`include "include/basic.svh"
-`include "include/memoryinterface.svh"
+`include "basic.svh"
+`include "memoryinterface.svh"
 
 module main #(
     parameter FMAX_MHz = 27

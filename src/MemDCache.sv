@@ -1,3 +1,5 @@
+`include "memoryinterface.svh"
+
 // direct map
 module MemDCache #(
     parameter CACHE_WIDTH = 10
@@ -5,12 +7,10 @@ module MemDCache #(
     input wire clk,
 
     inout wire CacheReq     dreq_in,
-    inout wire CacheResp    dresp, // TODO rename
+    inout wire CacheResp    dresp_in,
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
 );
-
-`include "include/basicparams.svh"
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
 

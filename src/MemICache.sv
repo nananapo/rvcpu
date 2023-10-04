@@ -1,16 +1,26 @@
+`include "memoryinterface.svh"
+
 // direct map
+// wenは無視
 module MemICache #(
-    // メモリのアドレスの下位何ビットを使うか
-    // 容量は 32 byte (キャッシュラインの長さ) * pow(2, width) になる
-    parameter ADDR_WIDTH = 8
+    parameter CACHE_WIDTH = 8
 )(
     input wire clk,
 
     inout wire CacheReq     ireq_in,
-    inout wire CacheResp    iresp,
+    inout wire CacheResp    iresp_in,
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
 );
+
+localparam ADDR_WIDTH = CACHE_WIDTH;
+
+initial begin
+    if (CACHE_WIDTH < 2) begin
+        $display("ICache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
+        $finish;
+    end 
+end
 
 localparam INST_WIDTH       = 32;
 
