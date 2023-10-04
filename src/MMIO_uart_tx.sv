@@ -22,7 +22,7 @@ wire UInt8 q_rdata;
 
 SyncQueue #(
     .DATA_SIZE($bits(UInt8)),
-    .QUEUE_SIZE(1024)
+    .QUEUE_SIZE(10)
 ) queue (
     .clk(clk),
     .kill(1'b0),

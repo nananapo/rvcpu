@@ -1,8 +1,8 @@
 // 書き込んだら次のクロックで取り出せる同期キュー
-// QUEUE_SIZEは2の冪にしてね
+// キューのサイズは2 ** WIDTH - 1になる
 module SyncQueue #(
     parameter DATA_SIZE = 32,
-    parameter QUEUE_SIZE = 32
+    parameter WIDTH = 5
 )(
     input wire clk,
     input wire kill,
@@ -14,43 +14,51 @@ module SyncQueue #(
     input wire  rready,
     output wire rvalid,
     output wire [DATA_SIZE-1:0] rdata
-);
+); generate
 
-localparam QUEUE_WIDTH = $clog2(QUEUE_SIZE);
+if (WIDTH == 0) begin
 
-logic [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
-logic [QUEUE_WIDTH-1:0] head = 0;
-logic [QUEUE_WIDTH-1:0] tail = 0;
+    logic [DATA_SIZE-1:0] data = 0;
+    logic is_empty = 1;
 
-wire inner_wready = tail + {{QUEUE_WIDTH-1{1'd0}}, 1'd1} != head;
-assign wready   = inner_wready && tail + {{QUEUE_WIDTH-2{1'd0}}, 2'b10} != head;
-assign rvalid   = head != tail;
-assign rdata    = queue[head];
+    assign wready = is_empty;
+    assign rvalid = !is_empty;
+    assign rdata  = data;
 
-always @(posedge clk) begin
-    if (kill)
-        head <= tail;
-    else begin
-        if (inner_wready && wvalid) begin
-            tail <= tail + 1;
-            queue[tail] <= wdata;
+    always @(posedge clk) begin
+        if (is_empty && wvalid) begin
+            is_empty    <= 0;
+            data        <= wdata;
         end
-        if (rready && rvalid)
-            head <= head + 1;
+        if (!is_empty && rready) begin
+            is_empty    <= 1;
+        end
+    end
+
+end else begin
+    localparam QUEUE_SIZE = 2 ** WIDTH; 
+
+    logic [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
+    logic [WIDTH-1:0] head = 0;
+    logic [WIDTH-1:0] tail = 0;
+
+    wire p_max = tail + {{WIDTH-1{1'b0}}, 1'b1} == head;
+    assign wready   = !p_max;
+    assign rvalid   = head != tail;
+    assign rdata    = queue[head];
+
+    always @(posedge clk) begin
+        if (kill)
+            head <= tail;
+        else begin
+            if (wready && wvalid) begin
+                tail <= tail + 1;
+                queue[tail] <= wdata;
+            end
+            if (rready && rvalid)
+                head <= head + 1;
+        end
     end
 end
-
-/*
-always @(posedge clk) begin
-    $display("data,fetchstage.queue.head,d,%b", head);
-    $display("data,fetchstage.queue.tail,d,%b", tail);
-    $display("data,fetchstage.queue.inner_wready,d,%b", inner_wready);
-    $display("data,fetchstage.queue.wvalid,d,%b", wvalid);
-    $display("data,fetchstage.queue.wdata,h,%b", wdata);
-    $display("data,fetchstage.queue.rready,d,%b", rready);
-    $display("data,fetchstage.queue.rvalid,d,%b", rvalid);
-    $display("data,fetchstage.queue.rdata,h,%b", rdata);
-end
-*/
-
-endmodule
+    
+endgenerate endmodule

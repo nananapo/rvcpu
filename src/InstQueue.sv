@@ -40,7 +40,7 @@ assign iresp.inst_id    = buf_rdata.inst_id;
 
 SyncQueue #(
     .DATA_SIZE($bits(BufType)),
-    .QUEUE_SIZE(QUEUE_SIZE)
+    .WIDTH($clog2(QUEUE_SIZE))
 ) resqueue (
     .clk(clk),
     .kill(buf_kill),
