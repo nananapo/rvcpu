@@ -131,7 +131,9 @@ MemICache #() memicache (
     .busresp(mbresp_icache)
 );
 
-PageTableWalker #() iptw (
+PageTableWalker #(
+    .LOG_ENABLE(0)
+) iptw (
     .clk(clk_in),
     .preq(icreq_iq_ptw),
     .presp(icresp_iq_ptw),
@@ -160,7 +162,9 @@ MemDCache #() memdcache (
     .busresp(mbresp_dcache)
 );
 
-PageTableWalker #() dptw (
+PageTableWalker #(
+    .LOG_ENABLE(0)
+) dptw (
     .clk(clk_in),
     .preq(dcreq_acntr_ptw),
     .presp(dcresp_acntr_ptw),
@@ -168,7 +172,7 @@ PageTableWalker #() dptw (
     .memresp(dcresp_ptw_cache),
     .csr_mode(csr_mode),
     .csr_satp(csr_satp),
-    .kill(ireq_core_iq.valid)
+    .kill(1'b0)
 );
 
 DAccessCntr #() daccesscntr (
