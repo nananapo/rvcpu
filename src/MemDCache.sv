@@ -20,6 +20,10 @@ logic   cache_valid[CACHE_SIZE-1:0];
 logic   cache_modified[CACHE_SIZE-1:0];
 
 initial begin
+    if (CACHE_WIDTH < 2) begin
+        $display("DCache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
+        $finish;
+    end 
     for (int i = 0; i < CACHE_SIZE; i++) begin
         cache_valid[i] = 0;
         cache_modified[i] = 0;
@@ -45,10 +49,12 @@ UInt32  wb_data;
 
 logic   dresp_valid_reg;
 UInt32  dresp_rdata_reg;
+logic   dresp_error_reg;
 
-assign dreq_in.ready= state == IDLE;
-assign dresp.valid  = dresp_valid_reg;
-assign dresp.rdata  = dresp_rdata_reg;
+assign dreq_in.ready    = state == IDLE;
+assign dresp_in.valid   = dresp_valid_reg;
+assign dresp_in.rdata   = dresp_rdata_reg;
+assign dresp_in.error   = dresp_error_reg;
 
 assign busreq.valid = state == READ_READY || state == WRITE_READY;
 assign busreq.addr  = state == READ_READY ? dreq.addr : wb_addr;
@@ -87,8 +93,9 @@ end
 
 always @(posedge clk) begin
     
-    dresp_valid_reg <= (state == IDLE && cache_hit) 
-                        || state == RESP_VALID;
+    dresp_valid_reg <= (state == IDLE && cache_hit) || // cache hit
+                        state == RESP_VALID || // read 
+                        state == WRITE_READY && busreq.ready && dreq.wen; // writeback -> write
     dresp_rdata_reg <= cache_data[mem_index];
     
     case (state)
@@ -96,6 +103,7 @@ always @(posedge clk) begin
         s_dreq <= dreq_in;
         if (dreq.valid) begin
             if (cache_hit) begin
+                dresp_error_reg <= 0;
                 // 上書き
                 if (dreq.wen) begin
                     cache_data[mem_index]       <= dreq.wdata;
@@ -114,7 +122,8 @@ always @(posedge clk) begin
                     cache_modified[info_index]  <= 0;
                 end else begin
                     if (dreq.wen) begin
-                        // 上書きする
+                        // 上書きする -> 終了
+                        dresp_error_reg             <= 0;
                         cache_data[mem_index]       <= dreq.wdata;
                         cache_addrs[info_index]     <= dreq.addr;
                         cache_valid[info_index]     <= 1;
@@ -134,19 +143,29 @@ always @(posedge clk) begin
     READ_READY: if (busreq.ready) state <= READ_VALID;
     READ_VALID: begin
         if (busresp.valid) begin
-            state <= RESP_VALID;
-            cache_data[mem_index]       <= busresp.rdata;
-            cache_valid[info_index]     <= 1;
-            cache_modified[info_index]  <= 0;
+            if (busresp.error) begin
+                state <= RESP_VALID;
+                dresp_error_reg         <= 1;
+                cache_valid[info_index] <= 0;
+            end else begin
+                state <= RESP_VALID;
+                dresp_error_reg             <= 0;
+                cache_data[mem_index]       <= busresp.rdata;
+                cache_valid[info_index]     <= 1;
+                cache_modified[info_index]  <= 0;
+            end
         end
     end
     RESP_VALID: state <= IDLE;
     WRITE_READY: begin
         if (busreq.ready) begin
+            // ライトバックが成功したかどうかは考慮しない
             if (dreq.wen) begin
                 // ライトバック -> write
-                // modifiedとして書き込みで終わり
+                // modifiedとして書き込みで終了
+                // TODO readしてからwrite (errorチェック, 並行性制御のため)
                 state <= IDLE;
+                dresp_error_reg             <= 0;
                 cache_data[mem_index]       <= dreq.wdata;
                 cache_addrs[info_index]     <= dreq.addr;
                 cache_valid[info_index]     <= 1;

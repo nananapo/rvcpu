@@ -69,17 +69,19 @@ wire CacheReq ireq = state == IDLE ? ireq_in : s_ireq;
 wire CacheIndex req_index = calc_cache_addr(ireq.addr);
 
 // addrがキャッシュラインに存在し、validであるかどうか
-wire req_addr_in_valid_cache = cache_addrs[req_index] == normalize_addr(ireq_in.addr) && cache_valid[req_index];
+wire cache_hit = cache_addrs[req_index] == normalize_addr(ireq_in.addr) && cache_valid[req_index];
 
 wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index_base = {req_index, {LINE_INST_WIDTH{1'b0}}};
 wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index = req_mem_index_base + {{LINE_DATA_ADDR_WIDTH - LINE_INST_WIDTH{1'b0}}, ireq.addr[LINE_INST_WIDTH+2-1:2]};
 
 logic iresp_valid_reg = 0;
 Inst  iresp_rdata_reg;
+logic iresp_error_reg;
 
-assign ireq_in.ready= state == IDLE;
-assign iresp.valid  = iresp_valid_reg;
-assign iresp.rdata  = iresp_rdata_reg;
+assign ireq_in.ready    = state == IDLE;
+assign iresp_in.valid   = iresp_valid_reg;
+assign iresp_in.rdata   = iresp_rdata_reg;
+assign iresp_in.error   = iresp_error_reg;
 
 assign busreq.valid = state == MEM_WAIT_READY;
 assign busreq.addr  = normalize_addr(ireq.addr) + read_count * 4;
@@ -102,7 +104,7 @@ always @(posedge clk) begin
         cachehit_count  <= 0;
         cachemiss_count <= 0;
     end else if (state == IDLE && ireq_in.valid) begin
-        if (req_addr_in_valid_cache) begin
+        if (cache_hit) begin
             cachehit_count  <= cachehit_count + 1;
         end else begin
             cachemiss_count <= cachemiss_count + 1;
@@ -113,16 +115,18 @@ end
 
 
 always @(posedge clk) begin
-    iresp_valid_reg <=  (state == IDLE && ireq_in.valid && req_addr_in_valid_cache) ||
+    iresp_valid_reg <=  (state == IDLE && ireq_in.valid && cache_hit) ||
                         (state == MEM_RESP_VALID);
     iresp_rdata_reg <= cache_data[req_mem_index];
     
     case (state)
     IDLE: begin
         read_count  <= 0;
-        s_ireq       <= ireq_in;
+        s_ireq      <= ireq_in;
         if (ireq_in.valid) begin
-            if (!req_addr_in_valid_cache) begin
+            if (cache_hit)
+                iresp_error_reg <= 0;
+            else begin
                 state <= MEM_WAIT_READY;
                 cache_valid[req_index] <= 0;
             end
@@ -135,16 +139,23 @@ always @(posedge clk) begin
     end
     MEM_READ_VALID: begin
         if (busresp.valid) begin
-            read_count <= read_count + 1;
-            /* verilator lint_off WIDTH */
-            cache_data[req_mem_index_base + read_count] <= busresp.rdata;
-            if (read_count == LINE_INST_COUNT - 1) begin
-            /* verilator lint_on WIDTH */
+            if (busresp.error) begin
                 state <= MEM_RESP_VALID;
-                cache_addrs[req_index] <= normalize_addr(ireq.addr);
-                cache_valid[req_index] <= 1;
-            end else
-                state <= MEM_WAIT_READY;
+                iresp_error_reg         <= 1;
+                cache_valid[req_index]  <= 0;
+            end else begin
+                read_count <= read_count + 1;
+                /* verilator lint_off WIDTH */
+                cache_data[req_mem_index_base + read_count] <= busresp.rdata;
+                if (read_count == LINE_INST_COUNT - 1) begin
+                /* verilator lint_on WIDTH */
+                    state <= MEM_RESP_VALID;
+                    iresp_error_reg         <= 0;
+                    cache_addrs[req_index]  <= normalize_addr(ireq.addr);
+                    cache_valid[req_index]  <= 1;
+                end else
+                    state <= MEM_WAIT_READY;
+            end
         end
     end
     MEM_RESP_VALID: state <= IDLE;
@@ -157,13 +168,14 @@ end
 
 `ifdef PRINT_DEBUGINFO
 // always @(posedge clk) begin
+/* verilator lint_off WIDTH */
 //     $display("data,fetchstage.i$.state,d,%b", state);
 //     $display("data,fetchstage.i$.read_count,d,%b", read_count);
 
 //     if (ireq_in.valid && state == IDLE) begin
 //         $display("data,fetchstage.i$.req.addr,h,%b", ireq_in.addr);
 //         $display("data,fetchstage.i$.req.addr_base,h,%b", normalize_addr(ireq_in.addr));
-//         $display("data,fetchstage.i$.req.cache_hit,d,%b", req_addr_in_valid_cache);
+//         $display("data,fetchstage.i$.req.cache_hit,d,%b", cache_hit);
 //     end
 
 //     $display("data,fetchstage.i$.busreq.ready,d,%b", busreq.ready);
@@ -171,6 +183,10 @@ end
 //     $display("data,fetchstage.i$.busreq.addr,h,%b", busreq.addr);
 //     $display("data,fetchstage.i$.busresp.valid,d,%b", busresp.valid);
 //     $display("data,fetchstage.i$.busresp.rdata,h,%b", busresp.rdata);
+    
+//     $display("data,fetchstage.i$.busresp.save_mem_index,h,%b", req_mem_index_base + read_count);
+//     $display("data,fetchstage.i$.busresp.mem_index,h,%b", req_mem_index);
+/* verilator lint_on WIDTH */
 // end
 `endif
 

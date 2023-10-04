@@ -96,7 +96,8 @@ wire DResp      dresp_core_mmio;
 
 Memory #(
     .FILEPATH(`MEM_FILE),
-    .ADDR_WIDTH(`MEMORY_WIDTH),
+    .MEM_WIDTH(`MEMORY_WIDTH),
+    .ADDR_WIDTH(`XLEN),
     .DELAY_CYCLE(`MEMORY_DELAY)
 ) memory (
     .clk(clk_in),
@@ -106,6 +107,8 @@ Memory #(
     .req_wen(mbreq_mem.wen),
     .req_wdata(mbreq_mem.wdata),
     .resp_valid(mbresp_mem.valid),
+    .resp_addr(mbresp_mem.addr),
+    .resp_error(mbresp_error.error),
     .resp_rdata(mbresp_mem.rdata)
 );
 
@@ -123,7 +126,7 @@ MemBusCntr #() membuscntr (
 MemICache #() memicache (
     .clk(clk_in),
     .ireq_in(icreq_ptw_cache),
-    .iresp(icresp_ptw_cache),
+    .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
     .busresp(mbresp_icache)
 );
@@ -152,7 +155,7 @@ InstQueue #() instqueue (
 MemDCache #() memdcache (
     .clk(clk_in),
     .dreq_in(dcreq_ptw_cache),
-    .dresp(dcresp_ptw_cache),
+    .dresp_in(dcresp_ptw_cache),
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache)
 );
