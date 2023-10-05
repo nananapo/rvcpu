@@ -1,0 +1,64 @@
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+jobs:
+  mi-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py mi-p-
+  si-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py si-p-
+  ua-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py ua-p-
+  ui-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py ui-p-
+  ui-v:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py ui-v-
+  um-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py um-p-
+  um-v:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py um-v-
