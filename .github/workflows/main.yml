@@ -65,22 +65,17 @@ jobs:
           sudo apt-get -y remove verilator
           git clone https://github.com/verilator/verilator
           cd verilator
+          cp /usr/include/FlexLexer.h .
           git checkout v5.016
           unset VERILATOR_ROOT
           autoconf
           ./configure
           make
-      - name: Install verilator 2
-        run: |
-          cd verilator
-          make
           sudo make install
-        if: ${{ always() }}
       - name: Lint
         run: |
           cd src
           make v
-        if: ${{ always() }}
   coremark-bench:
     runs-on: ubuntu-latest
     steps:
