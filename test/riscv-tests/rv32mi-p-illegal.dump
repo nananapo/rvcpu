@@ -1,0 +1,466 @@
+
+rv32mi-p-illegal:     file format elf32-littleriscv
+
+
+Disassembly of section .text.init:
+
+00000000 <_start>:
+   0:	0540006f          	j	54 <reset_vector>
+
+00000004 <trap_vector>:
+   4:	34202f73          	csrr	t5,mcause
+   8:	00800f93          	li	t6,8
+   c:	03ff0a63          	beq	t5,t6,40 <write_tohost>
+  10:	00900f93          	li	t6,9
+  14:	03ff0663          	beq	t5,t6,40 <write_tohost>
+  18:	00b00f93          	li	t6,11
+  1c:	03ff0263          	beq	t5,t6,40 <write_tohost>
+  20:	00000f17          	auipc	t5,0x0
+  24:	3e0f0f13          	add	t5,t5,992 # 400 <mtvec_handler>
+  28:	000f0463          	beqz	t5,30 <trap_vector+0x2c>
+  2c:	000f0067          	jr	t5
+  30:	34202f73          	csrr	t5,mcause
+  34:	000f5463          	bgez	t5,3c <handle_exception>
+  38:	0040006f          	j	3c <handle_exception>
+
+0000003c <handle_exception>:
+  3c:	5391e193          	or	gp,gp,1337
+
+00000040 <write_tohost>:
+  40:	00001f17          	auipc	t5,0x1
+  44:	fc3f2023          	sw	gp,-64(t5) # 1000 <tohost>
+  48:	00001f17          	auipc	t5,0x1
+  4c:	fa0f2e23          	sw	zero,-68(t5) # 1004 <tohost+0x4>
+  50:	ff1ff06f          	j	40 <write_tohost>
+
+00000054 <reset_vector>:
+  54:	00000093          	li	ra,0
+  58:	00000113          	li	sp,0
+  5c:	00000193          	li	gp,0
+  60:	00000213          	li	tp,0
+  64:	00000293          	li	t0,0
+  68:	00000313          	li	t1,0
+  6c:	00000393          	li	t2,0
+  70:	00000413          	li	s0,0
+  74:	00000493          	li	s1,0
+  78:	00000513          	li	a0,0
+  7c:	00000593          	li	a1,0
+  80:	00000613          	li	a2,0
+  84:	00000693          	li	a3,0
+  88:	00000713          	li	a4,0
+  8c:	00000793          	li	a5,0
+  90:	00000813          	li	a6,0
+  94:	00000893          	li	a7,0
+  98:	00000913          	li	s2,0
+  9c:	00000993          	li	s3,0
+  a0:	00000a13          	li	s4,0
+  a4:	00000a93          	li	s5,0
+  a8:	00000b13          	li	s6,0
+  ac:	00000b93          	li	s7,0
+  b0:	00000c13          	li	s8,0
+  b4:	00000c93          	li	s9,0
+  b8:	00000d13          	li	s10,0
+  bc:	00000d93          	li	s11,0
+  c0:	00000e13          	li	t3,0
+  c4:	00000e93          	li	t4,0
+  c8:	00000f13          	li	t5,0
+  cc:	00000f93          	li	t6,0
+  d0:	f1402573          	csrr	a0,mhartid
+  d4:	00051063          	bnez	a0,d4 <reset_vector+0x80>
+  d8:	00000297          	auipc	t0,0x0
+  dc:	01028293          	add	t0,t0,16 # e8 <reset_vector+0x94>
+  e0:	30529073          	csrw	mtvec,t0
+  e4:	74445073          	csrw	0x744,8
+  e8:	00000297          	auipc	t0,0x0
+  ec:	01028293          	add	t0,t0,16 # f8 <reset_vector+0xa4>
+  f0:	30529073          	csrw	mtvec,t0
+  f4:	18005073          	csrw	satp,0
+  f8:	00000297          	auipc	t0,0x0
+  fc:	02028293          	add	t0,t0,32 # 118 <reset_vector+0xc4>
+ 100:	30529073          	csrw	mtvec,t0
+ 104:	800002b7          	lui	t0,0x80000
+ 108:	fff28293          	add	t0,t0,-1 # 7fffffff <_end+0x7fffdfff>
+ 10c:	3b029073          	csrw	pmpaddr0,t0
+ 110:	01f00293          	li	t0,31
+ 114:	3a029073          	csrw	pmpcfg0,t0
+ 118:	30405073          	csrw	mie,0
+ 11c:	00000297          	auipc	t0,0x0
+ 120:	01428293          	add	t0,t0,20 # 130 <reset_vector+0xdc>
+ 124:	30529073          	csrw	mtvec,t0
+ 128:	30205073          	csrw	medeleg,0
+ 12c:	30305073          	csrw	mideleg,0
+ 130:	00000193          	li	gp,0
+ 134:	00000297          	auipc	t0,0x0
+ 138:	ed028293          	add	t0,t0,-304 # 4 <trap_vector>
+ 13c:	30529073          	csrw	mtvec,t0
+ 140:	00100513          	li	a0,1
+ 144:	01f51513          	sll	a0,a0,0x1f
+ 148:	00054c63          	bltz	a0,160 <reset_vector+0x10c>
+ 14c:	0ff0000f          	fence
+ 150:	00100193          	li	gp,1
+ 154:	05d00893          	li	a7,93
+ 158:	00000513          	li	a0,0
+ 15c:	00000073          	ecall
+ 160:	00000293          	li	t0,0
+ 164:	00028a63          	beqz	t0,178 <reset_vector+0x124>
+ 168:	10529073          	csrw	stvec,t0
+ 16c:	0000b2b7          	lui	t0,0xb
+ 170:	10928293          	add	t0,t0,265 # b109 <_end+0x9109>
+ 174:	30229073          	csrw	medeleg,t0
+ 178:	30005073          	csrw	mstatus,0
+ 17c:	00002537          	lui	a0,0x2
+ 180:	80050513          	add	a0,a0,-2048 # 1800 <fromhost+0x7c0>
+ 184:	30052073          	csrs	mstatus,a0
+ 188:	00000297          	auipc	t0,0x0
+ 18c:	01428293          	add	t0,t0,20 # 19c <reset_vector+0x148>
+ 190:	34129073          	csrw	mepc,t0
+ 194:	f1402573          	csrr	a0,mhartid
+ 198:	30200073          	mret
+ 19c:	00200193          	li	gp,2
+
+000001a0 <bad2>:
+ 1a0:	0000                	.2byte	0x0
+ 1a2:	0000                	.2byte	0x0
+ 1a4:	1300006f          	j	2d4 <fail>
+ 1a8:	000022b7          	lui	t0,0x2
+ 1ac:	80028293          	add	t0,t0,-2048 # 1800 <fromhost+0x7c0>
+ 1b0:	3002b073          	csrc	mstatus,t0
+ 1b4:	00001337          	lui	t1,0x1
+ 1b8:	80030313          	add	t1,t1,-2048 # 800 <synchronous_exception+0x3c0>
+ 1bc:	30032073          	csrs	mstatus,t1
+ 1c0:	300023f3          	csrr	t2,mstatus
+ 1c4:	0053f3b3          	and	t2,t2,t0
+ 1c8:	12731463          	bne	t1,t2,2f0 <pass>
+
+000001cc <test_vectored_interrupts>:
+ 1cc:	34415073          	csrw	mip,2
+ 1d0:	30415073          	csrw	mie,2
+ 1d4:	00000297          	auipc	t0,0x0
+ 1d8:	22d28293          	add	t0,t0,557 # 401 <mtvec_handler+0x1>
+ 1dc:	30529473          	csrrw	s0,mtvec,t0
+ 1e0:	305022f3          	csrr	t0,mtvec
+ 1e4:	0012f293          	and	t0,t0,1
+ 1e8:	00028663          	beqz	t0,1f4 <msip>
+ 1ec:	30046073          	csrs	mstatus,8
+ 1f0:	0000006f          	j	1f0 <test_vectored_interrupts+0x24>
+
+000001f4 <msip>:
+ 1f4:	30541073          	csrw	mtvec,s0
+ 1f8:	30315073          	csrw	mideleg,2
+ 1fc:	00000297          	auipc	t0,0x0
+ 200:	02828293          	add	t0,t0,40 # 224 <msip+0x30>
+ 204:	34129073          	csrw	mepc,t0
+ 208:	000022b7          	lui	t0,0x2
+ 20c:	80028293          	add	t0,t0,-2048 # 1800 <fromhost+0x7c0>
+ 210:	3002b073          	csrc	mstatus,t0
+ 214:	00001337          	lui	t1,0x1
+ 218:	80030313          	add	t1,t1,-2048 # 800 <synchronous_exception+0x3c0>
+ 21c:	30032073          	csrs	mstatus,t1
+ 220:	30200073          	mret
+ 224:	10500073          	wfi
+ 228:	0002f2b3          	and	t0,t0,zero
+ 22c:	000c02b7          	lui	t0,0xc0
+ 230:	1002b073          	csrc	sstatus,t0
+ 234:	00037333          	and	t1,t1,zero
+ 238:	000c0337          	lui	t1,0xc0
+ 23c:	10032073          	csrs	sstatus,t1
+ 240:	100023f3          	csrr	t2,sstatus
+ 244:	0053f3b3          	and	t2,t2,t0
+ 248:	06038463          	beqz	t2,2b0 <bare_s_1>
+ 24c:	1002b073          	csrc	sstatus,t0
+ 250:	12000073          	sfence.vma
+ 254:	180022f3          	csrr	t0,satp
+
+00000258 <bad5>:
+ 258:	0000                	.2byte	0x0
+ 25a:	0000                	.2byte	0x0
+ 25c:	0780006f          	j	2d4 <fail>
+
+00000260 <bad6>:
+ 260:	12000073          	sfence.vma
+ 264:	0700006f          	j	2d4 <fail>
+
+00000268 <bad7>:
+ 268:	180022f3          	csrr	t0,satp
+ 26c:	0680006f          	j	2d4 <fail>
+
+00000270 <test_tsr>:
+ 270:	00000297          	auipc	t0,0x0
+ 274:	02028293          	add	t0,t0,32 # 290 <bad8>
+ 278:	14129073          	csrw	sepc,t0
+ 27c:	10000293          	li	t0,256
+ 280:	1002a073          	csrs	sstatus,t0
+ 284:	02000293          	li	t0,32
+ 288:	1002b073          	csrc	sstatus,t0
+ 28c:	10200073          	sret
+
+00000290 <bad8>:
+ 290:	0000                	.2byte	0x0
+ 292:	0000                	.2byte	0x0
+ 294:	0400006f          	j	2d4 <fail>
+ 298:	00000297          	auipc	t0,0x0
+ 29c:	01028293          	add	t0,t0,16 # 2a8 <bad9+0x4>
+ 2a0:	14129073          	csrw	sepc,t0
+
+000002a4 <bad9>:
+ 2a4:	10200073          	sret
+ 2a8:	02c0006f          	j	2d4 <fail>
+ 2ac:	0240006f          	j	2d0 <skip_bare_s>
+
+000002b0 <bare_s_1>:
+ 2b0:	12000073          	sfence.vma
+ 2b4:	0200006f          	j	2d4 <fail>
+
+000002b8 <bare_s_2>:
+ 2b8:	12000073          	sfence.vma
+ 2bc:	0180006f          	j	2d4 <fail>
+ 2c0:	180022f3          	csrr	t0,satp
+
+000002c4 <bare_s_3>:
+ 2c4:	0000                	.2byte	0x0
+ 2c6:	0000                	.2byte	0x0
+ 2c8:	00c0006f          	j	2d4 <fail>
+ 2cc:	fa5ff06f          	j	270 <test_tsr>
+
+000002d0 <skip_bare_s>:
+ 2d0:	02301063          	bne	zero,gp,2f0 <pass>
+
+000002d4 <fail>:
+ 2d4:	0ff0000f          	fence
+ 2d8:	00018063          	beqz	gp,2d8 <fail+0x4>
+ 2dc:	00119193          	sll	gp,gp,0x1
+ 2e0:	0011e193          	or	gp,gp,1
+ 2e4:	05d00893          	li	a7,93
+ 2e8:	00018513          	mv	a0,gp
+ 2ec:	00000073          	ecall
+
+000002f0 <pass>:
+ 2f0:	0ff0000f          	fence
+ 2f4:	00100193          	li	gp,1
+ 2f8:	05d00893          	li	a7,93
+ 2fc:	00000513          	li	a0,0
+ 300:	00000073          	ecall
+ 304:	00000013          	nop
+ 308:	00000013          	nop
+ 30c:	00000013          	nop
+ 310:	00000013          	nop
+ 314:	00000013          	nop
+ 318:	00000013          	nop
+ 31c:	00000013          	nop
+ 320:	00000013          	nop
+ 324:	00000013          	nop
+ 328:	00000013          	nop
+ 32c:	00000013          	nop
+ 330:	00000013          	nop
+ 334:	00000013          	nop
+ 338:	00000013          	nop
+ 33c:	00000013          	nop
+ 340:	00000013          	nop
+ 344:	00000013          	nop
+ 348:	00000013          	nop
+ 34c:	00000013          	nop
+ 350:	00000013          	nop
+ 354:	00000013          	nop
+ 358:	00000013          	nop
+ 35c:	00000013          	nop
+ 360:	00000013          	nop
+ 364:	00000013          	nop
+ 368:	00000013          	nop
+ 36c:	00000013          	nop
+ 370:	00000013          	nop
+ 374:	00000013          	nop
+ 378:	00000013          	nop
+ 37c:	00000013          	nop
+ 380:	00000013          	nop
+ 384:	00000013          	nop
+ 388:	00000013          	nop
+ 38c:	00000013          	nop
+ 390:	00000013          	nop
+ 394:	00000013          	nop
+ 398:	00000013          	nop
+ 39c:	00000013          	nop
+ 3a0:	00000013          	nop
+ 3a4:	00000013          	nop
+ 3a8:	00000013          	nop
+ 3ac:	00000013          	nop
+ 3b0:	00000013          	nop
+ 3b4:	00000013          	nop
+ 3b8:	00000013          	nop
+ 3bc:	00000013          	nop
+ 3c0:	00000013          	nop
+ 3c4:	00000013          	nop
+ 3c8:	00000013          	nop
+ 3cc:	00000013          	nop
+ 3d0:	00000013          	nop
+ 3d4:	00000013          	nop
+ 3d8:	00000013          	nop
+ 3dc:	00000013          	nop
+ 3e0:	00000013          	nop
+ 3e4:	00000013          	nop
+ 3e8:	00000013          	nop
+ 3ec:	00000013          	nop
+ 3f0:	00000013          	nop
+ 3f4:	00000013          	nop
+ 3f8:	00000013          	nop
+ 3fc:	00000013          	nop
+
+00000400 <mtvec_handler>:
+ 400:	0400006f          	j	440 <synchronous_exception>
+ 404:	df1ff06f          	j	1f4 <msip>
+ 408:	ecdff06f          	j	2d4 <fail>
+ 40c:	ec9ff06f          	j	2d4 <fail>
+ 410:	ec5ff06f          	j	2d4 <fail>
+ 414:	ec1ff06f          	j	2d4 <fail>
+ 418:	ebdff06f          	j	2d4 <fail>
+ 41c:	eb9ff06f          	j	2d4 <fail>
+ 420:	eb5ff06f          	j	2d4 <fail>
+ 424:	eb1ff06f          	j	2d4 <fail>
+ 428:	eadff06f          	j	2d4 <fail>
+ 42c:	ea9ff06f          	j	2d4 <fail>
+ 430:	ea5ff06f          	j	2d4 <fail>
+ 434:	ea1ff06f          	j	2d4 <fail>
+ 438:	e9dff06f          	j	2d4 <fail>
+ 43c:	e99ff06f          	j	2d4 <fail>
+
+00000440 <synchronous_exception>:
+ 440:	00200313          	li	t1,2
+ 444:	342022f3          	csrr	t0,mcause
+ 448:	e86296e3          	bne	t0,t1,2d4 <fail>
+ 44c:	341022f3          	csrr	t0,mepc
+ 450:	343023f3          	csrr	t2,mtval
+ 454:	00038e63          	beqz	t2,470 <synchronous_exception+0x30>
+ 458:	0002d303          	lhu	t1,0(t0)
+ 45c:	0063c3b3          	xor	t2,t2,t1
+ 460:	0022d303          	lhu	t1,2(t0)
+ 464:	01031313          	sll	t1,t1,0x10
+ 468:	0063c3b3          	xor	t2,t2,t1
+ 46c:	e60394e3          	bnez	t2,2d4 <fail>
+ 470:	00000317          	auipc	t1,0x0
+ 474:	d3030313          	add	t1,t1,-720 # 1a0 <bad2>
+ 478:	06628463          	beq	t0,t1,4e0 <synchronous_exception+0xa0>
+ 47c:	00000317          	auipc	t1,0x0
+ 480:	ddc30313          	add	t1,t1,-548 # 258 <bad5>
+ 484:	06628463          	beq	t0,t1,4ec <synchronous_exception+0xac>
+ 488:	00000317          	auipc	t1,0x0
+ 48c:	dd830313          	add	t1,t1,-552 # 260 <bad6>
+ 490:	04628863          	beq	t0,t1,4e0 <synchronous_exception+0xa0>
+ 494:	00000317          	auipc	t1,0x0
+ 498:	dd430313          	add	t1,t1,-556 # 268 <bad7>
+ 49c:	04628263          	beq	t0,t1,4e0 <synchronous_exception+0xa0>
+ 4a0:	00000317          	auipc	t1,0x0
+ 4a4:	df030313          	add	t1,t1,-528 # 290 <bad8>
+ 4a8:	04628863          	beq	t0,t1,4f8 <synchronous_exception+0xb8>
+ 4ac:	00000317          	auipc	t1,0x0
+ 4b0:	df830313          	add	t1,t1,-520 # 2a4 <bad9>
+ 4b4:	04628863          	beq	t0,t1,504 <synchronous_exception+0xc4>
+ 4b8:	00000317          	auipc	t1,0x0
+ 4bc:	df830313          	add	t1,t1,-520 # 2b0 <bare_s_1>
+ 4c0:	02628663          	beq	t0,t1,4ec <synchronous_exception+0xac>
+ 4c4:	00000317          	auipc	t1,0x0
+ 4c8:	df430313          	add	t1,t1,-524 # 2b8 <bare_s_2>
+ 4cc:	00628a63          	beq	t0,t1,4e0 <synchronous_exception+0xa0>
+ 4d0:	00000317          	auipc	t1,0x0
+ 4d4:	df430313          	add	t1,t1,-524 # 2c4 <bare_s_3>
+ 4d8:	00628463          	beq	t0,t1,4e0 <synchronous_exception+0xa0>
+ 4dc:	df9ff06f          	j	2d4 <fail>
+ 4e0:	00828293          	add	t0,t0,8
+ 4e4:	34129073          	csrw	mepc,t0
+ 4e8:	30200073          	mret
+ 4ec:	00100337          	lui	t1,0x100
+ 4f0:	30032073          	csrs	mstatus,t1
+ 4f4:	fedff06f          	j	4e0 <synchronous_exception+0xa0>
+ 4f8:	00400337          	lui	t1,0x400
+ 4fc:	30032073          	csrs	mstatus,t1
+ 500:	fe1ff06f          	j	4e0 <synchronous_exception+0xa0>
+ 504:	fddff06f          	j	4e0 <synchronous_exception+0xa0>
+ 508:	c0001073          	unimp
+ 50c:	0000                	.2byte	0x0
+ 50e:	0000                	.2byte	0x0
+ 510:	0000                	.2byte	0x0
+ 512:	0000                	.2byte	0x0
+ 514:	0000                	.2byte	0x0
+ 516:	0000                	.2byte	0x0
+ 518:	0000                	.2byte	0x0
+ 51a:	0000                	.2byte	0x0
+ 51c:	0000                	.2byte	0x0
+ 51e:	0000                	.2byte	0x0
+ 520:	0000                	.2byte	0x0
+ 522:	0000                	.2byte	0x0
+ 524:	0000                	.2byte	0x0
+ 526:	0000                	.2byte	0x0
+ 528:	0000                	.2byte	0x0
+ 52a:	0000                	.2byte	0x0
+ 52c:	0000                	.2byte	0x0
+ 52e:	0000                	.2byte	0x0
+ 530:	0000                	.2byte	0x0
+ 532:	0000                	.2byte	0x0
+ 534:	0000                	.2byte	0x0
+ 536:	0000                	.2byte	0x0
+ 538:	0000                	.2byte	0x0
+ 53a:	0000                	.2byte	0x0
+ 53c:	0000                	.2byte	0x0
+ 53e:	0000                	.2byte	0x0
+ 540:	0000                	.2byte	0x0
+ 542:	0000                	.2byte	0x0
+ 544:	0000                	.2byte	0x0
+ 546:	0000                	.2byte	0x0
+ 548:	0000                	.2byte	0x0
+ 54a:	0000                	.2byte	0x0
+ 54c:	0000                	.2byte	0x0
+ 54e:	0000                	.2byte	0x0
+ 550:	0000                	.2byte	0x0
+ 552:	0000                	.2byte	0x0
+ 554:	0000                	.2byte	0x0
+ 556:	0000                	.2byte	0x0
+ 558:	0000                	.2byte	0x0
+ 55a:	0000                	.2byte	0x0
+ 55c:	0000                	.2byte	0x0
+ 55e:	0000                	.2byte	0x0
+ 560:	0000                	.2byte	0x0
+ 562:	0000                	.2byte	0x0
+ 564:	0000                	.2byte	0x0
+ 566:	0000                	.2byte	0x0
+ 568:	0000                	.2byte	0x0
+ 56a:	0000                	.2byte	0x0
+ 56c:	0000                	.2byte	0x0
+ 56e:	0000                	.2byte	0x0
+ 570:	0000                	.2byte	0x0
+ 572:	0000                	.2byte	0x0
+ 574:	0000                	.2byte	0x0
+ 576:	0000                	.2byte	0x0
+ 578:	0000                	.2byte	0x0
+ 57a:	0000                	.2byte	0x0
+ 57c:	0000                	.2byte	0x0
+ 57e:	0000                	.2byte	0x0
+ 580:	0000                	.2byte	0x0
+ 582:	0000                	.2byte	0x0
+ 584:	0000                	.2byte	0x0
+ 586:	0000                	.2byte	0x0
+ 588:	0000                	.2byte	0x0
+ 58a:	0000                	.2byte	0x0
+ 58c:	0000                	.2byte	0x0
+ 58e:	0000                	.2byte	0x0
+ 590:	0000                	.2byte	0x0
+ 592:	0000                	.2byte	0x0
+ 594:	0000                	.2byte	0x0
+ 596:	0000                	.2byte	0x0
+ 598:	0000                	.2byte	0x0
+ 59a:	0000                	.2byte	0x0
+ 59c:	0000                	.2byte	0x0
+ 59e:	0000                	.2byte	0x0
+ 5a0:	0000                	.2byte	0x0
+ 5a2:	0000                	.2byte	0x0
+ 5a4:	0000                	.2byte	0x0
+ 5a6:	0000                	.2byte	0x0
+ 5a8:	0000                	.2byte	0x0
+ 5aa:	0000                	.2byte	0x0
+ 5ac:	0000                	.2byte	0x0
+ 5ae:	0000                	.2byte	0x0
+ 5b0:	0000                	.2byte	0x0
+ 5b2:	0000                	.2byte	0x0
+ 5b4:	0000                	.2byte	0x0
+ 5b6:	0000                	.2byte	0x0
+ 5b8:	0000                	.2byte	0x0
+ 5ba:	0000                	.2byte	0x0
+ 5bc:	0000                	.2byte	0x0
+ 5be:	0000                	.2byte	0x0

@@ -1,46 +1,46 @@
 module DataSelectStage
 (
     input wire clk,
-    input wire [31:0]   regfile[31:0],
+    input wire UIntX    regfile[31:0],
 
     input wire          ds_valid,
-    input wire [31:0]   ds_pc,
-    input wire [31:0]   ds_inst,
-    input wire iidtype  ds_inst_id,
-    input wire ctrltype ds_ctrl,
-    input wire [31:0]   ds_imm_i,
-    input wire [31:0]   ds_imm_s,
-    input wire [31:0]   ds_imm_b,
-    input wire [31:0]   ds_imm_j,
-    input wire [31:0]   ds_imm_u,
-    input wire [31:0]   ds_imm_z,
+    input wire Addr     ds_pc,
+    input wire Inst     ds_inst,
+    input wire IId      ds_inst_id,
+    input wire Ctrl     ds_ctrl,
+    input wire UIntX    ds_imm_i,
+    input wire UIntX    ds_imm_s,
+    input wire UIntX    ds_imm_b,
+    input wire UIntX    ds_imm_j,
+    input wire UIntX    ds_imm_u,
+    input wire UIntX    ds_imm_z,
     
-    output wire             ds_exe_valid,
-    output wire [31:0]      ds_exe_pc,
-    output wire [31:0]      ds_exe_inst,
-    output wire iidtype     ds_exe_inst_id,
-    output wire ctrltype    ds_exe_ctrl,
-    output wire [31:0]      ds_exe_imm_i,
-    output wire [31:0]      ds_exe_imm_b,
-    output wire [31:0]      ds_exe_imm_j,
-    output wire [31:0]      ds_exe_op1_data,
-    output wire [31:0]      ds_exe_op2_data,
-    output wire [31:0]      ds_exe_rs2_data,
+    output wire         ds_exe_valid,
+    output wire Addr    ds_exe_pc,
+    output wire Inst    ds_exe_inst,
+    output wire IId     ds_exe_inst_id,
+    output wire Ctrl    ds_exe_ctrl,
+    output wire UIntX   ds_exe_imm_i,
+    output wire UIntX   ds_exe_imm_b,
+    output wire UIntX   ds_exe_imm_j,
+    output wire UIntX   ds_exe_op1_data,
+    output wire UIntX   ds_exe_op2_data,
+    output wire UIntX   ds_exe_rs2_data,
 
-    output wire             dh_stall_flg,
-    input wire fw_ctrltype  dh_exe_fw,
-    input wire fw_ctrltype  dh_mem_fw,
-    input wire fw_ctrltype  dh_wb_fw
+    output wire         dh_stall_flg,
+    input wire FwCtrl   dh_exe_fw,
+    input wire FwCtrl   dh_mem_fw,
+    input wire FwCtrl   dh_wb_fw
 );
 
-`include "include/core.sv"
+`include "basicparams.svh"
 
-wire [31:0] pc      = ds_pc;
-wire [31:0] inst    = ds_inst;
-wire iidtype inst_id= ds_inst_id;
+wire Addr   pc      = ds_pc;
+wire Inst   inst    = ds_inst;
+wire IId    inst_id = ds_inst_id;
 
-wire [4:0] rs1_addr = inst[19:15];
-wire [4:0] rs2_addr = inst[24:20];
+wire UInt5 rs1_addr = inst[19:15];
+wire UInt5 rs2_addr = inst[24:20];
 
 // データハザード判定
 wire dh_exe_rs1 = dh_exe_fw.valid && dh_exe_fw.addr == rs1_addr && rs1_addr != 0;
@@ -57,10 +57,10 @@ assign dh_stall_flg = ds_valid && (
     (/*dh_wb_fw.valid  && */!dh_wb_fw.can_forward  && (dh_wb_rs1  || dh_wb_rs2 ))
     );
 
-function [31:0] gen_op1data(
-    input [3:0]     op1_sel,
-    input [31:0]    pc,
-    input [31:0]    imm_z
+function [$bits(UIntX)-1:0] gen_op1data(
+    input Op1Sel   op1_sel,
+    input Addr     pc,
+    input UIntX    imm_z
 );
 case(op1_sel) 
     OP1_PC  : gen_op1data = pc;
@@ -69,13 +69,13 @@ case(op1_sel)
 endcase
 endfunction
 
-function [31:0] gen_op2data(
-    input [3:0]     op2_sel,
-    input [4:0]     rs2_addr,
-    input [31:0]    imm_i,
-    input [31:0]    imm_s,
-    input [31:0]    imm_j,
-    input [31:0]    imm_u
+function [$bits(UIntX)-1:0] gen_op2data(
+    input Op2Sel    op2_sel,
+    input UInt5     rs2_addr,
+    input UIntX     imm_i,
+    input UIntX     imm_s,
+    input UIntX     imm_j,
+    input UIntX     imm_u
 );
 case(op2_sel) 
     OP2_IMI : gen_op2data = imm_i;
@@ -86,12 +86,12 @@ case(op2_sel)
 endcase
 endfunction
 
-wire [31:0] rs2_data = rs2_addr == 0 ? 0 : 
+wire UIntX rs2_data = rs2_addr == 0 ? 0 : 
                 // exeは常にフォワーディングできないので考えないでおく
                 //dh_exe_rs2 ? dh_exe_fw.wdata :
                 dh_mem_rs2 ? dh_mem_fw.wdata : 
                 dh_wb_rs2  ? dh_wb_fw.wdata : regfile[rs2_addr];
-wire [31:0] rs1_data = rs1_addr == 0 ? 0 :
+wire UIntX rs1_data = rs1_addr == 0 ? 0 :
                 // exeは常にフォワーディングできないので考えないでおく
                 //dh_exe_rs1 ? dh_exe_fw.wdata :
                 dh_mem_rs1 ? dh_mem_fw.wdata : 
@@ -106,11 +106,12 @@ assign ds_exe_inst_id   = inst_id;
 // idからそのまま
 assign ds_exe_ctrl.i_exe        = ds_ctrl.i_exe;
 assign ds_exe_ctrl.br_exe       = ds_ctrl.br_exe;
-assign ds_exe_ctrl.m_exe        = ds_ctrl.m_exe;
+assign ds_exe_ctrl.sign_sel     = ds_ctrl.sign_sel;
 assign ds_exe_ctrl.op1_sel      = ds_ctrl.op1_sel;
 assign ds_exe_ctrl.op2_sel      = ds_ctrl.op2_sel;
 assign ds_exe_ctrl.mem_wen      = ds_ctrl.mem_wen;
 assign ds_exe_ctrl.mem_size     = ds_ctrl.mem_size;
+assign ds_exe_ctrl.a_sel        = ds_ctrl.a_sel;
 assign ds_exe_ctrl.rf_wen       = ds_ctrl.rf_wen;
 assign ds_exe_ctrl.wb_sel       = ds_ctrl.wb_sel;
 assign ds_exe_ctrl.wb_addr      = ds_ctrl.wb_addr;
@@ -134,7 +135,7 @@ assign ds_exe_rs2_data  = rs2_data;
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,datastage.valid,b,%b", ds_valid);
-    $display("data,datastage.inst_id,h,%b", ds_valid ? inst_id : INST_ID_NOP);
+    $display("data,datastage.inst_id,h,%b", ds_valid ? inst_id : IID_X);
     if (ds_valid) begin
         $display("data,datastage.pc,h,%b", pc);
         $display("data,datastage.inst,h,%b", inst);

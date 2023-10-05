@@ -1,6 +1,6 @@
 TOOLCHAIN_PREFIX = riscv32-unknown-elf-
 BIN2HEX = python3 ../../bin2hex.py
-ARCH = rv32im
+ARCH = rv32im_zicsr
 
 OUTPUT_DIR = ./output
 
@@ -23,10 +23,10 @@ CFLAGS = \
 
 LDFLAGS = \
 	-static \
-	-nostartfiles \
 	-Tlink.ld \
-	-lc \
 	-L/opt/riscv32/riscv32-unknown-elf/lib/ \
+	# -lc \
+	# -nostartfiles \
 
 ITERATIONS = 400
 CLOCKS_PER_SEC = 27000000
@@ -50,7 +50,7 @@ CORE_CFLAGS = \
 	-I./ \
 	-I$(PORT_DIR)/ \
 	-DFLAGS_STR=\"$(FLAGS_STR)\" \
-	#-DCORE_DEBUG=1 \
+	# -DCORE_DEBUG=1 \
 
 ELF_FILE = $(OUTPUT_DIR)/temp.elf
 BIN_FILE = $(OUTPUT_DIR)/code.bin

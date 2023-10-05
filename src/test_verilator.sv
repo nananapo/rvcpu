@@ -3,24 +3,22 @@
 module test(
     input wire clk
 );
-  reg exit;
-  reg [31:0] gp;
-  reg [5:0] led;
-  reg uart_rx = 0;
-  reg uart_tx;
+  logic exit;
+  logic [31:0] gp;
+  logic [5:0] led;
+  logic uart_rx = 0;
+  logic uart_tx;
 
   main #() m(
     .clk27MHz(clk),
     .uart_tx(uart_tx),
     .uart_rx(uart_rx),
-    .mem_uart_tx(uart_tx),
-    .mem_uart_rx(uart_rx),
     .exit(exit),
     .led(led),
     .gp(gp)
   );
 
-`ifdef RISCV_TEST
+`ifdef RISCV_TESTS
   always @(posedge clk) begin
 	if (exit) begin
 		if (gp == 1)

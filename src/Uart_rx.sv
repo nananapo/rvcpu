@@ -4,11 +4,11 @@ module Uart_rx
     parameter BaudRate = 32'd115200
 )
 (
-    input  wire         clk,        // system clock
+    input  wire clk,        // system clock
 
     input  wire         uart_rx,    // serial
-    output reg  [7:0]   rdata,      // rdata
-    output wire         rdata_valid // rdata is valid(1)
+    output logic [7:0]  rdata,// rdata
+    output wire         rvalid // rdata is valid(1)
 );
 
 `ifdef FAST_UART
@@ -25,15 +25,15 @@ localparam RX_STATE_READ        = 2;
 localparam RX_STATE_STOP_BIT    = 3;
 localparam RX_STATE_DEBOUNCE    = 4;
 
-reg [3:0]   rxState     = RX_STATE_IDLE;
-reg [31:0]  rxCounter   = 0;
-reg [2:0]   rxBitNumber = 0;
+logic [3:0]   rxState     = RX_STATE_IDLE;
+logic [31:0]  rxCounter   = 0;
+logic [2:0]   rxBitNumber = 0;
 
-reg [7:0]   dataBuf     = 0;
+logic [7:0]   dataBuf     = 0;
 
-wire        rxPin       = uart_rx;
+wire rxPin = uart_rx;
 
-assign      rdata_valid = rxState == RX_STATE_DEBOUNCE;
+assign rvalid = rxState == RX_STATE_DEBOUNCE;
 
 always @(posedge clk) begin
     case (rxState)

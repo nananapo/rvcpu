@@ -30,8 +30,15 @@ IF_BRANCH_HAZARD    = "fetchstage.event.branch_hazard"
 ID_PIPELINE_FLUSH   = "decodestage.event.pipeline_flush"
 DS_PIPELINE_FLUSH   = "datastage.event.pipeline_flush"
 
+def filter_prefix(d, prefix):
+    r = dict()
+    for k in d.keys():
+        if k.startswith(prefix):
+            r[k] = d[k]
+    return r
+
 # ログを1クロックサイクルごとのデータにまとめる
-def readClockCycle():
+def readClockCycle(bintoint = False):
     clockCount = None
     clockNumberData = dict()
     clockTextData = dict()
@@ -70,7 +77,10 @@ def readClockCycle():
             num = lineData[3].strip()
             if "x" not in num and "z" not in num:
                 if f == "b":
-                    num = str(num)
+                    if bintoint:
+                        num = int(num, 2)
+                    else:
+                        num = str(num)
                 elif f == "d":
                     num = int(num, 2)
                 elif f == "h":

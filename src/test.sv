@@ -1,11 +1,11 @@
 `default_nettype none
 
 module test();
-  reg clk = 1;
-  reg exit;
-  reg [31:0] gp;
-  reg uart_rx = 0;
-  reg uart_tx;
+  logic clk = 1;
+  logic exit;
+  logic [31:0] gp;
+  logic uart_rx = 0;
+  logic uart_tx;
 
   main #() m(
     .clk27MHz(clk),
@@ -21,7 +21,9 @@ module test();
   initial begin
     `ifdef PRINT_DEBUGINFO
         $display("START_DEBUG_LOG");
-        #20001 $finish;
+        `ifndef INFINITE_LOG
+            #100001 $finish;
+        `endif
     `endif
   end
 

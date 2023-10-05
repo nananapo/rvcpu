@@ -1,166 +1,166 @@
 `default_nettype none
 
-`include "include/ctrltype.sv"
-`include "include/memoryinterface.sv"
-
 module Core #(
     parameter FMAX_MHz = 27
 )(
-    input wire          clk,
-    input wire          exited,
+    input wire  clk,
+    input wire  exited,
 
-    input wire [63:0]   reg_cycle,
-    input wire [63:0]   reg_time,
-    input wire [63:0]   reg_mtime,
-    input wire [63:0]   reg_mtimecmp,
+    input wire UInt64   reg_cycle,
+    input wire UInt64   reg_time,
+    input wire UInt64   reg_mtime,
+    input wire UInt64   reg_mtimecmp,
 
-    inout wire IRequest     ireq,
-    inout wire IResponse    iresp,
-    output IUpdatePredictionIO  updateio, // reg
-    inout wire DRequest     dreq,
-    inout wire DResponse    dresp,
+    inout wire IReq     ireq,
+    inout wire IResp    iresp,
+    output BrInfo       brinfo,
+    inout wire DReq     dreq,
+    inout wire DResp    dresp,
+
     output wire modetype    csr_mode,
-    output wire [31:0]      csr_satp,
+    output wire Addr        csr_satp,
+    // output wire             fencei_hazard,
+    // output wire             sfence_inval,
 
-    output reg          exit,
-    output reg [31:0]   gp
+    output logic    exit,
+    output UIntX    gp
 );
 
-`include "include/core.sv"
+`include "basicparams.svh"
 
 // id reg
-reg             id_valid = 0;
-reg [31:0]      id_pc;
-reg [31:0]      id_inst;
-iidtype         id_inst_id;
+logic   id_valid    = 0;
+Addr    id_pc       = ADDR_X;
+Inst    id_inst     = INST_NOP;
+IId     id_inst_id;
 
 // id -> ds wire
-wire            id_ds_valid   = id_valid;
-wire [31:0]     id_ds_pc      = id_pc;
-wire [31:0]     id_ds_inst    = id_inst;
-wire iidtype    id_ds_inst_id = id_inst_id;
-wire ctrltype   id_ds_ctrl;
-wire [31:0]     id_ds_imm_i;
-wire [31:0]     id_ds_imm_s;
-wire [31:0]     id_ds_imm_b;
-wire [31:0]     id_ds_imm_j;
-wire [31:0]     id_ds_imm_u;
-wire [31:0]     id_ds_imm_z;
+wire        id_ds_valid    = id_valid;
+wire Addr   id_ds_pc       = id_pc;
+wire Inst   id_ds_inst     = id_inst;
+wire IId    id_ds_inst_id  = id_inst_id;
+wire Ctrl   id_ds_ctrl;
+wire UIntX  id_ds_imm_i;
+wire UIntX  id_ds_imm_s;
+wire UIntX  id_ds_imm_b;
+wire UIntX  id_ds_imm_j;
+wire UIntX  id_ds_imm_u;
+wire UIntX  id_ds_imm_z;
+
 
 // ds reg
-reg             ds_valid = 0;
-reg [31:0]      ds_pc;
-reg [31:0]      ds_inst;
-iidtype         ds_inst_id;
-ctrltype        ds_ctrl;
-reg [31:0]      ds_imm_i;
-reg [31:0]      ds_imm_s;
-reg [31:0]      ds_imm_b;
-reg [31:0]      ds_imm_j;
-reg [31:0]      ds_imm_u;
-reg [31:0]      ds_imm_z;
+logic   ds_valid = 0;
+Addr    ds_pc;
+Inst    ds_inst;
+IId     ds_inst_id;
+Ctrl    ds_ctrl;
+UIntX   ds_imm_i;
+UIntX   ds_imm_s;
+UIntX   ds_imm_b;
+UIntX   ds_imm_j;
+UIntX   ds_imm_u;
+UIntX   ds_imm_z;
 
 // ds wire
-wire            ds_dh_stall; // datahazard
+wire    ds_dh_stall; // datahazard
 
 // ds -> exe wire
-wire            ds_exe_valid;
-wire [31:0]     ds_exe_pc;
-wire [31:0]     ds_exe_inst;
-wire iidtype    ds_exe_inst_id;
-wire ctrltype   ds_exe_ctrl;
-wire [31:0]     ds_exe_imm_i;
-wire [31:0]     ds_exe_imm_b;
-wire [31:0]     ds_exe_imm_j;
-wire [31:0]     ds_exe_op1_data;
-wire [31:0]     ds_exe_op2_data;
-wire [31:0]     ds_exe_rs2_data;
+wire        ds_exe_valid;
+wire Addr   ds_exe_pc;
+wire Inst   ds_exe_inst;
+wire IId    ds_exe_inst_id;
+wire Ctrl   ds_exe_ctrl;
+wire UIntX  ds_exe_imm_i;
+wire UIntX  ds_exe_imm_j;
+wire UIntX  ds_exe_imm_b;
+wire UIntX  ds_exe_op1_data;
+wire UIntX  ds_exe_op2_data;
+wire UIntX  ds_exe_rs2_data;
 
 // exe, csr reg
-reg             exe_valid = 0;
-reg [31:0]      exe_pc;
-reg [31:0]      exe_inst;
-iidtype         exe_inst_id;
-ctrltype        exe_ctrl;
-reg [31:0]      exe_imm_i;
-reg [31:0]      exe_imm_b;
-reg [31:0]      exe_imm_j;
-reg [31:0]      exe_op1_data;
-reg [31:0]      exe_op2_data;
-reg [31:0]      exe_rs2_data;
+logic   exe_valid = 0;
+Addr    exe_pc;
+Inst    exe_inst;
+IId     exe_inst_id;
+Ctrl    exe_ctrl;
+UIntX   exe_imm_i;
+UIntX   exe_imm_b;
+UIntX   exe_imm_j;
+UIntX   exe_op1_data;
+UIntX   exe_op2_data;
+UIntX   exe_rs2_data;
 
 // exe wire
-wire            exe_branch_taken;
-wire [31:0]     exe_branch_target;
-wire            exe_calc_stall;
+wire        exe_branch_taken;
+wire Addr   exe_branch_target;
+wire        exe_calc_stall;
 
 // csr wire
-wire            csr_csr_trap_flg;
-wire [31:0]     csr_trap_vector;
-wire            csr_stall_flg;
+wire        csr_csr_trap_flg;
+wire Addr   csr_trap_vector;
+wire        csr_stall_flg;
 
 // exe -> mem wire
-wire            exe_mem_valid;
-wire [31:0]     exe_mem_pc;
-wire [31:0]     exe_mem_inst;
-wire iidtype    exe_mem_inst_id;
-wire ctrltype   exe_mem_ctrl;
-wire [31:0]     exe_mem_alu_out;
-wire [31:0]     exe_mem_rs2_data;
+wire        exe_mem_valid;
+wire Addr   exe_mem_pc;
+wire Inst   exe_mem_inst;
+wire IId    exe_mem_inst_id;
+wire Ctrl   exe_mem_ctrl;
+wire UIntX  exe_mem_alu_out;
+wire UIntX  exe_mem_rs2_data;
 
 // csr -> mem wire
-wire [31:0]     csr_mem_csr_rdata;
-wire            satp_change_hazard;
+wire UIntX  csr_mem_csr_rdata;
 
 // mem reg
-reg             mem_valid = 0;
-reg [31:0]      mem_pc;
-reg [31:0]      mem_inst;
-iidtype         mem_inst_id;
-ctrltype        mem_ctrl;
-reg [31:0]      mem_alu_out;
-reg [31:0]      mem_csr_rdata;
-reg [31:0]      mem_rs2_data;
+logic   mem_valid = 0;
+Addr    mem_pc;
+Inst    mem_inst;
+IId     mem_inst_id;
+Ctrl    mem_ctrl;
+UIntX   mem_alu_out;
+UIntX   mem_csr_rdata;
+UIntX   mem_rs2_data;
 
 // mem wire
-wire            mem_memory_unit_stall;
+wire    mem_memory_unit_stall;
 
 // mem -> wb wire
-wire            mem_wb_valid;
-wire [31:0]     mem_wb_pc;
-wire [31:0]     mem_wb_inst;
-wire iidtype    mem_wb_inst_id;
-wire ctrltype   mem_wb_ctrl;
-wire [31:0]     mem_wb_alu_out;
-wire [31:0]     mem_wb_mem_rdata;
-wire [31:0]     mem_wb_csr_rdata;
+wire        mem_wb_valid;
+wire Addr   mem_wb_pc;
+wire Inst   mem_wb_inst;
+wire IId    mem_wb_inst_id;
+wire Ctrl   mem_wb_ctrl;
+wire UIntX  mem_wb_alu_out;
+wire UIntX  mem_wb_mem_rdata;
+wire UIntX  mem_wb_csr_rdata;
 
 // wb reg
-reg             wb_valid = 0;
-reg [31:0]      wb_pc;
-reg [31:0]      wb_inst;
-iidtype         wb_inst_id;
-ctrltype        wb_ctrl;
-reg [31:0]      wb_alu_out;
-reg [31:0]      wb_mem_rdata;
-reg [31:0]      wb_csr_rdata;
-wire [31:0]     wb_wdata_out;
-wire [31:0]     wb_regfile[31:0];
+logic   wb_valid = 0;
+Addr    wb_pc;
+Inst    wb_inst;
+IId     wb_inst_id;
+Ctrl    wb_ctrl;
+UIntX   wb_alu_out;
+UIntX   wb_mem_rdata;
+UIntX   wb_csr_rdata;
+
+wire UIntX  wb_wdata_out;
+wire UIntX  wb_regfile[31:0];
 
 // for debug
 assign gp = wb_regfile[3];
 
-
 // forwarding
-wire fw_ctrltype exe_fw_ctrl;
-wire fw_ctrltype mem_fw_ctrl;
-wire fw_ctrltype wb_fw_ctrl;
+wire FwCtrl exe_fw_ctrl;
+wire FwCtrl mem_fw_ctrl;
+wire FwCtrl wb_fw_ctrl;
 
 // exeからフォワーディングはしない (パスが長くなる)
 assign exe_fw_ctrl.valid        = exe_valid && exe_ctrl.rf_wen == REN_S;
 assign exe_fw_ctrl.can_forward  = 0;
 assign exe_fw_ctrl.addr         = exe_ctrl.wb_addr;
-assign exe_fw_ctrl.wdata        = 32'bz;
+assign exe_fw_ctrl.wdata        = 32'bx;
 // load命令ではないならフォワーディングできる
 assign mem_fw_ctrl.valid        = mem_valid && mem_ctrl.rf_wen == REN_S;
 assign mem_fw_ctrl.can_forward  = mem_ctrl.wb_sel == WB_ALU ||
@@ -179,7 +179,9 @@ assign wb_fw_ctrl.wdata         = wb_wdata_out;
 // stall
 wire if_stall   = id_stall;
 wire id_stall   = id_valid && (ds_stall);
+
 wire ds_stall   = ds_valid && (exe_stall || ds_dh_stall);
+
 // exeで分岐予測の判定を行うため、idがvalidになるのを待つ
 wire exe_stall  = exe_valid && (
                     (mem_valid && mem_stall) ||
@@ -189,14 +191,13 @@ wire exe_stall  = exe_valid && (
 wire mem_stall  = mem_valid && (mem_memory_unit_stall);
 
 
-
 // IF Stage
 assign iresp.ready  = !exited && !if_stall;
 
 // 最後のクロックでの分岐ハザード状態
 // このレジスタを介してireqすることで、EXEステージとinstqueueが直接つながらないようにする。
-reg branch_hazard_last_clock        = 0;
-reg [31:0] branch_target_last_clock = 32'h0;
+logic branch_hazard_last_clock  = 0;
+UIntX branch_target_last_clock  = 32'h0;
 
 // branchするとき(分岐予測に失敗したとき)はireq経由でリクエストする
 // ireq.validをtrueにすると、キューがリセットされる。
@@ -208,6 +209,8 @@ always @(posedge clk) begin
     branch_target_last_clock <= branch_target;
 end
 
+IId exe_last_inst_id_to_prevent_double_flush = IID_RANDOM;
+
 // if -> id logic
 always @(posedge clk) begin
     if (branch_hazard_now || branch_hazard_last_clock) begin
@@ -215,6 +218,7 @@ always @(posedge clk) begin
         `ifdef PRINT_DEBUGINFO
             $display("info,decodestage.event.pipeline_flush,pipeline flush");
         `endif
+        exe_last_inst_id_to_prevent_double_flush <= exe_inst_id;
     end else if (!iresp.valid && !id_stall) begin
         id_valid    <= 0;
     end else if (iresp.valid && !id_stall) begin
@@ -251,47 +255,47 @@ end
 
 // ds -> exe logic
 always @(posedge clk) begin
-    if (branch_hazard_now && !exe_stall)
-        exe_valid   <= 0;
-    else if (ds_stall && !exe_stall)
-        exe_valid   <= 0;
-    else if (!csr_stall_flg && csr_csr_trap_flg)
-        exe_valid   <= 0;
-    else if (!ds_stall && !exe_stall) begin
-        exe_valid   <= ds_exe_valid;
-        exe_pc      <= ds_exe_pc;
-        exe_inst    <= ds_exe_inst;
-        exe_inst_id <= ds_exe_inst_id;
-        exe_ctrl    <= ds_exe_ctrl;
-        exe_imm_i   <= ds_exe_imm_i;
-        exe_imm_b   <= ds_exe_imm_b;
-        exe_imm_j   <= ds_exe_imm_j;
-        exe_op1_data<= ds_exe_op1_data;
-        exe_op2_data<= ds_exe_op2_data;
-        exe_rs2_data<= ds_exe_rs2_data;
+    if (!exe_stall) begin
+        if (branch_hazard_now)
+            exe_valid   <= 0;
+        else if (ds_stall)
+            exe_valid   <= 0;
+        else if (!ds_stall) begin
+            exe_valid   <= ds_exe_valid;
+            exe_pc      <= ds_exe_pc;
+            exe_inst    <= ds_exe_inst;
+            exe_inst_id <= ds_exe_inst_id;
+            exe_ctrl    <= ds_exe_ctrl;
+            exe_imm_i   <= ds_exe_imm_i;
+            exe_imm_b   <= ds_exe_imm_b;
+            exe_imm_j   <= ds_exe_imm_j;
+            exe_op1_data<= ds_exe_op1_data;
+            exe_op2_data<= ds_exe_op2_data;
+            exe_rs2_data<= ds_exe_rs2_data;
+        end
     end
 end
 
-wire branch_fail = exe_valid && (
-                      ds_valid ?
+wire branch_fail =  exe_valid && 
+                    /*!csr_csr_trap_flg && */ 
+                    exe_inst_id != exe_last_inst_id_to_prevent_double_flush && // TODO HOTFIX
+                    ( ds_valid ?
                           (exe_branch_taken && ds_pc != exe_branch_target) || (!exe_branch_taken && ds_pc != exe_pc + 4)
                       : id_valid ?
                           (exe_branch_taken && id_pc != exe_branch_target) || (!exe_branch_taken && id_pc != exe_pc + 4)
-                      : 1'b0
-                    );
+                      : 1'b0 );
 
 // csrはトラップするときに1クロックストールする
-wire branch_hazard_now = !csr_stall_flg && (csr_csr_trap_flg || branch_fail || satp_change_hazard);
+wire branch_hazard_now      = !csr_stall_flg && (csr_csr_trap_flg || branch_fail);
 // 分岐ハザードよりもCSRのトラップを優先する
-wire [31:0] branch_target = csr_csr_trap_flg ? csr_trap_vector : 
-                            exe_branch_taken ? exe_branch_target : exe_pc + 4;
+wire Addr  branch_target    =   csr_csr_trap_flg ? csr_trap_vector : 
+                                exe_branch_taken ? exe_branch_target : exe_pc + 4;
 
 // exe -> mem logic
-always @(posedge clk) begin
-    // exeがストールしていても、memがストールしていないならinvalidにして流す
-    if (exe_stall && !mem_stall)
+always @(posedge clk) if (!mem_stall) begin
+    if (exe_stall)
         mem_valid       <= 0;
-    else if (!exe_stall && !mem_stall) begin
+    else if (!exe_stall) begin
         mem_valid       <= exe_mem_valid;
         mem_pc          <= exe_mem_pc;
         mem_inst        <= exe_mem_inst;
@@ -305,19 +309,48 @@ end
 
 // invalidで初期化
 initial begin
-    updateio.valid = 0;
+    brinfo.valid = 0;
 end
 
-iidtype exe_last_inst_id = INST_ID_RANDOM;
-// 分岐予測の更新
+IId send_brinfo_exe_last = IID_RANDOM;
+// 分岐情報を渡す
 always @(posedge clk) begin
-    if (exe_valid) exe_last_inst_id <= exe_inst_id;
-    updateio.valid  <= exe_valid && exe_inst_id != exe_last_inst_id;
-    updateio.pc     <= exe_pc;
-    updateio.is_br  <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || exe_ctrl.br_exe != BR_X;
-    updateio.taken  <= exe_branch_taken;
-    updateio.target <= exe_branch_target;
+    if (exe_valid) send_brinfo_exe_last <= exe_inst_id;
+    brinfo.valid    <=  exe_valid &&
+                        exe_inst_id != send_brinfo_exe_last &&
+                        (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg);
+    brinfo.pc       <= exe_pc;
+    brinfo.is_br    <= exe_ctrl.br_exe != BR_X;
+    brinfo.is_jmp   <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg;
+    brinfo.taken    <= exe_branch_taken;
+    brinfo.target   <= exe_branch_target;
 end
+
+`ifdef PRINT_BRANCH_ACCURACY
+int all_br_count = 0;
+int all_inst_count = 0;
+int fail_count = 0;
+
+localparam COUNT = 1_000_000;
+
+// 予測の成功率を求める
+always @(posedge clk) begin
+    if (exe_valid && exe_inst_id != send_brinfo_exe_last) begin
+        if (all_inst_count >= COUNT) begin
+            $display("MPKI : %d , %d%%", fail_count / (COUNT / 1000), (all_br_count - fail_count) * 100 / all_br_count);
+            fail_count = 0;
+            all_inst_count = 0;
+            all_br_count = 0;
+        end else begin
+            if (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg) begin
+                fail_count += branch_fail ? 1 : 0;
+                all_br_count += 1;
+            end
+            all_inst_count = all_inst_count + 1;
+        end
+    end
+end
+`endif
 
 // mem -> wb logic
 always @(posedge clk) begin
@@ -335,7 +368,6 @@ always @(posedge clk) begin
         wb_csr_rdata    <= mem_wb_csr_rdata;
     end
 end
-
 
 
 // ID Stage
@@ -445,8 +477,7 @@ CSRStage #(
     .reg_mtimecmp(reg_mtimecmp),
 
     .output_mode(csr_mode),
-    .output_satp(csr_satp),
-    .satp_change_hazard(satp_change_hazard)
+    .output_satp(csr_satp)
 );
 
 MemoryStage #() memorystage
@@ -474,7 +505,9 @@ MemoryStage #() memorystage
     .mem_wb_mem_rdata(mem_wb_mem_rdata),
     .mem_wb_csr_rdata(mem_wb_csr_rdata),
 
-    .memory_unit_stall(mem_memory_unit_stall)
+    .memory_unit_stall(mem_memory_unit_stall),
+
+    .exit(exit)
 );
 
 WriteBackStage #() wbstage(
@@ -491,20 +524,18 @@ WriteBackStage #() wbstage(
     .wb_mem_rdata(wb_mem_rdata),
     .wb_csr_rdata(wb_csr_rdata),
 
-    .wb_wdata_out(wb_wdata_out),
-    .exit(exit)
+    .wb_wdata_out(wb_wdata_out)
 );
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,decodestage.valid,b,%b", id_valid);
-    $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : INST_ID_NOP);
+    $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : IID_X);
     if (id_valid) begin
         $display("data,decodestage.pc,h,%b", id_pc);
         $display("data,decodestage.inst,h,%b", id_inst);
         $display("data,decodestage.decode.i_exe,d,%b", id_ds_ctrl.i_exe);
         $display("data,decodestage.decode.br_exe,d,%b", id_ds_ctrl.br_exe);
-        $display("data,decodestage.decode.m_exe,d,%b", id_ds_ctrl.m_exe);
         $display("data,decodestage.decode.op1_sel,d,%b", id_ds_ctrl.op1_sel);
         $display("data,decodestage.decode.op2_sel,d,%b", id_ds_ctrl.op2_sel);
         $display("data,decodestage.decode.mem_wen,d,%b", id_ds_ctrl.mem_wen);
@@ -521,12 +552,12 @@ always @(posedge clk) begin
         $display("data,decodestage.decode.imm_b,h,%b", id_ds_imm_b);
         $display("data,decodestage.decode.imm_j,h,%b", id_ds_imm_j);
         $display("data,decodestage.decode.imm_u,h,%b", id_ds_imm_u);
-        $display("data,decodestage.decode.imm_z,h,%b", id_ds_imm_z);
+        $display("data,decodestage.decode.imm_z,h,%b", id_ds_imm_z);    
     end
+    // $display("data,exestage.last_inst_id,h,%b", exe_last_inst_id_to_prevent_double_flush);
 end
 
-reg [31:0] clk_count = 0;
-integer reg_i;
+int clk_count = 0;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
     $display("clock,%d", clk_count);
@@ -538,8 +569,8 @@ always @(negedge clk) begin
     $display("data,core.gp,h,%b", gp);
     $display("data,core.exit,b,%b", exit);
     `ifdef PRINT_REG
-    for (reg_i = 1; reg_i < 32; reg_i = reg_i + 1) begin
-        $display("data,core.regfile[%d],h,%b", reg_i, regfile[reg_i]);
+    for (int i = 1; i < 32; i++) begin
+        $display("data,core.regfile[%d],h,%b", i, wb_regfile[i]);
     end
     `endif
 end

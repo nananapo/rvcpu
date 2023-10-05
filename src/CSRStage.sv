@@ -1,21 +1,21 @@
 module CSRStage #(
     parameter FMAX_MHz = 27
 ) (
-    input  wire         clk,
+    input wire clk,
 
     input wire          csr_valid,
-    input wire [31:0]   csr_pc,
-    input wire [31:0]   csr_inst,
-    input wire iidtype  csr_inst_id,
-    input wire ctrltype csr_ctrl,
-    input wire [31:0]   csr_imm_i,
-    input wire [31:0]   csr_op1_data,
+    input wire Addr     csr_pc,
+    input wire Inst     csr_inst,
+    input wire IId      csr_inst_id,
+    input wire Ctrl     csr_ctrl,
+    input wire UIntX    csr_imm_i,
+    input wire UIntX    csr_op1_data,
 
-    output wire [31:0]  csr_mem_csr_rdata,
+    output wire UIntX   csr_mem_csr_rdata,
 
     output wire         csr_stall_flg,
     output wire         csr_trap_flg,
-    output wire [31:0]  csr_trap_vector,
+    output wire Addr    csr_trap_vector,
 
     input wire [63:0]   reg_cycle,
     input wire [63:0]   reg_time,
@@ -23,16 +23,15 @@ module CSRStage #(
     input wire [63:0]   reg_mtimecmp,
 
     output wire modetype output_mode,
-    output wire [31:0]   output_satp,
-    output wire          satp_change_hazard
+    output wire Addr     output_satp
 );
 
-`include "include/core.sv"
+`include "basicparams.svh"
 
-wire [31:0]  pc         = csr_pc;
-wire iidtype inst_id    = csr_inst_id;
-wire [2:0]   csr_cmd    = csr_ctrl.csr_cmd;
-wire [31:0]  op1_data   = csr_op1_data;
+wire Addr   pc      = csr_pc;
+wire IId    inst_id = csr_inst_id;
+wire CsrCmd csr_cmd = csr_ctrl.csr_cmd;
+wire UIntX  op1_data= csr_op1_data;
 
 // Table 3.6
                                                                                            // I ECODE Description 
@@ -58,7 +57,7 @@ localparam MCAUSE_INSTRUCTION_PAGE_FAULT        = 32'b1100; // 0 12    Instructi
 localparam MCAUSE_LOAD_PAGE_FAULT               = 32'b1101; // 0 13    Load page fault
 localparam MCAUSE_STORE_AMO_PAGE_FAULT          = 32'b1111; // 0 15    Store/AMO page fault
 
-typedef enum reg [11:0] { 
+typedef enum logic [11:0] { 
     // Counters and Timers
     ADDR_CYCLE      = 12'hc00,
     ADDR_TIME       = 12'hc01,
@@ -127,7 +126,7 @@ typedef enum reg [11:0] {
     ADDR_MINSTRETH  = 12'hb82
 } csr_addr_type;
 
-typedef enum reg [1:0] { 
+typedef enum logic [1:0] { 
     XTVEC_DIRECT   = 2'b00,
     XTVEC_VECTORED = 2'b01
 } xtvec_mode_type;
@@ -144,14 +143,14 @@ wire mstatus_sum = 0; // 3.1.6.3 サポートしない
 wire mstatus_mprv= 0; // 3.1.6.3 サポートしない
 wire [1:0] mstatus_xs = 0; // 3.1.6.6 サポートしない
 wire [1:0] mstatus_fs = 0; // 3.1.6.6 サポートしない
-reg [1:0] mstatus_mpp = M_MODE; // S-modeでtrapしても書き込まれない // 初期値をM-modeにする
+logic [1:0] mstatus_mpp = M_MODE; // S-modeでtrapしても書き込まれない // 初期値をM-modeにする
 wire [1:0] mstatus_vs = 0; // 3.1.6.6 サポートしない
-reg mstatus_spp  = 0; // S-modeでtrapしたとき、アクティブなモードが書き込まれる
-reg mstatus_mpie = 0; // S-modeでtrapしても書き込まれない
+logic mstatus_spp  = 0; // S-modeでtrapしたとき、アクティブなモードが書き込まれる
+logic mstatus_mpie = 0; // S-modeでtrapしても書き込まれない
 wire mstatus_ube = 0; // 3.1.6.4 サポートしない
-reg mstatus_spie = 0; // S-modeでtrapした時、sieが書き込まれる
-reg mstatus_mie  = 0; // M-modeでtrapしたとき、クリアされる
-reg mstatus_sie  = 0; // S-modeでtrapしたとき、クリアされる
+logic mstatus_spie = 0; // S-modeでtrapした時、sieが書き込まれる
+logic mstatus_mie  = 0; // M-modeでtrapしたとき、クリアされる
+logic mstatus_sie  = 0; // S-modeでtrapしたとき、クリアされる
 
 wire mstatush_mbe = 0; // 3.1.6.4 サポートしない
 wire mstatush_sbe = 0; // 3.1.6.4 サポートしない
@@ -203,7 +202,7 @@ wire [31:0] mstatush = {26'b0, mstatush_mbe, mstatush_sbe, 4'b0};
 //                     32     ZYXWVUTSRQPONMLKJIHGFEDCBA
 wire [31:0] misa = 32'b01_000_00000000000001000100000001;
 
-reg [31:0] medeleg = 0;
+logic [31:0] medeleg = 0;
 // 9.4.2. Machine Interrupt Delegation Register (mideleg)
 // When the hypervisor extension is implemented, bits 10, 6, and 2 of mideleg (corresponding to the
 // standard VS-level interrupts) are each read-only one. Furthermore, if any guest external interrupts are
@@ -212,17 +211,17 @@ reg [31:0] medeleg = 0;
 // past M-mode to HS-mode
 // 
 // 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
-reg [15:0] mideleg_custom = 0;
+logic [15:0] mideleg_custom = 0;
 wire mideleg_sgeip  = 0; // any guest external interruptsをサポートする
-reg mideleg_meip    = 0;
+logic mideleg_meip    = 0;
 wire mideleg_vseip  = 0; // hypervisor extensionをサポートしない
-reg mideleg_seip    = 0;
-reg mideleg_mtip    = 0;
+logic mideleg_seip    = 0;
+logic mideleg_mtip    = 0;
 wire mideleg_vstip  = 0; // hypervisor extensionをサポートしない
-reg mideleg_stip    = 0;
-reg mideleg_msip    = 0;
+logic mideleg_stip    = 0;
+logic mideleg_msip    = 0;
 wire mideleg_vssip  = 0; // hypervisor extensionをサポートしない
-reg mideleg_ssip    = 0;
+logic mideleg_ssip    = 0;
 wire [31:0] mideleg = {
     mideleg_custom,
     3'b0,
@@ -241,12 +240,12 @@ wire [31:0] mideleg = {
     1'b0
 };
 
-reg mie_meie = 0; // external interrupt
-reg mie_seie = 0;
-reg mie_mtie = 0; // timer interrupt
-reg mie_stie = 0;
-reg mie_msie = 0; // software interrupt
-reg mie_ssie = 0;
+logic mie_meie = 0; // external interrupt
+logic mie_seie = 0;
+logic mie_mtie = 0; // timer interrupt
+logic mie_stie = 0;
+logic mie_msie = 0; // software interrupt
+logic mie_ssie = 0;
 
 wire [31:0] mie = {
     16'b0, 4'b0,
@@ -264,18 +263,18 @@ wire [31:0] sie = {
     mie_ssie, 1'b0
 };
 
-reg [31:0] mtvec = 0;
+logic [31:0] mtvec = 0;
 
-reg [31:0] mscratch = 0;
-reg [31:0] mepc     = 0;
-reg [31:0] mcause   = 0;
+logic [31:0] mscratch = 0;
+logic [31:0] mepc     = 0;
+logic [31:0] mcause   = 0;
 
-reg mip_meip = 0;
-reg mip_seip = 0;
-reg mip_mtip = 0;
-reg mip_stip = 0;
-reg mip_msip = 0;
-reg mip_ssip = 0;
+logic mip_meip = 0;
+logic mip_seip = 0;
+logic mip_mtip = 0;
+logic mip_stip = 0;
+logic mip_msip = 0;
+logic mip_ssip = 0;
 wire [31:0] mip = {
     20'b0,
     mip_meip, 1'b0,
@@ -294,20 +293,20 @@ wire [31:0] sip = {
     mip_ssip, 1'b0
 };
 
-reg [31:0] mtinst   = 0;
-reg [31:0] mtvec2   = 0;
+logic [31:0] mtinst   = 0;
+logic [31:0] mtvec2   = 0;
 
-reg [31:0] stvec    = 0;
-reg [31:0] sscratch = 0;
-reg [31:0] sepc     = 0;
-reg [31:0] scause   = 0;
+logic [31:0] stvec    = 0;
+logic [31:0] sscratch = 0;
+logic [31:0] sepc     = 0;
+logic [31:0] scause   = 0;
 // 5.1.11
 // MODE(1) | ASID(9) | PPN(22)
 // Table 23
 // MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
 //            0ではないなら動作はUNSPECIFIED！こわいね 
 // MODE = 1 : Sv32, ページングが有効
-reg [31:0] satp     = 0;
+logic [31:0] satp     = 0;
 
 // 3.1.7
 // MODE = Direct(0)  : BASE
@@ -374,7 +373,7 @@ case (csr_cmd)
 endcase
 endfunction
 
-function [31:0] rdata_f(
+function [31:0] gen_rdata(
     input [11:0] addr,
     input [63:0] reg_cycle,
     input [63:0] reg_time,
@@ -400,46 +399,46 @@ function [31:0] rdata_f(
 );
 case (addr)
     // Counters and Timers
-    ADDR_CYCLE:     rdata_f = reg_cycle[31:0];
-    ADDR_TIME:      rdata_f = reg_time[31:0];
-    ADDR_CYCLEH:    rdata_f = reg_cycle[63:32];
-    ADDR_TIMEH:     rdata_f = reg_time[63:32];
+    ADDR_CYCLE:     gen_rdata = reg_cycle[31:0];
+    ADDR_TIME:      gen_rdata = reg_time[31:0];
+    ADDR_CYCLEH:    gen_rdata = reg_cycle[63:32];
+    ADDR_TIMEH:     gen_rdata = reg_time[63:32];
     // Machine Trap Setup
-    ADDR_MSTATUS:   rdata_f = mstatus;
-    ADDR_MISA:      rdata_f = misa;
-    ADDR_MEDELEG:   rdata_f = medeleg;
-    ADDR_MIDELEG:   rdata_f = mideleg;
-    ADDR_MIE:       rdata_f = mie;
-    ADDR_MTVEC:     rdata_f = mtvec;
-    ADDR_MSTATUSH:  rdata_f = mstatush;
+    ADDR_MSTATUS:   gen_rdata = mstatus;
+    ADDR_MISA:      gen_rdata = misa;
+    ADDR_MEDELEG:   gen_rdata = medeleg;
+    ADDR_MIDELEG:   gen_rdata = mideleg;
+    ADDR_MIE:       gen_rdata = mie;
+    ADDR_MTVEC:     gen_rdata = mtvec;
+    ADDR_MSTATUSH:  gen_rdata = mstatush;
     // Machine Trap Handling
-    ADDR_MSCRATCH:  rdata_f = mscratch;
-    ADDR_MEPC:      rdata_f = mepc;
-    ADDR_MCAUSE:    rdata_f = mcause;
-    ADDR_MIP:       rdata_f = mip;
-    ADDR_MTINST:    rdata_f = mtinst;
-    ADDR_MTVAL2:    rdata_f = mtvec2;
+    ADDR_MSCRATCH:  gen_rdata = mscratch;
+    ADDR_MEPC:      gen_rdata = mepc;
+    ADDR_MCAUSE:    gen_rdata = mcause;
+    ADDR_MIP:       gen_rdata = mip;
+    ADDR_MTINST:    gen_rdata = mtinst;
+    ADDR_MTVAL2:    gen_rdata = mtvec2;
     // Machine Counter/Timers
-    ADDR_MCYCLE:    rdata_f = reg_cycle[31:0];
-    ADDR_MCYCLEH:   rdata_f = reg_cycle[63:32];
+    ADDR_MCYCLE:    gen_rdata = reg_cycle[31:0];
+    ADDR_MCYCLEH:   gen_rdata = reg_cycle[63:32];
     // Supervisor Trap Setup
-    ADDR_SSTATUS:   rdata_f = sstatus;
-    ADDR_SIE:       rdata_f = sie;
-    ADDR_STVEC:     rdata_f = stvec;
+    ADDR_SSTATUS:   gen_rdata = sstatus;
+    ADDR_SIE:       gen_rdata = sie;
+    ADDR_STVEC:     gen_rdata = stvec;
     // Supervisor Trap Handling
-    ADDR_SSCRATCH:  rdata_f = sscratch;
-    ADDR_SEPC:      rdata_f = sepc;
-    ADDR_SCAUSE:    rdata_f = scause;
-    // ADDR_STVAL:     rdata_f = stval;
-    ADDR_SIP:       rdata_f = sip;
+    ADDR_SSCRATCH:  gen_rdata = sscratch;
+    ADDR_SEPC:      gen_rdata = sepc;
+    ADDR_SCAUSE:    gen_rdata = scause;
+    // ADDR_STVAL:     gen_rdata = stval;
+    ADDR_SIP:       gen_rdata = sip;
     // Supervisor Protection and Translation
-    ADDR_SATP:      rdata_f = satp; 
-    default:        rdata_f = 32'b0;
+    ADDR_SATP:      gen_rdata = satp; 
+    default:        gen_rdata = 32'b0;
 endcase
 endfunction
 
 wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
-wire [31:0] rdata = can_read ? rdata_f(
+wire [31:0] rdata = can_read ? gen_rdata(
     addr,
     reg_cycle,
     reg_time,
@@ -463,40 +462,43 @@ wire [31:0] rdata = can_read ? rdata_f(
     scause,
     satp
 ) : 32'b0;
-assign csr_mem_csr_rdata = rdata;
+UIntX rdata_saved;
+assign csr_mem_csr_rdata = csr_inst_id != saved_inst_id ? rdata : rdata_saved;
 
 // 2.1 CSR Address Mapping Conventions
 wire can_access = addr[9:8] <= mode;
 wire can_read   = can_access;
 wire can_write  = can_access && addr[11:10] != 2'b11;
 
-iidtype saved_inst_id = INST_ID_RANDOM;
+IId saved_inst_id = IID_RANDOM;
+IId saved_iid_old = IID_RANDOM; // TODO HOTFIX
 always @(posedge clk) begin
     if (csr_valid)
         saved_inst_id <= csr_inst_id;
+    saved_iid_old <= saved_inst_id;
 end
 
-// defined in include/core.sv
 wire cmd_is_2clock  = csr_cmd[2] != 1'b0;
 wire cmd_is_trap    = csr_cmd[2] == 1'b1;
 wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
 
-assign csr_stall_flg = csr_valid &&
-                       cmd_is_2clock &&
-                       (csr_inst_id != saved_inst_id);
-assign csr_trap_flg  = csr_valid && (may_trap || cmd_is_trap);
+assign csr_stall_flg =  csr_valid &&
+                        cmd_is_2clock &&
+                        (csr_inst_id != saved_inst_id); // TODO HOTFIX
+assign csr_trap_flg  =  csr_valid && 
+                        (may_trap || cmd_is_trap) &&
+                        (!cmd_is_2clock || csr_inst_id != saved_iid_old); // TODO HOTFIX
 
 assign output_mode = mode;
 assign output_satp = satp;
-assign satp_change_hazard = csr_valid && ((can_write && cmd_is_write && addr == ADDR_SATP) || csr_ctrl.svinval); // SVINVALはsatpを変えてしまったものとして扱うことでflushする
 
 // mret, sret, ecallのtrap_vectorはレジスタ経由で渡す
 // 割り込み、例外はワイヤで渡す
-reg [31:0] trap_vector;
+logic [31:0] trap_vector;
 assign csr_trap_vector = may_trap ? (trap_to_mmode ? mtvec_addr : stvec_addr) : trap_vector;
 
 always @(posedge clk) begin
-if (csr_valid) begin
+if (csr_valid && csr_inst_id != saved_inst_id) begin
     // trapを起こす
     if (may_trap) begin
         `ifdef PRINT_DEBUGINFO
@@ -537,6 +539,9 @@ if (csr_valid) begin
             else if (mip_stip && mie_stie) mip_stip <= 0;
         end
     end else begin
+
+        rdata_saved <= rdata;
+
         // pending registerを更新する
         mip_mtip <= reg_mtime >= reg_mtimecmp;
         if (csr_inst_id != saved_inst_id) begin
@@ -639,7 +644,7 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", csr_valid);
-    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? INST_ID_NOP : inst_id);
+    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? IID_X : inst_id);
     if (csr_valid && (csr_cmd != CSR_X || may_trap)) begin
         $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", csr_inst);
@@ -648,7 +653,7 @@ always @(posedge clk) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
-        $display("data,csrstage.rdata,h,%b", rdata);
+        $display("data,csrstage.rdata,h,%b", csr_mem_csr_rdata);
         $display("data,csrstage.trap_vector,h,%b", trap_vector);
         $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
         $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);

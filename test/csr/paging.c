@@ -81,16 +81,9 @@ void success(void)
 }
 
 /* UART */
-#define UART_TX_TAILPTR ((volatile char *)(0xff000100))
-#define UART_TX_HEADPTR ((volatile char *)(0xff000104))
-#define UART_TX_DATAPTR ((volatile char *)(0xff000000))
-#define UART_TX_BUFSIZE 256
+#define UART_TX_PTR ((volatile int *)(0xff000000))
 
 void uart_send_char(char c)
 {
-    int tail = *UART_TX_TAILPTR;
-    int tailTo = (tail + 1) % UART_TX_BUFSIZE;
-    UART_TX_DATAPTR[tail] = c;
-    *UART_TX_TAILPTR = tailTo;
-    while (*UART_TX_HEADPTR != tailTo);
+    *UART_TX_PTR = c;
 }

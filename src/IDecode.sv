@@ -1,104 +1,137 @@
-/* verilator lint_off CASEX */
 module IDecode (
-    input wire[31:0]        inst,
-    output wire ctrltype    ctrl
+    input wire Inst inst,
+    output wire Ctrl ctrl
 );
 
-`include "include/core.sv"
-`include "include/inst.sv"
+`include "inst.svh"
 
-//  i_exe(4) : br_exe(3) : m_exe(4) : op1_sel(4) : op2_sel(4) : mem_wen(2) : mem_size(2) : rf_wen(1) : wb_sel(2) : csr_cmd(3)
-function [4 + 3 + 4 + 4 + 4 + 2 + 2 + 1 + 2 + 3 - 1:0] decode(input [31:0] inst);
+localparam X_2 = 2'bx;
+localparam X_3 = 3'bx;
+localparam X_5 = 5'bx;
+localparam X_7 = 7'bx;
+localparam X_X = 10'bx;
+
+localparam WB_X = WB_ALU;
+localparam SIZE_X = SIZE_W;
+
+/* verilator lint_off CASEX */
+function [
+    $bits(AluSel) + 
+    $bits(BrSel) + 
+    $bits(SignSel) +
+    $bits(Op1Sel) + 
+    $bits(Op2Sel) + 
+    $bits(MemSel) +
+    $bits(AextSel) +
+    $bits(RwenSel) + 
+    $bits(WbSel) +
+    $bits(CsrCmd) - 1:0
+] decode(
+    input Inst inst
+);
     casex (inst)
-        // RV32I
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_LB_FUNCT3    , 5'bxxxxx, INST_LB_OPCODE    } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_LS, SIZE_B, REN_S, WB_MEM, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_LBU_FUNCT3   , 5'bxxxxx, INST_LBU_OPCODE   } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_LU, SIZE_B, REN_S, WB_MEM, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_LH_FUNCT3    , 5'bxxxxx, INST_LH_OPCODE    } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_LS, SIZE_H, REN_S, WB_MEM, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_LHU_FUNCT3   , 5'bxxxxx, INST_LHU_OPCODE   } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_LU, SIZE_H, REN_S, WB_MEM, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_LW_FUNCT3    , 5'bxxxxx, INST_LW_OPCODE    } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_LS, SIZE_W, REN_S, WB_MEM, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_SB_FUNCT3    , 5'bxxxxx, INST_SB_OPCODE    } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMS , MEN_S , SIZE_B, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_SH_FUNCT3    , 5'bxxxxx, INST_SH_OPCODE    } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMS , MEN_S , SIZE_H, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_SW_FUNCT3    , 5'bxxxxx, INST_SW_OPCODE    } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMS , MEN_S , SIZE_W, REN_X, WB_X  , CSR_X};
-        {INST_ADD_FUNCT7 , 10'bxxxxxxxxxx, INST_ADD_FUNCT3   , 5'bxxxxx, INST_ADD_OPCODE   } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_ADDI_FUNCT3  , 5'bxxxxx, INST_ADDI_OPCODE  } : decode = {ALUI_ADD , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SUB_FUNCT7 , 10'bxxxxxxxxxx, INST_SUB_FUNCT3   , 5'bxxxxx, INST_SUB_OPCODE   } : decode = {ALUI_SUB , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_AND_FUNCT7 , 10'bxxxxxxxxxx, INST_AND_FUNCT3   , 5'bxxxxx, INST_AND_OPCODE   } : decode = {ALUI_AND , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_OR_FUNCT7  , 10'bxxxxxxxxxx, INST_OR_FUNCT3    , 5'bxxxxx, INST_OR_OPCODE    } : decode = {ALUI_OR  , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_XOR_FUNCT7 , 10'bxxxxxxxxxx, INST_XOR_FUNCT3   , 5'bxxxxx, INST_XOR_OPCODE   } : decode = {ALUI_XOR , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_ANDI_FUNCT3  , 5'bxxxxx, INST_ANDI_OPCODE  } : decode = {ALUI_AND , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_ORI_FUNCT3   , 5'bxxxxx, INST_ORI_OPCODE   } : decode = {ALUI_OR  , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_XORI_FUNCT3  , 5'bxxxxx, INST_XORI_OPCODE  } : decode = {ALUI_XOR , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SLL_FUNCT7 , 10'bxxxxxxxxxx, INST_SLL_FUNCT3   , 5'bxxxxx, INST_SLL_OPCODE   } : decode = {ALUI_SLL , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SRL_FUNCT7 , 10'bxxxxxxxxxx, INST_SRL_FUNCT3   , 5'bxxxxx, INST_SRL_OPCODE   } : decode = {ALUI_SRL , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SRA_FUNCT7 , 10'bxxxxxxxxxx, INST_SRA_FUNCT3   , 5'bxxxxx, INST_SRA_OPCODE   } : decode = {ALUI_SRA , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SLLI_FUNCT7, 10'bxxxxxxxxxx, INST_SLLI_FUNCT3  , 5'bxxxxx, INST_SLLI_OPCODE  } : decode = {ALUI_SLL , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SRLI_FUNCT7, 10'bxxxxxxxxxx, INST_SRLI_FUNCT3  , 5'bxxxxx, INST_SRLI_OPCODE  } : decode = {ALUI_SRL , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SRAI_FUNCT7, 10'bxxxxxxxxxx, INST_SRAI_FUNCT3  , 5'bxxxxx, INST_SRAI_OPCODE  } : decode = {ALUI_SRA , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SLT_FUNCT7 , 10'bxxxxxxxxxx, INST_SLT_FUNCT3   , 5'bxxxxx, INST_SLT_OPCODE   } : decode = {ALUI_SLT , BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_SLTU_FUNCT7, 10'bxxxxxxxxxx, INST_SLTU_FUNCT3  , 5'bxxxxx, INST_SLTU_OPCODE  } : decode = {ALUI_SLTU, BR_X, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_SLTI_FUNCT3  , 5'bxxxxx, INST_SLTI_OPCODE  } : decode = {ALUI_SLT , BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_SLTIU_FUNCT3 , 5'bxxxxx, INST_SLTIU_OPCODE } : decode = {ALUI_SLTU, BR_X, ALUM_X, OP1_RS1, OP2_IMI , MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_BEQ_FUNCT3   , 5'bxxxxx, INST_BEQ_OPCODE   } : decode = {ALUI_X, BR_BEQ , ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_BNE_FUNCT3   , 5'bxxxxx, INST_BNE_OPCODE   } : decode = {ALUI_X, BR_BNE , ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_BLT_FUNCT3   , 5'bxxxxx, INST_BLT_OPCODE   } : decode = {ALUI_X, BR_BLT , ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_BGE_FUNCT3   , 5'bxxxxx, INST_BGE_OPCODE   } : decode = {ALUI_X, BR_BGE , ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_BLTU_FUNCT3  , 5'bxxxxx, INST_BLTU_OPCODE  } : decode = {ALUI_X, BR_BLTU, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_BGEU_FUNCT3  , 5'bxxxxx, INST_BGEU_OPCODE  } : decode = {ALUI_X, BR_BGEU, ALUM_X, OP1_RS1, OP2_RS2W, MEN_X , SIZE_X, REN_X, WB_X  , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, 3'bxxx            , 5'bxxxxx, INST_JAL_OPCODE   } : decode = {ALUI_ADD  , BR_X, ALUM_X, OP1_PC , OP2_IMJ, MEN_X , SIZE_X, REN_S, WB_PC , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_JALR_FUNCT3  , 5'bxxxxx, INST_JALR_OPCODE  } : decode = {ALUI_JALR , BR_X, ALUM_X, OP1_RS1, OP2_IMI, MEN_X , SIZE_X, REN_S, WB_PC , CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, 3'bxxx            , 5'bxxxxx, INST_LUI_OPCODE   } : decode = {ALUI_ADD  , BR_X, ALUM_X, OP1_X  , OP2_IMU, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, 3'bxxx            , 5'bxxxxx, INST_AUIPC_OPCODE } : decode = {ALUI_ADD  , BR_X, ALUM_X, OP1_PC , OP2_IMU, MEN_X , SIZE_X, REN_S, WB_ALU, CSR_X};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_CSRRW_FUNCT3 , 5'bxxxxx, INST_CSRRW_OPCODE } : decode = {ALUI_COPY1, BR_X, ALUM_X, OP1_RS1, OP2_X  , MEN_X , SIZE_X, REN_S, WB_CSR, CSR_W};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_CSRRWI_FUNCT3, 5'bxxxxx, INST_CSRRWI_OPCODE} : decode = {ALUI_COPY1, BR_X, ALUM_X, OP1_IMZ, OP2_X  , MEN_X , SIZE_X, REN_S, WB_CSR, CSR_W};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_CSRRS_FUNCT3 , 5'bxxxxx, INST_CSRRS_OPCODE } : decode = {ALUI_COPY1, BR_X, ALUM_X, OP1_RS1, OP2_X  , MEN_X , SIZE_X, REN_S, WB_CSR, CSR_S};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_CSRRSI_FUNCT3, 5'bxxxxx, INST_CSRRSI_OPCODE} : decode = {ALUI_COPY1, BR_X, ALUM_X, OP1_IMZ, OP2_X  , MEN_X , SIZE_X, REN_S, WB_CSR, CSR_S};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_CSRRC_FUNCT3 , 5'bxxxxx, INST_CSRRC_OPCODE } : decode = {ALUI_COPY1, BR_X, ALUM_X, OP1_RS1, OP2_X  , MEN_X , SIZE_X, REN_S, WB_CSR, CSR_C};
-        {7'bxxxxxxx      , 10'bxxxxxxxxxx, INST_CSRRCI_FUNCT3, 5'bxxxxx, INST_CSRRCI_OPCODE} : decode = {ALUI_COPY1, BR_X, ALUM_X, OP1_IMZ, OP2_X  , MEN_X , SIZE_X, REN_S, WB_CSR, CSR_C};
-        INST_ECALL                                                                           : decode = {ALUI_X    , BR_X, ALUM_X, OP1_X  , OP2_X  , MEN_X , SIZE_X, REN_X, WB_X  , CSR_ECALL};
-        INST_SRET                                                                            : decode = {ALUI_X    , BR_X, ALUM_X, OP1_X  , OP2_X  , MEN_X , SIZE_X, REN_X, WB_X  , CSR_SRET};
-        INST_MRET                                                                            : decode = {ALUI_X    , BR_X, ALUM_X, OP1_X  , OP2_X  , MEN_X , SIZE_X, REN_X, WB_X  , CSR_MRET};
-`ifndef EXCLUDE_RV32M
-        // RV32M
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MUL_FUNCT3   , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_MUL   , OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MULH_FUNCT3  , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_MULH  , OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MULHSU_FUNCT3, 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_MULHSU, OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_MULHU_FUNCT3 , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_MULHU , OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_DIV_FUNCT3   , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_DIV   , OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_DIVU_FUNCT3  , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_DIVU  , OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_REM_FUNCT3   , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_REM   , OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-        {INST_RV32M_FUNCT7, 10'bxxxxxxxxxx, INST_RV32M_REMU_FUNCT3  , 5'bxxxxx, INST_RV32M_OPCODE} : decode = {ALUI_X, BR_X, ALUM_REMU  , OP1_RS1, OP2_RS2W, MEN_X, SIZE_X, REN_S, WB_ALU, CSR_X};
-`endif
-/*
-`ifndef EXCLUDE_RV32A
-        {INST_RV32A_AMOSWAP_W_FUNCT5, 2'bxx, 10'bxxxxxxxxxx, INST_RV32A_AMOSWAP_W_FUNCT3, 5'bxxxxx, INST_RV32A_OPCODE} :
-            decode = {ALUI_COPY1, BR_X, ALUM_X, OP1_RS1, OP2_X, MEN_AMOSWAP_W_AQRL, REN_S, WB_MEMW, CSR_X};
-`endif
-*/
-        default : // NOP
-            decode = {ALUI_ADD, BR_X, ALUM_X, OP1_X, OP2_X, MEN_X, SIZE_X, REN_X, WB_X, CSR_X};
+        // I
+        {X_7    , X_X, LB_F3    , X_5, LOAD_OP  }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_L, ASEL_X, REN_S, WB_MEM, CSR_X}; // LB
+        {X_7    , X_X, LBU_F3   , X_5, LOAD_OP  }   : decode = {ALU_ADD   , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_IMI , MEN_L, ASEL_X, REN_S, WB_MEM, CSR_X}; // LBU
+        {X_7    , X_X, LH_F3    , X_5, LOAD_OP  }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_L, ASEL_X, REN_S, WB_MEM, CSR_X}; // LH
+        {X_7    , X_X, LHU_F3   , X_5, LOAD_OP  }   : decode = {ALU_ADD   , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_IMI , MEN_L, ASEL_X, REN_S, WB_MEM, CSR_X}; // LHU
+        {X_7    , X_X, LW_F3    , X_5, LOAD_OP  }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_L, ASEL_X, REN_S, WB_MEM, CSR_X}; // LW
+        {X_7    , X_X, SB_F3    , X_5, STORE_OP }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMS , MEN_S, ASEL_X, REN_X, WB_X  , CSR_X}; // SB
+        {X_7    , X_X, SH_F3    , X_5, STORE_OP }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMS , MEN_S, ASEL_X, REN_X, WB_X  , CSR_X}; // SH
+        {X_7    , X_X, SW_F3    , X_5, STORE_OP }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMS , MEN_S, ASEL_X, REN_X, WB_X  , CSR_X}; // SW
+        {ADD_F7 , X_X, ADD_F3   , X_5, ALUR_OP  }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // ADD
+        {SUB_F7 , X_X, SUB_F3   , X_5, ALUR_OP  }   : decode = {ALU_SUB   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SUB
+        {AND_F7 , X_X, AND_F3   , X_5, ALUR_OP  }   : decode = {ALU_AND   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // AND
+        {OR_F7  , X_X, OR_F3    , X_5, ALUR_OP  }   : decode = {ALU_OR    , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // OR
+        {XOR_F7 , X_X, XOR_F3   , X_5, ALUR_OP  }   : decode = {ALU_XOR   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // XOR
+        {SLL_F7 , X_X, SLL_F3   , X_5, ALUR_OP  }   : decode = {ALU_SLL   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SLL
+        {SRL_F7 , X_X, SRL_F3   , X_5, ALUR_OP  }   : decode = {ALU_SRL   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SRL
+        {SRA_F7 , X_X, SRA_F3   , X_5, ALUR_OP  }   : decode = {ALU_SRA   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SRA
+        {SLT_F7 , X_X, SLT_F3   , X_5, ALUR_OP  }   : decode = {ALU_SLT   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SLT
+        {SLTU_F7, X_X, SLTU_F3  , X_5, ALUR_OP  }   : decode = {ALU_SLT   , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SLTU
+        {X_7    , X_X, ADDI_F3  , X_5, ALUI_OP  }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // ADDI
+        {X_7    , X_X, ANDI_F3  , X_5, ALUI_OP  }   : decode = {ALU_AND   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // ANDI
+        {X_7    , X_X, ORI_F3   , X_5, ALUI_OP  }   : decode = {ALU_OR    , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // ORI
+        {X_7    , X_X, XORI_F3  , X_5, ALUI_OP  }   : decode = {ALU_XOR   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // XORI
+        {SLLI_F7, X_X, SLLI_F3  , X_5, ALUI_OP  }   : decode = {ALU_SLL   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SLLI
+        {SRLI_F7, X_X, SRLI_F3  , X_5, ALUI_OP  }   : decode = {ALU_SRL   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SRLI
+        {SRAI_F7, X_X, SRAI_F3  , X_5, ALUI_OP  }   : decode = {ALU_SRA   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SRAI
+        {X_7    , X_X, SLTI_F3  , X_5, ALUI_OP  }   : decode = {ALU_SLT   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SLTI
+        {X_7    , X_X, SLTIU_F3 , X_5, ALUI_OP  }   : decode = {ALU_SLT   , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // SLTIU
+        {X_7    , X_X, BEQ_F3   , X_5, BR_OP    }   : decode = {ALU_X     , BR_BEQ  , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_X, WB_X  , CSR_X}; // BEQ
+        {X_7    , X_X, BNE_F3   , X_5, BR_OP    }   : decode = {ALU_X     , BR_BNE  , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_X, WB_X  , CSR_X}; // BNE
+        {X_7    , X_X, BLT_F3   , X_5, BR_OP    }   : decode = {ALU_X     , BR_BLT  , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_X, WB_X  , CSR_X}; // BLT
+        {X_7    , X_X, BGE_F3   , X_5, BR_OP    }   : decode = {ALU_X     , BR_BGE  , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_X, WB_X  , CSR_X}; // BGE
+        {X_7    , X_X, BLTU_F3  , X_5, BR_OP    }   : decode = {ALU_X     , BR_BLT  , OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_X, WB_X  , CSR_X}; // BLTU
+        {X_7    , X_X, BGEU_F3  , X_5, BR_OP    }   : decode = {ALU_X     , BR_BGE  , OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_X, WB_X  , CSR_X}; // BGEU
+        {X_7    , X_X, X_3      , X_5, JAL_OP   }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_PC , OP2_IMJ , MEN_X, ASEL_X, REN_S, WB_PC , CSR_X}; // JAL
+        {X_7    , X_X, JALR_F3  , X_5, JALR_OP  }   : decode = {ALU_JALR  , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_PC , CSR_X}; // JALR
+        {X_7    , X_X, X_3      , X_5, LUI_OP   }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_X  , OP2_IMU , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // LUI
+        {X_7    , X_X, X_3      , X_5, AUIPC_OP }   : decode = {ALU_ADD   , BR_X    , OP_SIGNED  , OP1_PC , OP2_IMU , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // AUIPC
+          
+        {X_7    , X_X, CSRRW_F3 , X_5, CSR_OP   }   : decode = {ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRW
+        {X_7    , X_X, CSRRWI_F3, X_5, CSR_OP   }   : decode = {ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRWI
+        {X_7    , X_X, CSRRS_F3 , X_5, CSR_OP   }   : decode = {ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_S}; // CSRRS
+        {X_7    , X_X, CSRRSI_F3, X_5, CSR_OP   }   : decode = {ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_S}; // CSRRSI
+        {X_7    , X_X, CSRRC_F3 , X_5, CSR_OP   }   : decode = {ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRC
+        {X_7    , X_X, CSRRCI_F3, X_5, CSR_OP   }   : decode = {ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRCI
+        ECALL                                       : decode = {ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_ECALL}; // ECALL
+ 
+        SRET                                        : decode = {ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_SRET}; // MRET
+        MRET                                        : decode = {ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_MRET}; // SRET
+
+        {M_F7   , X_X, M_MUL_F3     , X_5, M_OP}    : decode = {ALU_MUL   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // MUL
+        {M_F7   , X_X, M_MULH_F3    , X_5, M_OP}    : decode = {ALU_MULH  , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // MULH
+        {M_F7   , X_X, M_MULHSU_F3  , X_5, M_OP}    : decode = {ALU_MULHSU, BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // MULHSU
+        {M_F7   , X_X, M_MULHU_F3   , X_5, M_OP}    : decode = {ALU_MULH  , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // MULHU
+        {M_F7   , X_X, M_DIV_F3     , X_5, M_OP}    : decode = {ALU_DIV   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // DIV
+        {M_F7   , X_X, M_DIVU_F3    , X_5, M_OP}    : decode = {ALU_DIV   , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // DIVU
+        {M_F7   , X_X, M_REM_F3     , X_5, M_OP}    : decode = {ALU_REM   , BR_X    , OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // REM
+        {M_F7   , X_X, M_REMU_F3    , X_5, M_OP}    : decode = {ALU_REM   , BR_X    , OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // REMU
+
+        {A_LR_W_F5      , X_2, A_LR_W_RS2, X_5, A_F3, X_5, A_OP}  : decode = {ALU_COPY1, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_LR      , REN_S, WB_MEM, CSR_X}; // LR
+        {A_SC_W_F5      , X_2, X_5       , X_5, A_F3, X_5, A_OP}  : decode = {ALU_COPY1, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_SC      , REN_S, WB_MEM, CSR_X}; // SC
+        {A_AMOSWAP_W_F5 , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_SWAP, REN_S, WB_MEM, CSR_X}; // AMO.SWAP
+        {A_AMOADD_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_ADD , REN_S, WB_MEM, CSR_X}; // AMO.ADD
+        {A_AMOXOR_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_XOR , REN_S, WB_MEM, CSR_X}; // AMO.XOR
+        {A_AMOAND_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_AND , REN_S, WB_MEM, CSR_X}; // AMO.AND
+        {A_AMOOR_W_F5   , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_OR  , REN_S, WB_MEM, CSR_X}; // AMO.OR
+        {A_AMOMIN_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MIN , REN_S, WB_MEM, CSR_X}; // AMO.MIN
+        {A_AMOMAX_W_F5  , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_SIGNED  , OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MAX , REN_S, WB_MEM, CSR_X}; // AMO.MAX
+        {A_AMOMINU_W_F5 , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MIN , REN_S, WB_MEM, CSR_X}; // AMO.MINU
+        {A_AMOMAXU_W_F5 , X_2, X_5, X_5, A_F3, X_5, A_OP}   : decode = {ALU_COPY1, BR_X, OP_UNSIGNED, OP1_RS1, OP2_RS2W, MEN_A, ASEL_AMO_MAX , REN_S, WB_MEM, CSR_X}; // AMO.MAXU
+
+
+        {ZICOND_F7, X_X, ZICOND_CZERO_EQZ_F3, X_5, ZICOND_OP} : decode = {ALU_CZERO_EQ, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // CZERO.EQZ
+        {ZICOND_F7, X_X, ZICOND_CZERO_NEZ_F3, X_5, ZICOND_OP} : decode = {ALU_CZERO_NE, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // CZERO.NEZ
+
+        default : decode = {ALU_ADD, BR_X, OP_SIGNED, OP1_X, OP2_X, MEN_X, ASEL_X, REN_X, WB_X, CSR_X};
     endcase
 endfunction
 
 assign {
     ctrl.i_exe,
     ctrl.br_exe,
-    ctrl.m_exe,
+    ctrl.sign_sel,
     ctrl.op1_sel,
     ctrl.op2_sel,
     ctrl.mem_wen,
-    ctrl.mem_size,
+    ctrl.a_sel,
     ctrl.rf_wen,
     ctrl.wb_sel,
     ctrl.csr_cmd
 } = decode(inst);
 
-wire [6:0] funct7       = inst[31:25];
-wire [2:0] funct3       = inst[14:12];
-wire [6:0] opcode       = inst[6:0];
+wire [6:0] F7   = inst[31:25];
+wire [2:0] F3   = inst[14:12];
+wire [6:0] OP   = inst[6:0];
+
+assign ctrl.mem_size = MemSize'(F3[1:0]);
 
 assign ctrl.wb_addr     = inst[11:7];
-assign ctrl.jmp_pc_flg  = opcode == INST_JAL_OPCODE;
-assign ctrl.jmp_reg_flg = funct3 == INST_JALR_FUNCT3 && opcode == INST_JALR_OPCODE;
-assign ctrl.svinval     = (funct7 == INST_SVINVAL_SFENCE_FUNCT7 || funct7 == INST_SVINVAL_SINVAL_VMA_FUNCT7) && funct3 == INST_SVINVAL_FUNCT3 && opcode == INST_SVINVAL_OPCODE;
+assign ctrl.jmp_pc_flg  = OP == JAL_OP;
+assign ctrl.jmp_reg_flg = F3 == JALR_F3 && OP == JALR_OP;
+assign ctrl.svinval     = (F7 == SVINVAL_SFENCE_F7 || F7 == SVINVAL_SINVAL_VMA_F7) && F3 == SVINVAL_F3 && OP == SVINVAL_OP;
+/* verilator lint_on CASEX */
 
 endmodule

@@ -1,6 +1,6 @@
 # rvcpu
 
-Verilogで記述されたRISC-V(RV32IM)のCPUです。  
+Verilogで記述されたRISC-V(RV32IMA)のCPUです。  
 「RISC-VとChiselで学ぶ　はじめてのCPU自作」という本を参考に実装しはじめました  
 TangNano9Kで動くことを確認しています。
 
@@ -57,8 +57,8 @@ https://github.com/users/nananapo/projects/1/views/2
 | ---- | ---- |
 | mret | 2 |
 | sret | 2 |
-| store | 3 or 7 or 9 以上 |
-| load | 4 or 6 以上 |
+| store | 気分 |
+| load | 気分 |
 | mul | 32 |
 | div | 32 |
 | rem | 32 |
@@ -66,34 +66,34 @@ https://github.com/users/nananapo/projects/1/views/2
 
 簡単な図
 ```txt
-    Memory  UART(TX/RX) MemoryMappedRegister
-       |         |                |
-       -----MemMapCntr-------------
-                 |
-        ----MemCmdCntr-------
+      Memory
+        |
+    MemBusCntr--------------
+        |                   \
+        |                DCache
         |                   |
-    InstQueue           DAccessCntr
+     ICache            DAccessCntr
+        |                   |
+       PTW              MMIO_Cntr
+        |                   |
+    InstQueue              PTW
         |                   |
 Core---------------------------------
 |       |                   |
 |   IF/ID -> DS -> CSR -> MEM -> WB
 |               -> EXE ->
 |                   |
-|           MulNbit/DivNbit
+|            MulNbit/DivNbit
 ```
 
 
 ### メモリマップ
 ```
-00000000 - 00008000 : RAM
+00000000 - MEM_SIZE : RAM
 f0000000 - f0000007 : mtime
 f0000008 - f000000f : mtimecmp
-ff000000 - ff0000ff : UART TX (文字列のキュー)
-ff000100            : UART TX (キューの末尾のindex(送信するときはこれを進める(mod 256する)))
-ff000104            : UART TX (キューの先頭のindex(読み込み可 / 書き込み不可))
-ff000200 - ff0005ff : UART RX (文字列のバッファ)
-ff000600            : UART RX (バッファの末尾のindex % 1024)
-ff000604            : UART RX (バッファを何周したか)
+ff000000            : UART TX (storeで送信)
+ff000200            : UART RX (1024文字のキュー)
 ```
 
 ### サンプルプログラム
@@ -105,7 +105,7 @@ ff000604            : UART RX (バッファを何周したか)
 
 ## デバッグログについて
 
-$display、$writeで出力しているデバッグ情報は、機械で分析しやすくすることを目的として下記のフォーマットで出力しています。  
+$display、$writeで出力しているデバッグ情報は、分析しやすくすることを目的として下記のフォーマットで出力しています。  
 数字は必ず2進数で出力しているため、そのまま人が読むのは難しいです。人にとって読みやすい形にログを変換するには、log/convert2humanreadable.pyを使用します。
 
 ### フォーマット

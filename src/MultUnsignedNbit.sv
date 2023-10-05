@@ -9,19 +9,19 @@ module MultUnsignedNbit #(
 
     input wire [SIZE-1:0]   multiplicand,   // 被乗数
     input wire [SIZE-1:0]   multiplier,     // 乗数
-    output reg [SIZE*2-1:0] product         // 積
+    output logic [SIZE*2-1:0] product       // 積
 );
 
-typedef enum reg [1:0] { 
+typedef enum logic [1:0] { 
     IDLE, EXECUTE, DONE
 } statetype;
 
 statetype state = IDLE;
 
-reg [9:0] count = 0;
+logic [9:0] count = 0;
 
-reg [SIZE*2-1:0] save_multiplicand;
-reg [SIZE-1:0] save_multiplier;
+logic [SIZE*2-1:0] save_multiplicand;
+logic [SIZE-1:0] save_multiplier;
 
 assign ready = state == IDLE;
 assign valid = state == DONE;
@@ -49,23 +49,5 @@ always @(posedge clk) begin
         default: state <= IDLE;
     endcase
 end
-
-`ifdef PRINT_DEBUGINFO
-`ifdef PRINT_ALU_MODULE
-always @(posedge clk) begin
-    $display("data,multunbit.input.start,b,%b", start);
-    $display("data,multunbit.input.ready,b,%b", ready);
-    $display("data,multunbit.input.valid,b,%b", valid);
-    $display("data,multunbit.input.multiplicand,d,%b", multiplicand);
-    $display("data,multunbit.input.multiplier,d,%b", multiplier);
-    $display("data,multunbit.output.product,d,%b", product);
-    
-    $display("data,multunbit.state,d,%b", state);
-    $display("data,multunbit.count,d,%b", count);
-    $display("data,multunbit.save_multiplicand,d,%b", save_multiplicand);
-    $display("data,multunbit.save_multiplier,d,%b", save_multiplier);
-end
-`endif
-`endif
 
 endmodule

@@ -1,14 +1,12 @@
-`include "include/memoryinterface.sv"
-
 module DAccessCntr (
-    input wire              clk,
-    inout wire DRequest     dreq,
-    inout wire DResponse    dresp,
-    inout wire DRequest     memreq,
-    inout wire DResponse    memresp
+    input wire clk,
+    inout wire DReq     dreq,
+    inout wire DResp    dresp,
+    inout wire CacheReq     memreq,
+    inout wire CacheResp    memresp
 );
 
-typedef enum reg [3:0] {
+typedef enum logic [3:0] {
     IDLE,
     LOAD_READY,
     LOAD_VALID,
@@ -23,36 +21,26 @@ typedef enum reg [3:0] {
 
 statetype state = IDLE;
 
-DRequest sdreq;
+DReq sdreq;
 initial begin
     sdreq.valid = 1'b0;
     sdreq.wen = 0;
     sdreq.wmask = SIZE_W;
 end
 
-// Storeの場合、投げっぱなし
-// 4 byteアラインされていない、またはbyte, half命令は必ず先読みする。
-//
-// 4byteアラインされているかつbyte, half
-// -> loadは1回
-// 4byteアラインされていない、かつword
-// -> loadは必ず2回
-// 4byteアラインされていない、かつhalf
-// -> addr % 4 == 1 or 2ならloadは1回
-// -> addr % 4 == 3ならloadは2回
-// 4byteアラインされていない、かつbyte
-// -> loadは1回 
-//
-// 先読みするなら、LOAD(4 or 6) + STORE(3)、よって7 or 9クロック以上
-//  IDLE -> STORE_CHECK -> LOAD_READY -> ... -> LOAD_END -> STORE_READY
-// しないなら、3クロック以上
-//  IDLE -> STORE_CHECK -> STORE_READY
-
-// LOADの場合、
-// 4byteアラインされているなら、4クロック以上
-//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_END -> LOAD_PUSH
-// されていないなら、6クロック以上
-//  IDLE -> LOAD_READY -> LOAD_VALID -> LOAD_READY2 -> LOAD_VALID2 -> LOAD_END -> LOAD_PUSH
+/*
+load byte 
+-> 0-3 アラインしてload、調整
+load half
+-> 0-2 アラインしてload、調整
+-> 3   2回load
+load word
+-> 0 1回load
+-> 1-3 2回load
+load dword
+-> 0 2回load
+-> 1-3 3回load
+*/
 
 // 下位2ビット
 wire [1:0]  saddr_lb = sdreq.addr[1:0];
@@ -69,16 +57,16 @@ wire require_load = (!sis_w || saddr_lb != 2'b00);
 // この命令は2回loadする必要があるか
 wire is_load_twice = (sis_w && saddr_lb != 2'b00) || (sis_h && saddr_lb == 2'd3);
 
-reg [31:0]  saved_rdata1;
-reg [31:0]  saved_rdata2;
+logic [31:0]  saved_rdata1;
+logic [31:0]  saved_rdata2;
 
-reg [31:0]  store_wdata1;
-reg [31:0]  store_wdata2;
+logic [31:0]  store_wdata1;
+logic [31:0]  store_wdata2;
 
-reg [31:0]  load_result;
+logic [31:0]  load_result;
 
-assign memreq.valid = state == LOAD_READY || state == LOAD_READY2 || state == STORE_READY || state == STORE_READY2;
-assign memreq.addr  = state == LOAD_READY || state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;
+assign memreq.valid = state == LOAD_READY  || state == LOAD_READY2 || state == STORE_READY || state == STORE_READY2;
+assign memreq.addr  = state == LOAD_READY  || state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;
 assign memreq.wen   = state == STORE_READY || state == STORE_READY2;
 assign memreq.wdata = state == STORE_READY ? store_wdata1 : store_wdata2;
 
@@ -183,14 +171,6 @@ always @(posedge clk) begin
     $display("data,dmemucntr.saved_rdata2,h,%b", saved_rdata2);
     $display("data,dmemucntr.load_result,h,%b", load_result);
     $display("data,dmemucntr.saddr_lb,h,%b", saddr_lb);
-    /*
-    $display("data,dmemucntr.dreq.ready,b,%b", dreq.ready);
-    $display("data,dmemucntr.dreq.valid,b,%b", dreq.valid);
-    $display("data,dmemucntr.dresp.valid,b,%b", dresp.valid);
-    $display("data,dmemucntr.ireq.ready,b,%b", ireq.ready);
-    $display("data,dmemucntr.ireq.valid,b,%b", ireq.valid);
-    $display("data,dmemucntr.iresp.valid,b,%b", iresp.valid);
-    */
 end
 `endif
 

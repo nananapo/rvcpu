@@ -1,0 +1,374 @@
+
+rv32mi-p-ma_addr:     file format elf32-littleriscv
+
+
+Disassembly of section .text.init:
+
+00000000 <_start>:
+   0:	0540006f          	j	54 <reset_vector>
+
+00000004 <trap_vector>:
+   4:	34202f73          	csrr	t5,mcause
+   8:	00800f93          	li	t6,8
+   c:	03ff0a63          	beq	t5,t6,40 <write_tohost>
+  10:	00900f93          	li	t6,9
+  14:	03ff0663          	beq	t5,t6,40 <write_tohost>
+  18:	00b00f93          	li	t6,11
+  1c:	03ff0263          	beq	t5,t6,40 <write_tohost>
+  20:	00000f17          	auipc	t5,0x0
+  24:	330f0f13          	add	t5,t5,816 # 350 <mtvec_handler>
+  28:	000f0463          	beqz	t5,30 <trap_vector+0x2c>
+  2c:	000f0067          	jr	t5
+  30:	34202f73          	csrr	t5,mcause
+  34:	000f5463          	bgez	t5,3c <handle_exception>
+  38:	0040006f          	j	3c <handle_exception>
+
+0000003c <handle_exception>:
+  3c:	5391e193          	or	gp,gp,1337
+
+00000040 <write_tohost>:
+  40:	00001f17          	auipc	t5,0x1
+  44:	fc3f2023          	sw	gp,-64(t5) # 1000 <tohost>
+  48:	00001f17          	auipc	t5,0x1
+  4c:	fa0f2e23          	sw	zero,-68(t5) # 1004 <tohost+0x4>
+  50:	ff1ff06f          	j	40 <write_tohost>
+
+00000054 <reset_vector>:
+  54:	00000093          	li	ra,0
+  58:	00000113          	li	sp,0
+  5c:	00000193          	li	gp,0
+  60:	00000213          	li	tp,0
+  64:	00000293          	li	t0,0
+  68:	00000313          	li	t1,0
+  6c:	00000393          	li	t2,0
+  70:	00000413          	li	s0,0
+  74:	00000493          	li	s1,0
+  78:	00000513          	li	a0,0
+  7c:	00000593          	li	a1,0
+  80:	00000613          	li	a2,0
+  84:	00000693          	li	a3,0
+  88:	00000713          	li	a4,0
+  8c:	00000793          	li	a5,0
+  90:	00000813          	li	a6,0
+  94:	00000893          	li	a7,0
+  98:	00000913          	li	s2,0
+  9c:	00000993          	li	s3,0
+  a0:	00000a13          	li	s4,0
+  a4:	00000a93          	li	s5,0
+  a8:	00000b13          	li	s6,0
+  ac:	00000b93          	li	s7,0
+  b0:	00000c13          	li	s8,0
+  b4:	00000c93          	li	s9,0
+  b8:	00000d13          	li	s10,0
+  bc:	00000d93          	li	s11,0
+  c0:	00000e13          	li	t3,0
+  c4:	00000e93          	li	t4,0
+  c8:	00000f13          	li	t5,0
+  cc:	00000f93          	li	t6,0
+  d0:	f1402573          	csrr	a0,mhartid
+  d4:	00051063          	bnez	a0,d4 <reset_vector+0x80>
+  d8:	00000297          	auipc	t0,0x0
+  dc:	01028293          	add	t0,t0,16 # e8 <reset_vector+0x94>
+  e0:	30529073          	csrw	mtvec,t0
+  e4:	74445073          	csrw	0x744,8
+  e8:	00000297          	auipc	t0,0x0
+  ec:	01028293          	add	t0,t0,16 # f8 <reset_vector+0xa4>
+  f0:	30529073          	csrw	mtvec,t0
+  f4:	18005073          	csrw	satp,0
+  f8:	00000297          	auipc	t0,0x0
+  fc:	02028293          	add	t0,t0,32 # 118 <reset_vector+0xc4>
+ 100:	30529073          	csrw	mtvec,t0
+ 104:	800002b7          	lui	t0,0x80000
+ 108:	fff28293          	add	t0,t0,-1 # 7fffffff <_end+0x7fffdeef>
+ 10c:	3b029073          	csrw	pmpaddr0,t0
+ 110:	01f00293          	li	t0,31
+ 114:	3a029073          	csrw	pmpcfg0,t0
+ 118:	30405073          	csrw	mie,0
+ 11c:	00000297          	auipc	t0,0x0
+ 120:	01428293          	add	t0,t0,20 # 130 <reset_vector+0xdc>
+ 124:	30529073          	csrw	mtvec,t0
+ 128:	30205073          	csrw	medeleg,0
+ 12c:	30305073          	csrw	mideleg,0
+ 130:	00000193          	li	gp,0
+ 134:	00000297          	auipc	t0,0x0
+ 138:	ed028293          	add	t0,t0,-304 # 4 <trap_vector>
+ 13c:	30529073          	csrw	mtvec,t0
+ 140:	00100513          	li	a0,1
+ 144:	01f51513          	sll	a0,a0,0x1f
+ 148:	00054c63          	bltz	a0,160 <reset_vector+0x10c>
+ 14c:	0ff0000f          	fence
+ 150:	00100193          	li	gp,1
+ 154:	05d00893          	li	a7,93
+ 158:	00000513          	li	a0,0
+ 15c:	00000073          	ecall
+ 160:	00000293          	li	t0,0
+ 164:	00028a63          	beqz	t0,178 <reset_vector+0x124>
+ 168:	10529073          	csrw	stvec,t0
+ 16c:	0000b2b7          	lui	t0,0xb
+ 170:	10928293          	add	t0,t0,265 # b109 <_end+0x8ff9>
+ 174:	30229073          	csrw	medeleg,t0
+ 178:	30005073          	csrw	mstatus,0
+ 17c:	00002537          	lui	a0,0x2
+ 180:	80050513          	add	a0,a0,-2048 # 1800 <fromhost+0x7c0>
+ 184:	30052073          	csrs	mstatus,a0
+ 188:	00000297          	auipc	t0,0x0
+ 18c:	01428293          	add	t0,t0,20 # 19c <reset_vector+0x148>
+ 190:	34129073          	csrw	mepc,t0
+ 194:	f1402573          	csrr	a0,mhartid
+ 198:	30200073          	mret
+ 19c:	00002417          	auipc	s0,0x2
+ 1a0:	e6440413          	add	s0,s0,-412 # 2000 <begin_signature>
+ 1a4:	00400493          	li	s1,4
+ 1a8:	00200193          	li	gp,2
+ 1ac:	00000397          	auipc	t2,0x0
+ 1b0:	01c38393          	add	t2,t2,28 # 1c8 <reset_vector+0x174>
+ 1b4:	00140313          	add	t1,s0,1
+ 1b8:	00141303          	lh	t1,1(s0)
+ 1bc:	ffffc3b7          	lui	t2,0xffffc
+ 1c0:	bcc38393          	add	t2,t2,-1076 # ffffbbcc <_end+0xffff9abc>
+ 1c4:	14731e63          	bne	t1,t2,320 <fail>
+ 1c8:	00300193          	li	gp,3
+ 1cc:	00000397          	auipc	t2,0x0
+ 1d0:	01c38393          	add	t2,t2,28 # 1e8 <reset_vector+0x194>
+ 1d4:	00140313          	add	t1,s0,1
+ 1d8:	00145303          	lhu	t1,1(s0)
+ 1dc:	0000c3b7          	lui	t2,0xc
+ 1e0:	bcc38393          	add	t2,t2,-1076 # bbcc <_end+0x9abc>
+ 1e4:	12731e63          	bne	t1,t2,320 <fail>
+ 1e8:	00400193          	li	gp,4
+ 1ec:	00000397          	auipc	t2,0x0
+ 1f0:	01c38393          	add	t2,t2,28 # 208 <reset_vector+0x1b4>
+ 1f4:	00140313          	add	t1,s0,1
+ 1f8:	00142303          	lw	t1,1(s0)
+ 1fc:	99aac3b7          	lui	t2,0x99aac
+ 200:	bcc38393          	add	t2,t2,-1076 # 99aabbcc <_end+0x99aa9abc>
+ 204:	10731e63          	bne	t1,t2,320 <fail>
+ 208:	00500193          	li	gp,5
+ 20c:	00000397          	auipc	t2,0x0
+ 210:	01c38393          	add	t2,t2,28 # 228 <reset_vector+0x1d4>
+ 214:	00240313          	add	t1,s0,2
+ 218:	00242303          	lw	t1,2(s0)
+ 21c:	8899b3b7          	lui	t2,0x8899b
+ 220:	abb38393          	add	t2,t2,-1349 # 8899aabb <_end+0x889989ab>
+ 224:	0e731e63          	bne	t1,t2,320 <fail>
+ 228:	00600193          	li	gp,6
+ 22c:	00000397          	auipc	t2,0x0
+ 230:	01c38393          	add	t2,t2,28 # 248 <reset_vector+0x1f4>
+ 234:	00340313          	add	t1,s0,3
+ 238:	00342303          	lw	t1,3(s0)
+ 23c:	7788a3b7          	lui	t2,0x7788a
+ 240:	9aa38393          	add	t2,t2,-1622 # 778899aa <_end+0x7788789a>
+ 244:	0c731e63          	bne	t1,t2,320 <fail>
+ 248:	00600493          	li	s1,6
+ 24c:	01600193          	li	gp,22
+ 250:	00000397          	auipc	t2,0x0
+ 254:	03038393          	add	t2,t2,48 # 280 <reset_vector+0x22c>
+ 258:	00140313          	add	t1,s0,1
+ 25c:	000410a3          	sh	zero,1(s0)
+ 260:	00040303          	lb	t1,0(s0)
+ 264:	0a030e63          	beqz	t1,320 <fail>
+ 268:	00340303          	lb	t1,3(s0)
+ 26c:	0a030a63          	beqz	t1,320 <fail>
+ 270:	00140303          	lb	t1,1(s0)
+ 274:	0a031663          	bnez	t1,320 <fail>
+ 278:	00240303          	lb	t1,2(s0)
+ 27c:	0a031263          	bnez	t1,320 <fail>
+ 280:	01700193          	li	gp,23
+ 284:	00000397          	auipc	t2,0x0
+ 288:	03038393          	add	t2,t2,48 # 2b4 <reset_vector+0x260>
+ 28c:	00540313          	add	t1,s0,5
+ 290:	000422a3          	sw	zero,5(s0)
+ 294:	00440303          	lb	t1,4(s0)
+ 298:	08030463          	beqz	t1,320 <fail>
+ 29c:	00940303          	lb	t1,9(s0)
+ 2a0:	08030063          	beqz	t1,320 <fail>
+ 2a4:	00540303          	lb	t1,5(s0)
+ 2a8:	06031c63          	bnez	t1,320 <fail>
+ 2ac:	00840303          	lb	t1,8(s0)
+ 2b0:	06031863          	bnez	t1,320 <fail>
+ 2b4:	01800193          	li	gp,24
+ 2b8:	00000397          	auipc	t2,0x0
+ 2bc:	03038393          	add	t2,t2,48 # 2e8 <reset_vector+0x294>
+ 2c0:	00a40313          	add	t1,s0,10
+ 2c4:	00042523          	sw	zero,10(s0)
+ 2c8:	00940303          	lb	t1,9(s0)
+ 2cc:	04030a63          	beqz	t1,320 <fail>
+ 2d0:	00e40303          	lb	t1,14(s0)
+ 2d4:	04030663          	beqz	t1,320 <fail>
+ 2d8:	00a40303          	lb	t1,10(s0)
+ 2dc:	04031263          	bnez	t1,320 <fail>
+ 2e0:	00d40303          	lb	t1,13(s0)
+ 2e4:	02031e63          	bnez	t1,320 <fail>
+ 2e8:	01900193          	li	gp,25
+ 2ec:	00000397          	auipc	t2,0x0
+ 2f0:	03038393          	add	t2,t2,48 # 31c <reset_vector+0x2c8>
+ 2f4:	00f40313          	add	t1,s0,15
+ 2f8:	000427a3          	sw	zero,15(s0)
+ 2fc:	00e40303          	lb	t1,14(s0)
+ 300:	02030063          	beqz	t1,320 <fail>
+ 304:	01340303          	lb	t1,19(s0)
+ 308:	00030c63          	beqz	t1,320 <fail>
+ 30c:	00f40303          	lb	t1,15(s0)
+ 310:	00031863          	bnez	t1,320 <fail>
+ 314:	01240303          	lb	t1,18(s0)
+ 318:	00031463          	bnez	t1,320 <fail>
+ 31c:	02301063          	bne	zero,gp,33c <pass>
+
+00000320 <fail>:
+ 320:	0ff0000f          	fence
+ 324:	00018063          	beqz	gp,324 <fail+0x4>
+ 328:	00119193          	sll	gp,gp,0x1
+ 32c:	0011e193          	or	gp,gp,1
+ 330:	05d00893          	li	a7,93
+ 334:	00018513          	mv	a0,gp
+ 338:	00000073          	ecall
+
+0000033c <pass>:
+ 33c:	0ff0000f          	fence
+ 340:	00100193          	li	gp,1
+ 344:	05d00893          	li	a7,93
+ 348:	00000513          	li	a0,0
+ 34c:	00000073          	ecall
+
+00000350 <mtvec_handler>:
+ 350:	342022f3          	csrr	t0,mcause
+ 354:	fc9296e3          	bne	t0,s1,320 <fail>
+ 358:	343022f3          	csrr	t0,mtval
+ 35c:	00028863          	beqz	t0,36c <mtvec_handler+0x1c>
+ 360:	fc6290e3          	bne	t0,t1,320 <fail>
+ 364:	00028283          	lb	t0,0(t0)
+ 368:	fa028ce3          	beqz	t0,320 <fail>
+ 36c:	34139073          	csrw	mepc,t2
+ 370:	30200073          	mret
+ 374:	c0001073          	unimp
+ 378:	0000                	.2byte	0x0
+ 37a:	0000                	.2byte	0x0
+
+Disassembly of section .data:
+
+00002000 <begin_signature>:
+    2000:	ccdd                	.2byte	0xccdd
+    2002:	8899aabb          	.4byte	0x8899aabb
+    2006:	44556677          	.4byte	0x44556677
+    200a:	ee112233          	.4byte	0xee112233
+    200e:	eeff 5050 5050 5050 	.byte	0xff, 0xee, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50, 0x50
+    2016:	5050 5050 5050 5050 
+    201e:	5050 5050 5050 
+    2024:	5050                	.2byte	0x5050
+    2026:	5050                	.2byte	0x5050
+    2028:	5050                	.2byte	0x5050
+    202a:	5050                	.2byte	0x5050
+    202c:	5050                	.2byte	0x5050
+    202e:	5050                	.2byte	0x5050
+    2030:	5050                	.2byte	0x5050
+    2032:	5050                	.2byte	0x5050
+    2034:	5050                	.2byte	0x5050
+    2036:	5050                	.2byte	0x5050
+    2038:	5050                	.2byte	0x5050
+    203a:	5050                	.2byte	0x5050
+    203c:	5050                	.2byte	0x5050
+    203e:	5050                	.2byte	0x5050
+    2040:	5050                	.2byte	0x5050
+    2042:	5050                	.2byte	0x5050
+    2044:	5050                	.2byte	0x5050
+    2046:	5050                	.2byte	0x5050
+    2048:	5050                	.2byte	0x5050
+    204a:	5050                	.2byte	0x5050
+    204c:	5050                	.2byte	0x5050
+    204e:	5050                	.2byte	0x5050
+    2050:	5050                	.2byte	0x5050
+    2052:	5050                	.2byte	0x5050
+    2054:	5050                	.2byte	0x5050
+    2056:	5050                	.2byte	0x5050
+    2058:	5050                	.2byte	0x5050
+    205a:	5050                	.2byte	0x5050
+    205c:	5050                	.2byte	0x5050
+    205e:	5050                	.2byte	0x5050
+    2060:	5050                	.2byte	0x5050
+    2062:	5050                	.2byte	0x5050
+    2064:	5050                	.2byte	0x5050
+    2066:	5050                	.2byte	0x5050
+    2068:	5050                	.2byte	0x5050
+    206a:	5050                	.2byte	0x5050
+    206c:	5050                	.2byte	0x5050
+    206e:	5050                	.2byte	0x5050
+    2070:	5050                	.2byte	0x5050
+    2072:	5050                	.2byte	0x5050
+    2074:	5050                	.2byte	0x5050
+    2076:	5050                	.2byte	0x5050
+    2078:	5050                	.2byte	0x5050
+    207a:	5050                	.2byte	0x5050
+    207c:	5050                	.2byte	0x5050
+    207e:	5050                	.2byte	0x5050
+    2080:	5050                	.2byte	0x5050
+    2082:	5050                	.2byte	0x5050
+    2084:	5050                	.2byte	0x5050
+    2086:	5050                	.2byte	0x5050
+    2088:	5050                	.2byte	0x5050
+    208a:	5050                	.2byte	0x5050
+    208c:	5050                	.2byte	0x5050
+    208e:	5050                	.2byte	0x5050
+    2090:	5050                	.2byte	0x5050
+    2092:	5050                	.2byte	0x5050
+    2094:	5050                	.2byte	0x5050
+    2096:	5050                	.2byte	0x5050
+    2098:	5050                	.2byte	0x5050
+    209a:	5050                	.2byte	0x5050
+    209c:	5050                	.2byte	0x5050
+    209e:	5050                	.2byte	0x5050
+    20a0:	5050                	.2byte	0x5050
+    20a2:	5050                	.2byte	0x5050
+    20a4:	5050                	.2byte	0x5050
+    20a6:	5050                	.2byte	0x5050
+    20a8:	5050                	.2byte	0x5050
+    20aa:	5050                	.2byte	0x5050
+    20ac:	5050                	.2byte	0x5050
+    20ae:	5050                	.2byte	0x5050
+    20b0:	5050                	.2byte	0x5050
+    20b2:	5050                	.2byte	0x5050
+    20b4:	5050                	.2byte	0x5050
+    20b6:	5050                	.2byte	0x5050
+    20b8:	5050                	.2byte	0x5050
+    20ba:	5050                	.2byte	0x5050
+    20bc:	5050                	.2byte	0x5050
+    20be:	5050                	.2byte	0x5050
+    20c0:	5050                	.2byte	0x5050
+    20c2:	5050                	.2byte	0x5050
+    20c4:	5050                	.2byte	0x5050
+    20c6:	5050                	.2byte	0x5050
+    20c8:	5050                	.2byte	0x5050
+    20ca:	5050                	.2byte	0x5050
+    20cc:	5050                	.2byte	0x5050
+    20ce:	5050                	.2byte	0x5050
+    20d0:	5050                	.2byte	0x5050
+    20d2:	5050                	.2byte	0x5050
+    20d4:	5050                	.2byte	0x5050
+    20d6:	5050                	.2byte	0x5050
+    20d8:	5050                	.2byte	0x5050
+    20da:	5050                	.2byte	0x5050
+    20dc:	5050                	.2byte	0x5050
+    20de:	5050                	.2byte	0x5050
+    20e0:	5050                	.2byte	0x5050
+    20e2:	5050                	.2byte	0x5050
+    20e4:	5050                	.2byte	0x5050
+    20e6:	5050                	.2byte	0x5050
+    20e8:	5050                	.2byte	0x5050
+    20ea:	5050                	.2byte	0x5050
+    20ec:	5050                	.2byte	0x5050
+    20ee:	5050                	.2byte	0x5050
+    20f0:	5050                	.2byte	0x5050
+    20f2:	5050                	.2byte	0x5050
+    20f4:	5050                	.2byte	0x5050
+    20f6:	5050                	.2byte	0x5050
+    20f8:	5050                	.2byte	0x5050
+    20fa:	5050                	.2byte	0x5050
+    20fc:	5050                	.2byte	0x5050
+    20fe:	5050                	.2byte	0x5050
+    2100:	5050                	.2byte	0x5050
+    2102:	5050                	.2byte	0x5050
+    2104:	5050                	.2byte	0x5050
+    2106:	5050                	.2byte	0x5050
+    2108:	5050                	.2byte	0x5050
+    210a:	5050                	.2byte	0x5050
+    210c:	5050                	.2byte	0x5050
+    210e:	0050                	.2byte	0x50

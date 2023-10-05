@@ -17,25 +17,28 @@
         <File path="src/ExecuteStage.sv" type="file.verilog" enable="1"/>
         <File path="src/InstQueue.sv" type="file.verilog" enable="1"/>
         <File path="src/Memory.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemCmdCntr.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemMapCntr.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMappedIO_Uart_rx.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMappedIO_Uart_tx.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryMapped_MachineTimeRegister.sv" type="file.verilog" enable="1"/>
+        <File path="src/MemICmdConverter.sv" type="file.verilog" enable="1"/>
+        <File path="src/MemDCmdConverter.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_Cntr.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_uart_rx.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_uart_tx.sv" type="file.verilog" enable="1"/>
+        <File path="src/MMIO_clint.sv" type="file.verilog" enable="1"/>
         <File path="src/MemoryStage.sv" type="file.verilog" enable="1"/>
         <File path="src/MultNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/MultUnsignedNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/PageTableWalker.sv" type="file.verilog" enable="1"/>
         <File path="src/SyncQueue.sv" type="file.verilog" enable="1"/>
         <File path="src/FastSyncQueue.sv" type="file.verilog" enable="1"/>
+        <File path="src/LocalHistory2bit.sv" type="file.verilog" enable="1"/>
+        <File path="src/GlobalHistory2bit.sv" type="file.verilog" enable="1"/>
         <File path="src/TwoBitCounter.sv" type="file.verilog" enable="1"/>
         <File path="src/Uart_rx.sv" type="file.verilog" enable="1"/>
         <File path="src/Uart_tx.sv" type="file.verilog" enable="1"/>
         <File path="src/WriteBackStage.sv" type="file.verilog" enable="1"/>
-        <File path="src/include/core.sv" type="file.verilog" enable="1"/>
-        <File path="src/include/ctrltype.sv" type="file.verilog" enable="1"/>
-        <File path="src/include/inst.sv" type="file.verilog" enable="1"/>
-        <File path="src/include/memoryinterface.sv" type="file.verilog" enable="1"/>
+        <File path="src/basic.svh" type="file.verilog" enable="1"/>
+        <File path="src/basicparams.svh" type="file.verilog" enable="1"/>
+        <File path="src/inst.svh" type="file.verilog" enable="1"/>
+        <File path="src/memoryinterface.sv" type="file.verilog" enable="1"/>
         <File path="src/main.sv" type="file.verilog" enable="1"/>
         <File path="src/test.sv" type="file.verilog" enable="1"/>
         <File path="src/tangnano9k.cst" type="file.cst" enable="1"/>

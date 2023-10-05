@@ -1,4 +1,6 @@
 debug.*
 *.kanata
+*.log
 __pycache__
 output/
+*.txt
