@@ -554,7 +554,7 @@ always @(posedge clk) begin
         $display("data,decodestage.decode.imm_u,h,%b", id_ds_imm_u);
         $display("data,decodestage.decode.imm_z,h,%b", id_ds_imm_z);    
     end
-    $display("data,exestage.ll_last_inst_id,h,%b", exe_last_inst_id_to_prevent_double_flush);
+    // $display("data,exestage.last_inst_id,h,%b", exe_last_inst_id_to_prevent_double_flush);
 end
 
 int clk_count = 0;
