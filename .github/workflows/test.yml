@@ -1,3 +1,6 @@
+name: behaviour tests
+run-name: Run behaviour tests
+
 on:
   push:
     branches:

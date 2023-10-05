@@ -1,3 +1,6 @@
+name: riscv-tests
+run-name: Run riscv-tests
+
 on:
   push:
     branches:
