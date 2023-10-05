@@ -61,4 +61,5 @@ jobs:
       - name: Build and test
         run: |
           cd test/chisel
+          ln -s ../../../../../src/ src/test/resources/ 
           sbt test
