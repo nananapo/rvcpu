@@ -37,6 +37,10 @@ jobs:
       - name: Install verilator
         run: |
           sudo apt-get -y install verilator
+      - name: Lint
+        run: |
+          cd src
+          make v
       - name: Test
         run: |
           cd src
