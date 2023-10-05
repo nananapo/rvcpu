@@ -1,0 +1,22 @@
+name: Install verilator
+on:
+  workflow_call:
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install verilator
+        run: |
+          sudo apt-get -y install verilator
+          verilator --version
+          sudo apt-get -y remove verilator
+          git clone https://github.com/verilator/verilator
+          cd verilator
+          git checkout v5.016
+          git clone https://github.com/westes/flex .flex
+          cp .flex/src/FlexLexer.h include/FlexLexer.h
+          unset VERILATOR_ROOT
+          autoconf
+          ./configure
+          make
+          sudo make install

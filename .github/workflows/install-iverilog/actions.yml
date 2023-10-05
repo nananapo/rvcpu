@@ -1,0 +1,24 @@
+name: Install iverilog
+on:
+  workflow_call:
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install iverilog
+        run: |
+          sudo apt-get install -y autoconf gperf
+          git clone https://github.com/steveicarus/iverilog.git
+          cd iverilog
+          git checkout --track -b v12-branch origin/v12-branch
+          sh autoconf.sh
+          ./configure
+          make
+          sudo sh -c "make install"
