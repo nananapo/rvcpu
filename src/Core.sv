@@ -196,8 +196,8 @@ assign iresp.ready  = !exited && !if_stall;
 
 // 最後のクロックでの分岐ハザード状態
 // このレジスタを介してireqすることで、EXEステージとinstqueueが直接つながらないようにする。
-logic branch_hazard_last_clock        = 0;
-UIntX branch_target_last_clock = 32'h0;
+logic branch_hazard_last_clock  = 0;
+UIntX branch_target_last_clock  = 32'h0;
 
 // branchするとき(分岐予測に失敗したとき)はireq経由でリクエストする
 // ireq.validをtrueにすると、キューがリセットされる。
@@ -209,6 +209,8 @@ always @(posedge clk) begin
     branch_target_last_clock <= branch_target;
 end
 
+IId exe_last_inst_id_to_prevent_double_flush = IID_RANDOM;
+
 // if -> id logic
 always @(posedge clk) begin
     if (branch_hazard_now || branch_hazard_last_clock) begin
@@ -216,6 +218,7 @@ always @(posedge clk) begin
         `ifdef PRINT_DEBUGINFO
             $display("info,decodestage.event.pipeline_flush,pipeline flush");
         `endif
+        exe_last_inst_id_to_prevent_double_flush <= exe_inst_id;
     end else if (!iresp.valid && !id_stall) begin
         id_valid    <= 0;
     end else if (iresp.valid && !id_stall) begin
@@ -273,12 +276,14 @@ always @(posedge clk) begin
     end
 end
 
-wire branch_fail =  exe_valid && !csr_csr_trap_flg && (
-                      ds_valid ?
+wire branch_fail =  exe_valid && 
+                    /*!csr_csr_trap_flg && */ 
+                    exe_inst_id != exe_last_inst_id_to_prevent_double_flush && // TODO HOTFIX
+                    ( ds_valid ?
                           (exe_branch_taken && ds_pc != exe_branch_target) || (!exe_branch_taken && ds_pc != exe_pc + 4)
                       : id_valid ?
                           (exe_branch_taken && id_pc != exe_branch_target) || (!exe_branch_taken && id_pc != exe_pc + 4)
-                      : 1'b0);
+                      : 1'b0 );
 
 // csrはトラップするときに1クロックストールする
 wire branch_hazard_now      = !csr_stall_flg && (csr_csr_trap_flg || branch_fail);
@@ -307,12 +312,12 @@ initial begin
     brinfo.valid = 0;
 end
 
-IId exe_last_inst_id = IID_RANDOM;
+IId send_brinfo_exe_last = IID_RANDOM;
 // 分岐情報を渡す
 always @(posedge clk) begin
-    if (exe_valid) exe_last_inst_id <= exe_inst_id;
+    if (exe_valid) send_brinfo_exe_last <= exe_inst_id;
     brinfo.valid    <=  exe_valid &&
-                        exe_inst_id != exe_last_inst_id &&
+                        exe_inst_id != send_brinfo_exe_last &&
                         (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg);
     brinfo.pc       <= exe_pc;
     brinfo.is_br    <= exe_ctrl.br_exe != BR_X;
@@ -330,7 +335,7 @@ localparam COUNT = 1_000_000;
 
 // 予測の成功率を求める
 always @(posedge clk) begin
-    if (exe_valid && exe_inst_id != exe_last_inst_id) begin
+    if (exe_valid && exe_inst_id != send_brinfo_exe_last) begin
         if (all_inst_count >= COUNT) begin
             $display("MPKI : %d , %d%%", fail_count / (COUNT / 1000), (all_br_count - fail_count) * 100 / all_br_count);
             fail_count = 0;
@@ -547,8 +552,9 @@ always @(posedge clk) begin
         $display("data,decodestage.decode.imm_b,h,%b", id_ds_imm_b);
         $display("data,decodestage.decode.imm_j,h,%b", id_ds_imm_j);
         $display("data,decodestage.decode.imm_u,h,%b", id_ds_imm_u);
-        $display("data,decodestage.decode.imm_z,h,%b", id_ds_imm_z);
+        $display("data,decodestage.decode.imm_z,h,%b", id_ds_imm_z);    
     end
+    $display("data,exestage.ll_last_inst_id,h,%b", exe_last_inst_id_to_prevent_double_flush);
 end
 
 int clk_count = 0;

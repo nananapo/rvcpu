@@ -484,7 +484,7 @@ wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
 
 assign csr_stall_flg =  csr_valid &&
                         cmd_is_2clock &&
-                        (csr_inst_id != saved_inst_id);
+                        (csr_inst_id != saved_inst_id); // TODO HOTFIX
 assign csr_trap_flg  =  csr_valid && 
                         (may_trap || cmd_is_trap) &&
                         (!cmd_is_2clock || csr_inst_id != saved_iid_old); // TODO HOTFIX
