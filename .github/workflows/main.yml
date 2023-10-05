@@ -6,7 +6,7 @@ on:
     branches:
       - 'main'
 jobs:
-  riscv-tests:
+  riscv-tests-p:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,7 +29,31 @@ jobs:
           sudo sh -c "make install"
       - name: Test
         run: |
-          cd test && python3 test.py
+          cd test && python3 test.py -p-
+  riscv-tests-v:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install iverilog
+        run: |
+          sudo apt-get install -y autoconf gperf
+          git clone https://github.com/steveicarus/iverilog.git
+          cd iverilog
+          git checkout --track -b v12-branch origin/v12-branch
+          sh autoconf.sh
+          ./configure
+          make
+          sudo sh -c "make install"
+      - name: Test
+        run: |
+          cd test && python3 test.py -v-
   verilator-lint:
     runs-on: ubuntu-latest
     steps:
