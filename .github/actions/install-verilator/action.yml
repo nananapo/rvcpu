@@ -4,6 +4,7 @@ on:
 runs:
   steps:
     - name: Install verilator
+      shell: bash
       run: |
         sudo apt-get -y install verilator
         verilator --version
