@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-iverilog.yml
+      - uses: ./.github/actions/install-iverilog
       - name: Test
         run: |
           cd test && python3 test.py mi-p-
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-iverilog.yml
+      - uses: ./.github/actions/install-iverilog
       - name: Test
         run: |
           cd test && python3 test.py si-p-
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-iverilog.yml
+      - uses: ./.github/actions/install-iverilog
       - name: Test
         run: |
           cd test && python3 test.py ua-p-
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-iverilog.yml
+      - uses: ./.github/actions/install-iverilog
       - name: Test
         run: |
           cd test && python3 test.py ui-p-
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-iverilog.yml
+      - uses: ./.github/actions/install-iverilog
       - name: Test
         run: |
           cd test && python3 test.py ui-v-
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-iverilog.yml
+      - uses: ./.github/actions/install-iverilog
       - name: Test
         run: |
           cd test && python3 test.py um-p-
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-iverilog.yml
+      - uses: ./.github/actions/install-iverilog
       - name: Test
         run: |
           cd test && python3 test.py um-v-
@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-verilator.yml
+      - uses: ./.github/actions/install-verilator
       - name: Lint
         run: |
           cd src
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-verilator.yml
+      - uses: ./.github/actions/install-verilator
       - name: Test
         run: |
           cd src
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/install-verilator.yml
+      - uses: ./.github/actions/install-verilator
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
