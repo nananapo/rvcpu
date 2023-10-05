@@ -16,7 +16,7 @@ module MMIO_clint #(
     output UInt64       mtimecmp
 );
 
-`include "include/memorymap.svh"
+`include "memorymap.svh"
 
 assign req_ready    = 1;
 assign resp_valid   = 1;

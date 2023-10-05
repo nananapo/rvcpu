@@ -108,7 +108,7 @@ Memory #(
     .req_wdata(mbreq_mem.wdata),
     .resp_valid(mbresp_mem.valid),
     .resp_addr(mbresp_mem.addr),
-    .resp_error(mbresp_error.error),
+    .resp_error(mbresp_mem.error),
     .resp_rdata(mbresp_mem.rdata)
 );
 

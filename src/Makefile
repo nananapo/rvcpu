@@ -30,7 +30,6 @@ FILES = test.sv \
 		TwoBitCounter.sv \
 		LocalHistory2bit.sv \
 		GlobalHistory2bit.sv \
-		FastSyncQueue.sv \
 
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TESTS -DPRINT_DEBUGINFO
