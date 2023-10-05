@@ -38,6 +38,15 @@ jobs:
         run: |
           sudo apt-get -y install verilator
           verilator --version
+          sudo apt-get -y remove verilator
+          git clone https://github.com/verilator/verilator
+          cd verilator
+          git checkout v5.016
+          unset VERILATOR_ROOT
+          autoconf
+          ./configure
+          make
+          sudo make install
       - name: Lint
         run: |
           cd src
