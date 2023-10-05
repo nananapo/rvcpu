@@ -65,8 +65,9 @@ jobs:
           sudo apt-get -y remove verilator
           git clone https://github.com/verilator/verilator
           cd verilator
-          cp /usr/include/FlexLexer.h .
           git checkout v5.016
+          git clone https://github.com/westes/flex .flex
+          cp .flex/src/FlexLexer.h .
           unset VERILATOR_ROOT
           autoconf
           ./configure
