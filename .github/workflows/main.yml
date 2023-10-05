@@ -70,11 +70,16 @@ jobs:
           autoconf
           ./configure
           make
+      - name: Install verilator 2
+        run: |
+          make
           sudo make install
+        if: ${{ always() }}
       - name: Lint
         run: |
           cd src
           make v
+        if: ${{ always() }}
   coremark-bench:
     runs-on: ubuntu-latest
     steps:
