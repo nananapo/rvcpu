@@ -67,7 +67,7 @@ jobs:
           cd verilator
           git checkout v5.016
           git clone https://github.com/westes/flex .flex
-          cp .flex/src/FlexLexer.h .
+          cp .flex/src/FlexLexer.h include/FlexLexer.h
           unset VERILATOR_ROOT
           autoconf
           ./configure
