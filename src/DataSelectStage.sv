@@ -104,6 +104,7 @@ assign ds_exe_inst      = inst;
 assign ds_exe_inst_id   = inst_id;
 
 // idからそのまま
+assign ds_exe_ctrl.is_legal     = ds_ctrl.is_legal;
 assign ds_exe_ctrl.i_exe        = ds_ctrl.i_exe;
 assign ds_exe_ctrl.br_exe       = ds_ctrl.br_exe;
 assign ds_exe_ctrl.sign_sel     = ds_ctrl.sign_sel;

@@ -129,6 +129,7 @@ typedef enum logic [3:0] {
 
 typedef struct packed 
 {
+    logic       is_legal;
     AluSel      i_exe;
     BrSel       br_exe;
     SignSel     sign_sel;
