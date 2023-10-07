@@ -118,7 +118,7 @@ function [
 endfunction
 
 assign {
-    ctrl.valid_inst,
+    ctrl.is_legal,
     ctrl.i_exe,
     ctrl.br_exe,
     ctrl.sign_sel,
