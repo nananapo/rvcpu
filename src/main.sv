@@ -82,8 +82,10 @@ wire DReq       dreq_core_mmio;
 wire DResp      dresp_core_mmio;
 
 `ifndef MEM_FILE
-    `define MEM_FILE "../test/riscv-tests/rv32ui-p-add.bin.aligned"
-    initial $display("WARN : initial memory file (MEM_FILE) is not set. default to %s", `MEM_FILE);
+    initial begin
+        $display("ERROR : initial memory file (MEM_FILE) is not set.");
+        $finish;
+    end
 `endif
 `ifndef MEMORY_SIZE
     `define MEMORY_WIDTH 20
