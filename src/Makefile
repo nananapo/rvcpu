@@ -77,12 +77,12 @@ dk:
 	make dv
 
 v:
-	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M main.sv
-	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32A main.sv
-	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
-	verilator --lint-only --top-module main -DDEBUG -DEXCLUDE_PREDICTION_MODULE main.sv
-	verilator --lint-only --top-module main $(DEFINE_DEBUG) main.sv
-	verilator --lint-only --top-module main $(DEFINE_RISCV_TESTS) main.sv
-	verilator --lint-only --top-module main $(DEFINE_MEMORY_UART) main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_RV32M main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_PREDICTION_MODULE main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_DEBUG) main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_RISCV_TESTS) main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_MEMORY_UART) main.sv
 
 .PHONY: d v
