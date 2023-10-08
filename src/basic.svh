@@ -166,4 +166,10 @@ typedef enum logic [1:0] {
     U_MODE = 2'b00  // User Mode
 } modetype;
 
+typedef struct packed {
+    logic is_expt;
+    logic is_intr;
+    logic cause;
+} TrapInfo;
+
 `endif
