@@ -10,11 +10,11 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
   val path = os.pwd / os.RelPath("src/test/resources/bin/add.bin")
   val xlen = 32
   val memWidth = 16
-  val randomAccsessCount = 4000
+  val randomAccsessCount = 4096
   val randomWriteCount = 4096
 
-  for (delay <- 0 to 5) {
-    for (cacheWidth <- 2 to 8 by 2) {
+  for (delay <- 0 to 8) {
+    for (cacheWidth <- 2 to 8) {
       s"DCache($cacheWidth) should read correct data sequentially from Memory($delay delay)" in {
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           var addr = 0

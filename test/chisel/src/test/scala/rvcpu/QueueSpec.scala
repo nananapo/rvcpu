@@ -7,7 +7,7 @@ import scala.util.Random
 import scala.math.pow
 
 class QueueSpec extends AnyFreeSpec with ChiselScalatestTester {
-  for (size <- Range(0, 8)) {
+  for (size <- Range(0, 16)) {
     s"SyncQueue(32, $size) should not accept data when queue is full" in {
       test(new SyncQueueWrapperModule(32, size)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
         // initial check
@@ -60,7 +60,7 @@ class QueueSpec extends AnyFreeSpec with ChiselScalatestTester {
       }
     }
   }
-  for (size <- Range(2, 6)) {
+  for (size <- Range(2, 16)) {
     s"SyncQueue(32, $size) should provide rdata when wvalid = 1" in {
       test(new SyncQueueWrapperModule(32, size)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
         val random = new Random
