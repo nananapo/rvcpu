@@ -1,3 +1,6 @@
 tmp.*
 debug.*
 obj_dir/
+.metals/
+.vscode/
+.scala-build/
