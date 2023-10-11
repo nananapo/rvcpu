@@ -129,7 +129,6 @@ typedef enum logic [3:0] {
 
 typedef struct packed 
 {
-    logic       is_legal;
     AluSel      i_exe;
     BrSel       br_exe;
     SignSel     sign_sel;
@@ -167,9 +166,9 @@ typedef enum logic [1:0] {
 } modetype;
 
 typedef struct packed {
-    logic is_expt;
-    logic is_intr;
-    logic cause;
+    logic   is_expt;
+    logic   is_intr;
+    UIntX   cause;
 } TrapInfo;
 
 `endif

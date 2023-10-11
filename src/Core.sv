@@ -26,69 +26,77 @@ module Core #(
     output UIntX    gp
 );
 
+`include "csrparam.svh"
 `include "basicparams.svh"
 
 // id reg
-logic   id_valid    = 0;
-Addr    id_pc       = ADDR_X;
-Inst    id_inst     = INST_NOP;
-IId     id_inst_id;
+logic       id_valid    = 0;
+TrapInfo    id_trap     = 0; // TODO assign
+Addr        id_pc       = ADDR_X;
+Inst        id_inst     = INST_NOP;
+IId         id_inst_id;
+
+// id wire
+wire        id_is_illegal;
 
 // id -> ds wire
-wire        id_ds_valid    = id_valid;
-wire Addr   id_ds_pc       = id_pc;
-wire Inst   id_ds_inst     = id_inst;
-wire IId    id_ds_inst_id  = id_inst_id;
-wire Ctrl   id_ds_ctrl;
-wire UIntX  id_ds_imm_i;
-wire UIntX  id_ds_imm_s;
-wire UIntX  id_ds_imm_b;
-wire UIntX  id_ds_imm_j;
-wire UIntX  id_ds_imm_u;
-wire UIntX  id_ds_imm_z;
-
+wire            id_ds_valid     = id_valid;
+wire TrapInfo   id_ds_trap;
+wire Addr       id_ds_pc        = id_pc;
+wire Inst       id_ds_inst      = id_inst;
+wire IId        id_ds_inst_id   = id_inst_id;
+wire Ctrl       id_ds_ctrl;
+wire UIntX      id_ds_imm_i;
+wire UIntX      id_ds_imm_s;
+wire UIntX      id_ds_imm_b;
+wire UIntX      id_ds_imm_j;
+wire UIntX      id_ds_imm_u;
+wire UIntX      id_ds_imm_z;
 
 // ds reg
-logic   ds_valid = 0;
-Addr    ds_pc;
-Inst    ds_inst;
-IId     ds_inst_id;
-Ctrl    ds_ctrl;
-UIntX   ds_imm_i;
-UIntX   ds_imm_s;
-UIntX   ds_imm_b;
-UIntX   ds_imm_j;
-UIntX   ds_imm_u;
-UIntX   ds_imm_z;
+logic       ds_valid = 0;
+Addr        ds_pc;
+TrapInfo    ds_trap;
+Inst        ds_inst;
+IId         ds_inst_id;
+Ctrl        ds_ctrl;
+UIntX       ds_imm_i;
+UIntX       ds_imm_s;
+UIntX       ds_imm_b;
+UIntX       ds_imm_j;
+UIntX       ds_imm_u;
+UIntX       ds_imm_z;
 
 // ds wire
 wire    ds_dh_stall; // datahazard
 
 // ds -> exe wire
-wire        ds_exe_valid;
-wire Addr   ds_exe_pc;
-wire Inst   ds_exe_inst;
-wire IId    ds_exe_inst_id;
-wire Ctrl   ds_exe_ctrl;
-wire UIntX  ds_exe_imm_i;
-wire UIntX  ds_exe_imm_j;
-wire UIntX  ds_exe_imm_b;
-wire UIntX  ds_exe_op1_data;
-wire UIntX  ds_exe_op2_data;
-wire UIntX  ds_exe_rs2_data;
+wire            ds_exe_valid;
+wire TrapInfo   ds_exe_trap;
+wire Addr       ds_exe_pc;
+wire Inst       ds_exe_inst;
+wire IId        ds_exe_inst_id;
+wire Ctrl       ds_exe_ctrl;
+wire UIntX      ds_exe_imm_i;
+wire UIntX      ds_exe_imm_j;
+wire UIntX      ds_exe_imm_b;
+wire UIntX      ds_exe_op1_data;
+wire UIntX      ds_exe_op2_data;
+wire UIntX      ds_exe_rs2_data;
 
 // exe, csr reg
-logic   exe_valid = 0;
-Addr    exe_pc;
-Inst    exe_inst;
-IId     exe_inst_id;
-Ctrl    exe_ctrl;
-UIntX   exe_imm_i;
-UIntX   exe_imm_b;
-UIntX   exe_imm_j;
-UIntX   exe_op1_data;
-UIntX   exe_op2_data;
-UIntX   exe_rs2_data;
+logic       exe_valid = 0;
+TrapInfo    exe_trap;
+Addr        exe_pc;
+Inst        exe_inst;
+IId         exe_inst_id;
+Ctrl        exe_ctrl;
+UIntX       exe_imm_i;
+UIntX       exe_imm_b;
+UIntX       exe_imm_j;
+UIntX       exe_op1_data;
+UIntX       exe_op2_data;
+UIntX       exe_rs2_data;
 
 // exe wire
 wire        exe_branch_taken;
@@ -96,54 +104,59 @@ wire Addr   exe_branch_target;
 wire        exe_calc_stall;
 
 // csr wire
+// TODO csr trapinfo
 wire        csr_csr_trap_flg;
 wire Addr   csr_trap_vector;
 wire        csr_stall_flg;
 
 // exe -> mem wire
-wire        exe_mem_valid;
-wire Addr   exe_mem_pc;
-wire Inst   exe_mem_inst;
-wire IId    exe_mem_inst_id;
-wire Ctrl   exe_mem_ctrl;
-wire UIntX  exe_mem_alu_out;
-wire UIntX  exe_mem_rs2_data;
+wire            exe_mem_valid;
+wire TrapInfo   exe_mem_trap;
+wire Addr       exe_mem_pc;
+wire Inst       exe_mem_inst;
+wire IId        exe_mem_inst_id;
+wire Ctrl       exe_mem_ctrl;
+wire UIntX      exe_mem_alu_out;
+wire UIntX      exe_mem_rs2_data;
 
 // csr -> mem wire
 wire UIntX  csr_mem_csr_rdata;
 
 // mem reg
-logic   mem_valid = 0;
-Addr    mem_pc;
-Inst    mem_inst;
-IId     mem_inst_id;
-Ctrl    mem_ctrl;
-UIntX   mem_alu_out;
-UIntX   mem_csr_rdata;
-UIntX   mem_rs2_data;
+logic       mem_valid = 0;
+TrapInfo    mem_trap;
+Addr        mem_pc;
+Inst        mem_inst;
+IId         mem_inst_id;
+Ctrl        mem_ctrl;
+UIntX       mem_alu_out;
+UIntX       mem_csr_rdata;
+UIntX       mem_rs2_data;
 
 // mem wire
 wire    mem_memory_unit_stall;
 
 // mem -> wb wire
-wire        mem_wb_valid;
-wire Addr   mem_wb_pc;
-wire Inst   mem_wb_inst;
-wire IId    mem_wb_inst_id;
-wire Ctrl   mem_wb_ctrl;
-wire UIntX  mem_wb_alu_out;
-wire UIntX  mem_wb_mem_rdata;
-wire UIntX  mem_wb_csr_rdata;
+wire            mem_wb_valid;
+wire TrapInfo   mem_wb_trap;
+wire Addr       mem_wb_pc;
+wire Inst       mem_wb_inst;
+wire IId        mem_wb_inst_id;
+wire Ctrl       mem_wb_ctrl;
+wire UIntX      mem_wb_alu_out;
+wire UIntX      mem_wb_mem_rdata;
+wire UIntX      mem_wb_csr_rdata;
 
 // wb reg
-logic   wb_valid = 0;
-Addr    wb_pc;
-Inst    wb_inst;
-IId     wb_inst_id;
-Ctrl    wb_ctrl;
-UIntX   wb_alu_out;
-UIntX   wb_mem_rdata;
-UIntX   wb_csr_rdata;
+logic       wb_valid = 0;
+TrapInfo    wb_trap;
+Addr        wb_pc;
+Inst        wb_inst;
+IId         wb_inst_id;
+Ctrl        wb_ctrl;
+UIntX       wb_alu_out;
+UIntX       wb_mem_rdata;
+UIntX       wb_csr_rdata;
 
 wire UIntX  wb_wdata_out;
 wire UIntX  wb_regfile[31:0];
@@ -229,6 +242,12 @@ always @(posedge clk) begin
     end
 end
 
+// interruptは必ずCSRステージで起こす
+assign id_ds_trap.is_expt   = id_trap.is_expt || id_is_illegal;
+// assign id_ds_trap.is_intr   = id_trap.is_intr;
+assign id_ds_trap.cause     =   id_trap.is_expt ? id_trap.cause : 
+                                id_is_illegal ? CAUSE_ILLEGAL_INSTRUCTION : 0;
+
 // id -> ds logic
 always @(posedge clk) begin
     if (branch_hazard_now) begin
@@ -240,6 +259,7 @@ always @(posedge clk) begin
         ds_valid    <= 0;
     else if (!id_stall && !ds_stall) begin
         ds_valid    <= id_ds_valid;
+        ds_trap     <= id_ds_trap;
         ds_pc       <= id_ds_pc;
         ds_inst     <= id_ds_inst;
         ds_inst_id  <= id_ds_inst_id;
@@ -373,6 +393,7 @@ end
 // ID Stage
 IDecode #() idecode (
     .inst(id_inst),
+    .is_illegal(id_is_illegal),
     .ctrl(id_ds_ctrl)
 );
 
@@ -451,35 +472,6 @@ ExecuteStage #() executestage
     .calc_stall_flg(exe_calc_stall)
 );
 
-CSRStage #(
-    .FMAX_MHz(FMAX_MHz)
-) csrstage
-(
-    .clk(clk),
-
-    .csr_valid(exe_valid),
-    .csr_pc(exe_pc),
-    .csr_inst(exe_inst),
-    .csr_inst_id(exe_inst_id),
-    .csr_ctrl(exe_ctrl),
-    .csr_imm_i(exe_imm_i),
-    .csr_op1_data(exe_op1_data),
-
-    .csr_mem_csr_rdata(csr_mem_csr_rdata),
-    
-    .csr_stall_flg(csr_stall_flg),
-    .csr_trap_flg(csr_csr_trap_flg),
-    .csr_trap_vector(csr_trap_vector),
-
-    .reg_cycle(reg_cycle),
-    .reg_time(reg_time),
-    .reg_mtime(reg_mtime),
-    .reg_mtimecmp(reg_mtimecmp),
-
-    .output_mode(csr_mode),
-    .output_satp(csr_satp)
-);
-
 MemoryStage #() memorystage
 (
     .clk(clk),
@@ -508,6 +500,35 @@ MemoryStage #() memorystage
     .memory_unit_stall(mem_memory_unit_stall),
 
     .exit(exit)
+);
+
+CSRStage #(
+    .FMAX_MHz(FMAX_MHz)
+) csrstage
+(
+    .clk(clk),
+
+    .csr_valid(exe_valid),
+    .csr_pc(exe_pc),
+    .csr_inst(exe_inst),
+    .csr_inst_id(exe_inst_id),
+    .csr_ctrl(exe_ctrl),
+    .csr_imm_i(exe_imm_i),
+    .csr_op1_data(exe_op1_data),
+
+    .csr_mem_csr_rdata(csr_mem_csr_rdata),
+    
+    .csr_stall_flg(csr_stall_flg),
+    .csr_trap_flg(csr_csr_trap_flg),
+    .csr_trap_vector(csr_trap_vector),
+
+    .reg_cycle(reg_cycle),
+    .reg_time(reg_time),
+    .reg_mtime(reg_mtime),
+    .reg_mtimecmp(reg_mtimecmp),
+
+    .output_mode(csr_mode),
+    .output_satp(csr_satp)
 );
 
 WriteBackStage #() wbstage(

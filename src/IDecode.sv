@@ -1,6 +1,7 @@
 module IDecode (
-    input wire Inst inst,
-    output wire Ctrl ctrl
+    input wire Inst     inst,
+    output wire logic   is_illegal,
+    output wire Ctrl    ctrl
 );
 
 `include "inst.svh"
@@ -117,8 +118,11 @@ function [
     endcase
 endfunction
 
+wire is_legal;
+assign is_illegal = is_legal;
+
 assign {
-    ctrl.is_legal,
+    is_legal,
     ctrl.i_exe,
     ctrl.br_exe,
     ctrl.sign_sel,
