@@ -29,6 +29,8 @@ IF_INFO_INST    = "fetchstage.event.inst"
 IF_BRANCH_HAZARD    = "fetchstage.event.branch_hazard"
 ID_PIPELINE_FLUSH   = "decodestage.event.pipeline_flush"
 DS_PIPELINE_FLUSH   = "datastage.event.pipeline_flush"
+EXE_PIPELINE_FLUSH   = "exestage.event.pipeline_flush"
+MEM_PIPELINE_FLUSH   = "memstage.event.pipeline_flush"
 
 def filter_prefix(d, prefix):
     r = dict()
