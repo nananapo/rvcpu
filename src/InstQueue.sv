@@ -66,13 +66,14 @@ wire Addr next_pc;
 
 
 
-Addr last_fetched_pc = 32'h0;
-Inst last_fetched_inst = 32'h0;
+Addr last_fetched_pc    = 32'h0;
+Inst last_fetched_inst  = 32'h0;
 
 
 // TODO この処理を適切な場所に移動したい。
-wire Addr fetched_pc      = requested ? request_pc : last_fetched_pc;
-wire Inst fetched_inst    = requested ? memresp.rdata : last_fetched_inst;
+wire fetched_is_valid   = !requested || memresp.valid;
+wire Addr fetched_pc    = requested ? request_pc : last_fetched_pc;
+wire Inst fetched_inst  = requested ? memresp.rdata : last_fetched_inst;
 
 wire [19:0] imm_j_g         = { fetched_inst[31],
                                 fetched_inst[19:12],
@@ -89,11 +90,11 @@ wire UIntX  imm_b_sext      = {{19{imm_b_g[11]}}, imm_b_g, 1'b0};
 wire [6:0]  inst_opcode     = fetched_inst[6:0];
 wire [2:0]  inst_funct3     = fetched_inst[14:12];
 
-wire        inst_is_jal     = inst_opcode == JAL_OP;
 wire Addr   jal_target      = fetched_pc + imm_j_sext;
 
-wire inst_is_jalr = inst_opcode == JALR_OP && inst_funct3 == JALR_F3;
-wire inst_is_br = inst_opcode == BR_OP;
+wire inst_is_jal    = fetched_is_valid && inst_opcode == JAL_OP;
+wire inst_is_jalr   = fetched_is_valid && inst_opcode == JALR_OP && inst_funct3 == JALR_F3;
+wire inst_is_br     = fetched_is_valid && inst_opcode == BR_OP;
 
 wire jal_hazard = inst_is_jal && /* requested &&*/ request_pc != jal_target;
 // TODO ここまで
