@@ -105,13 +105,13 @@ typedef enum logic [1:0] {
 } WbSel;
 
 typedef enum logic [2:0] {
-    CSR_X,    
-    CSR_W,    
-    CSR_S,    
-    CSR_C,    
+    CSR_X,
+    CSR_W,
+    CSR_S,
+    CSR_C,
     CSR_ECALL,
-    CSR_SRET, 
-    CSR_MRET 
+    CSR_SRET,
+    CSR_MRET
 } CsrCmd;
 
 typedef enum logic [3:0] {

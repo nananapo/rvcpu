@@ -552,7 +552,6 @@ if (csr_valid && csr_inst_id != saved_inst_id) begin
                 default: begin end
             endcase
         end
-
         if (can_write && cmd_is_write) begin
             case (addr)
                 // Machine Trap Setup

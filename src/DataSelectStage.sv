@@ -1,6 +1,6 @@
 module DataSelectStage
 (
-    input wire clk,
+    input wire          clk,
     input wire UIntX    regfile[31:0],
 
     input wire          ds_valid,

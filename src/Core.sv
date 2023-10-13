@@ -35,10 +35,8 @@ TrapInfo    id_trap     = 0; // TODO assign
 Addr        id_pc       = ADDR_X;
 Inst        id_inst     = INST_NOP;
 IId         id_inst_id;
-
 // id wire
 wire        id_is_illegal;
-
 // id -> ds wire
 wire            id_ds_valid     = id_valid;
 wire TrapInfo   id_ds_trap;
@@ -97,7 +95,6 @@ UIntX       exe_imm_j;
 UIntX       exe_op1_data;
 UIntX       exe_op2_data;
 UIntX       exe_rs2_data;
-
 // exe wire
 wire        exe_branch_taken;
 wire Addr   exe_branch_target;
@@ -132,7 +129,6 @@ Ctrl        mem_ctrl;
 UIntX       mem_alu_out;
 UIntX       mem_csr_rdata;
 UIntX       mem_rs2_data;
-
 // mem wire
 wire    mem_memory_unit_stall;
 
