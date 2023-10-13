@@ -68,22 +68,19 @@ https://github.com/users/nananapo/projects/1/views/2
 ```txt
       Memory
         |
-    MemBusCntr--------------
-        |                   \
-        |                DCache
-        |                   |
-     ICache            DAccessCntr
-        |                   |
-       PTW              MMIO_Cntr
-        |                   |
-    InstQueue              PTW
-        |                   |
-Core---------------------------------
-|       |                   |
-|   IF/ID -> DS -> CSR -> MEM -> WB
-|               -> EXE ->
-|                   |
-|            MulNbit/DivNbit
+    MemBusCntr---------------------
+        |                         |
+        |                      DCache
+        |                         |
+     ICache                  DAccessCntr
+        |                         |
+       PTW                    MMIO_Cntr
+        |                         |
+    InstQueue                    PTW
+        |                         |
+        IF -> ID -> DS -> EXE -> MEM -> CSR -> WB
+                           |
+                        Mul/Div
 ```
 
 
