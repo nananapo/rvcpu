@@ -1,43 +1,40 @@
+`include "muldiv.svh"
+
 module ExecuteStage
 (
     input wire          clk,
+    input wire          flush,
+    input wire          valid,
+    input wire          is_new,
+    input wire Addr     pc,
+    input wire Inst     inst,
+    input wire IId      inst_id,
+    input wire Ctrl     ctrl,
+    input wire UIntX    imm_b,
+    input wire UIntX    imm_j,
+    input wire UIntX    op1_data,
+    input wire UIntX    op2_data,
+    input wire UIntX    rs2_data,
 
-    input wire          exe_valid,
-    input wire Addr     exe_pc,
-    input wire Inst     exe_inst,
-    input wire IId      exe_inst_id,
-    input wire Ctrl     exe_ctrl,
-    input wire UIntX    exe_imm_b,
-    input wire UIntX    exe_imm_j,
-    input wire UIntX    exe_op1_data,
-    input wire UIntX    exe_op2_data,
-    input wire UIntX    exe_rs2_data,
+    output wire UIntX   next_alu_out,
 
-    output wire         exe_mem_valid,
-    output wire Addr    exe_mem_pc,
-    output wire Inst    exe_mem_inst,
-    output wire IId     exe_mem_inst_id,
-    output wire Ctrl    exe_mem_ctrl,
-    output wire UIntX   exe_mem_alu_out,
-    output wire UIntX   exe_mem_rs2_data,
-    
     output wire         branch_taken,
     output wire Addr    branch_target,
-
-    output wire         calc_stall_flg
+    output wire         is_stall
 );
 
 `include "basicparams.svh"
 
-wire Addr pc        = exe_pc;
-wire Inst inst      = exe_inst;
-wire IId  inst_id   = exe_inst_id;
-wire Ctrl ctrl      = exe_ctrl;
+typedef enum logic [1:0] {
+    IDLE,
+    WAIT_READY,
+    WAIT_CALC
+} statetype;
 
-wire AluSel i_exe   = exe_ctrl.i_exe;
-wire BrSel  br_exe  = exe_ctrl.br_exe;
-wire UIntX  op1_data= exe_op1_data;
-wire UIntX  op2_data= exe_op2_data;
+statetype state = IDLE;
+
+wire AluSel i_exe   = ctrl.i_exe;
+wire BrSel  br_exe  = ctrl.br_exe;
 
 wire UIntX alu_out;
 wire alu_branch_take;
@@ -55,130 +52,70 @@ ALU #(
     .branch_take(alu_branch_take)
 );
 
-DivNbit #(
-    .SIZE(33) // オーバーフロー対策
-) divnbitm(
+wire MulDivReq mdreq;
+wire MulDivResp mdresp;
+MulDivModule #() muldiv (
     .clk(clk),
-    .start(divm_start),
-    .ready(divm_ready),
-    .valid(divm_valid),
-    .error(divm_error),
-    .is_signed(divm_signed),
-    .dividend(divm_dividend),
-    .divisor(divm_divisor),
-    .quotient(divm_quotient),
-    .remainder(divm_remainder)
-);
-MultNbit #(
-    .SIZE(33) // s * u用
-) m (
-    .clk(clk),
-    .start(multm_start),
-    .ready(multm_ready),
-    .valid(multm_valid),
-    .is_signed(multm_signed),
-    .multiplicand(multm_multiplicand),
-    .multiplier(multm_multiplier),
-    .product(multm_product)
+    .req(mdreq),
+    .resp(mdresp)
 );
 
-wire    is_div          = i_exe == ALU_DIV || i_exe == ALU_REM;
-wire    is_mul          = i_exe == ALU_MUL || i_exe == ALU_MULH || i_exe == ALU_MULHSU;
+wire is_muldiv          = i_exe == ALU_DIV ||i_exe == ALU_REM ||
+                          i_exe == ALU_MUL || i_exe == ALU_MULH || i_exe == ALU_MULHSU;
 
-logic   calc_started    = 0; // 複数サイクルかかる計算を開始済みか
-logic   is_calculated   = 0; // 複数サイクルかかる計算が終了しているか
+assign mdreq.valid      = valid && ((is_new && state == IDLE && is_muldiv) || state == WAIT_READY);
+assign mdreq.sel        = i_exe;
+assign mdreq.is_signed  = ctrl.sign_sel == OP_SIGNED;
+assign mdreq.op1        = op1_data;
+assign mdreq.op2        = op2_data;
 
-IId     saved_inst_id   = IID_RANDOM;
-wire    may_start_m     = !is_calculated || saved_inst_id != inst_id; // 複数サイクルかかる計算を始める可能性があるか
+assign is_stall         = valid && 
+                            (
+                                (is_new && state == IDLE && is_muldiv) ||   // 計算前
+                                state == WAIT_READY ||                      // 待ち
+                                (state == WAIT_CALC && !mdresp.valid)       // 計算中
+                            );
 
-wire    divm_start      = exe_valid && is_div && may_start_m && divm_ready;
-wire    divm_signed     = ctrl.sign_sel;
-wire    divm_ready;
-wire    divm_valid;
-wire    divm_error;
-wire [32:0] divm_dividend   = divm_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};
-wire [32:0] divm_divisor    = divm_signed ? {op2_data[31], op2_data} : {1'b0, op2_data};
-wire [32:0] divm_quotient;
-wire [32:0] divm_remainder;
-
-wire    multm_start     = exe_valid && is_mul && may_start_m && multm_ready;
-wire    multm_signed    = ctrl.sign_sel;
-wire    multm_ready;
-wire    multm_valid;
-wire [32:0] multm_multiplicand  = multm_signed ? {op1_data[31], op1_data} : {1'b0, op1_data};
-wire [32:0] multm_multiplier    = multm_signed && i_exe != ALU_MULHSU ? {op2_data[31], op2_data} : {1'b0, op2_data};
-wire [65:0] multm_product;
-
-UIntX   saved_result        = 0; // 複数サイクルかかる計算の結果
-wire    calc_valid          = (is_div && divm_valid) || (is_mul && multm_valid); // 複数サイクルかかる計算が今クロックで終了したか
-wire    is_multicycle_exe   = is_div || is_mul; // 現在のi_exeが複数サイクルかかる計算かどうか
-
-assign calc_stall_flg   = exe_valid && is_multicycle_exe && 
-                          (divm_start || multm_start || !is_calculated); // モジュールで計算を始める = 未計算
-
-assign exe_mem_valid    = exe_valid && !calc_stall_flg;
-assign exe_mem_pc       = exe_pc;
-assign exe_mem_inst     = exe_inst;
-assign exe_mem_inst_id  = exe_inst_id;
-assign exe_mem_ctrl     = exe_ctrl;
-assign exe_mem_rs2_data = exe_rs2_data;
-
-assign exe_mem_alu_out  = is_div || is_mul ? saved_result : alu_out;
-
-assign branch_taken     = exe_valid && 
-                          (exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg || alu_branch_take);
-assign branch_target    = exe_ctrl.jmp_pc_flg ? exe_pc + exe_imm_j :
-                          exe_ctrl.jmp_reg_flg ? op1_data + op2_data :
-                          pc + exe_imm_b;
+assign next_alu_out     = state == WAIT_CALC ? mdresp.result : alu_out;
+assign branch_taken     = valid && 
+                          (ctrl.jmp_pc_flg || ctrl.jmp_reg_flg || alu_branch_take);
+assign branch_target    = ctrl.jmp_pc_flg ? pc + imm_j :
+                          ctrl.jmp_reg_flg ? op1_data + op2_data :
+                          pc + imm_b;
 
 always @(posedge clk) begin
-    if (exe_valid)
-        saved_inst_id <= inst_id;
-end
-
-always @(posedge clk) begin
-    // EX STAGE
-    if (!exe_valid || !is_multicycle_exe) begin
+    if (flush || !valid) begin
         // TODO kill muldiv
-        calc_started    <= 0;
-        is_calculated   <= 0;
-    end else if (may_start_m) begin
-        // 計算を始める
-        if (!calc_started) begin
-            is_calculated   <= 0;
-            calc_started    <= divm_start || multm_start;
-        // 結果を待つ
-        end else if (calc_started && calc_valid) begin
-            is_calculated   <= 1;
-            calc_started    <= 0;
-            case (i_exe) 
-                ALU_DIV    : saved_result <= divm_quotient[31:0];
-                ALU_REM    : saved_result <= divm_remainder[31:0];
-                ALU_MUL    : saved_result <= multm_product[31:0];
-                ALU_MULH   : saved_result <= multm_product[63:32];
-                ALU_MULHSU : saved_result <= multm_product[63:32];
-                default     : saved_result <= 0;
-            endcase
-        end else begin
-            is_calculated   <= 0;
-        end
+        state <= IDLE; 
+    end else begin
+        case (state)
+            IDLE: if (is_muldiv) begin
+                state <= mdreq.ready ? WAIT_CALC : WAIT_READY;
+            end
+            WAIT_READY: if (mdreq.ready) state <= WAIT_CALC;
+            WAIT_CALC: if (mdresp.valid) state <= IDLE;
+            default: begin
+                $display("ExecuteStage : Unknown state %d", state);
+                $finish;
+            end
+        endcase
     end
 end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,exestage.valid,b,%b", exe_valid);
-    $display("data,exestage.inst_id,h,%b", exe_valid ? exe_inst_id : IID_X);
-    if (exe_valid) begin
-        $display("data,exestage.pc,h,%b", exe_pc);
-        $display("data,exestage.inst,h,%b", exe_inst);
+    $display("data,exestage.valid,b,%b", valid);
+    $display("data,exestage.inst_id,h,%b", valid ? inst_id : IID_X);
+    if (valid) begin
+        $display("data,exestage.pc,h,%b", pc);
+        $display("data,exestage.inst,h,%b", inst);
         $display("data,exestage.i_exe,d,%b", i_exe);
         $display("data,exestage.br_exe,d,%b", br_exe);
         $display("data,exestage.op1_data,h,%b", op1_data);
         $display("data,exestage.op2_data,h,%b", op2_data);
-        $display("data,exestage.calc_stall,b,%b", calc_stall_flg);
-        $display("data,exestage.ismulticyc,b,%b", is_multicycle_exe);
-        $display("data,exestage.jmp_flg,d,%b", exe_ctrl.jmp_reg_flg || exe_ctrl.jmp_pc_flg);
+        $display("data,exestage.is_stall,b,%b", is_stall);
+        $display("data,exestage.is_muldiv,b,%b", is_muldiv);
+        $display("data,exestage.jmp_flg,d,%b", ctrl.jmp_reg_flg || ctrl.jmp_pc_flg);
         $display("data,exestage.branch_taken,b,%b", branch_taken);
         $display("data,exestage.branch_target,h,%b", branch_target);
     end

@@ -1,84 +1,51 @@
 module WriteBackStage(
-    input wire clk,
+    input wire          clk,
+    input wire          valid,
+    input wire Addr     pc,
+    input wire Inst     inst,
+    input wire IId      inst_id,
+    input wire RwenSel  rf_wen,
+    input wire UInt5    reg_addr,
+    input wire UIntX    wdata,
 
-    output UIntX regfile[31:0],
-
-    input wire          wb_valid,
-    input wire Addr     wb_pc,
-    input wire Inst     wb_inst,
-    input wire IId      wb_inst_id,
-    input wire Ctrl     wb_ctrl,
-    input wire UIntX    wb_alu_out,
-    input wire UIntX    wb_mem_rdata,
-    input wire UIntX    wb_csr_rdata,
-
-    output wire UIntX   wb_wdata_out
+    output UIntX        regfile[31:0]
 );
 
 `include "basicparams.svh"
-
-wire Addr   pc          = wb_pc;
-wire Inst   inst        = wb_inst;
-wire IId    inst_id     = wb_inst_id;
-wire Ctrl   ctrl        = wb_ctrl;
-wire UIntX  alu_out     = wb_alu_out;
-wire UIntX  memory_rdata= wb_mem_rdata;
-wire UIntX  csr_rdata   = wb_csr_rdata;
-
 initial begin
+    regfile[0] = 0;
 `ifdef RISCV_TESTS
-    for (int i = 0; i < 32; i++) regfile[i] = ADDR_MAX;
+    for (int i = 1; i < 32; i++) regfile[i] = ADDR_MAX;
 `else
+    `ifndef INITIAL_SP_VALUE
+        `define INITIAL_SP_VALUE 32'h00007500
+        $display("WARNING : initial value of sp (INITIAL_SP_VALUE) is not set. default to 0x%h", `INITIAL_SP_VALUE);
+    `endif
     regfile[1] = ADDR_MAX;
-    regfile[2] = 32'h00007500;
+    regfile[2] = `INITIAL_SP_VALUE;
     for (int i = 3; i < 32; i++) regfile[i] = ADDR_MAX;
 `endif
 end
 
-// WB STAGE
-function [$bits(UIntX)-1:0] wb_data_func(
-    input Addr  pc,
-    input WbSel wb_sel,
-    input UIntX alu_out,
-    input UIntX csr_rdata,
-    input UIntX memory_rdata
-);
-    case (wb_sel)
-        WB_MEM  : wb_data_func = memory_rdata;
-        WB_PC   : wb_data_func = pc + 4;
-        WB_CSR  : wb_data_func = csr_rdata;
-        default : wb_data_func = alu_out;
-    endcase
-endfunction
-
-wire UIntX wb_data  = wb_data_func(pc, ctrl.wb_sel, alu_out, csr_rdata, memory_rdata);
-assign wb_wdata_out = wb_data;
-
-UIntX inst_count    = 0;
-IId   saved_inst_id = IID_RANDOM;
-
-wire is_new_inst    = wb_valid && saved_inst_id != inst_id;
-
 always @(posedge clk) begin
-    if (wb_valid)
-        saved_inst_id <= inst_id;
-    if (is_new_inst)
-        inst_count += 1;
-    if (is_new_inst && ctrl.rf_wen == REN_S) begin
-        regfile[ctrl.wb_addr] <= wb_data;
+    if (valid && rf_wen == REN_S && reg_addr != 0) begin
+        regfile[reg_addr] <= wdata;
     end    
 end
 
 `ifdef PRINT_DEBUGINFO 
+UIntX inst_count    = 0;
 always @(posedge clk) begin
-    $display("data,wbstage.valid,b,%b", wb_valid);
-    $display("data,wbstage.inst_id,h,%b", is_new_inst ? inst_id : IID_X);
-    if (wb_valid) begin
+    if (valid) inst_count += 1;
+end
+always @(posedge clk) begin
+    $display("data,wbstage.valid,b,%b", valid);
+    $display("data,wbstage.inst_id,h,%b", valid ? inst_id : IID_X);
+    if (valid) begin
         $display("data,wbstage.pc,h,%b", pc);
         $display("data,wbstage.inst,h,%b", inst);
-        $display("data,wbstage.wb_sel,d,%b", ctrl.wb_sel);
-        $display("data,wbstage.wb_addr,d,%b", ctrl.wb_addr);
-        $display("data,wbstage.wb_data,h,%b", wb_data);
+        $display("data,wbstage.wb_addr,d,%b", reg_addr);
+        $display("data,wbstage.wb_data,h,%b", wdata);
         $display("data,wbstage.inst_count,d,%b", inst_count);
     end
 end

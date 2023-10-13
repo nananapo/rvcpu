@@ -1,38 +1,39 @@
 module CSRStage #(
     parameter FMAX_MHz = 27
 ) (
-    input wire clk,
+    input wire              clk,
 
-    input wire          csr_valid,
-    input wire Addr     csr_pc,
-    input wire Inst     csr_inst,
-    input wire IId      csr_inst_id,
-    input wire Ctrl     csr_ctrl,
-    input wire UIntX    csr_imm_i,
-    input wire UIntX    csr_op1_data,
+    input wire              valid,
+    input wire              is_new,
+    input wire TrapInfo     trapinfo,
+    input wire Addr         pc,
+    input wire Inst         inst,
+    input wire IId          inst_id,
+    input wire Ctrl         ctrl,
+    input wire UIntX        imm_i,
+    input wire UIntX        op1_data,
 
-    output wire UIntX   csr_mem_csr_rdata,
+    output wire UIntX       next_csr_rdata,
 
-    output wire         csr_stall_flg,
-    output wire         csr_trap_flg,
-    output wire Addr    csr_trap_vector,
+    output wire             is_stall,
+    output wire             csr_is_trap,
+    output wire Addr        csr_trap_vector,
 
-    input wire [63:0]   reg_cycle,
-    input wire [63:0]   reg_time,
-    input wire [63:0]   reg_mtime,
-    input wire [63:0]   reg_mtimecmp,
+    input wire UInt64       reg_cycle,
+    input wire UInt64       reg_time,
+    input wire UInt64       reg_mtime,
+    input wire UInt64       reg_mtimecmp,
 
-    output wire modetype output_mode,
-    output wire Addr     output_satp
+    output wire modetype    output_mode,
+    output wire Addr        output_satp,
+
+    output wire enable_illegal_instruction_expt
 );
 
 `include "csrparam.svh"
 `include "basicparams.svh"
 
-wire Addr   pc      = csr_pc;
-wire IId    inst_id = csr_inst_id;
-wire CsrCmd csr_cmd = csr_ctrl.csr_cmd;
-wire UIntX  op1_data= csr_op1_data;
+wire CsrCmd csr_cmd = ctrl.csr_cmd;
 
 typedef enum logic [11:0] { 
     // Counters and Timers
@@ -324,9 +325,9 @@ wire trap_to_mmode = mode == M_MODE || (may_expt ? exception_to_mmode : interrup
 
 // trapが起こりそうかどうか
 wire may_expt = (
-    csr_cmd == CSR_ECALL 
+    csr_cmd == CSR_ECALL // TODO idに持っていく
     /*|| // ecall
-    !csr_ctrl.is_legal
+    !ctrl.is_legal
     */
 );
 wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
@@ -338,7 +339,10 @@ wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
     (mip_ssip && mie_ssie) ||
     (mip_stip && mie_stie)
 );
+// CSR Stageでおこる例外かどうか
 wire may_trap = may_expt || may_interrupt;
+
+assign enable_illegal_instruction_expt  = medeleg[CAUSE_ILLEGAL_INSTRUCTION] == 0 ? global_mie : global_sie;
 
 wire UInt12 addr = imm_i[11:0];
 
@@ -419,8 +423,9 @@ case (addr)
 endcase
 endfunction
 
-wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
-wire [31:0] rdata = can_read ? gen_rdata(
+wire UIntX  wdata = wdata_fun(csr_cmd, op1_data, rdata);
+
+wire UIntX  rdata = can_read ? gen_rdata(
     addr,
     reg_cycle,
     reg_time,
@@ -444,97 +449,71 @@ wire [31:0] rdata = can_read ? gen_rdata(
     scause,
     satp
 ) : 32'b0;
-UIntX rdata_saved;
-assign csr_mem_csr_rdata = csr_inst_id != saved_inst_id ? rdata : rdata_saved;
+UIntX       rdata_saved;
+assign      next_csr_rdata = rdata_saved;
 
 // 2.1 CSR Address Mapping Conventions
-wire can_access = addr[9:8] <= mode;
-wire can_read   = can_access;
-wire can_write  = can_access && addr[11:10] != 2'b11;
+wire can_access     = addr[9:8] <= mode;
+wire can_read       = can_access;
+wire can_write      = can_access && addr[11:10] != 2'b11;
 
-IId saved_inst_id = IID_RANDOM;
-IId saved_iid_old = IID_RANDOM; // TODO HOTFIX
-always @(posedge clk) begin
-    if (csr_valid)
-        saved_inst_id <= csr_inst_id;
-    saved_iid_old <= saved_inst_id;
-end
+wire cmd_is_write   = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
+wire cmd_is_trap    = csr_cmd == CSR_ECALL || csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
 
-wire cmd_is_2clock  = csr_cmd[2] != 1'b0;
-wire cmd_is_trap    = csr_cmd[2] == 1'b1;
-wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
+assign is_stall     = valid && is_new && (cmd_is_trap || may_trap || cmd_is_write);
+assign csr_is_trap  = valid && !is_new && (may_trap || cmd_is_trap);
 
-assign csr_stall_flg =  csr_valid &&
-                        cmd_is_2clock &&
-                        (csr_inst_id != saved_inst_id); // TODO HOTFIX
-assign csr_trap_flg  =  csr_valid && 
-                        (may_trap || cmd_is_trap) &&
-                        (!cmd_is_2clock || csr_inst_id != saved_iid_old); // TODO HOTFIX
+assign output_mode  = mode;
+assign output_satp  = satp;
 
-assign output_mode = mode;
-assign output_satp = satp;
-
-// mret, sret, ecallのtrap_vectorはレジスタ経由で渡す
-// 割り込み、例外はワイヤで渡す
-logic [31:0] trap_vector;
-assign csr_trap_vector = may_trap ? (trap_to_mmode ? mtvec_addr : stvec_addr) : trap_vector;
+// mret, sret, ecall, 割り込み、例外
+Addr    trap_vector;
+assign csr_trap_vector = trap_vector;
 
 always @(posedge clk) begin
-if (csr_valid && csr_inst_id != saved_inst_id) begin
-    // trapを起こす
-    if (may_trap) begin
-        `ifdef PRINT_DEBUGINFO
-            $display("info,csrstage.trap.pc,0x%h", pc);
-            $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
-            $display("info,csrstage.trap.cause,0x%h", mtvec_addr);
-            $display("info,csrstage.trap.mtvec,0x%h", mtvec_addr);
-            $display("info,csrstage.trap.stvec,0x%h", stvec_addr);
-        `endif
-        // 3.1.6.1
-        // To support nested traps, each privilege mode x that can respond to interrupts has a two-level stack of
-        // interrupt-enable bits and privilege modes. xPIE holds the value of the interrupt-enable bit active prior
-        // to the trap, and xPP holds the previous privilege mode. The xPP fields can only hold privilege modes
-        // up to x, so MPP is two bits wide and SPP is one bit wide. When a trap is taken from privilege mode y
-        // into privilege mode x, xPIE is set to the value of xIE; xIE is set to 0; and xPP is set to y
-        if (trap_to_mmode) begin
-            mode         <= M_MODE;
-            mcause       <= trap_cause;
-            mepc         <= pc;
-            mstatus_mpie <= mstatus_mie;
-            mstatus_mie  <= 0;
-            mstatus_mpp  <= mode;
+    if (valid && is_new) begin
+        // trapを起こす
+        if (may_trap) begin
+            `ifdef PRINT_DEBUGINFO
+                $display("info,csrstage.trap.pc,0x%h", pc);
+                $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
+                $display("info,csrstage.trap.cause,0x%h", mtvec_addr);
+                $display("info,csrstage.trap.mtvec,0x%h", mtvec_addr);
+                $display("info,csrstage.trap.stvec,0x%h", stvec_addr);
+            `endif
+            if (trap_to_mmode) begin
+                mode         <= M_MODE;
+                mcause       <= trap_cause;
+                mepc         <= pc;
+                mstatus_mpie <= mstatus_mie;
+                mstatus_mie  <= 0;
+                mstatus_mpp  <= mode;
+                trap_vector  <= mtvec_addr;
+            end else begin
+                mode         <= S_MODE;
+                scause       <= trap_cause;
+                sepc         <= pc;
+                mstatus_spie <= mstatus_sie;
+                mstatus_sie  <= 0;
+                mstatus_spp  <= mode[0];
+                trap_vector  <= stvec_addr;
+            end
+            // interruptならmipを0にする
+            if (!may_expt) begin
+                     if (mip_meip && mie_meie) mip_meip <= 0;
+                else if (mip_msip && mie_msie) mip_msip <= 0;
+                else if (mip_mtip && mie_mtie) mip_mtip <= 0;
+                else if (mip_seip && mie_seie) mip_seip <= 0;
+                else if (mip_ssip && mie_ssie) mip_ssip <= 0;
+                else if (mip_stip && mie_stie) mip_stip <= 0;
+            end
         end else begin
-            mode         <= S_MODE;
-            scause       <= trap_cause;
-            sepc         <= pc;
-            mstatus_spie <= mstatus_sie;
-            mstatus_sie  <= 0;
-            mstatus_spp  <= mode[0];
-        end
-        // interruptならmipを0にする
-        if (!may_expt) begin
-                 if (mip_meip && mie_meie) mip_meip <= 0;
-            else if (mip_msip && mie_msie) mip_msip <= 0;
-            else if (mip_mtip && mie_mtie) mip_mtip <= 0;
-            else if (mip_seip && mie_seie) mip_seip <= 0;
-            else if (mip_ssip && mie_ssie) mip_ssip <= 0;
-            else if (mip_stip && mie_stie) mip_stip <= 0;
-        end
-    end else begin
-
-        rdata_saved <= rdata;
-
-        // pending registerを更新する
-        mip_mtip <= reg_mtime >= reg_mtimecmp;
-        if (csr_inst_id != saved_inst_id) begin
+            // pending registerを更新する
+            mip_mtip <= reg_mtime >= reg_mtimecmp;
+            // rdataを保存
+            rdata_saved <= rdata;
             // mret, sretを処理する
             case (csr_cmd)
-                // MRET, SRET
-                // 3.1.6.1
-                // An MRET or SRET instruction is used to return from a trap in M-mode or S-mode respectively. When
-                // executing an xRET instruction, supposing xPP holds the value y, xIE is set to xPIE; the privilege mode is
-                // changed to y; xPIE is set to 1; and xPP is set to the least-privileged supported mode (U if U-mode is
-                // implemented, else M). If y≠M, xRET also sets MPRV=0.
                 CSR_MRET: begin
                     mstatus_mie     <= mstatus_mpie;
                     mode            <= modetype'(mstatus_mpp);
@@ -549,10 +528,15 @@ if (csr_valid && csr_inst_id != saved_inst_id) begin
                     mstatus_spp     <= U_MODE[0];
                     trap_vector     <= sepc;
                 end
-                default: begin end
+                default: begin 
+                    trap_vector     <= ADDR_MAX;
+                end
             endcase
         end
+    end
+    if (valid && !is_new) begin
         if (can_write && cmd_is_write) begin
+            $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
             case (addr)
                 // Machine Trap Setup
                 ADDR_MSTATUS: begin
@@ -565,13 +549,13 @@ if (csr_valid && csr_inst_id != saved_inst_id) begin
                 end
                 ADDR_MEDELEG: medeleg <= wdata;
                 ADDR_MIDELEG: begin
-                    mideleg_custom <= wdata[31:16];
-                    mideleg_meip <= wdata[11];
-                    mideleg_seip <= wdata[9];
-                    mideleg_mtip <= wdata[7];
-                    mideleg_stip <= wdata[5];
-                    mideleg_msip <= wdata[3];
-                    mideleg_ssip <= wdata[1];
+                    mideleg_custom  <= wdata[31:16];
+                    mideleg_meip    <= wdata[11];
+                    mideleg_seip    <= wdata[9];
+                    mideleg_mtip    <= wdata[7];
+                    mideleg_stip    <= wdata[5];
+                    mideleg_msip    <= wdata[3];
+                    mideleg_ssip    <= wdata[1];
                 end
                 ADDR_MIE: begin
                     mie_meie <= wdata[11];
@@ -620,24 +604,22 @@ if (csr_valid && csr_inst_id != saved_inst_id) begin
         end
     end
 end
-end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,csrstage.valid,b,%b", csr_valid);
-    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? IID_X : inst_id);
-    if (csr_valid && (csr_cmd != CSR_X || may_trap)) begin
+    $display("data,csrstage.valid,b,%b", valid);
+    $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);
+    // csr_cmd == CSR_X || !valid ? IID_X : inst_id);
+    if (valid && (csr_cmd != CSR_X || may_trap)) begin
         $display("data,csrstage.pc,h,%b", pc);
-        $display("data,csrstage.inst,h,%b", csr_inst);
+        $display("data,csrstage.inst,h,%b", inst);
 
         $display("data,csrstage.mode,d,%b", mode);
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
-        $display("data,csrstage.rdata,h,%b", csr_mem_csr_rdata);
-        $display("data,csrstage.trap_vector,h,%b", trap_vector);
-        $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
-        $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
+        $display("data,csrstage.rdata,h,%b", next_csr_rdata);
+        $display("data,csrstage.csr_is_trap,b,%b", csr_is_trap);
         $display("data,csrstage.may_trap,b,%b", may_trap);
     end
 end

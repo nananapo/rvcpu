@@ -150,7 +150,7 @@ typedef struct packed
 typedef struct packed
 {
     logic       valid;
-    logic       can_forward;
+    logic       fwdable;
     logic [4:0] addr;
     UIntX       wdata;
 } FwCtrl;
@@ -167,8 +167,7 @@ typedef enum logic [1:0] {
 } modetype;
 
 typedef struct packed {
-    logic   is_expt;
-    logic   is_intr;
+    logic   valid;
     UIntX   cause;
 } TrapInfo;
 
