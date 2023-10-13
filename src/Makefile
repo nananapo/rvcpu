@@ -24,6 +24,7 @@ FILES = test.sv \
 		DataSelectStage.sv \
 		ExecuteStage.sv \
 		MemoryStage.sv \
+		MulDivModule.sv \
 		MultNbit.sv \
 		MultUnsignedNbit.sv \
 		WriteBackStage.sv \
