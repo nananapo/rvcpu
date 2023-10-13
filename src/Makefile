@@ -78,10 +78,10 @@ dk:
 	make dv
 
 v:
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_RV32M main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_RV32A main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_RV32M -DEXCLUDE_RV32A main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DEXCLUDE_PREDICTION_MODULE main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_TBC main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_LOCAL main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_GLOBAL main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_DEBUG) main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_RISCV_TESTS) main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_MEMORY_UART) main.sv
