@@ -18,7 +18,7 @@ typedef enum logic [1:0] {
 
 statetype state = IDLE;
 
-UInt8 count = 0;
+logic [7:0] count = 0;
 
 logic [SIZE*2-1:0] save_multiplicand;
 logic [SIZE-1:0] save_multiplier;
