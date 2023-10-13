@@ -340,7 +340,7 @@ wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
 );
 wire may_trap = may_expt || may_interrupt;
 
-wire [11:0] addr = csr_imm_i[11:0];
+wire UInt12 addr = imm_i[11:0];
 
 function [31:0] wdata_fun(
     input [2:0]  csr_cmd,
@@ -356,7 +356,7 @@ endcase
 endfunction
 
 function [31:0] gen_rdata(
-    input [11:0] addr,
+    input UInt12 addr,
     input [63:0] reg_cycle,
     input [63:0] reg_time,
     input [31:0] mstatus,

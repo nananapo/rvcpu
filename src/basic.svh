@@ -21,6 +21,7 @@ typedef logic [`XLEN-1:0]   Addr;
 typedef logic [`XLEN-1:0]   UIntX;
 typedef logic [4:0]     UInt5;
 typedef logic [7:0]     UInt8;
+typedef logic [11:0]    UInt12;
 typedef logic [31:0]    UInt32;
 typedef logic [63:0]    UInt64;
 
