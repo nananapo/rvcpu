@@ -119,7 +119,7 @@ function [
 endfunction
 
 wire is_legal;
-assign is_illegal = is_legal;
+assign is_illegal = !is_legal;
 
 assign {
     is_legal,
