@@ -8,7 +8,6 @@ class DivWrapperModule (val width : Int) extends Module {
         val start       = Input(Bool())
         val ready       = Output(Bool())
         val valid       = Output(Bool())
-        val error       = Output(Bool())
         val is_signed   = Input(Bool())
         val dividend    = Input(SInt(width.W))
         val divisor     = Input(SInt(width.W))
