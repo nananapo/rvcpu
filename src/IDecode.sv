@@ -74,7 +74,9 @@ function [
         {X_7    , X_X, JALR_F3  , X_5, JALR_OP  }   : decode = {T, ALU_JALR  , BR_X    , OP_SIGNED  , OP1_RS1, OP2_IMI , MEN_X, ASEL_X, REN_S, WB_PC , CSR_X}; // JALR
         {X_7    , X_X, X_3      , X_5, LUI_OP   }   : decode = {T, ALU_ADD   , BR_X    , OP_SIGNED  , OP1_X  , OP2_IMU , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // LUI
         {X_7    , X_X, X_3      , X_5, AUIPC_OP }   : decode = {T, ALU_ADD   , BR_X    , OP_SIGNED  , OP1_PC , OP2_IMU , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // AUIPC
-          
+
+        {X_7    , X_X, FENCE_F3 , X_5, FENCE_OP }   : decode = {T, DEFAULT_NOP}; // TODO fence
+
         {X_7    , X_X, CSRRW_F3 , X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRW
         {X_7    , X_X, CSRRWI_F3, X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRWI
         {X_7    , X_X, CSRRS_F3 , X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_S}; // CSRRS
