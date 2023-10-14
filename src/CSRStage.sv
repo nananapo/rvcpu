@@ -324,12 +324,7 @@ wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
 wire trap_to_mmode = mode == M_MODE || (may_expt ? exception_to_mmode : interrupt_to_mmode);
 
 // trapが起こりそうかどうか
-wire may_expt = (
-    csr_cmd == CSR_ECALL // TODO idに持っていく
-    /*|| // ecall
-    !ctrl.is_legal
-    */
-);
+wire may_expt = trapinfo.valid;
 wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
 (
     (mip_meip && mie_meie) ||
@@ -342,7 +337,8 @@ wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
 // CSR Stageでおこる例外かどうか
 wire may_trap = may_expt || may_interrupt;
 
-assign enable_illegal_instruction_expt  = medeleg[CAUSE_ILLEGAL_INSTRUCTION] == 0 ? global_mie : global_sie;
+// TODO あれ～～～～？？？？？？
+assign enable_illegal_instruction_expt  = 1;// medeleg[CAUSE_ILLEGAL_INSTRUCTION] == 0 ? global_mie : global_sie;
 
 wire UInt12 addr = imm_i[11:0];
 
