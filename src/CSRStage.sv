@@ -466,9 +466,7 @@ always @(posedge clk) begin
             `ifdef PRINT_DEBUGINFO
                 $display("info,csrstage.trap.pc,0x%h", pc);
                 $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
-                $display("info,csrstage.trap.cause,0x%h", mtvec_addr);
-                $display("info,csrstage.trap.mtvec,0x%h", mtvec_addr);
-                $display("info,csrstage.trap.stvec,0x%h", stvec_addr);
+                $display("info,csrstage.trap.cause,0x%h", trap_cause);
             `endif
             if (trap_to_mmode) begin
                 mode         <= M_MODE;
@@ -598,12 +596,21 @@ end
 always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", valid);
     $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);
-    // csr_cmd == CSR_X || !valid ? IID_X : inst_id);
-    if (valid && (csr_cmd != CSR_X || may_trap)) begin
+    if (valid) begin
         $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", inst);
-
-        $display("data,csrstage.mode,d,%b", mode);
+        $display("data,csrstage.is_stall,b,%b", is_stall);
+    end
+    $display("data,csrstage.mode,d,%b", mode);
+    $display("data,csrstage.mstatus,h,%b", mstatus);
+    $display("data,csrstage.mstatus.mie,b,%b", mstatus_mie);
+    $display("data,csrstage.mstatus.sie,b,%b", mstatus_sie);
+    $display("data,csrstage.global_mie,b,%b", global_mie);
+    $display("data,csrstage.global_sie,b,%b", global_sie);
+    $display("data,csrstage.medeleg,h,%b", medeleg);
+    $display("info,csrstage.mtvec,0x%h", mtvec_addr);
+    $display("info,csrstage.stvec,0x%h", stvec_addr);
+    if (valid && (csr_cmd != CSR_X || may_trap)) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
