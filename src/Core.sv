@@ -147,8 +147,8 @@ FwCtrl  wb_fw;
 // for debug
 assign gp = wb_regfile[3];
 
-// id/dsがvalidではない、branchに失敗したクロックは保持
-wire exe_branch_stall = (!ds_valid && !id_valid) || branch_fail;
+// id/dsがvalidではないか、branchに失敗したクロックは保持
+wire exe_branch_stall = (!ds_valid && !id_valid && (exe_is_new || !exe_br_checked)) || branch_fail;
 
 // stall
 // 各ステージに新しく値を流してはいけないかどうか
@@ -180,7 +180,12 @@ always @(posedge clk) begin
     branch_target_last_clock <= branch_target;
 end
 
-wire branch_fail            =   exe_valid && exe_is_new &&
+// exeステージにある命令がすでに分岐チェックされたかどうか
+// newか!checkedのとき、チェックする必要がある
+// hazardが起きると1になり、命令がidに供給されると0に戻る
+logic exe_br_checked = 0;
+
+wire branch_fail            =   exe_valid && (exe_is_new || !exe_br_checked) &&
                                 ( ds_valid ? (exe_branch_taken && ds_pc != exe_branch_target) || (!exe_branch_taken && ds_pc != exe_pc + 4)
                                 : id_valid ? (exe_branch_taken && id_pc != exe_branch_target) || (!exe_branch_taken && id_pc != exe_pc + 4) : 1'b0 );
 wire branch_hazard_now      =   csr_is_trap || branch_fail;
@@ -188,6 +193,11 @@ wire Addr  branch_target    =   csr_is_trap ? csr_trap_vector :
                                 exe_branch_taken ? exe_branch_target : exe_pc + 4;
 
 always @(posedge clk) begin
+
+    if (branch_hazard_now) begin
+        exe_br_checked <= 1;
+    end
+
     // if -> id
     if (branch_hazard_now || branch_hazard_last_clock) begin
         id_valid    <= 0;
@@ -201,6 +211,8 @@ always @(posedge clk) begin
             id_pc       <= iresp.addr;
             id_inst     <= iresp.inst;
             id_inst_id  <= iresp.inst_id;
+
+            exe_br_checked  <= 0;
             // TODO trap
         end else begin
             id_valid    <= 0;
