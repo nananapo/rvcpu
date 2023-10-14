@@ -25,9 +25,7 @@ module CSRStage #(
     input wire UInt64       reg_mtimecmp,
 
     output wire modetype    output_mode,
-    output wire Addr        output_satp,
-
-    output wire enable_illegal_instruction_expt
+    output wire Addr        output_satp
 );
 
 `include "csrparam.svh"
@@ -312,9 +310,7 @@ wire [31:0] interrupt_cause = (
     (mip_stip && mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT : 
     32'b0
 );
-wire [31:0] exception_cause = (
-    CAUSE_ENVIRONMENT_CALL_FROM_U_MODE + {30'b0, mode} // ecall
-);
+wire [31:0] exception_cause = trapinfo.cause + (trapinfo.cause == CAUSE_ENVIRONMENT_CALL_FROM_U_MODE ? {30'b0, mode} : 0);
 wire [31:0] trap_cause = may_expt ? exception_cause : interrupt_cause;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
@@ -336,9 +332,6 @@ wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
 );
 // CSR Stageでおこる例外かどうか
 wire may_trap = may_expt || may_interrupt;
-
-// TODO あれ～～～～？？？？？？
-assign enable_illegal_instruction_expt  = 1;// medeleg[CAUSE_ILLEGAL_INSTRUCTION] == 0 ? global_mie : global_sie;
 
 wire UInt12 addr = imm_i[11:0];
 

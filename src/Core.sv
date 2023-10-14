@@ -123,7 +123,6 @@ UIntX       csr_mem_rdata;
 wire        csr_cmd_stall;
 wire        csr_is_trap;
 wire Addr   csr_trap_vector;
-wire        enable_illegal_instruction_expt;
 // csr -> wb wire
 wire UIntX  csr_csr_rdata;
 
@@ -249,12 +248,12 @@ always @(posedge clk) begin
         // TODO ここで割り込みも起こす
         ds_trap.valid   <= id_valid &&
                             (   id_trap.valid ||
-                                (enable_illegal_instruction_expt && id_is_illegal) ||
-                                id_ctrl.csr_cmd == CSR_ECALL ||
-                                id_ctrl.csr_cmd == CSR_SRET ||
-                                id_ctrl.csr_cmd == CSR_MRET );
+                                id_is_illegal ||
+                                id_ctrl.csr_cmd == CSR_ECALL );
         ds_trap.cause   <= id_trap.valid ? id_trap.cause : 
-                            (id_is_illegal && enable_illegal_instruction_expt) ? CAUSE_ILLEGAL_INSTRUCTION : 0;
+                            id_is_illegal ? CAUSE_ILLEGAL_INSTRUCTION :
+                            (id_ctrl.csr_cmd == CSR_ECALL) ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE : 0;
+                            // TODO causeをCSR Stageで修正する 
         // forwarding
         ds_fw.valid     <= id_valid && id_ctrl.rf_wen == REN_S;
         ds_fw.fwdable   <= id_ctrl.wb_sel == WB_PC;
@@ -440,7 +439,11 @@ ExecuteStage #() executestage
 MemoryStage #() memorystage
 (
     .clk(clk),
-    .valid(mem_valid && !csr_trap.valid),
+    .valid( 
+        mem_valid && 
+        !csr_trap.valid &&
+        mem_ctrl.csr_cmd != CSR_SRET &&
+        mem_ctrl.csr_cmd != CSR_MRET),
     .is_new(mem_is_new),
     .trapinfo(mem_trap),
     .pc(mem_pc),
@@ -488,9 +491,7 @@ CSRStage #(
     .reg_mtimecmp(reg_mtimecmp),
 
     .output_mode(csr_mode),
-    .output_satp(csr_satp),
-
-    .enable_illegal_instruction_expt(enable_illegal_instruction_expt)
+    .output_satp(csr_satp)
 );
 
 WriteBackStage #() wbstage(
