@@ -19,6 +19,11 @@ module MemoryStage
 
     output logic            is_stall,
     output wire             exit
+
+    `ifdef PRINT_DEBUGINFO
+        ,
+        input wire         invalid_by_trap
+    `endif
 );
 
 `include "basicparams.svh"
@@ -223,9 +228,9 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,memstage.valid,b,%b", valid);
+    $display("data,memstage.valid,b,%b", valid || invalid_by_trap);
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", valid ? inst_id : IID_X);
+    $display("data,memstage.inst_id,h,%b", valid || invalid_by_trap ? inst_id : IID_X);
     if (valid) begin
         $display("data,memstage.pc,h,%b", pc);
         $display("data,memstage.inst,h,%b", inst);

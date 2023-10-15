@@ -461,6 +461,16 @@ MemoryStage #() memorystage
 
     .is_stall(mem_memory_stall),
     .exit(exit)
+    
+    `ifdef PRINT_DEBUGINFO
+        ,
+        .invalid_by_trap(
+            mem_valid && (
+            csr_trap.valid ||
+            csr_ctrl.csr_cmd == CSR_SRET ||
+            csr_ctrl.csr_cmd == CSR_MRET)
+        )
+    `endif
 );
 
 CSRStage #(
