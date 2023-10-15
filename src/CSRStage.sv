@@ -311,16 +311,15 @@ wire [31:0] interrupt_cause = (
     32'b0
 );
 wire [31:0] exception_cause = trapinfo.cause + (trapinfo.cause == CAUSE_ENVIRONMENT_CALL_FROM_U_MODE ? {30'b0, mode} : 0);
-wire [31:0] trap_cause = may_expt ? exception_cause : interrupt_cause;
+wire [31:0] trap_cause = trapinfo.valid ? exception_cause : interrupt_cause;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
 wire interrupt_to_mmode = mideleg[interrupt_cause[4:0]] == 0;
 wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
-wire trap_to_mmode = mode == M_MODE || (may_expt ? exception_to_mmode : interrupt_to_mmode);
+wire trap_to_mmode = mode == M_MODE || (trapinfo.valid ? exception_to_mmode : interrupt_to_mmode);
 
 // trapが起こりそうかどうか
-wire may_expt = trapinfo.valid;
 wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
 (
     (mip_meip && mie_meie) ||
@@ -330,8 +329,6 @@ wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
     (mip_ssip && mie_ssie) ||
     (mip_stip && mie_stie)
 );
-// CSR Stageでおこる例外かどうか
-wire may_trap = may_expt || may_interrupt;
 
 wire UInt12 addr = imm_i[11:0];
 
@@ -447,10 +444,14 @@ wire can_read       = can_access;
 wire can_write      = can_access && addr[11:10] != 2'b11;
 
 wire cmd_is_write   = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
-wire cmd_is_trap    = csr_cmd == CSR_ECALL || csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
+wire cmd_is_trap    = csr_cmd == CSR_ECALL;
+wire cmd_is_xret    = csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
 
-assign is_stall     = valid && is_new && (cmd_is_trap || may_trap || cmd_is_write);
-assign csr_is_trap  = valid && !is_new && (may_trap || cmd_is_trap);
+wire this_cause_trap    = trapinfo.valid || cmd_is_trap || may_interrupt;
+logic last_cause_trap   = 0;
+
+assign is_stall     = valid && is_new && (this_cause_trap || cmd_is_xret || cmd_is_write);
+assign csr_is_trap  = valid && !is_new && last_cause_trap;
 
 assign output_mode  = mode;
 assign output_satp  = satp;
@@ -460,9 +461,10 @@ Addr    trap_vector;
 assign csr_trap_vector = trap_vector;
 
 always @(posedge clk) begin
+    last_cause_trap <= this_cause_trap || cmd_is_xret;
     if (valid && is_new) begin
         // trapを起こす
-        if (may_trap) begin
+        if (this_cause_trap) begin
             `ifdef PRINT_DEBUGINFO
                 $display("info,csrstage.trap.pc,0x%h", pc);
                 $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
@@ -486,7 +488,7 @@ always @(posedge clk) begin
                 trap_vector  <= stvec_addr;
             end
             // interruptならmipを0にする
-            if (!may_expt) begin
+            if (!trapinfo.valid && !cmd_is_trap && may_interrupt) begin
                      if (mip_meip && mie_meie) mip_meip <= 0;
                 else if (mip_msip && mie_msie) mip_msip <= 0;
                 else if (mip_mtip && mie_mtie) mip_mtip <= 0;
@@ -605,18 +607,23 @@ always @(posedge clk) begin
     $display("data,csrstage.mstatus,h,%b", mstatus);
     $display("data,csrstage.mstatus.mie,b,%b", mstatus_mie);
     $display("data,csrstage.mstatus.sie,b,%b", mstatus_sie);
+    $display("data,csrstage.interrupt_to_mmode,b,%b", interrupt_to_mmode);
     $display("data,csrstage.global_mie,b,%b", global_mie);
     $display("data,csrstage.global_sie,b,%b", global_sie);
+    $display("data,csrstage.mip,b,%b", mip);
+    $display("data,csrstage.mie,b,%b", mie);
     $display("data,csrstage.medeleg,h,%b", medeleg);
+    $display("data,csrstage.mideleg,h,%b", mideleg);
     $display("info,csrstage.mtvec,0x%h", mtvec_addr);
     $display("info,csrstage.stvec,0x%h", stvec_addr);
-    if (valid && (csr_cmd != CSR_X || may_trap)) begin
+    $display("info,csrstage.mepc,0x%h", mepc);
+    $display("info,csrstage.sepc,0x%h", sepc);
+    if (valid && (csr_cmd != CSR_X || this_cause_trap)) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
         $display("data,csrstage.rdata,h,%b", next_csr_rdata);
-        $display("data,csrstage.csr_is_trap,b,%b", csr_is_trap);
-        $display("data,csrstage.may_trap,b,%b", may_trap);
+        $display("data,csrstage.csr_is_trap,b,%b", this_cause_trap);
     end
 end
 `endif
