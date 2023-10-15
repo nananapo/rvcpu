@@ -76,13 +76,14 @@ function [
         {X_7    , X_X, X_3      , X_5, AUIPC_OP }   : decode = {T, ALU_ADD   , BR_X    , OP_SIGNED  , OP1_PC , OP2_IMU , MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // AUIPC
 
         {X_7    , X_X, FENCE_F3 , X_5, FENCE_OP }   : decode = {T, DEFAULT_NOP}; // TODO fence
+        WFI                                         : decode = {T, DEFAULT_NOP}; // TODO wfi
 
-        {X_7    , X_X, CSRRW_F3 , X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRW
-        {X_7    , X_X, CSRRWI_F3, X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRWI
-        {X_7    , X_X, CSRRS_F3 , X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_S}; // CSRRS
-        {X_7    , X_X, CSRRSI_F3, X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_S}; // CSRRSI
-        {X_7    , X_X, CSRRC_F3 , X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRC
-        {X_7    , X_X, CSRRCI_F3, X_5, CSR_OP   }   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRCI
+        {X_7    , X_X, CSRRW_F3 , X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRW
+        {X_7    , X_X, CSRRWI_F3, X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_W}; // CSRRWI
+        {X_7    , X_X, CSRRS_F3 , X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_S}; // CSRRS
+        {X_7    , X_X, CSRRSI_F3, X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_S}; // CSRRSI
+        {X_7    , X_X, CSRRC_F3 , X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRC
+        {X_7    , X_X, CSRRCI_F3, X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRCI
         ECALL                                       : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_ECALL}; // ECALL
  
         SRET                                        : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_SRET}; // MRET
@@ -113,8 +114,8 @@ function [
         {ZICOND_F7, X_X, ZICOND_CZERO_EQZ_F3, X_5, ZICOND_OP} : decode = {T, ALU_CZERO_EQ, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // CZERO.EQZ
         {ZICOND_F7, X_X, ZICOND_CZERO_NEZ_F3, X_5, ZICOND_OP} : decode = {T, ALU_CZERO_NE, BR_X, OP_SIGNED, OP1_RS1, OP2_RS2W, MEN_X, ASEL_X, REN_S, WB_ALU, CSR_X}; // CZERO.NEZ
 
-        {SVINVAL_SFENCE_F7, X_5, X_5, SVINVAL_F3, X_5, SVINVAL_OP}       : decode = {T, DEFAULT_NOP};
-        {SVINVAL_SINVAL_VMA_F7, X_5, X_5, SVINVAL_F3, X_5, SVINVAL_OP}   : decode = {T, DEFAULT_NOP};
+        {SVINVAL_SFENCE_F7, X_5, X_5, SVINVAL_F3, X_5, SYSTEM_OP}       : decode = {T, DEFAULT_NOP};
+        {SVINVAL_SINVAL_VMA_F7, X_5, X_5, SVINVAL_F3, X_5, SYSTEM_OP}   : decode = {T, DEFAULT_NOP};
 
         default : decode = {F, DEFAULT_NOP};
     endcase
@@ -146,6 +147,6 @@ assign ctrl.mem_size = MemSize'(F3[1:0]);
 assign ctrl.wb_addr     = inst[11:7];
 assign ctrl.jmp_pc_flg  = OP == JAL_OP;
 assign ctrl.jmp_reg_flg = F3 == JALR_F3 && OP == JALR_OP;
-assign ctrl.svinval     = (F7 == SVINVAL_SFENCE_F7 || F7 == SVINVAL_SINVAL_VMA_F7) && F3 == SVINVAL_F3 && OP == SVINVAL_OP;
+assign ctrl.svinval     = (F7 == SVINVAL_SFENCE_F7 || F7 == SVINVAL_SINVAL_VMA_F7) && F3 == SVINVAL_F3 && OP == SYSTEM_OP;
 
 endmodule
