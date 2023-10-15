@@ -439,11 +439,11 @@ ExecuteStage #() executestage
 MemoryStage #() memorystage
 (
     .clk(clk),
-    .valid( 
+    .valid(
         mem_valid && 
         !csr_trap.valid &&
-        mem_ctrl.csr_cmd != CSR_SRET &&
-        mem_ctrl.csr_cmd != CSR_MRET),
+        csr_ctrl.csr_cmd != CSR_SRET &&
+        csr_ctrl.csr_cmd != CSR_MRET),
     .is_new(mem_is_new),
     .trapinfo(mem_trap),
     .pc(mem_pc),
