@@ -234,6 +234,9 @@ end
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
     $display("data,memstage.valid,b,%b", valid || invalid_by_trap);
+    if (invalid_by_trap) begin
+        $display("info,memstage.valid_but_invalid,this stage is invalid.");
+    end
     $display("data,memstage.state,d,%b", state);
     $display("data,memstage.inst_id,h,%b", valid || invalid_by_trap ? inst_id : IID_X);
     if (valid) begin
