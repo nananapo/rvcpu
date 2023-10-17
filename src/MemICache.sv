@@ -167,8 +167,8 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-// always @(posedge clk) begin
 /* verilator lint_off WIDTH */
+// always @(posedge clk) begin
 //     $display("data,fetchstage.i$.state,d,%b", state);
 //     $display("data,fetchstage.i$.read_count,d,%b", read_count);
 
@@ -186,8 +186,8 @@ end
     
 //     $display("data,fetchstage.i$.busresp.save_mem_index,h,%b", req_mem_index_base + read_count);
 //     $display("data,fetchstage.i$.busresp.mem_index,h,%b", req_mem_index);
-/* verilator lint_on WIDTH */
 // end
+/* verilator lint_on WIDTH */
 `endif
 
 endmodule
