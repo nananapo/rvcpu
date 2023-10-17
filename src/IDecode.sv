@@ -86,6 +86,7 @@ function [
         {X_7    , X_X, CSRRC_F3 , X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRC
         {X_7    , X_X, CSRRCI_F3, X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, REN_S, WB_CSR, CSR_C}; // CSRRCI
         ECALL                                       : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_ECALL}; // ECALL
+        EBREAK                                      : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_EBREAK}; // EBREAK
  
         SRET                                        : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_SRET}; // MRET
         MRET                                        : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, REN_X, WB_X  , CSR_MRET}; // SRET

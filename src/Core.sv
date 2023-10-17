@@ -246,10 +246,12 @@ always @(posedge clk) begin
         ds_trap.valid   <= id_valid &&
                             (   id_trap.valid ||
                                 id_is_illegal ||
-                                id_ctrl.csr_cmd == CSR_ECALL );
+                                id_ctrl.csr_cmd == CSR_ECALL ||
+                                id_ctrl.csr_cmd == CSR_EBREAK);
         ds_trap.cause   <= id_trap.valid ? id_trap.cause : 
                             id_is_illegal ? CAUSE_ILLEGAL_INSTRUCTION :
-                            id_ctrl.csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE : 0;
+                            id_ctrl.csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE :
+                            id_ctrl.csr_cmd == CSR_EBREAK ? CAUSE_BREAKPOINT : 0;
         // forwarding
         ds_fw.valid     <= id_valid && id_ctrl.rf_wen == REN_S;
         ds_fw.fwdable   <= id_ctrl.wb_sel == WB_PC;

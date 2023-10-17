@@ -84,8 +84,9 @@ localparam JALR_OP  = 7'b1100111;
 localparam LUI_OP   = 7'b0110111;
 localparam AUIPC_OP = 7'b0010111;
 
-localparam ECALL= {25'b0000000000000000000000000, SYSTEM_OP};
-localparam WFI  = {12'b0001000_00101, 5'b0, 3'b0, 5'b0, SYSTEM_OP};
+localparam ECALL    = {12'b0, 13'b0, SYSTEM_OP};
+localparam EBREAK   = {12'b1, 13'b0, SYSTEM_OP};
+localparam WFI      = {12'b0001000_00101, 5'b0, 3'b0, 5'b0, SYSTEM_OP};
 
 /*----------------Zicsr----------------*/
 localparam SRET = {25'b0001000_00010_00000_000_00000, SYSTEM_OP};

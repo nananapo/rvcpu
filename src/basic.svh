@@ -111,6 +111,7 @@ typedef enum logic [2:0] {
     CSR_S,
     CSR_C,
     CSR_ECALL,
+    CSR_EBREAK,
     CSR_SRET,
     CSR_MRET
 } CsrCmd;
