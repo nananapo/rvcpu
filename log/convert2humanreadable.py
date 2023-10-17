@@ -23,8 +23,8 @@ try:
             (ID_INST_PREFIX, IDSTAGE_NAME),
             (DS_INST_PREFIX, DSSTAGE_NAME),
             (EXE_INST_PREFIX, EXESTAGE_NAME),
-            (CSR_INST_PREFIX, CSRSTAGE_NAME),
             (MEM_INST_PREFIX, MEMSTAGE_NAME),
+            (CSR_INST_PREFIX, CSRSTAGE_NAME),
             (WB_INST_PREFIX, WBSTAGE_NAME)]:
 
 

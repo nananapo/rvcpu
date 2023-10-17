@@ -1,5 +1,3 @@
-// TODO pcがかぶった時の挙動を知らない
-// pcがかぶったとき、それが同じアドレスで命令が違う時も知らない
 module TwoBitCounter #(
     parameter ADDR_WIDTH = 12
 )(

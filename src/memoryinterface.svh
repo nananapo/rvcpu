@@ -75,4 +75,12 @@ typedef struct packed {
     UInt32  rdata;
 } CacheResp;
 
+typedef struct packed {
+    modetype    mode;
+    Addr        satp;
+    logic       do_writeback;
+    logic       is_writebacked_all;
+    logic       invalidate_icache;
+} CacheCntrInfo; 
+
 `endif

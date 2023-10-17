@@ -21,6 +21,7 @@ typedef logic [`XLEN-1:0]   Addr;
 typedef logic [`XLEN-1:0]   UIntX;
 typedef logic [4:0]     UInt5;
 typedef logic [7:0]     UInt8;
+typedef logic [11:0]    UInt12;
 typedef logic [31:0]    UInt32;
 typedef logic [63:0]    UInt64;
 
@@ -105,13 +106,13 @@ typedef enum logic [1:0] {
 } WbSel;
 
 typedef enum logic [2:0] {
-    CSR_X,    
-    CSR_W,    
-    CSR_S,    
-    CSR_C,    
+    CSR_X,
+    CSR_W,
+    CSR_S,
+    CSR_C,
     CSR_ECALL,
-    CSR_SRET, 
-    CSR_MRET 
+    CSR_SRET,
+    CSR_MRET
 } CsrCmd;
 
 typedef enum logic [3:0] {
@@ -129,7 +130,6 @@ typedef enum logic [3:0] {
 
 typedef struct packed 
 {
-    logic       is_legal;
     AluSel      i_exe;
     BrSel       br_exe;
     SignSel     sign_sel;
@@ -144,13 +144,14 @@ typedef struct packed
     logic       jmp_pc_flg;
     logic       jmp_reg_flg;
     logic       svinval;
+    logic       fence_i;
     AextSel     a_sel;
 } Ctrl;
 
 typedef struct packed
 {
     logic       valid;
-    logic       can_forward;
+    logic       fwdable;
     logic [4:0] addr;
     UIntX       wdata;
 } FwCtrl;
@@ -167,9 +168,8 @@ typedef enum logic [1:0] {
 } modetype;
 
 typedef struct packed {
-    logic is_expt;
-    logic is_intr;
-    logic cause;
+    logic   valid;
+    UIntX   cause;
 } TrapInfo;
 
 `endif

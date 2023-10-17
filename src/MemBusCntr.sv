@@ -65,10 +65,9 @@ always @(posedge clk) begin
         I_CHECK: begin
             s_ireq  <= ireq_in;
             state   <=  !ireq_in.valid ? D_CHECK :
-                        !memreq_in.ready ? I_READY :
-                        (ireq_in.wen ? D_CHECK : I_VALID);
+                        !memreq_in.ready ? I_READY : I_VALID;
         end
-        I_READY: if (memreq_in.ready) state <= s_ireq.wen ? D_CHECK : I_VALID;
+        I_READY: if (memreq_in.ready) state <= I_VALID;
         I_VALID: begin
             if (memresp_in.valid) begin
                 b_counter   <= b_counter + 1;
@@ -79,10 +78,9 @@ always @(posedge clk) begin
             b_counter   <= 0;
             s_dreq  <= dreq_in;
             state   <=  !dreq_in.valid ? I_CHECK :
-                        !memreq_in.ready ? D_READY :
-                        (dreq_in.wen ? I_CHECK : D_VALID);
+                        !memreq_in.ready ? D_READY : D_VALID;
         end
-        D_READY: if (memreq_in.ready)  state <= s_dreq.wen ? I_CHECK : D_VALID;
+        D_READY: if (memreq_in.ready)  state <= D_VALID;
         D_VALID: if (memresp_in.valid) state <= I_CHECK;
         default: begin
             $display("MemBusCntr : Unknown state %d", state);

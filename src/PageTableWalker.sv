@@ -128,7 +128,7 @@ else if (sv32_enable) begin
     end
     REQ_READY: begin
         if (memreq.ready) begin
-            state <= s_req.wen ? REQ_END : REQ_VALID;
+            state <= REQ_VALID;
         end
     end
     REQ_VALID: begin

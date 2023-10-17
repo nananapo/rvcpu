@@ -112,11 +112,16 @@ Disassembly of section .text.init:
  180:	34129073          	csrw	mepc,t0
  184:	f1402573          	csrr	a0,mhartid
  188:	30200073          	mret
+
+
+ # TEST START
  18c:	06f00693          	li	a3,111
  190:	00002517          	auipc	a0,0x2
  194:	e7051503          	lh	a0,-400(a0) # 2000 <begin_signature>
  198:	00002597          	auipc	a1,0x2
  19c:	e6a59583          	lh	a1,-406(a1) # 2002 <begin_signature+0x2>
+ # ↑ a1 = ffff14d6, a0 = ffff8693
+
  1a0:	00000013          	nop
  1a4:	00000013          	nop
  1a8:	00000013          	nop
@@ -129,6 +134,10 @@ Disassembly of section .text.init:
  1c4:	e4a29223          	sh	a0,-444(t0) # 2004 <begin_signature+0x4>
  1c8:	00002297          	auipc	t0,0x2
  1cc:	e2b29f23          	sh	a1,-450(t0) # 2006 <begin_signature+0x6>
+ # ↑ set 2004  
+ #    from  add a3,a3,222
+ #    to    add	a3,a3,333
+
  1d0:	0000100f          	fence.i
  1d4:	00002797          	auipc	a5,0x2
  1d8:	e3078793          	add	a5,a5,-464 # 2004 <begin_signature+0x4>
@@ -139,9 +148,11 @@ Disassembly of section .text.init:
  1e4:	00000013          	nop
  1e8:	1bc00393          	li	t2,444
  1ec:	06769a63          	bne	a3,t2,260 <fail>
+
  1f0:	06400713          	li	a4,100
- 1f4:	fff70713          	add	a4,a4,-1
- 1f8:	fe071ee3          	bnez	a4,1f4 <test_2+0x14>
+ 1f4:	fff70713          	add	a4,a4,-1 
+ 1f8:	fe071ee3          	bnez	a4,1f4 <test_2+0x14> # a4 = 99 -> 0
+ 
  1fc:	00002297          	auipc	t0,0x2
  200:	e0a29823          	sh	a0,-496(t0) # 200c <begin_signature+0xc>
  204:	00002297          	auipc	t0,0x2

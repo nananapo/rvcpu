@@ -1,61 +1,57 @@
+`include "memoryinterface.svh"
+
 module CSRStage #(
     parameter FMAX_MHz = 27
 ) (
-    input wire clk,
+    input wire          clk,
 
-    input wire          csr_valid,
-    input wire Addr     csr_pc,
-    input wire Inst     csr_inst,
-    input wire IId      csr_inst_id,
-    input wire Ctrl     csr_ctrl,
-    input wire UIntX    csr_imm_i,
-    input wire UIntX    csr_op1_data,
+    input wire          valid,
+    input wire          is_new,
+    input wire TrapInfo trapinfo,
+    input wire Addr     pc,
+    input wire Inst     inst,
+    input wire IId      inst_id,
+    input wire Ctrl     ctrl,
+    input wire UIntX    imm_i,
+    input wire UIntX    op1_data,
 
-    output wire UIntX   csr_mem_csr_rdata,
+    output wire UIntX   next_csr_rdata,
 
-    output wire         csr_stall_flg,
-    output wire         csr_trap_flg,
-    output wire Addr    csr_trap_vector,
+    output wire         is_stall,
+    output wire         csr_is_trap,
+    output wire         csr_keep_trap, // validのままにするtrapかどうか
+    output Addr         trap_vector,
 
-    input wire [63:0]   reg_cycle,
-    input wire [63:0]   reg_time,
-    input wire [63:0]   reg_mtime,
-    input wire [63:0]   reg_mtimecmp,
+    input wire UInt64   reg_cycle,
+    input wire UInt64   reg_time,
+    input wire UInt64   reg_mtime,
+    input wire UInt64   reg_mtimecmp,
 
-    output wire modetype output_mode,
-    output wire Addr     output_satp
+    output wire CacheCntrInfo   cache_cntr
 );
 
+modetype    mode = M_MODE;
+Addr        satp = ADDR_ZERO;
+
+assign cache_cntr.mode  = mode;
+assign cache_cntr.satp  = satp;
+
+`include "csrparam.svh"
 `include "basicparams.svh"
 
-wire Addr   pc      = csr_pc;
-wire IId    inst_id = csr_inst_id;
-wire CsrCmd csr_cmd = csr_ctrl.csr_cmd;
-wire UIntX  op1_data= csr_op1_data;
+initial begin
+    // 起動時はM-mode
+    mode = M_MODE;
+    // 5.1.11
+    // MODE(1) | ASID(9) | PPN(22)
+    // Table 23
+    // MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
+    //            0ではないなら動作はUNSPECIFIED！こわいね 
+    // MODE = 1 : Sv32, ページングが有効
+    satp = 0;
+end
 
-// Table 3.6
-                                                                                           // I ECODE Description 
-localparam MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT = 32'b10000000_00000000_00000000_00000001; // 1 1     Supervisor software interrupt
-localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT    = 32'b10000000_00000000_00000000_00000011; // 1 3     Machine software interrupt
-localparam MCAUSE_SUPERVISOR_TIMER_INTERRUPT    = 32'b10000000_00000000_00000000_00000101; // 1 5     Supervisor timer interrupt
-localparam MCAUSE_MACHINE_TIMER_INTERRUPT       = 32'b10000000_00000000_00000000_00000111; // 1 7     Machine timer interrupt
-localparam MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT = 32'b10000000_00000000_00000000_00001001; // 1 9     Supervisor external interrupt
-localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT    = 32'b10000000_00000000_00000000_00001011; // 1 11    Machine external interrupt
-                                                            // I ECODE Description 
-localparam MCAUSE_INSTRUCTION_ADDRESS_MISALIGNED= 32'b0000; // 0 0     Instruction address misaligned
-localparam MCAUSE_INSTRUCTION_ACCESS_FAULT      = 32'b0001; // 0 1     Instruction access fault
-localparam MCAUSE_ILLEGAL_INSTRUCTION           = 32'b0010; // 0 2     Illegal instruction
-localparam MCAUSE_BREAKPOINT                    = 32'b0011; // 0 3     Breakpoint
-localparam MCAUSE_LOAD_ADDRESS_MISALIGNED       = 32'b0100; // 0 4     Load address misaligned
-localparam MCAUSE_LOAD_ACCESS_FAULT             = 32'b0101; // 0 5     Load access fault
-localparam MCAUSE_STORE_AMO_ADDRESS_MISALIGNED  = 32'b0110; // 0 6     Store/AMO address misaligned
-localparam MCAUSE_STORE_AMO_ACCESS_FAULT        = 32'b0111; // 0 7     Store/AMO access fault
-localparam MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE  = 32'b1000; // 0 8     Environment call from U-mode
-localparam MCAUSE_ENVIRONMENT_CALL_FROM_S_MODE  = 32'b1001; // 0 9     Environment call from S-mode
-localparam MCAUSE_ENVIRONMENT_CALL_FROM_M_MODE  = 32'b1011; // 0 11    Environment call from M-mode
-localparam MCAUSE_INSTRUCTION_PAGE_FAULT        = 32'b1100; // 0 12    Instruction page fault
-localparam MCAUSE_LOAD_PAGE_FAULT               = 32'b1101; // 0 13    Load page fault
-localparam MCAUSE_STORE_AMO_PAGE_FAULT          = 32'b1111; // 0 15    Store/AMO page fault
+wire CsrCmd csr_cmd = ctrl.csr_cmd;
 
 typedef enum logic [11:0] { 
     // Counters and Timers
@@ -131,15 +127,21 @@ typedef enum logic [1:0] {
     XTVEC_VECTORED = 2'b01
 } xtvec_mode_type;
 
-// 現在のモード
-modetype mode = M_MODE;
-
 wire mstatus_sd  = 0;
+
+// TODO 作る？
 wire mstatus_tsr = 0; // 3.1.6.5 サポートしない。1ならS-modeでSRETするとillegal instruction exceptionにする
+
+// TODO 作る？
 wire mstatus_tw  = 0; // 3.1.6.5 WFI instruction をサポートしないのでサポートしない
+
+// TODO 作る?
 wire mstatus_tvm = 0; // 3.1.6.5 SFENCE.VMA or SINVAL.VMA をサポートしないのでサポートしない
-wire mstatus_mxr = 0; // 3.1.6.3 サポートしない
-wire mstatus_sum = 0; // 3.1.6.3 サポートしない
+
+// TODO 作る
+wire mstatus_mxr = 0; // 3.1.6.3
+wire mstatus_sum = 0; // 3.1.6.3
+
 wire mstatus_mprv= 0; // 3.1.6.3 サポートしない
 wire [1:0] mstatus_xs = 0; // 3.1.6.6 サポートしない
 wire [1:0] mstatus_fs = 0; // 3.1.6.6 サポートしない
@@ -300,13 +302,6 @@ logic [31:0] stvec    = 0;
 logic [31:0] sscratch = 0;
 logic [31:0] sepc     = 0;
 logic [31:0] scause   = 0;
-// 5.1.11
-// MODE(1) | ASID(9) | PPN(22)
-// Table 23
-// MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
-//            0ではないなら動作はUNSPECIFIED！こわいね 
-// MODE = 1 : Sv32, ページングが有効
-logic [31:0] satp     = 0;
 
 // 3.1.7
 // MODE = Direct(0)  : BASE
@@ -319,34 +314,32 @@ wire [31:0] stvec_addr = stvec[1:0] == XTVEC_DIRECT ? stvec : {stvec[31:2], 2'b0
 wire global_mie = mode == M_MODE ? mstatus_mie : 1;
 wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
 
+// wire gg
+
 // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
 // priority order: MEI, MSI, MTI, SEI, SSI, STI.
 // TODO mip_* && mie_*をまとめる
 wire [31:0] interrupt_cause = (
-    (mip_meip && mie_meie) ? MCAUSE_MACHINE_EXTERNAL_INTERRUPT :
-    (mip_msip && mie_msie) ? MCAUSE_MACHINE_SOFTWARE_INTERRUPT :
-    (mip_mtip && mie_mtie) ? MCAUSE_MACHINE_TIMER_INTERRUPT : 
-    (mip_seip && mie_seie) ? MCAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
-    (mip_ssip && mie_ssie) ? MCAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
-    (mip_stip && mie_stie) ? MCAUSE_SUPERVISOR_TIMER_INTERRUPT : 
+    (mip_meip && mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
+    (mip_msip && mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
+    (mip_mtip && mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT : 
+    (mip_seip && mie_seie) ? CAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
+    (mip_ssip && mie_ssie) ? CAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
+    (mip_stip && mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT : 
     32'b0
 );
-wire [31:0] exception_cause = (
-    MCAUSE_ENVIRONMENT_CALL_FROM_U_MODE + {30'b0, mode} // ecall
-);
-wire [31:0] trap_cause = may_expt ? exception_cause : interrupt_cause;
+wire [31:0] exception_cause = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
+wire [31:0] trap_cause = trapinfo.valid ? exception_cause : interrupt_cause;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
 wire interrupt_to_mmode = mideleg[interrupt_cause[4:0]] == 0;
 wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
-wire trap_to_mmode = mode == M_MODE || (may_expt ? exception_to_mmode : interrupt_to_mmode);
+wire trap_nochange = ctrl.fence_i;
+wire trap_to_mmode = mode == M_MODE || (trapinfo.valid ? exception_to_mmode : interrupt_to_mmode);
 
 // trapが起こりそうかどうか
-wire may_expt = (
-    csr_cmd == CSR_ECALL // ecall
-);
 wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
 (
     (mip_meip && mie_meie) ||
@@ -356,9 +349,8 @@ wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
     (mip_ssip && mie_ssie) ||
     (mip_stip && mie_stie)
 );
-wire may_trap = may_expt || may_interrupt;
 
-wire [11:0] addr = csr_imm_i[11:0];
+wire UInt12 addr = imm_i[11:0];
 
 function [31:0] wdata_fun(
     input [2:0]  csr_cmd,
@@ -374,7 +366,7 @@ endcase
 endfunction
 
 function [31:0] gen_rdata(
-    input [11:0] addr,
+    input UInt12 addr,
     input [63:0] reg_cycle,
     input [63:0] reg_time,
     input [31:0] mstatus,
@@ -437,8 +429,9 @@ case (addr)
 endcase
 endfunction
 
-wire [31:0] wdata = wdata_fun(csr_cmd, op1_data, rdata);
-wire [31:0] rdata = can_read ? gen_rdata(
+wire UIntX  wdata = wdata_fun(csr_cmd, op1_data, rdata);
+
+wire UIntX  rdata = can_read ? gen_rdata(
     addr,
     reg_cycle,
     reg_time,
@@ -462,97 +455,81 @@ wire [31:0] rdata = can_read ? gen_rdata(
     scause,
     satp
 ) : 32'b0;
-UIntX rdata_saved;
-assign csr_mem_csr_rdata = csr_inst_id != saved_inst_id ? rdata : rdata_saved;
+UIntX       rdata_saved;
+assign      next_csr_rdata = rdata_saved;
 
 // 2.1 CSR Address Mapping Conventions
-wire can_access = addr[9:8] <= mode;
-wire can_read   = can_access;
-wire can_write  = can_access && addr[11:10] != 2'b11;
+wire can_access     = addr[9:8] <= mode;
+wire can_read       = can_access;
+wire can_write      = can_access && addr[11:10] != 2'b11;
 
-IId saved_inst_id = IID_RANDOM;
-IId saved_iid_old = IID_RANDOM; // TODO HOTFIX
-always @(posedge clk) begin
-    if (csr_valid)
-        saved_inst_id <= csr_inst_id;
-    saved_iid_old <= saved_inst_id;
-end
+wire cmd_is_write   = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
+wire cmd_is_trap    = csr_cmd == CSR_ECALL;
+wire cmd_is_xret    = csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
 
-wire cmd_is_2clock  = csr_cmd[2] != 1'b0;
-wire cmd_is_trap    = csr_cmd[2] == 1'b1;
-wire cmd_is_write = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
+wire this_cause_trap    = trapinfo.valid || cmd_is_trap || may_interrupt;
+logic last_cause_trap   = 0;
 
-assign csr_stall_flg =  csr_valid &&
-                        cmd_is_2clock &&
-                        (csr_inst_id != saved_inst_id); // TODO HOTFIX
-assign csr_trap_flg  =  csr_valid && 
-                        (may_trap || cmd_is_trap) &&
-                        (!cmd_is_2clock || csr_inst_id != saved_iid_old); // TODO HOTFIX
+wire undone_fence_i = ctrl.fence_i && !cache_cntr.is_writebacked_all;
 
-assign output_mode = mode;
-assign output_satp = satp;
+assign is_stall     = valid && (
+                ( is_new && (this_cause_trap || cmd_is_xret || cmd_is_write || trap_nochange)) || 
+                (!is_new && undone_fence_i)
+);
+assign csr_is_trap  = valid && !is_new && (last_cause_trap || undone_fence_i);
+assign csr_keep_trap= trap_nochange;
 
-// mret, sret, ecallのtrap_vectorはレジスタ経由で渡す
-// 割り込み、例外はワイヤで渡す
-logic [31:0] trap_vector;
-assign csr_trap_vector = may_trap ? (trap_to_mmode ? mtvec_addr : stvec_addr) : trap_vector;
+assign cache_cntr.do_writeback      = is_new && ctrl.fence_i;
+assign cache_cntr.invalidate_icache = is_new && ctrl.fence_i;
 
 always @(posedge clk) begin
-if (csr_valid && csr_inst_id != saved_inst_id) begin
-    // trapを起こす
-    if (may_trap) begin
-        `ifdef PRINT_DEBUGINFO
-            $display("info,csrstage.trap.pc,0x%h", pc);
-            $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
-            $display("info,csrstage.trap.cause,0x%h", mtvec_addr);
-            $display("info,csrstage.trap.mtvec,0x%h", mtvec_addr);
-            $display("info,csrstage.trap.stvec,0x%h", stvec_addr);
-        `endif
-        // 3.1.6.1
-        // To support nested traps, each privilege mode x that can respond to interrupts has a two-level stack of
-        // interrupt-enable bits and privilege modes. xPIE holds the value of the interrupt-enable bit active prior
-        // to the trap, and xPP holds the previous privilege mode. The xPP fields can only hold privilege modes
-        // up to x, so MPP is two bits wide and SPP is one bit wide. When a trap is taken from privilege mode y
-        // into privilege mode x, xPIE is set to the value of xIE; xIE is set to 0; and xPP is set to y
-        if (trap_to_mmode) begin
-            mode         <= M_MODE;
-            mcause       <= trap_cause;
-            mepc         <= pc;
-            mstatus_mpie <= mstatus_mie;
-            mstatus_mie  <= 0;
-            mstatus_mpp  <= mode;
+    last_cause_trap <= this_cause_trap || cmd_is_xret;
+    if (valid && is_new) begin
+        // trapを起こす
+        if (trap_nochange) begin
+            trap_vector <= pc + 4;
+            `ifdef PRINT_DEBUGINFO
+                $display("info,csrstage.trap.nochange,0x%h", pc);
+            `endif
+        end else if (this_cause_trap) begin
+            `ifdef PRINT_DEBUGINFO
+                $display("info,csrstage.trap.pc,0x%h", pc);
+                $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
+                $display("info,csrstage.trap.cause,0x%h", trap_cause);
+            `endif
+            if (trap_to_mmode) begin
+                mode         <= M_MODE;
+                mcause       <= trap_cause;
+                mepc         <= pc;
+                mstatus_mpie <= mstatus_mie;
+                mstatus_mie  <= 0;
+                mstatus_mpp  <= mode;
+                trap_vector  <= mtvec_addr;
+            end else begin
+                mode         <= S_MODE;
+                scause       <= trap_cause;
+                sepc         <= pc;
+                mstatus_spie <= mstatus_sie;
+                mstatus_sie  <= 0;
+                mstatus_spp  <= mode[0];
+                trap_vector  <= stvec_addr;
+            end
+            // interruptならmipを0にする
+            if (!trapinfo.valid && !cmd_is_trap && may_interrupt) begin
+                     if (mip_meip && mie_meie) mip_meip <= 0;
+                else if (mip_msip && mie_msie) mip_msip <= 0;
+                else if (mip_mtip && mie_mtie) mip_mtip <= 0;
+                else if (mip_seip && mie_seie) mip_seip <= 0;
+                else if (mip_ssip && mie_ssie) mip_ssip <= 0;
+                else if (mip_stip && mie_stie) mip_stip <= 0;
+            end
         end else begin
-            mode         <= S_MODE;
-            scause       <= trap_cause;
-            sepc         <= pc;
-            mstatus_spie <= mstatus_sie;
-            mstatus_sie  <= 0;
-            mstatus_spp  <= mode[0];
-        end
-        // interruptならmipを0にする
-        if (!may_expt) begin
-                 if (mip_meip && mie_meie) mip_meip <= 0;
-            else if (mip_msip && mie_msie) mip_msip <= 0;
-            else if (mip_mtip && mie_mtie) mip_mtip <= 0;
-            else if (mip_seip && mie_seie) mip_seip <= 0;
-            else if (mip_ssip && mie_ssie) mip_ssip <= 0;
-            else if (mip_stip && mie_stie) mip_stip <= 0;
-        end
-    end else begin
-
-        rdata_saved <= rdata;
-
-        // pending registerを更新する
-        mip_mtip <= reg_mtime >= reg_mtimecmp;
-        if (csr_inst_id != saved_inst_id) begin
+            // pending registerを更新する
+            mip_mtip <= reg_mtime >= reg_mtimecmp;
+            // rdataを保存
+            rdata_saved <= rdata;
             // mret, sretを処理する
             case (csr_cmd)
-                // MRET, SRET
-                // 3.1.6.1
-                // An MRET or SRET instruction is used to return from a trap in M-mode or S-mode respectively. When
-                // executing an xRET instruction, supposing xPP holds the value y, xIE is set to xPIE; the privilege mode is
-                // changed to y; xPIE is set to 1; and xPP is set to the least-privileged supported mode (U if U-mode is
-                // implemented, else M). If y≠M, xRET also sets MPRV=0.
                 CSR_MRET: begin
                     mstatus_mie     <= mstatus_mpie;
                     mode            <= modetype'(mstatus_mpp);
@@ -567,11 +544,15 @@ if (csr_valid && csr_inst_id != saved_inst_id) begin
                     mstatus_spp     <= U_MODE[0];
                     trap_vector     <= sepc;
                 end
-                default: begin end
+                default: begin 
+                    trap_vector     <= ADDR_MAX;
+                end
             endcase
         end
-
+    end
+    if (valid && !is_new) begin
         if (can_write && cmd_is_write) begin
+            $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
             case (addr)
                 // Machine Trap Setup
                 ADDR_MSTATUS: begin
@@ -584,13 +565,13 @@ if (csr_valid && csr_inst_id != saved_inst_id) begin
                 end
                 ADDR_MEDELEG: medeleg <= wdata;
                 ADDR_MIDELEG: begin
-                    mideleg_custom <= wdata[31:16];
-                    mideleg_meip <= wdata[11];
-                    mideleg_seip <= wdata[9];
-                    mideleg_mtip <= wdata[7];
-                    mideleg_stip <= wdata[5];
-                    mideleg_msip <= wdata[3];
-                    mideleg_ssip <= wdata[1];
+                    mideleg_custom  <= wdata[31:16];
+                    mideleg_meip    <= wdata[11];
+                    mideleg_seip    <= wdata[9];
+                    mideleg_mtip    <= wdata[7];
+                    mideleg_stip    <= wdata[5];
+                    mideleg_msip    <= wdata[3];
+                    mideleg_ssip    <= wdata[1];
                 end
                 ADDR_MIE: begin
                     mie_meie <= wdata[11];
@@ -639,25 +620,44 @@ if (csr_valid && csr_inst_id != saved_inst_id) begin
         end
     end
 end
-end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,csrstage.valid,b,%b", csr_valid);
-    $display("data,csrstage.inst_id,h,%b", csr_cmd == CSR_X || !csr_valid ? IID_X : inst_id);
-    if (csr_valid && (csr_cmd != CSR_X || may_trap)) begin
+    $display("data,csrstage.valid,b,%b", valid);
+    $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);
+    if (valid) begin
         $display("data,csrstage.pc,h,%b", pc);
-        $display("data,csrstage.inst,h,%b", csr_inst);
+        $display("data,csrstage.inst,h,%b", inst);
+        $display("data,csrstage.is_stall,b,%b", is_stall);
+    end
+    $display("data,csrstage.mode,d,%b", mode);
+    $display("data,csrstage.mstatus,h,%b", mstatus);
+    $display("data,csrstage.mstatus.mie,b,%b", mstatus_mie);
+    $display("data,csrstage.mstatus.sie,b,%b", mstatus_sie);
+    $display("data,csrstage.interrupt_to_mmode,b,%b", interrupt_to_mmode);
+    $display("data,csrstage.global_mie,b,%b", global_mie);
+    $display("data,csrstage.global_sie,b,%b", global_sie);
+    $display("data,csrstage.mip,b,%b", mip);
+    $display("data,csrstage.mie,b,%b", mie);
+    $display("data,csrstage.medeleg,h,%b", medeleg);
+    $display("data,csrstage.mideleg,h,%b", mideleg);
+    $display("info,csrstage.mtvec,0x%h", mtvec_addr);
+    $display("info,csrstage.stvec,0x%h", stvec_addr);
+    $display("info,csrstage.mepc,0x%h", mepc);
+    $display("info,csrstage.sepc,0x%h", sepc);
 
-        $display("data,csrstage.mode,d,%b", mode);
+    if (ctrl.fence_i || ctrl.svinval) begin
+        $display("data,csrstage.$.do_wb,b,%b", cache_cntr.do_writeback);
+        $display("data,csrstage.$.is_wbed_all,b,%b", cache_cntr.is_writebacked_all);
+        $display("data,csrstage.$.invalidate_i$,b,%b", cache_cntr.invalidate_icache);
+    end
+
+    if (valid && (csr_cmd != CSR_X || this_cause_trap)) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
-        $display("data,csrstage.rdata,h,%b", csr_mem_csr_rdata);
-        $display("data,csrstage.trap_vector,h,%b", trap_vector);
-        $display("data,csrstage.csr_trap_flg,b,%b", csr_trap_flg);
-        $display("data,csrstage.csr_stall_flg,b,%b", csr_stall_flg);
-        $display("data,csrstage.may_trap,b,%b", may_trap);
+        $display("data,csrstage.rdata,h,%b", next_csr_rdata);
+        $display("data,csrstage.csr_is_trap,b,%b", this_cause_trap);
     end
 end
 `endif

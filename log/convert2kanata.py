@@ -104,6 +104,12 @@ for (clock, numberData, textData) in readClockCycle():
     if DS_PIPELINE_FLUSH in textData:
         if ds_id is not None:
             retire(ds_id, 1)
+    if EXE_PIPELINE_FLUSH in textData:
+        if exe_id is not None:
+            retire(exe_id, 1)
+    if MEM_PIPELINE_FLUSH in textData:
+        if mem_id is not None:
+            retire(mem_id, 1)
 
     lastClock   = clock
     last_id_id  = id_id

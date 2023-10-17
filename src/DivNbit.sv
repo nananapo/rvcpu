@@ -6,7 +6,6 @@ module DivNbit #(
     input wire  start,
     output wire ready,
     output wire valid,
-    output wire error,
 
     input wire                      is_signed,  // signedかどうか
     input wire signed [SIZE-1:0]    dividend,   // 被除数
@@ -21,6 +20,8 @@ typedef enum logic {
 } statetype;
 
 statetype state = IDLE;
+
+wire error;
 
 logic result_div_is_minus = 0;
 logic result_rem_is_minus = 0;

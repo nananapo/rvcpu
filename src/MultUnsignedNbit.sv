@@ -18,7 +18,7 @@ typedef enum logic [1:0] {
 
 statetype state = IDLE;
 
-logic [9:0] count = 0;
+logic [7:0] count = 0;
 
 logic [SIZE*2-1:0] save_multiplicand;
 logic [SIZE-1:0] save_multiplier;
@@ -38,8 +38,10 @@ always @(posedge clk) begin
             end
         end
         EXECUTE: begin
+            /* verilator lint_off WIDTH */
             if (count == SIZE - 1)
                 state <= DONE;
+            /* verilator lint_on WIDTH */
             if (save_multiplier[0] == 1)
                 product <= product + save_multiplicand;
             save_multiplicand   <= save_multiplicand << 1;

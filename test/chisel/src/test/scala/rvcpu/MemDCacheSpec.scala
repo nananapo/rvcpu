@@ -10,13 +10,15 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
   val path = os.pwd / os.RelPath("src/test/resources/bin/add.bin")
   val xlen = 32
   val memWidth = 16
-  val randomAccsessCount = 4000
+  val randomAccsessCount = 4096
   val randomWriteCount = 4096
 
-  for (delay <- 0 to 5) {
-    for (cacheWidth <- 2 to 8 by 2) {
+  for (delay <- 0 to 8) {
+    for (cacheWidth <- 2 to 8) {
       s"DCache($cacheWidth) should read correct data sequentially from Memory($delay delay)" in {
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+          m.io.do_writeback.poke(0.B)
+
           var addr = 0
           for (line <- Source.fromFile(path.toString).getLines()) {
             val expectData = changeEndian(line)
@@ -43,6 +45,8 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
 
       s"DCache($cacheWidth) should be able to random access data from Memory($delay delay)" in {
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+          m.io.do_writeback.poke(0.B)
+
           val lines = Source.fromFile(path.toString).getLines().toSeq
           val r = new Random
           for (_ <- 0 until randomAccsessCount) {
@@ -70,6 +74,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       
       s"DCache($cacheWidth) sequential write and read test to Memory($delay delay)" in {
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+          m.io.do_writeback.poke(0.B)
 
           val r = new Random
           val rdata = Range(0, randomWriteCount).map(_ => r.nextInt(1 << 30).U)
@@ -113,7 +118,9 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
     }
 
     s"DCache should raise error when read address is out of Memory($delay delay) range" in {
-      test(new MemICacheTestModule(path.toString, memWidth, xlen, delay, 4)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+      test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, 4)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+        m.io.do_writeback.poke(0.B)
+
         var addr = 1 << memWidth
         // Request
         m.io.req.ready.expect(true.B)

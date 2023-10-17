@@ -7,9 +7,11 @@ import scala.util.Random
 import scala.math.pow
 
 class QueueSpec extends AnyFreeSpec with ChiselScalatestTester {
-  for (size <- Range(0, 8)) {
+  for (size <- Range(0, 16)) {
     s"SyncQueue(32, $size) should not accept data when queue is full" in {
       test(new SyncQueueWrapperModule(32, size)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+        m.clock.setTimeout(0)
+
         // initial check
         m.io.wready.expect(true.B)
         m.io.rvalid.expect(false.B)
@@ -34,6 +36,7 @@ class QueueSpec extends AnyFreeSpec with ChiselScalatestTester {
     }
     s"SyncQueue(32, $size) should provide all data" in {
       test(new SyncQueueWrapperModule(32, size)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+        m.clock.setTimeout(0)
 
         val random = new Random
         val randomData = Range(1, pow(2, size).intValue - 1).map(_ => random.nextInt(1 << 30).U)
@@ -60,9 +63,11 @@ class QueueSpec extends AnyFreeSpec with ChiselScalatestTester {
       }
     }
   }
-  for (size <- Range(2, 6)) {
+  for (size <- Range(2, 16)) {
     s"SyncQueue(32, $size) should provide rdata when wvalid = 1" in {
       test(new SyncQueueWrapperModule(32, size)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+        m.clock.setTimeout(0)
+
         val random = new Random
         val randomData = Range(0, pow(2, size + 1).intValue - 1).map(_ => random.nextInt(1 << 30).U)
 

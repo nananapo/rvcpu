@@ -2,3 +2,8 @@ impl/
 rvcpu.gprj.user
 *.swp
 .DS_Store
+.vscode/settings.json
+.scala-build/.bloop/rvcpu_bd2c96d2de.json
+.scala-build/.bloop/rvcpu_bd2c96d2de-test.json
+.metals/metals.mv.db
+.metals/metals.log

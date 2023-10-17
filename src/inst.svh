@@ -17,6 +17,10 @@ localparam SB_F3    = 3'b000;
 localparam SH_F3    = 3'b001;
 localparam SW_F3    = 3'b010;
 
+localparam MISC_MEM_OP  = 7'b0001111;
+localparam FENCE_F3     = 3'b000;
+localparam FENCEI_F3    = 3'b001; // Zifencei
+
 
 localparam ALUR_OP  = 7'b0110011;
 localparam ADD_F7   = 7'b0000000;
@@ -64,8 +68,8 @@ localparam BGE_F3   = 3'b101;
 localparam BLTU_F3  = 3'b110;
 localparam BGEU_F3  = 3'b111;
 
+localparam SYSTEM_OP= 7'b1110011;
 
-localparam CSR_OP   = 7'b1110011;
 localparam CSRRW_F3 = 3'b001;
 localparam CSRRWI_F3= 3'b101;
 localparam CSRRS_F3 = 3'b010;
@@ -80,15 +84,13 @@ localparam JALR_OP  = 7'b1100111;
 localparam LUI_OP   = 7'b0110111;
 localparam AUIPC_OP = 7'b0010111;
 
-localparam ECALL = 32'b00000000000000000000000001110011;
+localparam ECALL= {25'b0000000000000000000000000, SYSTEM_OP};
+localparam WFI  = {12'b0001000_00101, 5'b0, 3'b0, 5'b0, SYSTEM_OP};
 
 /*----------------Zicsr----------------*/
-localparam SRET = 32'b0001000_00010_00000_000_00000_1110011;
-localparam MRET = 32'b0011000_00010_00000_000_00000_1110011;
+localparam SRET = {25'b0001000_00010_00000_000_00000, SYSTEM_OP};
+localparam MRET = {25'b0011000_00010_00000_000_00000, SYSTEM_OP};
 
-/*----------------Zifencei-------------*/
-localparam ZIFENCEI_FENCEI_OP = 7'b0001111;
-localparam ZIFENCEI_FENCEI_F3 = 3'b001;
 
 /*----------------32M-------------*/
 localparam M_OP = 7'b0110011;
@@ -119,7 +121,6 @@ localparam A_AMOMINU_W_F5   = 5'b11000;
 localparam A_AMOMAXU_W_F5   = 5'b11100;
 
 /*----------------Svinal---------------*/
-localparam SVINVAL_OP = 7'b1110011;
 localparam SVINVAL_F3 = 3'b000;
 localparam SVINVAL_SINVAL_VMA_F7 = 7'b0001011;
 localparam SVINVAL_SFENCE_F7 = 7'b0001100;

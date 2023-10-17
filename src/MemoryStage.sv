@@ -1,30 +1,29 @@
-module MemoryStage(
-    input wire          clk,
+module MemoryStage
+(
+    input wire              clk,
+    input wire              valid,
+    input wire              is_new,
+    input wire TrapInfo     trapinfo,
+    input wire Addr         pc,
+    input wire Inst         inst,
+    input wire IId          inst_id,
+    input wire Ctrl         ctrl,
+    input wire UIntX        alu_out,
+    input wire UIntX        rs2_data,
 
-    inout wire DReq     dreq,
-    inout wire DResp    dresp,
+    output wire TrapInfo    next_trapinfo,
+    output wire UIntX       next_mem_rdata,
 
-    input wire          mem_valid,
-    input wire Addr     mem_pc,
-    input wire Inst     mem_inst,
-    input wire IId      mem_inst_id,
-    input wire Ctrl     mem_ctrl,
-    input wire UIntX    mem_alu_out,
-    input wire UIntX    mem_csr_rdata,
-    input wire UIntX    mem_rs2_data,
+    inout wire DReq         dreq,
+    inout wire DResp        dresp,
 
-    output wire         mem_wb_valid,
-    output wire Addr    mem_wb_pc,
-    output wire Inst    mem_wb_inst,
-    output wire IId     mem_wb_inst_id,
-    output wire Ctrl    mem_wb_ctrl,
-    output wire UIntX   mem_wb_alu_out,
-    output wire UIntX   mem_wb_mem_rdata,
-    output wire UIntX   mem_wb_csr_rdata,
+    output logic            is_stall,
+    output wire             exit
 
-    output logic        memory_unit_stall,
-
-    output wire         exit
+    `ifdef PRINT_DEBUGINFO
+        ,
+        input wire         invalid_by_trap
+    `endif
 );
 
 `include "basicparams.svh"
@@ -33,26 +32,18 @@ typedef enum logic [1:0]
 {
     IDLE,
     WAIT_READY,
-    WAIT_VALID 
+    WAIT_RVALID,
+    WAIT_WVALID
 } statetype;
 
 statetype state = IDLE;
 
-wire Addr   pc          = mem_pc;
-wire Inst   inst        = mem_inst;
-wire IId    inst_id     = mem_inst_id;
-wire Ctrl   ctrl        = mem_ctrl;
-wire UIntX  rs2_data    = mem_rs2_data;
-wire UIntX  alu_out     = mem_alu_out;
-
 logic   is_cmd_executed = 0;
-IId     saved_inst_id   = IID_RANDOM;
-wire    may_start_m     = !is_cmd_executed || saved_inst_id != inst_id;
 
-MemSel replace_mem_wen  = MEN_X;
-wire MemSel mem_wen     = MemSel'(!mem_valid ? MEN_X : 
-                                saved_inst_id != inst_id ? ctrl.mem_wen : replace_mem_wen);
-wire MemSize mem_size   = ctrl.mem_size;
+// logic   is_wen_replaced = 0;
+MemSel  replace_mem_wen = MEN_X;
+wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X : 
+                                    state != IDLE ? replace_mem_wen : ctrl.mem_wen);
 
 function [$bits(UIntX)-1:0] gen_amo_wdata(
     input AextSel   a_sel,
@@ -91,12 +82,9 @@ wire memu_cmd_ready   = dreq.ready;
 wire memu_valid       = dresp.valid;
 wire UIntX memu_rdata = dresp.rdata;
 
-assign dreq.valid   = state == WAIT_READY && mem_valid && may_start_m && mem_wen != MEN_X;
+assign dreq.valid   = state == WAIT_READY && valid && !is_cmd_executed && mem_wen != MEN_X;
 assign dreq.wen     = is_store;
 assign dreq.addr    = alu_out;
-
-
-
 assign dreq.wdata   = 
                     `ifdef RISCV_TESTS
                         alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
@@ -104,9 +92,12 @@ assign dreq.wdata   =
                         ctrl.mem_wen != MEN_A ? rs2_data :
                         ctrl.a_sel == ASEL_SC ? rs2_data :
                         gen_amo_wdata(ctrl.a_sel, ctrl.sign_sel, saved_mem_rdata, rs2_data);
-assign dreq.wmask   = mem_size;
+assign dreq.wmask   = ctrl.mem_size;
 
-assign memory_unit_stall = mem_valid && (state != IDLE || (may_start_m && mem_wen != MEN_X));
+// TODO error
+assign next_trapinfo = trapinfo;
+
+assign is_stall = valid && (state != IDLE || (!is_cmd_executed && mem_wen != MEN_X));
 
 UIntX  saved_mem_rdata;
 
@@ -136,33 +127,20 @@ function [$bits(UIntX)-1:0] gen_rdata(
     end
 endfunction
 
-assign mem_wb_valid     = mem_valid;
-assign mem_wb_pc        = mem_pc;
-assign mem_wb_inst      = mem_inst;
-assign mem_wb_inst_id   = mem_inst_id;
-assign mem_wb_ctrl      = mem_ctrl;
-assign mem_wb_alu_out   = mem_alu_out;
-assign mem_wb_mem_rdata = 
+assign next_mem_rdata = 
                         `ifdef RISCV_TESTS
                             alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
                         `endif
                             gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
-assign mem_wb_csr_rdata = mem_csr_rdata;
-
 
 `ifdef RISCV_TESTS
-    assign exit = mem_valid && is_store && alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] != 8'b0101_0000;
+    assign exit = valid && is_store && alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] != 8'b0101_0000;
 `else
     assign exit = 0;
 `endif
 
 always @(posedge clk) begin
-    if (mem_valid)
-        saved_inst_id <= inst_id;
-end
-
-always @(posedge clk) begin
-    if (!mem_valid || mem_wen == MEN_X) begin
+    if (!valid || mem_wen == MEN_X) begin
         state           <= IDLE;
         is_cmd_executed <= 0;
         replace_mem_wen <= MEN_X;
@@ -170,10 +148,7 @@ always @(posedge clk) begin
         WAIT_READY: begin
             if (memu_cmd_ready) begin
                 if (is_store) begin
-                    state           <= IDLE;
-                    replace_mem_wen <= MEN_X;
-                    is_cmd_executed <= 1;
-
+                    state   <= WAIT_WVALID;
                     `ifdef RISCV_TESTS
                         // riscv-testsのデバッグ出力
                         if (alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] == 8'b0101_0000) begin
@@ -181,11 +156,11 @@ always @(posedge clk) begin
                         end
                     `endif
                 end else begin
-                    state           <= WAIT_VALID;
+                    state   <= WAIT_RVALID;
                 end
             end
         end
-        WAIT_VALID: begin
+        WAIT_RVALID: begin
             if (memu_valid) begin
                 saved_mem_rdata <= memu_rdata;
                 // A拡張で、LR, SCではないものはStoreする
@@ -197,6 +172,13 @@ always @(posedge clk) begin
                     is_cmd_executed <= 1;
                     replace_mem_wen <= MEN_X;
                 end
+            end
+        end
+        WAIT_WVALID: begin
+            if (memu_valid) begin
+                state <= IDLE;
+                is_cmd_executed <= 1;
+                replace_mem_wen <= MEN_X;
             end
         end
         default/*IDLE*/: begin
@@ -234,37 +216,41 @@ always @(posedge clk) begin
     endcase
 end
 
+//////////////////////////////// ストールの割合を表示する /////////////////////
 `ifdef PRINT_MEMPERF
 int memperf_counter = 0;
 int clk_count = 0;
 always @(posedge clk) begin
-    memperf_counter += {31'b0, state == WAIT_READY || state == WAIT_VALID};
+    memperf_counter += {31'b0, is_stall};
     if (clk_count % 10_000_000 == 0) begin
-        $display("memperf : %d", memperf_counter);
+        $display("memorystage.stall.ratio,%d", memperf_counter);
         memperf_counter = 0;
     end
     clk_count += 1;
 end
 `endif
+/////////////////////////////////////////////////////////////////////////////
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,memstage.valid,b,%b", mem_valid);
+    $display("data,memstage.valid,b,%b", valid || invalid_by_trap);
+    if (invalid_by_trap) begin
+        $display("info,memstage.valid_but_invalid,this stage is invalid.");
+    end
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", mem_valid ? inst_id : IID_X);
-
-    if (mem_valid) begin
+    $display("data,memstage.inst_id,h,%b", valid || invalid_by_trap ? inst_id : IID_X);
+    if (valid) begin
         $display("data,memstage.pc,h,%b", pc);
         $display("data,memstage.inst,h,%b", inst);
         $display("data,memstage.alu_out,h,%b", alu_out);
         $display("data,memstage.rs2_data,h,%b", rs2_data);
         $display("data,memstage.mem_wen,d,%b", mem_wen);
-        $display("data,memstage.mem_size,d,%b", mem_size);
+        $display("data,memstage.mem_size,d,%b", ctrl.mem_size);
         $display("data,memstage.is_load,b,%b", is_load);
         $display("data,memstage.is_store,b,%b", is_store);
         $display("data,memstage.reserved_addr,h,%b", aext_reserved_address);
-        $display("data,memstage.memory_unit_stall,b,%b", memory_unit_stall);
-        $display("data,memstage.output.read_data,h,%b", mem_wb_mem_rdata);
+        $display("data,memstage.is_stall,b,%b", is_stall);
+        $display("data,memstage.output.read_data,h,%b", next_mem_rdata);
     end
 end
 `endif

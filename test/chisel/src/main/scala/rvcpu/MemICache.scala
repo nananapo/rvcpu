@@ -4,8 +4,10 @@ import chisel3._
 import chisel3.util._
 import svgen._
 
+// TODO resetをテストする
 class MemICacheWrapperModule(val xlen : Int, val cacheWidth : Int) extends Module {
   class MemICacheIO(xlen : Int) extends Bundle {
+      val reset   = Input(Bool())
       val ireq_in = new CacheReq(xlen)
       val iresp_in= new CacheResp(xlen)
       val busreq  = Flipped(new MemBusReq(xlen))
@@ -32,8 +34,9 @@ class MemICacheTestModule(val memfileName : String, val mem_width : Int, val add
   val xlen = addr_width
 
   class MemICacheTestIO extends Bundle {
-    val req = new CacheReq(xlen)
-    val resp =  new CacheResp(xlen)
+    val reset = Input(Bool())
+    val req   = new CacheReq(xlen)
+    val resp  =  new CacheResp(xlen)
   }
   val io = IO(new MemICacheTestIO)
 
@@ -53,6 +56,7 @@ class MemICacheTestModule(val memfileName : String, val mem_width : Int, val add
 
   cache.io.ireq_in  <> io.req
   cache.io.iresp_in <> io.resp
+  cache.io.reset    <> io.reset
 
   mem.clock   := clock
   mem.reset   := reset

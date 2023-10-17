@@ -5,7 +5,8 @@
 module MemICache #(
     parameter CACHE_WIDTH = 8
 )(
-    input wire clk,
+    input wire              clk,
+    input wire              reset,
 
     inout wire CacheReq     ireq_in,
     inout wire CacheResp    iresp_in,
@@ -115,60 +116,72 @@ end
 
 
 always @(posedge clk) begin
-    iresp_valid_reg <=  (state == IDLE && ireq_in.valid && cache_hit) ||
-                        (state == MEM_RESP_VALID);
-    iresp_rdata_reg <= cache_data[req_mem_index];
-    
-    case (state)
-    IDLE: begin
-        read_count  <= 0;
-        s_ireq      <= ireq_in;
-        if (ireq_in.valid) begin
-            if (cache_hit)
-                iresp_error_reg <= 0;
-            else begin
-                state <= MEM_WAIT_READY;
-                cache_valid[req_index] <= 0;
-            end
+    if (reset) begin
+        state           <= IDLE;
+        iresp_valid_reg <= 0;
+        // すべてのキャッシュをinvalidにする
+        for (int i = 0; i < CACHE_LENGTH; i++) begin
+            cache_valid[i] = 0;
         end
-    end
-    MEM_WAIT_READY: begin
-        if (busreq.ready) begin
-            state <= MEM_READ_VALID;
-        end
-    end
-    MEM_READ_VALID: begin
-        if (busresp.valid) begin
-            if (busresp.error) begin
-                state <= MEM_RESP_VALID;
-                iresp_error_reg         <= 1;
-                cache_valid[req_index]  <= 0;
-            end else begin
-                read_count <= read_count + 1;
-                /* verilator lint_off WIDTH */
-                cache_data[req_mem_index_base + read_count] <= busresp.rdata;
-                if (read_count == LINE_INST_COUNT - 1) begin
-                /* verilator lint_on WIDTH */
-                    state <= MEM_RESP_VALID;
-                    iresp_error_reg         <= 0;
-                    cache_addrs[req_index]  <= normalize_addr(ireq.addr);
-                    cache_valid[req_index]  <= 1;
-                end else
+        `ifdef PRINT_DEBUGINFO
+            $display("info,fetchstage.i$.event.invalidated,Invalidated all cache!");
+        `endif
+    end else begin
+        iresp_valid_reg <=  (state == IDLE && ireq_in.valid && cache_hit) ||
+                            (state == MEM_RESP_VALID);
+        iresp_rdata_reg <= cache_data[req_mem_index];
+        
+        case (state)
+        IDLE: begin
+            read_count  <= 0;
+            s_ireq      <= ireq_in;
+            if (ireq_in.valid) begin
+                if (cache_hit)
+                    iresp_error_reg <= 0;
+                else begin
                     state <= MEM_WAIT_READY;
+                    cache_valid[req_index] <= 0;
+                end
             end
         end
+        MEM_WAIT_READY: begin
+            if (busreq.ready) begin
+                state <= MEM_READ_VALID;
+            end
+        end
+        MEM_READ_VALID: begin
+            if (busresp.valid) begin
+                if (busresp.error) begin
+                    state <= MEM_RESP_VALID;
+                    iresp_error_reg         <= 1;
+                    cache_valid[req_index]  <= 0;
+                end else begin
+                    read_count <= read_count + 1;
+                    /* verilator lint_off WIDTH */
+                    cache_data[req_mem_index_base + read_count] <= busresp.rdata;
+                    if (read_count == LINE_INST_COUNT - 1) begin
+                    /* verilator lint_on WIDTH */
+                        state <= MEM_RESP_VALID;
+                        iresp_error_reg         <= 0;
+                        cache_addrs[req_index]  <= normalize_addr(ireq.addr);
+                        cache_valid[req_index]  <= 1;
+                    end else
+                        state <= MEM_WAIT_READY;
+                end
+            end
+        end
+        MEM_RESP_VALID: state <= IDLE;
+        default: begin
+            $display("MemICache : Unknown state");
+            $finish;
+        end
+        endcase
     end
-    MEM_RESP_VALID: state <= IDLE;
-    default: begin
-        $display("MemICache : Unknown state");
-        $finish;
-    end
-    endcase
 end
 
 `ifdef PRINT_DEBUGINFO
-// always @(posedge clk) begin
 /* verilator lint_off WIDTH */
+// always @(posedge clk) begin
 //     $display("data,fetchstage.i$.state,d,%b", state);
 //     $display("data,fetchstage.i$.read_count,d,%b", read_count);
 
@@ -186,8 +199,8 @@ end
     
 //     $display("data,fetchstage.i$.busresp.save_mem_index,h,%b", req_mem_index_base + read_count);
 //     $display("data,fetchstage.i$.busresp.mem_index,h,%b", req_mem_index);
-/* verilator lint_on WIDTH */
 // end
+/* verilator lint_on WIDTH */
 `endif
 
 endmodule
