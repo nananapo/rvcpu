@@ -32,7 +32,8 @@ typedef enum logic [1:0]
 {
     IDLE,
     WAIT_READY,
-    WAIT_VALID 
+    WAIT_RVALID,
+    WAIT_WVALID
 } statetype;
 
 statetype state = IDLE;
@@ -147,10 +148,7 @@ always @(posedge clk) begin
         WAIT_READY: begin
             if (memu_cmd_ready) begin
                 if (is_store) begin
-                    state           <= IDLE;
-                    replace_mem_wen <= MEN_X;
-                    is_cmd_executed <= 1;
-
+                    state   <= WAIT_WVALID;
                     `ifdef RISCV_TESTS
                         // riscv-testsのデバッグ出力
                         if (alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] == 8'b0101_0000) begin
@@ -158,11 +156,11 @@ always @(posedge clk) begin
                         end
                     `endif
                 end else begin
-                    state           <= WAIT_VALID;
+                    state   <= WAIT_RVALID;
                 end
             end
         end
-        WAIT_VALID: begin
+        WAIT_RVALID: begin
             if (memu_valid) begin
                 saved_mem_rdata <= memu_rdata;
                 // A拡張で、LR, SCではないものはStoreする
@@ -174,6 +172,13 @@ always @(posedge clk) begin
                     is_cmd_executed <= 1;
                     replace_mem_wen <= MEN_X;
                 end
+            end
+        end
+        WAIT_WVALID: begin
+            if (memu_valid) begin
+                state <= IDLE;
+                is_cmd_executed <= 1;
+                replace_mem_wen <= MEN_X;
             end
         end
         default/*IDLE*/: begin

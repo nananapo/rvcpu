@@ -20,7 +20,7 @@ module MMIO_Cntr #(
 typedef enum logic [1:0] {
     IDLE,
     WAIT_READY,
-    READ_VALID
+    WAIT_VALID
 } statetype;
 
 statetype state = IDLE;
@@ -49,7 +49,7 @@ wire cmd_ready  =   is_uart_tx ? cmd_uart_tx_ready :
                     memreq_in.ready;
                     
 /* verilator lint_off UNOPTFLAT */
-wire s_rvalid   = s_dreq.valid && (
+wire s_valid   = s_dreq.valid && (
                     (s_is_memory  && memresp_in.valid) ||
                     (s_is_uart_tx && cmd_uart_tx_rvalid) || 
                     (s_is_uart_rx && cmd_uart_rx_rvalid) || 
@@ -61,9 +61,9 @@ wire UIntX s_rdata  =   s_is_memory  ? memresp_in.rdata :
                         s_is_uart_rx ? cmd_uart_rx_rdata :
                         /*s_is_clint   ?*/cmd_clint_rdata /*: 32'bx */;
 
-assign dreq_in.ready    = state == IDLE || (state == READ_VALID && s_rvalid);
+assign dreq_in.ready    = state == IDLE || (state == WAIT_VALID && s_valid);
 
-assign dresp_in.valid   = s_rvalid;
+assign dresp_in.valid   = s_valid;
 assign dresp_in.addr    = s_dreq.addr;
 assign dresp_in.rdata   = s_rdata;
 
@@ -77,10 +77,10 @@ always @(posedge clk) begin
     case (state)
         IDLE: if (dreq_in.valid) begin
             s_dreq  <= dreq_in;
-            state   <= cmd_ready ? (dreq.wen ? IDLE : READ_VALID) : WAIT_READY;
+            state   <= cmd_ready ? WAIT_VALID : WAIT_READY;
         end
-        WAIT_READY: if (cmd_ready) state <= dreq.wen ? IDLE : READ_VALID;
-        READ_VALID: if (s_rvalid) state <= IDLE;
+        WAIT_READY: if (cmd_ready) state <= WAIT_VALID;
+        WAIT_VALID: if (s_valid) state <= IDLE;
         default: state <= IDLE;
     endcase
 end

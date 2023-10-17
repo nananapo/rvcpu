@@ -16,7 +16,9 @@ typedef enum logic [3:0] {
     LOAD_PUSH,
     STORE_CHECK,
     STORE_READY,
-    STORE_READY2
+    STORE_VALID,
+    STORE_READY2,
+    STORE_VALID2
 } statetype;
 
 statetype state = IDLE;
@@ -70,7 +72,9 @@ assign memreq.addr  = state == LOAD_READY  || state == STORE_READY ? saddr_align
 assign memreq.wen   = state == STORE_READY || state == STORE_READY2;
 assign memreq.wdata = state == STORE_READY ? store_wdata1 : store_wdata2;
 
-assign dresp.valid  = state == LOAD_PUSH;
+assign dresp.valid  =   state == LOAD_PUSH ||
+                        state == STORE_VALID && !is_load_twice && memresp.valid ||
+                        state == STORE_VALID2 && memresp.valid;
 assign dresp.addr   = sdreq.addr;
 assign dresp.rdata  = load_result;
 
@@ -138,7 +142,6 @@ always @(posedge clk) begin
         endcase
     end
     LOAD_PUSH: begin
-        // TODO dresp.readyを待つ？
         state <= IDLE;
     end
     STORE_CHECK: begin
@@ -147,11 +150,21 @@ always @(posedge clk) begin
     end
     STORE_READY: begin
         if (memreq.ready) begin
+            state <= STORE_VALID;
+        end
+    end
+    STORE_VALID: begin
+        if (memresp.valid) begin
             state <= statetype'(is_load_twice ? STORE_READY2 : IDLE);
         end
     end
     STORE_READY2: begin
         if (memreq.ready) begin
+            state <= STORE_VALID2;
+        end
+    end
+    STORE_VALID2: begin
+        if (memresp.valid) begin
             state <= IDLE;
         end
     end
