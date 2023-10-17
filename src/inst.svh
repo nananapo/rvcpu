@@ -17,8 +17,10 @@ localparam SB_F3    = 3'b000;
 localparam SH_F3    = 3'b001;
 localparam SW_F3    = 3'b010;
 
-localparam FENCE_OP = 7'b0001111;
-localparam FENCE_F3 = 3'b000;
+localparam MISC_MEM_OP  = 7'b0001111;
+localparam FENCE_F3     = 3'b000;
+localparam FENCEI_F3    = 3'b001; // Zifencei
+
 
 localparam ALUR_OP  = 7'b0110011;
 localparam ADD_F7   = 7'b0000000;
@@ -89,8 +91,6 @@ localparam WFI  = {12'b0001000_00101, 5'b0, 3'b0, 5'b0, SYSTEM_OP};
 localparam SRET = {25'b0001000_00010_00000_000_00000, SYSTEM_OP};
 localparam MRET = {25'b0011000_00010_00000_000_00000, SYSTEM_OP};
 
-/*----------------Zifencei-------------*/
-localparam FENCEI_F3 = 3'b001;
 
 /*----------------32M-------------*/
 localparam M_OP = 7'b0110011;
