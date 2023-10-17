@@ -200,9 +200,9 @@ wire [31:0] sstatus = {
 };
 wire [31:0] mstatush = {26'b0, mstatush_mbe, mstatush_sbe, 4'b0};
 
-//                   |MXL|   |Extensions                |
-//                     32     ZYXWVUTSRQPONMLKJIHGFEDCBA
-wire [31:0] misa = 32'b01_000_00000000000001000100000001;
+//                   |MXL|   |Extensions                      |
+//                     32     ZY XWVU TSRQ PONM LKJI HGFE DCBA
+wire [31:0] misa = 32'b0100_0000_0000_0000_0001_0001_0000_0001;
 
 logic [31:0] medeleg = 0;
 // 9.4.2. Machine Interrupt Delegation Register (mideleg)
