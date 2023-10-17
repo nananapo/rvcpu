@@ -17,10 +17,7 @@ module Core #(
     inout wire DReq     dreq,
     inout wire DResp    dresp,
 
-    output wire modetype    csr_mode,
-    output wire Addr        csr_satp,
-    // output wire             fencei_hazard,
-    // output wire             sfence_inval,
+    output wire CacheCntrInfo   cache_cntr,
 
     output logic    exit,
     output UIntX    gp
@@ -122,6 +119,7 @@ UIntX       csr_mem_rdata;
 // csr wire
 wire        csr_cmd_stall;
 wire        csr_is_trap;
+wire        csr_keep_trap;
 wire Addr   csr_trap_vector;
 // csr -> wb wire
 wire UIntX  csr_csr_rdata;
@@ -245,15 +243,13 @@ always @(posedge clk) begin
         ds_imm_z        <= id_imm_z;
         // trap
         // TODO *_validをtrapとfwのvalidでコピーしているのが冗長なので、functionか何かにする
-        // TODO ここで割り込みも起こす
         ds_trap.valid   <= id_valid &&
                             (   id_trap.valid ||
                                 id_is_illegal ||
                                 id_ctrl.csr_cmd == CSR_ECALL );
         ds_trap.cause   <= id_trap.valid ? id_trap.cause : 
                             id_is_illegal ? CAUSE_ILLEGAL_INSTRUCTION :
-                            (id_ctrl.csr_cmd == CSR_ECALL) ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE : 0;
-                            // TODO causeをCSR Stageで修正する 
+                            id_ctrl.csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE : 0;
         // forwarding
         ds_fw.valid     <= id_valid && id_ctrl.rf_wen == REN_S;
         ds_fw.fwdable   <= id_ctrl.wb_sel == WB_PC;
@@ -327,8 +323,8 @@ always @(posedge clk) begin
 
     // mem -> csr
     if (csr_is_trap) begin
-        csr_valid       <= 0;
-        csr_is_new      <= 1;
+        csr_valid       <= csr_keep_trap;
+        csr_is_new      <= 0;
         csr_trap        <= 0;
         csr_fw          <= 0;
     end else if (csr_stall) begin
@@ -443,7 +439,8 @@ MemoryStage #() memorystage
         mem_valid && 
         !csr_trap.valid &&
         csr_ctrl.csr_cmd != CSR_SRET &&
-        csr_ctrl.csr_cmd != CSR_MRET),
+        csr_ctrl.csr_cmd != CSR_MRET &&
+        !csr_ctrl.fence_i),
     .is_new(mem_is_new),
     .trapinfo(mem_trap),
     .pc(mem_pc),
@@ -468,7 +465,8 @@ MemoryStage #() memorystage
             mem_valid && (
             csr_trap.valid ||
             csr_ctrl.csr_cmd == CSR_SRET ||
-            csr_ctrl.csr_cmd == CSR_MRET)
+            csr_ctrl.csr_cmd == CSR_MRET || 
+            csr_ctrl.fence_i)
         )
     `endif
 );
@@ -493,15 +491,15 @@ CSRStage #(
     
     .is_stall(csr_cmd_stall),
     .csr_is_trap(csr_is_trap),
-    .csr_trap_vector(csr_trap_vector),
+    .csr_keep_trap(csr_keep_trap),
+    .trap_vector(csr_trap_vector),
 
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
     .reg_mtime(reg_mtime),
     .reg_mtimecmp(reg_mtimecmp),
 
-    .output_mode(csr_mode),
-    .output_satp(csr_satp)
+    .cache_cntr(cache_cntr)
 );
 
 WriteBackStage #() wbstage(
@@ -595,6 +593,7 @@ always @(posedge clk) begin
         $display("data,decodestage.decode.jmp_pc,d,%b", id_ctrl.jmp_pc_flg);
         $display("data,decodestage.decode.jmp_reg,d,%b", id_ctrl.jmp_reg_flg);
         $display("data,decodestage.decode.svinval,d,%b", id_ctrl.svinval);
+        $display("data,decodestage.decode.fence_i,d,%b", id_ctrl.fence_i);
         $display("data,decodestage.decode.imm_i,h,%b", id_imm_i);
         $display("data,decodestage.decode.imm_s,h,%b", id_imm_s);
         $display("data,decodestage.decode.imm_b,h,%b", id_imm_b);
