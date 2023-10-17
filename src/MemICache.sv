@@ -6,14 +6,12 @@ module MemICache #(
     parameter CACHE_WIDTH = 8
 )(
     input wire              clk,
+    input wire              reset,
 
     inout wire CacheReq     ireq_in,
     inout wire CacheResp    iresp_in,
     inout wire MemBusReq    busreq,
-    inout wire MemBusResp   busresp,
-
-    // TODO 実質resetなのでresetに置き換える
-    input wire              invalidate
+    inout wire MemBusResp   busresp
 );
 
 localparam ADDR_WIDTH = CACHE_WIDTH;
@@ -118,11 +116,10 @@ end
 
 
 always @(posedge clk) begin
-    if (invalidate) begin
+    if (reset) begin
         state           <= IDLE;
         iresp_valid_reg <= 0;
         // すべてのキャッシュをinvalidにする
-        // TODO 信号をresetにする
         for (int i = 0; i < CACHE_LENGTH; i++) begin
             cache_valid[i] = 0;
         end

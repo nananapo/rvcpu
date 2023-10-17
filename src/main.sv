@@ -126,11 +126,11 @@ MemBusCntr #() membuscntr (
 /* ---- Inst ---- */
 MemICache #() memicache (
     .clk(clk_in),
+    .reset(cache_cntr.invalidate_icache),
     .ireq_in(icreq_ptw_cache),
     .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
-    .busresp(mbresp_icache),
-    .invalidate(cache_cntr.invalidate_icache)
+    .busresp(mbresp_icache)
 );
 
 PageTableWalker #(
