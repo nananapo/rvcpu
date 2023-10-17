@@ -464,10 +464,9 @@ wire can_read       = can_access;
 wire can_write      = can_access && addr[11:10] != 2'b11;
 
 wire cmd_is_write   = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
-wire cmd_is_trap    = csr_cmd == CSR_ECALL;
 wire cmd_is_xret    = csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
 
-wire this_cause_trap    = trapinfo.valid || cmd_is_trap || may_interrupt;
+wire this_cause_trap    = trapinfo.valid || may_interrupt;
 logic last_cause_trap   = 0;
 
 wire undone_fence_i = ctrl.fence_i && !cache_cntr.is_writebacked_all;
@@ -515,7 +514,7 @@ always @(posedge clk) begin
                 trap_vector  <= stvec_addr;
             end
             // interruptならmipを0にする
-            if (!trapinfo.valid && !cmd_is_trap && may_interrupt) begin
+            if (!trapinfo.valid && may_interrupt) begin
                      if (mip_meip && mie_meie) mip_meip <= 0;
                 else if (mip_msip && mie_msie) mip_msip <= 0;
                 else if (mip_mtip && mie_mtie) mip_mtip <= 0;
