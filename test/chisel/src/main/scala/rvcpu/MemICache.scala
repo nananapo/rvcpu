@@ -34,8 +34,9 @@ class MemICacheTestModule(val memfileName : String, val mem_width : Int, val add
   val xlen = addr_width
 
   class MemICacheTestIO extends Bundle {
-    val req = new CacheReq(xlen)
-    val resp =  new CacheResp(xlen)
+    val reset = Input(Bool())
+    val req   = new CacheReq(xlen)
+    val resp  =  new CacheResp(xlen)
   }
   val io = IO(new MemICacheTestIO)
 
@@ -55,6 +56,7 @@ class MemICacheTestModule(val memfileName : String, val mem_width : Int, val add
 
   cache.io.ireq_in  <> io.req
   cache.io.iresp_in <> io.resp
+  cache.io.reset    <> io.reset
 
   mem.clock   := clock
   mem.reset   := reset

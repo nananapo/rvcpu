@@ -35,8 +35,10 @@ class MemDCacheTestModule(val memfileName : String, val mem_width : Int, val add
   val xlen = addr_width
 
   class MemDCacheTestIO extends Bundle {
-    val req = new CacheReq(xlen)
-    val resp =  new CacheResp(xlen)
+    val req                 = new CacheReq(xlen)
+    val resp                = new CacheResp(xlen)
+    val do_writeback        = Input(Bool())
+    val is_writebacked_all  = Output(Bool())
   }
   val io = IO(new MemDCacheTestIO)
 
@@ -54,8 +56,10 @@ class MemDCacheTestModule(val memfileName : String, val mem_width : Int, val add
   mem.io.resp_addr  <> cache.io.busresp.addr
   mem.io.resp_rdata <> cache.io.busresp.rdata
 
-  cache.io.dreq_in  <> io.req
-  cache.io.dresp_in <> io.resp
+  cache.io.dreq_in            <> io.req
+  cache.io.dresp_in           <> io.resp
+  cache.io.do_writeback       <> io.do_writeback
+  cache.io.is_writebacked_all <> io.is_writebacked_all
 
   mem.clock   := clock
   mem.reset   := reset
