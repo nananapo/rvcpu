@@ -55,9 +55,6 @@ end
 wire MemBusReq  mbreq_mem;
 wire MemBusResp mbresp_mem;
 
-wire modetype   csr_mode;
-wire UIntX      csr_satp;
-
 wire BrInfo     brinfo;
 wire MemBusReq  mbreq_icache;
 wire MemBusResp mbresp_icache;
@@ -80,6 +77,8 @@ wire DReq       dreq_mmio_acntr;
 wire DResp      dresp_mmio_acntr;
 wire DReq       dreq_core_mmio;
 wire DResp      dresp_core_mmio;
+
+wire CacheCntrInfo  cache_cntr;
 
 `ifndef MEM_FILE
     initial begin
@@ -130,7 +129,8 @@ MemICache #() memicache (
     .ireq_in(icreq_ptw_cache),
     .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
-    .busresp(mbresp_icache)
+    .busresp(mbresp_icache),
+    .invalidate(cache_cntr.invalidate_icache)
 );
 
 PageTableWalker #(
@@ -141,8 +141,8 @@ PageTableWalker #(
     .presp(icresp_iq_ptw),
     .memreq(icreq_ptw_cache),
     .memresp(icresp_ptw_cache),
-    .csr_mode(csr_mode),
-    .csr_satp(csr_satp),
+    .csr_mode(cache_cntr.mode),
+    .csr_satp(cache_cntr.satp),
     .kill(ireq_core_iq.valid)
 );
 
@@ -161,7 +161,9 @@ MemDCache #() memdcache (
     .dreq_in(dcreq_ptw_cache),
     .dresp_in(dcresp_ptw_cache),
     .busreq(mbreq_dcache),
-    .busresp(mbresp_dcache)
+    .busresp(mbresp_dcache),
+    .do_writeback(cache_cntr.do_writeback),
+    .is_writebacked_all(cache_cntr.is_writebacked_all)
 );
 
 PageTableWalker #(
@@ -172,8 +174,8 @@ PageTableWalker #(
     .presp(dcresp_acntr_ptw),
     .memreq(dcreq_ptw_cache),
     .memresp(dcresp_ptw_cache),
-    .csr_mode(csr_mode),
-    .csr_satp(csr_satp),
+    .csr_mode(cache_cntr.mode),
+    .csr_satp(cache_cntr.satp),
     .kill(1'b0)
 );
 
@@ -215,8 +217,7 @@ Core #(
     .brinfo(brinfo),
     .dreq(dreq_core_mmio),
     .dresp(dresp_core_mmio),
-    .csr_mode(csr_mode),
-    .csr_satp(csr_satp),
+    .cache_cntr(cache_cntr),
 
     .gp(gp),
     .exit(exit),
