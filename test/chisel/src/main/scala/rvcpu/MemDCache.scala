@@ -4,12 +4,15 @@ import chisel3._
 import chisel3.util._
 import svgen._
 
+// TODO wbをテストする
 class MemDCacheWrapperModule(val xlen : Int, val cacheWidth : Int) extends Module {
   class MemDCacheIO(xlen : Int) extends Bundle {
-      val dreq_in = new CacheReq(xlen)
-      val dresp_in= new CacheResp(xlen)
-      val busreq  = Flipped(new MemBusReq(xlen))
-      val busresp = Flipped(new MemBusResp(xlen))
+      val dreq_in             = new CacheReq(xlen)
+      val dresp_in            = new CacheResp(xlen)
+      val busreq              = Flipped(new MemBusReq(xlen))
+      val busresp             = Flipped(new MemBusResp(xlen))
+      val do_writeback        = Input(Bool())
+      val is_writebacked_all  = Output(Bool())
   }
   private class MemDCacheBlackBox extends BlackBox(Map("CACHE_WIDTH" -> cacheWidth)) with HasBlackBoxResourceWithPortUsingStruct {
       class BBIO extends MemDCacheIO(xlen) {
