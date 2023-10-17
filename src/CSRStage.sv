@@ -1,35 +1,55 @@
+`include "memoryinterface.svh"
+
 module CSRStage #(
     parameter FMAX_MHz = 27
 ) (
-    input wire              clk,
+    input wire          clk,
 
-    input wire              valid,
-    input wire              is_new,
-    input wire TrapInfo     trapinfo,
-    input wire Addr         pc,
-    input wire Inst         inst,
-    input wire IId          inst_id,
-    input wire Ctrl         ctrl,
-    input wire UIntX        imm_i,
-    input wire UIntX        op1_data,
+    input wire          valid,
+    input wire          is_new,
+    input wire TrapInfo trapinfo,
+    input wire Addr     pc,
+    input wire Inst     inst,
+    input wire IId      inst_id,
+    input wire Ctrl     ctrl,
+    input wire UIntX    imm_i,
+    input wire UIntX    op1_data,
 
-    output wire UIntX       next_csr_rdata,
+    output wire UIntX   next_csr_rdata,
 
-    output wire             is_stall,
-    output wire             csr_is_trap,
-    output wire Addr        csr_trap_vector,
+    output wire         is_stall,
+    output wire         csr_is_trap,
+    output wire         csr_keep_trap, // validのままにするtrapかどうか
+    output Addr         trap_vector,
 
-    input wire UInt64       reg_cycle,
-    input wire UInt64       reg_time,
-    input wire UInt64       reg_mtime,
-    input wire UInt64       reg_mtimecmp,
+    input wire UInt64   reg_cycle,
+    input wire UInt64   reg_time,
+    input wire UInt64   reg_mtime,
+    input wire UInt64   reg_mtimecmp,
 
-    output wire modetype    output_mode,
-    output wire Addr        output_satp
+    output wire CacheCntrInfo   cache_cntr
 );
+
+modetype    mode = M_MODE;
+Addr        satp = ADDR_ZERO;
+
+assign cache_cntr.mode  = mode;
+assign cache_cntr.satp  = satp;
 
 `include "csrparam.svh"
 `include "basicparams.svh"
+
+initial begin
+    // 起動時はM-mode
+    mode = M_MODE;
+    // 5.1.11
+    // MODE(1) | ASID(9) | PPN(22)
+    // Table 23
+    // MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
+    //            0ではないなら動作はUNSPECIFIED！こわいね 
+    // MODE = 1 : Sv32, ページングが有効
+    satp = 0;
+end
 
 wire CsrCmd csr_cmd = ctrl.csr_cmd;
 
@@ -107,15 +127,21 @@ typedef enum logic [1:0] {
     XTVEC_VECTORED = 2'b01
 } xtvec_mode_type;
 
-// 現在のモード
-modetype mode = M_MODE;
-
 wire mstatus_sd  = 0;
+
+// TODO 作る？
 wire mstatus_tsr = 0; // 3.1.6.5 サポートしない。1ならS-modeでSRETするとillegal instruction exceptionにする
+
+// TODO 作る？
 wire mstatus_tw  = 0; // 3.1.6.5 WFI instruction をサポートしないのでサポートしない
+
+// TODO 作る?
 wire mstatus_tvm = 0; // 3.1.6.5 SFENCE.VMA or SINVAL.VMA をサポートしないのでサポートしない
-wire mstatus_mxr = 0; // 3.1.6.3 サポートしない
-wire mstatus_sum = 0; // 3.1.6.3 サポートしない
+
+// TODO 作る
+wire mstatus_mxr = 0; // 3.1.6.3
+wire mstatus_sum = 0; // 3.1.6.3
+
 wire mstatus_mprv= 0; // 3.1.6.3 サポートしない
 wire [1:0] mstatus_xs = 0; // 3.1.6.6 サポートしない
 wire [1:0] mstatus_fs = 0; // 3.1.6.6 サポートしない
@@ -276,13 +302,6 @@ logic [31:0] stvec    = 0;
 logic [31:0] sscratch = 0;
 logic [31:0] sepc     = 0;
 logic [31:0] scause   = 0;
-// 5.1.11
-// MODE(1) | ASID(9) | PPN(22)
-// Table 23
-// MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
-//            0ではないなら動作はUNSPECIFIED！こわいね 
-// MODE = 1 : Sv32, ページングが有効
-logic [31:0] satp     = 0;
 
 // 3.1.7
 // MODE = Direct(0)  : BASE
@@ -310,13 +329,14 @@ wire [31:0] interrupt_cause = (
     (mip_stip && mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT : 
     32'b0
 );
-wire [31:0] exception_cause = trapinfo.cause + (trapinfo.cause == CAUSE_ENVIRONMENT_CALL_FROM_U_MODE ? {30'b0, mode} : 0);
+wire [31:0] exception_cause = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
 wire [31:0] trap_cause = trapinfo.valid ? exception_cause : interrupt_cause;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
 wire interrupt_to_mmode = mideleg[interrupt_cause[4:0]] == 0;
 wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
+wire trap_nochange = ctrl.fence_i;
 wire trap_to_mmode = mode == M_MODE || (trapinfo.valid ? exception_to_mmode : interrupt_to_mmode);
 
 // trapが起こりそうかどうか
@@ -450,21 +470,28 @@ wire cmd_is_xret    = csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
 wire this_cause_trap    = trapinfo.valid || cmd_is_trap || may_interrupt;
 logic last_cause_trap   = 0;
 
-assign is_stall     = valid && is_new && (this_cause_trap || cmd_is_xret || cmd_is_write);
-assign csr_is_trap  = valid && !is_new && last_cause_trap;
+wire undone_fence_i = ctrl.fence_i && !cache_cntr.is_writebacked_all;
 
-assign output_mode  = mode;
-assign output_satp  = satp;
+assign is_stall     = valid && (
+                ( is_new && (this_cause_trap || cmd_is_xret || cmd_is_write || trap_nochange)) || 
+                (!is_new && undone_fence_i)
+);
+assign csr_is_trap  = valid && !is_new && (last_cause_trap || undone_fence_i);
+assign csr_keep_trap= trap_nochange;
 
-// mret, sret, ecall, 割り込み、例外
-Addr    trap_vector;
-assign csr_trap_vector = trap_vector;
+assign cache_cntr.do_writeback      = is_new && ctrl.fence_i;
+assign cache_cntr.invalidate_icache = is_new && ctrl.fence_i;
 
 always @(posedge clk) begin
     last_cause_trap <= this_cause_trap || cmd_is_xret;
     if (valid && is_new) begin
         // trapを起こす
-        if (this_cause_trap) begin
+        if (trap_nochange) begin
+            trap_vector <= pc + 4;
+            `ifdef PRINT_DEBUGINFO
+                $display("info,csrstage.trap.nochange,0x%h", pc);
+            `endif
+        end else if (this_cause_trap) begin
             `ifdef PRINT_DEBUGINFO
                 $display("info,csrstage.trap.pc,0x%h", pc);
                 $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
@@ -618,6 +645,13 @@ always @(posedge clk) begin
     $display("info,csrstage.stvec,0x%h", stvec_addr);
     $display("info,csrstage.mepc,0x%h", mepc);
     $display("info,csrstage.sepc,0x%h", sepc);
+
+    if (ctrl.fence_i || ctrl.svinval) begin
+        $display("data,csrstage.$.do_wb,b,%b", cache_cntr.do_writeback);
+        $display("data,csrstage.$.is_wbed_all,b,%b", cache_cntr.is_writebacked_all);
+        $display("data,csrstage.$.invalidate_i$,b,%b", cache_cntr.invalidate_icache);
+    end
+
     if (valid && (csr_cmd != CSR_X || this_cause_trap)) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
