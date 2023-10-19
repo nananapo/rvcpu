@@ -88,6 +88,19 @@ always @(posedge clk) begin
                 req_wdata[31:24]
             };
         end
+        // `ifdef PRINT_DEBUGINFO
+        // if (req_valid) begin
+        //     if (req_wen)
+        //         $display("info,memstage.rawmem.store,0x%h <= %h", req_addr, req_wdata);
+        //     else
+        //         $display("info,memstage.rawmem.load,0x%h : %h", req_addr, {
+        //             mem[addr_shift][7:0],
+        //             mem[addr_shift][15:8],
+        //             mem[addr_shift][23:16],
+        //             mem[addr_shift][31:24]
+        //         });
+        // end
+        // `endif
     end
     S_DELAY: begin
         if (delay_count + 1 == DELAY_CYCLE) begin

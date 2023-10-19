@@ -6,6 +6,9 @@ module DAccessCntr (
     inout wire CacheResp    memresp
 );
 
+// TODO ミスアラインの例外について調べる
+// TODO エラーを全く見てない、伝播させてない
+
 typedef enum logic [3:0] {
     IDLE,
     LOAD_READY,

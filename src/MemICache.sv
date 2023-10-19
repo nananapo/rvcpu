@@ -2,6 +2,7 @@
 
 // direct map
 // wenは無視
+// TODO メモリの範囲外エラーを全く考慮しないようにしたい
 module MemICache #(
     parameter CACHE_WIDTH = 8
 )(

@@ -1,4 +1,4 @@
-
+// TODO trapinfo
 module InstQueue #(
     parameter QUEUE_SIZE = 16,
     parameter INITIAL_ADDR = 32'h0

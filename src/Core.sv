@@ -1,5 +1,7 @@
 `default_nettype none
 
+// TODO ステージの接続にinterfaceを多用したい
+
 module Core #(
     parameter FMAX_MHz = 27
 )(
