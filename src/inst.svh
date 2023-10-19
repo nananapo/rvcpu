@@ -126,6 +126,9 @@ localparam SVINVAL_F3 = 3'b000;
 localparam SVINVAL_SINVAL_VMA_F7 = 7'b0001011;
 localparam SVINVAL_SFENCE_F7 = 7'b0001100;
 
+localparam PRIV_F3          = 3'b000;
+localparam SFENCE_VMA_F7    = 7'b0001001;
+
 /*---------------Zicond----------------*/
 localparam ZICOND_OP = 7'b0110011;
 localparam ZICOND_F7 = 7'b0000111;

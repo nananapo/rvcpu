@@ -79,6 +79,8 @@ function [
         {X_7    , X_X, FENCEI_F3, X_5, MISC_MEM_OP} : decode = {T, DEFAULT_NOP}; // fence.i
         WFI                                         : decode = {T, DEFAULT_NOP}; // wfi TODO
 
+        {SFENCE_VMA_F7, X_X, PRIV_F3, 5'b0, SYSTEM_OP}  : decode = {T, DEFAULT_NOP};
+
         {X_7    , X_X, CSRRW_F3 , X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, T, WB_CSR, CSR_W}; // CSRRW
         {X_7    , X_X, CSRRWI_F3, X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, T, WB_CSR, CSR_W}; // CSRRWI
         {X_7    , X_X, CSRRS_F3 , X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_RS1, OP2_X   , MEN_X, ASEL_X, T, WB_CSR, CSR_S}; // CSRRS
@@ -141,16 +143,18 @@ assign {
     ctrl.csr_cmd
 } = decode(inst);
 
-wire [6:0] F7   = inst[31:25];
-wire [2:0] F3   = inst[14:12];
-wire [6:0] OP   = inst[6:0];
+wire [6:0] F7       = inst[31:25];
+wire [2:0] F3       = inst[14:12];
+wire [4:0] wb_addr  = inst[11:7];
+wire [6:0] OP       = inst[6:0];
 
 assign ctrl.mem_size = MemSize'(F3[1:0]);
 
-assign ctrl.wb_addr     = inst[11:7];
+assign ctrl.wb_addr     = wb_addr;
 assign ctrl.jmp_pc_flg  = OP == JAL_OP;
 assign ctrl.jmp_reg_flg = F3 == JALR_F3 && OP == JALR_OP;
 assign ctrl.svinval     = (F7 == SVINVAL_SFENCE_F7 || F7 == SVINVAL_SINVAL_VMA_F7) && F3 == SVINVAL_F3 && OP == SYSTEM_OP;
-assign ctrl.fence_i     = OP == MISC_MEM_OP && F3 == FENCEI_F3;
+assign ctrl.fence_i     =   (OP == MISC_MEM_OP && F3 == FENCEI_F3) || 
+                            (OP == SYSTEM_OP && F7 == SFENCE_VMA_F7 && F3 == PRIV_F3 && wb_addr == 5'b0);
 
 endmodule
