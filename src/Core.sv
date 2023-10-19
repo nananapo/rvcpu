@@ -381,18 +381,23 @@ always @(posedge clk) begin
     end
 
     // csr -> wb (no stall)
-    wb_valid        <= csr_valid && !csr_cmd_stall;
-    wb_pc           <= csr_pc;
-    wb_inst         <= csr_inst;
-    wb_inst_id      <= csr_inst_id;
-    wb_rf_wen       <= !csr_trap.valid && csr_ctrl.rf_wen; // trapの時は書き込まない
-    wb_reg_addr     <= csr_ctrl.wb_addr;
-    wb_wdata        <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata; // fwと等しい
-    // forwarding
-    wb_fw.valid     <= (csr_valid && !csr_cmd_stall) && csr_fw.valid;
-    wb_fw.fwdable   <= 1;
-    wb_fw.addr      <= csr_fw.addr;
-    wb_fw.wdata     <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata;
+    if (csr_cmd_stall) begin
+        wb_valid   <= 0;
+        wb_fw      <= 0;
+    end else begin
+        wb_valid        <= csr_valid;
+        wb_pc           <= csr_pc;
+        wb_inst         <= csr_inst;
+        wb_inst_id      <= csr_inst_id;
+        wb_rf_wen       <= !csr_trap.valid && csr_ctrl.rf_wen; // trapの時は書き込まない
+        wb_reg_addr     <= csr_ctrl.wb_addr;
+        wb_wdata        <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata; // fwと等しい
+        // forwarding
+        wb_fw.valid     <= csr_valid;
+        wb_fw.fwdable   <= 1;
+        wb_fw.addr      <= csr_fw.addr;
+        wb_fw.wdata     <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata;
+    end
 end
 
 // ID Stage
