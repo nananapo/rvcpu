@@ -88,8 +88,8 @@ assign busreq.wen   =   state == READ_READY ? 1'b0 :
 assign busreq.wdata =   wb_data;
 
 wire [CACHE_WIDTH-1:0] info_index = dreq.addr[CACHE_WIDTH + 2 - 1 : 2];
-wire cache_hit  = cache_valid[info_index] && cache_addrs[info_index] == dreq.addr;
-wire need_wb    = cache_valid[info_index] && cache_modified[info_index];
+wire cache_hit  = cache_valid[info_index] & cache_addrs[info_index] == dreq.addr;
+wire need_wb    = cache_valid[info_index] & cache_modified[info_index];
 
 wire [CACHE_WIDTH-1:0] mem_index = info_index;
 
@@ -105,7 +105,7 @@ always @(posedge clk) begin
         $display("d cache miss : %d%% (%d / %d)", cachemiss_count * 100 / CACHE_MISS_COUNT, cachemiss_count, CACHE_MISS_COUNT);
         cachehit_count  <= 0;
         cachemiss_count <= 0;
-    end else if (state == IDLE && dreq.valid) begin
+    end else if (state == IDLE & dreq.valid) begin
         if (cache_hit) begin
             cachehit_count  <= cachehit_count + 1;
         end else begin
@@ -118,15 +118,15 @@ end
 
 always @(posedge clk) begin
     // TODO これきれいにできない？
-    dresp_valid_reg <=  (state == IDLE && (
+    dresp_valid_reg <=  (state == IDLE & (
                             cache_hit ||            // cache hit
-                            !need_wb && dreq.wen    // ライトバックが必要なくて、そのまま上書きする
+                            !need_wb & dreq.wen    // ライトバックが必要なくて、そのまま上書きする
                         )) ||
                         state == RESP_VALID || // read 
-                        state == WRITE_READY && (busreq.ready && dreq.wen); // writeback -> write
+                        state == WRITE_READY & (busreq.ready & dreq.wen); // writeback -> write
     dresp_rdata_reg <= cache_data[mem_index];
 
-    if (do_writeback && state != IDLE && state != WB_LOOP_CHECK && state != WB_LOOP_READY) begin
+    if (do_writeback & state != IDLE & state != WB_LOOP_CHECK & state != WB_LOOP_READY) begin
         writeback_requested <= 1;
         `ifdef PRINT_DEBUGINFO
             $display("info,memstage.d$.event.wb_req,force writeback requested. state : %d count : %d", state, modified_count);
@@ -151,7 +151,7 @@ always @(posedge clk) begin
                     if (dreq.wen) begin
                         cache_data[mem_index]   <= dreq.wdata;
                         // modifiedが0かつ変更するならmodifiedとする
-                        if (cache_modified[info_index] == 0 && cache_data[mem_index] != dreq.wdata) begin
+                        if (cache_modified[info_index] == 0 & cache_data[mem_index] != dreq.wdata) begin
                             cache_modified[info_index]  <= 1;
                             modified_count              <= modified_count + 1;
                             `ifdef PRINT_DEBUGINFO
@@ -256,7 +256,7 @@ always @(posedge clk) begin
         end else begin
             cache_valid[wb_loop_address]    <= 0;
             cache_modified[wb_loop_address] <= 0;
-            if (cache_valid[wb_loop_address] && cache_modified[wb_loop_address]) begin
+            if (cache_valid[wb_loop_address] & cache_modified[wb_loop_address]) begin
                 state   <= WB_LOOP_READY;
                 wb_addr <= cache_addrs[wb_loop_address];
                 wb_data <= cache_data[wb_loop_address];
@@ -285,7 +285,7 @@ end
 // `ifdef PRINT_DEBUGINFO
 // always @(posedge clk) begin
 //     $display("data,memstage.d$.state,d,%b", state);
-//     if (dreq_in.valid && state == IDLE) begin
+//     if (dreq_in.valid & state == IDLE) begin
 //         $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);
 //         $display("data,memstage.d$.req.addr_index,h,%b", info_index);
 //         $display("data,memstage.d$.req.cache_hit,d,%b", cache_hit);

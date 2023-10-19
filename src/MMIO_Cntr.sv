@@ -34,26 +34,26 @@ wire DReq dreq  = state == IDLE ? dreq_in : s_dreq;
 
 wire is_uart_tx     = dreq.addr == MMIO_ADDR_UART_TX;
 wire is_uart_rx     = dreq.addr == MMIO_ADDR_UART_RX;
-wire is_clint       = CLINT_OFFSET <= dreq.addr && dreq.addr <= CLINT_END;
-wire is_memory      = !is_uart_tx && !is_uart_rx && !is_clint;
+wire is_clint       = CLINT_OFFSET <= dreq.addr & dreq.addr <= CLINT_END;
+wire is_memory      = !is_uart_tx & !is_uart_rx & !is_clint;
 
 wire s_is_uart_tx   = s_dreq.addr == MMIO_ADDR_UART_TX;
 wire s_is_uart_rx   = s_dreq.addr == MMIO_ADDR_UART_RX;
-wire s_is_clint     = CLINT_OFFSET <= s_dreq.addr && s_dreq.addr <= CLINT_END;
-wire s_is_memory    = !s_is_uart_tx && !s_is_uart_rx && !s_is_clint;
+wire s_is_clint     = CLINT_OFFSET <= s_dreq.addr & s_dreq.addr <= CLINT_END;
+wire s_is_memory    = !s_is_uart_tx & !s_is_uart_rx & !s_is_clint;
 
-wire cmd_start  = (state == IDLE || state == WAIT_READY) && dreq.valid;
+wire cmd_start  = (state == IDLE || state == WAIT_READY) & dreq.valid;
 wire cmd_ready  =   is_uart_tx ? cmd_uart_tx_ready : 
                     is_uart_rx ? cmd_uart_rx_ready :
                     is_clint   ? cmd_clint_ready :
                     memreq_in.ready;
                     
 /* verilator lint_off UNOPTFLAT */
-wire s_valid   = s_dreq.valid && (
-                    (s_is_memory  && memresp_in.valid) ||
-                    (s_is_uart_tx && cmd_uart_tx_rvalid) || 
-                    (s_is_uart_rx && cmd_uart_rx_rvalid) || 
-                    (s_is_clint   && cmd_clint_rvalid) );
+wire s_valid   = s_dreq.valid & (
+                    (s_is_memory  & memresp_in.valid) ||
+                    (s_is_uart_tx & cmd_uart_tx_rvalid) || 
+                    (s_is_uart_rx & cmd_uart_rx_rvalid) || 
+                    (s_is_clint   & cmd_clint_rvalid) );
 /* verilator lint_on UNOPTFLAT */
 
 wire UIntX s_rdata  =   s_is_memory  ? memresp_in.rdata :
@@ -61,13 +61,13 @@ wire UIntX s_rdata  =   s_is_memory  ? memresp_in.rdata :
                         s_is_uart_rx ? cmd_uart_rx_rdata :
                         /*s_is_clint   ?*/cmd_clint_rdata /*: 32'bx */;
 
-assign dreq_in.ready    = state == IDLE || (state == WAIT_VALID && s_valid);
+assign dreq_in.ready    = state == IDLE || (state == WAIT_VALID & s_valid);
 
 assign dresp_in.valid   = s_valid;
 assign dresp_in.addr    = s_dreq.addr;
 assign dresp_in.rdata   = s_rdata;
 
-assign memreq_in.valid  = is_memory && cmd_start;
+assign memreq_in.valid  = is_memory & cmd_start;
 assign memreq_in.addr   = dreq.addr;
 assign memreq_in.wen    = dreq.wen;
 assign memreq_in.wdata  = dreq.wdata;
@@ -94,9 +94,9 @@ wire        cmd_clint_rvalid;
 wire UIntX  cmd_uart_tx_rdata;
 wire UIntX  cmd_uart_rx_rdata;
 wire UIntX  cmd_clint_rdata;
-wire        cmd_uart_tx_start = is_uart_tx && cmd_start;
-wire        cmd_uart_rx_start = is_uart_rx && cmd_start;
-wire        cmd_clint_start   = is_clint && cmd_start;
+wire        cmd_uart_tx_start = is_uart_tx & cmd_start;
+wire        cmd_uart_rx_start = is_uart_rx & cmd_start;
+wire        cmd_clint_start   = is_clint & cmd_start;
 
 MMIO_uart_rx #(
     .FMAX_MHz(FMAX_MHz)

@@ -57,7 +57,7 @@ wire        sis_w = sdreq.wmask == SIZE_W;
 // このstore命令はloadする必要があるか
 wire require_load = (!sis_w || saddr_lb != 2'b00);
 // この命令は2回loadする必要があるか
-wire is_load_twice = (sis_w && saddr_lb != 2'b00) || (sis_h && saddr_lb == 2'd3);
+wire is_load_twice = (sis_w & saddr_lb != 2'b00) || (sis_h & saddr_lb == 2'd3);
 
 logic [31:0]  saved_rdata1;
 logic [31:0]  saved_rdata2;
@@ -73,8 +73,8 @@ assign memreq.wen   = state == STORE_READY || state == STORE_READY2;
 assign memreq.wdata = state == STORE_READY ? store_wdata1 : store_wdata2;
 
 assign dresp.valid  =   state == LOAD_PUSH ||
-                        state == STORE_VALID && !is_load_twice && memresp.valid ||
-                        state == STORE_VALID2 && memresp.valid;
+                        state == STORE_VALID & !is_load_twice & memresp.valid ||
+                        state == STORE_VALID2 & memresp.valid;
 assign dresp.addr   = sdreq.addr;
 assign dresp.rdata  = load_result;
 

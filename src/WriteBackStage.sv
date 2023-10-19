@@ -28,7 +28,7 @@ initial begin
 end
 
 always @(posedge clk) begin
-    if (valid && rf_wen && reg_addr != 0) begin
+    if (valid & rf_wen & reg_addr != 0) begin
         regfile[reg_addr] <= wdata;
     end    
 end

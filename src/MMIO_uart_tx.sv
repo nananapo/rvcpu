@@ -27,7 +27,7 @@ SyncQueue #(
     .clk(clk),
     .kill(1'b0),
     .wready(req_ready),
-    .wvalid(req_valid && req_wen),
+    .wvalid(req_valid & req_wen),
     .wdata(req_wdata[7:0]),
     .rready(q_rready),
     .rvalid(q_rvalid),
@@ -48,7 +48,7 @@ assign resp_valid   = 1;
 assign resp_rdata   = DATA_Z;
 
 always @(posedge clk) begin
-    if (q_rready && q_rvalid) begin
+    if (q_rready & q_rvalid) begin
         `ifdef PRINT_DEBUGINFO
             $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
         `else

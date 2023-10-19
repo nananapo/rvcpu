@@ -29,7 +29,7 @@ wire [8:0] satp_asid = csr_satp[30:22];
 wire [21:0] satp_ppn = csr_satp[21:0];
 
 statetype state  = IDLE;
-wire sv32_enable = csr_mode != M_MODE && satp_mode == 1;
+wire sv32_enable = csr_mode != M_MODE & satp_mode == 1;
 
 wire        sv32_req_ready;
 wire        sv32_req_valid;

@@ -66,7 +66,7 @@ always @(posedge clk) begin
                 rxCounter <= rxCounter + 1;
         end
         RX_STATE_STOP_BIT: begin
-            if ((rxCounter + 1) == DELAY_FRAMES && rxPin == 1) begin
+            if ((rxCounter + 1) == DELAY_FRAMES & rxPin == 1) begin
                 rxState     <= RX_STATE_DEBOUNCE;
                 rxCounter   <= 0;
             end else 

@@ -63,22 +63,21 @@ MulDivModule #() muldiv (
 wire is_muldiv          = i_exe == ALU_DIV ||i_exe == ALU_REM ||
                           i_exe == ALU_MUL || i_exe == ALU_MULH || i_exe == ALU_MULHSU;
 
-assign mdreq.valid      = valid && ((is_new && state == IDLE && is_muldiv) || state == WAIT_READY);
+assign mdreq.valid      = valid & ((is_new & state == IDLE & is_muldiv) || state == WAIT_READY);
 assign mdreq.sel        = i_exe;
 assign mdreq.is_signed  = ctrl.sign_sel == OP_SIGNED;
 assign mdreq.op1        = op1_data;
 assign mdreq.op2        = op2_data;
 
-assign is_stall         = valid && 
+assign is_stall         = valid & 
                             (
-                                (is_new && state == IDLE && is_muldiv) ||   // 計算前
+                                (is_new & state == IDLE & is_muldiv) ||   // 計算前
                                 state == WAIT_READY ||                      // 待ち
-                                (state == WAIT_CALC && !mdresp.valid)       // 計算中
+                                (state == WAIT_CALC & !mdresp.valid)       // 計算中
                             );
 
 assign next_alu_out     = state == WAIT_CALC ? mdresp.result : alu_out;
-assign branch_taken     = valid && 
-                          (ctrl.jmp_pc_flg || ctrl.jmp_reg_flg || alu_branch_take);
+assign branch_taken     = valid & (ctrl.jmp_pc_flg || ctrl.jmp_reg_flg || alu_branch_take);
 assign branch_target    =   (
                             ctrl.jmp_pc_flg ? pc + imm_j :
                             ctrl.jmp_reg_flg ? op1_data + op2_data :

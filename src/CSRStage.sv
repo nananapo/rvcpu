@@ -319,14 +319,14 @@ wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
 // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
 // priority order: MEI, MSI, MTI, SEI, SSI, STI.
-// TODO mip_* && mie_*をまとめる
+// TODO mip_* & mie_*をまとめる
 wire [31:0] interrupt_cause = (
-    (mip_meip && mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
-    (mip_msip && mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
-    (mip_mtip && mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT : 
-    (mip_seip && mie_seie) ? CAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
-    (mip_ssip && mie_ssie) ? CAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
-    (mip_stip && mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT : 
+    (mip_meip & mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
+    (mip_msip & mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
+    (mip_mtip & mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT : 
+    (mip_seip & mie_seie) ? CAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
+    (mip_ssip & mie_ssie) ? CAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
+    (mip_stip & mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT : 
     32'b0
 );
 wire [31:0] exception_cause = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
@@ -340,14 +340,14 @@ wire trap_nochange = ctrl.fence_i;
 wire trap_to_mmode = mode == M_MODE || (trapinfo.valid ? exception_to_mmode : interrupt_to_mmode);
 
 // trapが起こりそうかどうか
-wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &&
+wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &
 (
-    (mip_meip && mie_meie) ||
-    (mip_msip && mie_msie) ||
-    (mip_mtip && mie_mtie) ||
-    (mip_seip && mie_seie) ||
-    (mip_ssip && mie_ssie) ||
-    (mip_stip && mie_stie)
+    (mip_meip & mie_meie) ||
+    (mip_msip & mie_msie) ||
+    (mip_mtip & mie_mtie) ||
+    (mip_seip & mie_seie) ||
+    (mip_ssip & mie_ssie) ||
+    (mip_stip & mie_stie)
 );
 
 wire UInt12 addr = imm_i[11:0];
@@ -461,7 +461,7 @@ assign      next_csr_rdata = rdata_saved;
 // 2.1 CSR Address Mapping Conventions
 wire can_access     = addr[9:8] <= mode;
 wire can_read       = can_access;
-wire can_write      = can_access && addr[11:10] != 2'b11;
+wire can_write      = can_access & addr[11:10] != 2'b11;
 
 wire cmd_is_write   = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
 wire cmd_is_xret    = csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
@@ -469,25 +469,25 @@ wire cmd_is_xret    = csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
 wire this_cause_trap    = trapinfo.valid || may_interrupt;
 logic last_cause_trap   = 0;
 
-wire undone_fence_i = ctrl.fence_i && !cache_cntr.is_writebacked_all;
+wire undone_fence_i = ctrl.fence_i & !cache_cntr.is_writebacked_all;
 
-wire fence_clocked = ctrl.fence_i && !undone_fence_i && inst_clock == 2'b0;
+wire fence_clocked = ctrl.fence_i & !undone_fence_i & inst_clock == 2'b0;
 
-assign is_stall     = valid && (
-                ( is_new && (this_cause_trap || cmd_is_xret || cmd_is_write || trap_nochange)) || 
-                (!is_new && undone_fence_i || fence_clocked)
+assign is_stall     = valid & (
+                ( is_new & (this_cause_trap || cmd_is_xret || cmd_is_write || trap_nochange)) || 
+                (!is_new & undone_fence_i || fence_clocked)
 );
-assign csr_is_trap  = valid && !is_new && (last_cause_trap || undone_fence_i || fence_clocked);
+assign csr_is_trap  = valid & !is_new & (last_cause_trap || undone_fence_i || fence_clocked);
 assign csr_keep_trap= trap_nochange;
 
-assign cache_cntr.do_writeback      = is_new && ctrl.fence_i;
-assign cache_cntr.invalidate_icache = is_new && ctrl.fence_i;
+assign cache_cntr.do_writeback      = is_new & ctrl.fence_i;
+assign cache_cntr.invalidate_icache = is_new & ctrl.fence_i;
 
 logic [1:0] inst_clock = 0;
 
 always @(posedge clk) begin
     last_cause_trap <= this_cause_trap || cmd_is_xret;
-    if (valid && is_new) begin
+    if (valid & is_new) begin
         inst_clock <= 0;
         // trapを起こす
         if (trap_nochange) begin
@@ -519,13 +519,13 @@ always @(posedge clk) begin
                 trap_vector  <= stvec_addr;
             end
             // interruptならmipを0にする
-            if (!trapinfo.valid && may_interrupt) begin
-                     if (mip_meip && mie_meie) mip_meip <= 0;
-                else if (mip_msip && mie_msie) mip_msip <= 0;
-                else if (mip_mtip && mie_mtie) mip_mtip <= 0;
-                else if (mip_seip && mie_seie) mip_seip <= 0;
-                else if (mip_ssip && mie_ssie) mip_ssip <= 0;
-                else if (mip_stip && mie_stie) mip_stip <= 0;
+            if (!trapinfo.valid & may_interrupt) begin
+                     if (mip_meip & mie_meie) mip_meip <= 0;
+                else if (mip_msip & mie_msie) mip_msip <= 0;
+                else if (mip_mtip & mie_mtie) mip_mtip <= 0;
+                else if (mip_seip & mie_seie) mip_seip <= 0;
+                else if (mip_ssip & mie_ssie) mip_ssip <= 0;
+                else if (mip_stip & mie_stie) mip_stip <= 0;
             end
         end else begin
             // pending registerを更新する
@@ -554,9 +554,9 @@ always @(posedge clk) begin
             endcase
         end
     end
-    if (valid && !is_new) begin
+    if (valid & !is_new) begin
         inst_clock <= inst_clock + 1;
-        if (can_write && cmd_is_write) begin
+        if (can_write & cmd_is_write) begin
             $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
             case (addr)
                 // Machine Trap Setup
@@ -657,7 +657,7 @@ always @(posedge clk) begin
         $display("data,csrstage.$.invalidate_i$,b,%b", cache_cntr.invalidate_icache);
     end
 
-    if (valid && (csr_cmd != CSR_X || this_cause_trap)) begin
+    if (valid & (csr_cmd != CSR_X || this_cause_trap)) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);

@@ -35,8 +35,8 @@ assign pred_taken = count[1] == 1'b1;
 always @(posedge clk) begin
     if (brinfo.valid) begin
         hist <= {hist[WIDTH_HIST-2:0], brinfo.taken};
-        if (!(u_count == 2'b11 && brinfo.taken) && 
-            !(u_count == 2'b00 && !brinfo.taken)) begin
+        if (!(u_count == 2'b11 & brinfo.taken) & 
+            !(u_count == 2'b00 & !brinfo.taken)) begin
             if (brinfo.taken)
                 counters[hist] <= u_count + 2'b1;
             else

@@ -70,7 +70,7 @@ wire CacheReq ireq = state == IDLE ? ireq_in : s_ireq;
 wire CacheIndex req_index = calc_cache_addr(ireq.addr);
 
 // addrがキャッシュラインに存在し、validであるかどうか
-wire cache_hit = cache_addrs[req_index] == normalize_addr(ireq_in.addr) && cache_valid[req_index];
+wire cache_hit = cache_addrs[req_index] == normalize_addr(ireq_in.addr) & cache_valid[req_index];
 
 wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index_base = {req_index, {LINE_INST_WIDTH{1'b0}}};
 wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index = req_mem_index_base + {{LINE_DATA_ADDR_WIDTH - LINE_INST_WIDTH{1'b0}}, ireq.addr[LINE_INST_WIDTH+2-1:2]};
@@ -104,7 +104,7 @@ always @(posedge clk) begin
         $display("i cache miss : %d%% (%d / %d)", cachemiss_count * 100 / CACHE_MISS_COUNT, cachemiss_count, CACHE_MISS_COUNT);
         cachehit_count  <= 0;
         cachemiss_count <= 0;
-    end else if (state == IDLE && ireq_in.valid) begin
+    end else if (state == IDLE & ireq_in.valid) begin
         if (cache_hit) begin
             cachehit_count  <= cachehit_count + 1;
         end else begin
@@ -127,7 +127,7 @@ always @(posedge clk) begin
             $display("info,fetchstage.i$.event.invalidated,Invalidated all cache!");
         `endif
     end else begin
-        iresp_valid_reg <=  (state == IDLE && ireq_in.valid && cache_hit) ||
+        iresp_valid_reg <=  (state == IDLE & ireq_in.valid & cache_hit) ||
                             (state == MEM_RESP_VALID);
         iresp_rdata_reg <= cache_data[req_mem_index];
         
@@ -185,7 +185,7 @@ end
 //     $display("data,fetchstage.i$.state,d,%b", state);
 //     $display("data,fetchstage.i$.read_count,d,%b", read_count);
 
-//     if (ireq_in.valid && state == IDLE) begin
+//     if (ireq_in.valid & state == IDLE) begin
 //         $display("data,fetchstage.i$.req.addr,h,%b", ireq_in.addr);
 //         $display("data,fetchstage.i$.req.addr_base,h,%b", normalize_addr(ireq_in.addr));
 //         $display("data,fetchstage.i$.req.cache_hit,d,%b", cache_hit);

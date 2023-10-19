@@ -61,7 +61,7 @@ always @(posedge clk) begin
         resp_addr <= req_addr;
         if (DELAY_CYCLE == 0) begin
             valid_old <= req_valid;
-            error_old <= req_valid && !addr_is_valid;
+            error_old <= req_valid & !addr_is_valid;
         end else begin
             if (req_valid) begin
                 valid_old <= !addr_is_valid;
@@ -80,7 +80,7 @@ always @(posedge clk) begin
             mem[addr_shift][23:16],
             mem[addr_shift][31:24]
         };
-        if (req_valid && req_wen) begin
+        if (req_valid & req_wen) begin
             mem[addr_shift] <= {
                 req_wdata[7:0],
                 req_wdata[15:8],

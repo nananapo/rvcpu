@@ -29,7 +29,7 @@ wire BufType buf_wdata;
 wire BufType buf_rdata;
 
 assign buf_kill         = branch_hazard;
-assign buf_wvalid       = requested && memresp.valid;
+assign buf_wvalid       = requested & memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.rdata;
 assign buf_wdata.inst_id= inst_id - IID_ONE;
@@ -92,11 +92,11 @@ wire [2:0]  inst_funct3     = fetched_inst[14:12];
 
 wire Addr   jal_target      = fetched_pc + imm_j_sext;
 
-wire inst_is_jal    = fetched_is_valid && inst_opcode == JAL_OP;
-wire inst_is_jalr   = fetched_is_valid && inst_opcode == JALR_OP && inst_funct3 == JALR_F3;
-wire inst_is_br     = fetched_is_valid && inst_opcode == BR_OP;
+wire inst_is_jal    = fetched_is_valid & inst_opcode == JAL_OP;
+wire inst_is_jalr   = fetched_is_valid & inst_opcode == JALR_OP & inst_funct3 == JALR_F3;
+wire inst_is_br     = fetched_is_valid & inst_opcode == BR_OP;
 
-wire jal_hazard = inst_is_jal && /* requested &&*/ request_pc != jal_target;
+wire jal_hazard = inst_is_jal & /* requested &*/ request_pc != jal_target;
 // TODO ここまで
 
 
@@ -163,7 +163,7 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
 int perf_counter = 0;
 int clk_count = 0;
 always @(posedge clk) begin
-    perf_counter += {31'b0, requested && memresp.valid};
+    perf_counter += {31'b0, requested & memresp.valid};
     if (clk_count % 10_000_000 == 0) begin
         $display("iperf : %d", perf_counter);
         perf_counter = 0;
@@ -212,7 +212,7 @@ always @(posedge clk) begin
                 last_fetched_inst <= memresp.rdata;
 
                 // メモリがreadyかつmemreq.validならリクエストしてる
-                if (memreq.ready && memreq.valid) begin
+                if (memreq.ready & memreq.valid) begin
                     requested   <= 1;
                     request_pc  <= memreq.addr;
                     pc          <= next_pc;
@@ -225,7 +225,7 @@ always @(posedge clk) begin
             end
         end else begin
             // メモリがreadyかつmemreq.validならリクエストしてる
-            if (memreq.ready && memreq.valid) begin
+            if (memreq.ready & memreq.valid) begin
                 pc          <= next_pc;
                 requested   <= 1;
                 request_pc  <= memreq.addr;
@@ -281,7 +281,7 @@ always @(posedge clk) begin
     $display("data,btb.pred.inst_is_jalr,h,%b", inst_is_jalr);
     $display("data,btb.pred.inst_is_br,h,%b", inst_is_br);
 
-    $display("data,btb.pred.use_prediction,b,%b", !branch_hazard && !jal_hazard && inst_is_br);
+    $display("data,btb.pred.use_prediction,b,%b", !branch_hazard & !jal_hazard & inst_is_br);
     $display("data,btb.pred.pc,h,%b", pred_pc_base);
     $display("data,btb.pred.pred_pc,h,%b", next_pc_pred);
 end

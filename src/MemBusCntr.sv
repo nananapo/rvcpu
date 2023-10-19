@@ -28,8 +28,8 @@ assign ireq_in.ready    = state == I_CHECK;
 assign dreq_in.ready    = state == D_CHECK;
 
 assign memreq_in.valid  =   (state == I_READY || state == D_READY) ||
-                            (state == I_CHECK && ireq_in.valid) ||
-                            (state == D_CHECK && dreq_in.valid);
+                            (state == I_CHECK & ireq_in.valid) ||
+                            (state == D_CHECK & dreq_in.valid);
 
 function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (
     input statetype state,
@@ -50,11 +50,11 @@ assign {
     memreq_in.addr, memreq_in.wen, memreq_in.wdata
 } = memcmd(state, ireq_in, dreq_in, s_ireq, s_dreq);
 
-assign iresp_in.valid = state == I_VALID && memresp_in.valid;
+assign iresp_in.valid = state == I_VALID & memresp_in.valid;
 assign iresp_in.addr  = s_ireq.addr;
 assign iresp_in.rdata = memresp_in.rdata;
 
-assign dresp_in.valid = state == D_VALID && memresp_in.valid;
+assign dresp_in.valid = state == D_VALID & memresp_in.valid;
 assign dresp_in.addr  = s_dreq.addr;
 assign dresp_in.rdata = memresp_in.rdata;
 

@@ -28,10 +28,10 @@ wire AluSel sel     = AluSel'(state == IDLE ? req.sel : s_req.sel);
 wire is_div = sel == ALU_DIV || sel == ALU_REM;
 wire is_mul = sel == ALU_MUL || sel == ALU_MULH || sel == ALU_MULHSU;
 
-wire m_start = state == WAIT_READY && is_mul;
+wire m_start = state == WAIT_READY & is_mul;
 wire m_ready;
 wire m_valid;
-wire d_start = state == WAIT_READY && is_div;
+wire d_start = state == WAIT_READY & is_div;
 wire d_ready;
 wire d_valid;
 
@@ -41,7 +41,7 @@ wire [`XLEN:0]      d_remainder;
 
 wire [`XLEN:0] op1ext = s_req.is_signed ?
                 {s_req.op1[`XLEN-1], s_req.op1} : {1'b0, s_req.op1};
-wire [`XLEN:0] op2ext = s_req.is_signed && (is_div || sel != ALU_MULHSU) ? 
+wire [`XLEN:0] op2ext = s_req.is_signed & (is_div || sel != ALU_MULHSU) ? 
                 {s_req.op2[`XLEN-1], s_req.op2} : {1'b0, s_req.op2};
 
 always @(posedge clk) case (state)
@@ -51,11 +51,11 @@ always @(posedge clk) case (state)
             state <= WAIT_READY;
     end
     WAIT_READY: begin
-        if ((is_mul && m_ready) || (is_div && d_ready))
+        if ((is_mul & m_ready) || (is_div & d_ready))
             state <= WAIT_CALC;
     end
     WAIT_CALC: begin
-        if ((is_mul && m_valid) || (is_div && d_valid)) begin
+        if ((is_mul & m_valid) || (is_div & d_valid)) begin
             state       <= RESULT;
             case (s_req.sel) 
                 ALU_DIV    : result <= d_quotient[`XLEN-1:0];

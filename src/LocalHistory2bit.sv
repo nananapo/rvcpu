@@ -38,8 +38,8 @@ assign pred_taken = count[1] == 1'b1;
 
 always @(posedge clk) begin
     if (brinfo.valid) begin
-        if (!(u_count == 2'b11 && brinfo.taken) && 
-            !(u_count == 2'b00 && !brinfo.taken)) begin
+        if (!(u_count == 2'b11 & brinfo.taken) & 
+            !(u_count == 2'b00 & !brinfo.taken)) begin
             if (brinfo.taken)
                 counters[u_phti] <= u_count + 2'b1;
             else
