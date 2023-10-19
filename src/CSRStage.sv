@@ -394,17 +394,18 @@ wire [31:0] stvec_addr = stvec[1:0] == XTVEC_DIRECT ? stvec : {stvec[31:2], 2'b0
 wire global_mie = mode == M_MODE ? mstatus_mie : 1;
 wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
 
-// TODO interruptが発生しないのに発生してしまう?かと思ったが、0が0なので発生しないようだ
+wire raise_expt = trapinfo.valid;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
+// TODO interruptが発生しないのに発生してしまう?かと思ったが、0が0なので発生しないようだ
 wire interrupt_to_mmode = mideleg[interrupt_cause[4:0]] == 0;
 wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
 wire trap_nochange = ctrl.fence_i;
-wire trap_to_mmode = mode == M_MODE | (trapinfo.valid ? exception_to_mmode : interrupt_to_mmode);
+wire trap_to_mmode = mode == M_MODE | (raise_expt ? exception_to_mmode : interrupt_to_mmode);
 
-// trapが起こりそうかどうか
-wire raise_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &
+// interruptが起こりそうかどうか
+wire raise_intr = (interrupt_to_mmode ? global_mie : global_sie) &
 (
     (mip_meip & mie_meie) |
     (mip_msip & mie_msie) |
@@ -428,7 +429,7 @@ wire [31:0] interrupt_cause = (
     32'b0
 );
 wire [31:0] exception_cause = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
-wire [31:0] trap_cause = trapinfo.valid ? exception_cause : interrupt_cause;
+wire [31:0] trap_cause = raise_expt ? exception_cause : interrupt_cause;
 
 wire UIntX  wdata = gen_wdata(csr_cmd, op1_data, rdata);
 wire UIntX  rdata = can_read ? gen_rdata( // TODO 例外で不要になる
@@ -458,7 +459,7 @@ wire UIntX  rdata = can_read ? gen_rdata( // TODO 例外で不要になる
 UIntX       rdata_saved;
 assign      next_csr_rdata = rdata_saved;
 
-wire this_raise_trap    = trapinfo.valid | raise_interrupt;
+wire this_raise_trap    = raise_expt | raise_intr;
 logic last_raise_trap   = 0;
 
 wire undone_fence_i = ctrl.fence_i & !cache_cntr.is_writebacked_all;
@@ -511,7 +512,7 @@ always @(posedge clk) begin
                 trap_vector  <= stvec_addr;
             end
             // interruptならmipを0にする
-            if (!trapinfo.valid & raise_interrupt) begin
+            if (!raise_expt & raise_intr) begin
                      if (mip_meip & mie_meie) mip_meip <= 0;
                 else if (mip_msip & mie_msie) mip_msip <= 0;
                 else if (mip_mtip & mie_mtie) mip_mtip <= 0;
