@@ -56,9 +56,9 @@ always @(posedge clk) begin
         IDLE: begin
             if (start) begin
                 state               <= WAIT;
-                result_div_is_minus <= is_signed & 
+                result_div_is_minus <= is_signed &
                                         ($signed(dividend) < $signed({SIZE{1'b0}})) != ($signed(divisor) < $signed({SIZE{1'b0}}));
-                result_rem_is_minus <= is_signed & 
+                result_rem_is_minus <= is_signed &
                                         ($signed(dividend) < $signed({SIZE{1'b0}}));
             end
         end

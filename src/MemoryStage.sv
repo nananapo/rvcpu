@@ -42,7 +42,7 @@ logic   is_cmd_executed = 0;
 
 // TODO logic   is_wen_replaced = 0;
 MemSel  replace_mem_wen = MEN_X;
-wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X : 
+wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X :
                                     state != IDLE ? replace_mem_wen : ctrl.mem_wen);
 
 function [$bits(UIntX)-1:0] gen_amo_wdata(
@@ -85,7 +85,7 @@ wire UIntX memu_rdata = dresp.rdata;
 assign dreq.valid   = state == WAIT_READY & valid & !is_cmd_executed & mem_wen != MEN_X;
 assign dreq.wen     = is_store;
 assign dreq.addr    = alu_out;
-assign dreq.wdata   = 
+assign dreq.wdata   =
                     `ifdef RISCV_TESTS
                         alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
                     `endif
@@ -110,7 +110,7 @@ function [$bits(UIntX)-1:0] gen_rdata(
     input logic     sc_succeeded
 );
     if (mem_type == MEN_A) begin
-        case (a_sel) 
+        case (a_sel)
             ASEL_LR: gen_rdata = mem_rdata;
             ASEL_SC: gen_rdata = sc_succeeded ? DATA_ZERO : {{XLEN-1{1'b0}}, 1'b1};
             default: gen_rdata = mem_rdata; // AMO : read-modify-write
@@ -127,7 +127,7 @@ function [$bits(UIntX)-1:0] gen_rdata(
     end
 endfunction
 
-assign next_mem_rdata = 
+assign next_mem_rdata =
                         `ifdef RISCV_TESTS
                             alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
                         `endif
@@ -209,7 +209,7 @@ always @(posedge clk) begin
                     endcase
                 end else begin
                     // LOAD, STORE
-                    state <= WAIT_READY; 
+                    state <= WAIT_READY;
                 end
             end
         end
@@ -231,7 +231,7 @@ end
 `endif
 /////////////////////////////////////////////////////////////////////////////
 
-`ifdef PRINT_DEBUGINFO 
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,memstage.valid,b,%b", valid | invalid_by_trap);
     if (invalid_by_trap) begin

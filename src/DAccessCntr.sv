@@ -34,7 +34,7 @@ initial begin
 end
 
 /*
-load byte 
+load byte
 -> 0-3 アラインしてload、調整
 load half
 -> 0-2 アラインしてload、調整

@@ -9,7 +9,7 @@ module main #(
     input  wire clk27MHz,
     input  wire uart_rx,
     output wire uart_tx,
-    
+
     output logic [5:0]  led
 `ifdef DEBUG
     ,
@@ -30,7 +30,7 @@ always @(posedge clk_in) begin
     if (exit) begin
         exited <= 1;
     end
-    led[5:0] = ~gp[5:0];
+    led[5:0] <= ~gp[5:0];
 end
 
 // Counter and Timers
@@ -206,7 +206,7 @@ Core #(
     .FMAX_MHz(FMAX_MHz)
 ) core (
     .clk(clk_in),
-    
+
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
     .reg_mtime(reg_time),

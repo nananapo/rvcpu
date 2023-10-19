@@ -13,7 +13,7 @@ module MultNbit #(
     output logic signed [SIZE*2-1:0]product         // 積
 );
 
-typedef enum logic { 
+typedef enum logic {
     IDLE, WAIT
 } statetype;
 

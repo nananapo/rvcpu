@@ -14,7 +14,7 @@ module DivUnsignedNbit #(
     output logic [SIZE-1:0] remainder   // 余り
 );
 
-typedef enum logic [2:0] { 
+typedef enum logic [2:0] {
     IDLE, DONE, DONE_ERROR, FIND_ONE, DIVIDE
 } statetype;
 

@@ -29,7 +29,7 @@ initial begin
     // $display("MemoryDelay : %d cycle", DELAY_CYCLE);
     `ifdef MEM_ZERO_CLEAR
     for (int l = 0; l < MEM_SIZE; l++)
-        mem[l] = 32'b0;     
+        mem[l] = 32'b0;
     `endif
     if (FILEPATH != "") begin
         $readmemh(FILEPATH, mem);
@@ -39,7 +39,7 @@ end
 
 wire MemAddr addr_shift = req_addr[MEM_WIDTH+2 -1:2];
 
-typedef enum logic { 
+typedef enum logic {
     S_IDLE, S_DELAY
 } statetype;
 statetype state = S_IDLE;
@@ -106,8 +106,9 @@ always @(posedge clk) begin
         if (delay_count + 1 == DELAY_CYCLE) begin
             state       <= S_IDLE;
             valid_old   <= 1;
-        end else 
+        end else begin
             delay_count <= delay_count + 1;
+        end
     end
     endcase
 end

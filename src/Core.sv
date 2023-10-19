@@ -47,10 +47,10 @@ wire UIntX  id_imm_u;
 wire UIntX  id_imm_z;
 
 // ds reg
-logic       ds_is_new = 0;
-logic       ds_valid = 0;
+logic       ds_is_new   = 0;
+logic       ds_valid    = 0;
 Addr        ds_pc;
-TrapInfo    ds_trap = 0;
+TrapInfo    ds_trap     = 0;
 Inst        ds_inst;
 IId         ds_inst_id;
 Ctrl        ds_ctrl;
@@ -68,9 +68,9 @@ wire UIntX  ds_op2_data;
 wire UIntX  ds_rs2_data;
 
 // exe
-logic       exe_is_new = 0;
-logic       exe_valid = 0;
-TrapInfo    exe_trap = 0;
+logic       exe_is_new  = 0;
+logic       exe_valid   = 0;
+TrapInfo    exe_trap    = 0;
 Addr        exe_pc;
 Inst        exe_inst;
 IId         exe_inst_id;
@@ -89,9 +89,9 @@ wire        exe_calc_stall;
 wire UIntX  exe_alu_out;
 
 // mem reg
-logic       mem_is_new = 0;
-logic       mem_valid = 0;
-TrapInfo    mem_trap = 0;
+logic       mem_is_new  = 0;
+logic       mem_valid   = 0;
+TrapInfo    mem_trap    = 0;
 Addr        mem_pc;
 Inst        mem_inst;
 IId         mem_inst_id;
@@ -107,9 +107,9 @@ wire UIntX      mem_mem_rdata;
 wire TrapInfo   mem_next_trap;
 
 // csr reg
-logic       csr_is_new = 0;
-logic       csr_valid = 0;
-TrapInfo    csr_trap = 0;
+logic       csr_is_new  = 0;
+logic       csr_valid   = 0;
+TrapInfo    csr_trap    = 0;
 Addr        csr_pc;
 Inst        csr_inst;
 IId         csr_inst_id;
@@ -254,7 +254,7 @@ always @(posedge clk) begin
                                 id_is_illegal |
                                 id_ctrl.csr_cmd == CSR_ECALL |
                                 id_ctrl.csr_cmd == CSR_EBREAK);
-        ds_trap.cause   <= id_trap.valid ? id_trap.cause : 
+        ds_trap.cause   <= id_trap.valid ? id_trap.cause :
                             id_is_illegal ? CAUSE_ILLEGAL_INSTRUCTION :
                             id_ctrl.csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE :
                             id_ctrl.csr_cmd == CSR_EBREAK ? CAUSE_BREAKPOINT : 0;
@@ -496,14 +496,14 @@ MemoryStage #() memorystage
 
     .is_stall(mem_memory_stall),
     .exit(exit)
-    
+
     `ifdef PRINT_DEBUGINFO
         ,
         .invalid_by_trap(
             mem_valid & (
             csr_trap.valid |
             csr_ctrl.csr_cmd == CSR_SRET |
-            csr_ctrl.csr_cmd == CSR_MRET | 
+            csr_ctrl.csr_cmd == CSR_MRET |
             csr_ctrl.fence_i)
         )
     `endif
@@ -526,7 +526,7 @@ CSRStage #(
     .op1_data(csr_op1_data),
 
     .next_csr_rdata(csr_csr_rdata),
-    
+
     .is_stall(csr_cmd_stall),
     .csr_is_trap(csr_is_trap),
     .csr_keep_trap(csr_keep_trap),
@@ -550,12 +550,13 @@ WriteBackStage #() wbstage(
     .rf_wen(wb_rf_wen),
     .reg_addr(wb_reg_addr),
     .wdata(wb_wdata),
-    
+
     .regfile(wb_regfile)
 );
 
 //////////////////////////////// 分岐情報を渡す ///////////////////////////////
 // invalidで初期化
+// TODO iidを使わなくする
 initial begin
     brinfo.valid = 0;
 end
@@ -575,21 +576,21 @@ end
 
 //////////////////////////////// 予測の成功率を表示する ///////////////////////
 `ifdef PRINT_BRANCH_ACCURACY
-int all_br_count = 0;
-int all_inst_count = 0;
-int fail_count = 0;
-localparam COUNT = 1_000_000;
+int all_br_count    = 0;
+int all_inst_count  = 0;
+int fail_count      = 0;
+localparam COUNT    = 1_000_000;
 always @(posedge clk) begin
     if (exe_valid & exe_inst_id != send_brinfo_exe_last) begin
         if (all_inst_count >= COUNT) begin
             $display("MPKI : %d , %d%%", fail_count / (COUNT / 1000), (all_br_count - fail_count) * 100 / all_br_count);
-            fail_count = 0;
-            all_inst_count = 0;
-            all_br_count = 0;
+            fail_count      = 0;
+            all_inst_count  = 0;
+            all_br_count    = 0;
         end else begin
             if (exe_ctrl.br_exe != BR_X | exe_ctrl.jmp_reg_flg) begin
-                fail_count += branch_fail ? 1 : 0;
-                all_br_count += 1;
+                fail_count      += branch_fail ? 1 : 0;
+                all_br_count    += 1;
             end
             all_inst_count = all_inst_count + 1;
         end

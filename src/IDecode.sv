@@ -22,11 +22,11 @@ localparam DEFAULT_NOP = {ALU_ADD, BR_X, OP_SIGNED, OP1_X, OP2_X, MEN_X, ASEL_X,
 
 function [
     1 + // is_legal
-    $bits(AluSel) + 
-    $bits(BrSel) + 
+    $bits(AluSel) +
+    $bits(BrSel) +
     $bits(SignSel) +
-    $bits(Op1Sel) + 
-    $bits(Op2Sel) + 
+    $bits(Op1Sel) +
+    $bits(Op2Sel) +
     $bits(MemSel) +
     $bits(AextSel) +
     1 +  // rf_wen
@@ -75,7 +75,7 @@ function [
         {X_7    , X_X, X_3      , X_5, LUI_OP   }   : decode = {T, ALU_ADD   , BR_X    , OP_SIGNED  , OP1_X  , OP2_IMU , MEN_X, ASEL_X, T, WB_ALU, CSR_X}; // LUI
         {X_7    , X_X, X_3      , X_5, AUIPC_OP }   : decode = {T, ALU_ADD   , BR_X    , OP_SIGNED  , OP1_PC , OP2_IMU , MEN_X, ASEL_X, T, WB_ALU, CSR_X}; // AUIPC
 
-        {X_7    , X_X, FENCE_F3 , X_5, MISC_MEM_OP} : decode = {T, DEFAULT_NOP}; // fence      
+        {X_7    , X_X, FENCE_F3 , X_5, MISC_MEM_OP} : decode = {T, DEFAULT_NOP}; // fence
         {X_7    , X_X, FENCEI_F3, X_5, MISC_MEM_OP} : decode = {T, DEFAULT_NOP}; // fence.i
         WFI                                         : decode = {T, DEFAULT_NOP}; // wfi TODO
 
@@ -89,7 +89,7 @@ function [
         {X_7    , X_X, CSRRCI_F3, X_5, SYSTEM_OP}   : decode = {T, ALU_COPY1 , BR_X    , OP_SIGNED  , OP1_IMZ, OP2_X   , MEN_X, ASEL_X, T, WB_CSR, CSR_C}; // CSRRCI
         ECALL                                       : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, F, WB_X  , CSR_ECALL}; // ECALL
         EBREAK                                      : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, F, WB_X  , CSR_EBREAK}; // EBREAK
- 
+
         SRET                                        : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, F, WB_X  , CSR_SRET}; // MRET
         MRET                                        : decode = {T, ALU_X     , BR_X    , OP_SIGNED  , OP1_X  , OP2_X   , MEN_X, ASEL_X, F, WB_X  , CSR_MRET}; // SRET
 
@@ -145,7 +145,7 @@ assign {
 
 wire [6:0] F7       = inst[31:25];
 wire [2:0] F3       = inst[14:12];
-wire [4:0] wb_addr  = inst[11:7];
+wire UInt5 wb_addr  = inst[11:7];
 wire [6:0] OP       = inst[6:0];
 
 assign ctrl.mem_size = MemSize'(F3[1:0]);

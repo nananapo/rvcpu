@@ -46,29 +46,29 @@ initial begin
     // MODE(1) | ASID(9) | PPN(22)
     // Table 23
     // MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
-    //            0ではないなら動作はUNSPECIFIED！こわいね 
+    //            0ではないなら動作はUNSPECIFIED！こわいね
     // MODE = 1 : Sv32, ページングが有効
     satp = 0;
 end
 
 wire CsrCmd csr_cmd = ctrl.csr_cmd;
 
-typedef enum logic [11:0] { 
+typedef enum logic [11:0] {
     // Counters and Timers
     ADDR_CYCLE      = 12'hc00,
     ADDR_TIME       = 12'hc01,
     // ADDR_INSTRET    = 12'hc02, // read-only 0
-    // ADDR_HPMCOUNTER~= 12'hc03 ~ 12'hc1f, // read-only 0 
+    // ADDR_HPMCOUNTER~= 12'hc03 ~ 12'hc1f, // read-only 0
     ADDR_CYCLEH     = 12'hc80,
     ADDR_TIMEH      = 12'hc81,
     // ADDR_INSTRETH    = 12'hc82,
-    // ADDR_HPMCOUNTERH~= 12'hc83 ~ 12'hc9f, // read-only 0 
+    // ADDR_HPMCOUNTERH~= 12'hc83 ~ 12'hc9f, // read-only 0
 
     // Supervisor Trap Setup
     ADDR_SSTATUS    = 12'h100,
     ADDR_SIE        = 12'h104,
     ADDR_STVEC      = 12'h105,
-    ADDR_SCOUNTEREN = 12'h106, // 5.1.5 U-modeがcycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ 
+    ADDR_SCOUNTEREN = 12'h106, // 5.1.5 U-modeがcycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ
     // Supervisor Configuration
     // ADDR_SENVCFG    = 12'h10a, // read-only 0
     // Supervisor Trap Handling
@@ -122,7 +122,7 @@ typedef enum logic [11:0] {
     ADDR_MINSTRETH  = 12'hb82
 } csr_addr_type;
 
-typedef enum logic [1:0] { 
+typedef enum logic [1:0] {
     XTVEC_DIRECT   = 2'b00,
     XTVEC_VECTORED = 2'b01
 } xtvec_mode_type;
@@ -211,7 +211,7 @@ logic [31:0] medeleg = 0;
 // implemented (GEILEN is nonzero), bit 12 of mideleg (corresponding to supervisor-level guest external
 // interrupts) is also read-only one. VS-level interrupts and guest external interrupts are always delegated
 // past M-mode to HS-mode
-// 
+//
 // 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
 logic [15:0] mideleg_custom = 0;
 wire mideleg_sgeip  = 0; // any guest external interruptsをサポートする
@@ -323,10 +323,10 @@ wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
 wire [31:0] interrupt_cause = (
     (mip_meip & mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
     (mip_msip & mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
-    (mip_mtip & mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT : 
+    (mip_mtip & mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT :
     (mip_seip & mie_seie) ? CAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
     (mip_ssip & mie_ssie) ? CAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
-    (mip_stip & mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT : 
+    (mip_stip & mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT :
     32'b0
 );
 wire [31:0] exception_cause = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
@@ -424,7 +424,7 @@ case (addr)
     // ADDR_STVAL:     gen_rdata = stval;
     ADDR_SIP:       gen_rdata = sip;
     // Supervisor Protection and Translation
-    ADDR_SATP:      gen_rdata = satp; 
+    ADDR_SATP:      gen_rdata = satp;
     default:        gen_rdata = 32'b0;
 endcase
 endfunction
@@ -474,7 +474,7 @@ wire undone_fence_i = ctrl.fence_i & !cache_cntr.is_writebacked_all;
 wire fence_clocked = ctrl.fence_i & !undone_fence_i & inst_clock == 2'b0;
 
 assign is_stall     = valid & (
-                ( is_new & (this_cause_trap | cmd_is_xret | cmd_is_write | trap_nochange)) | 
+                ( is_new & (this_cause_trap | cmd_is_xret | cmd_is_write | trap_nochange)) |
                 (!is_new & undone_fence_i | fence_clocked)
 );
 assign csr_is_trap  = valid & !is_new & (last_cause_trap | undone_fence_i | fence_clocked);
@@ -548,7 +548,7 @@ always @(posedge clk) begin
                     mstatus_spp     <= U_MODE[0];
                     trap_vector     <= sepc;
                 end
-                default: begin 
+                default: begin
                     trap_vector     <= ADDR_MAX;
                 end
             endcase
@@ -619,14 +619,14 @@ always @(posedge clk) begin
                     mip_ssip <= wdata[1];
                 end
                 // Supervisor Protection and Translation
-                ADDR_SATP: satp <= wdata; 
+                ADDR_SATP: satp <= wdata;
                 default: begin end
             endcase
         end
     end
 end
 
-`ifdef PRINT_DEBUGINFO 
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,csrstage.valid,b,%b", valid);
     $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);

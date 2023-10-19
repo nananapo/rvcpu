@@ -62,7 +62,7 @@ wire [11:0] s_page_offset   = s_req.addr[11:0];
 wire [9:0]  idleonly_vpn1   = preq.addr[31:22];
 // D A G U X W R V
 wire validonly_pte_R    = memresp.rdata[1];
-wire validonly_pte_X    = memresp.rdata[3]; 
+wire validonly_pte_X    = memresp.rdata[3];
 wire validonly_pte_V    = memresp.rdata[0];
 wire [11:0] validonly_pte_ppn1 = memresp.rdata[31:20];
 wire [9:0]  validonly_pte_ppn0 = memresp.rdata[19:10];
@@ -82,11 +82,11 @@ else if (sv32_enable) begin
     case (state)
     IDLE: begin
         if (preq.valid) begin
-            state   <= WALK_READY; 
-            s_req   <= preq;
+            state       <= WALK_READY;
+            s_req       <= preq;
             // 5.3.2 step 3
-            level   <= 1; // level = 2 - 1 = 1スタート
-            next_addr <= {satp_ppn, 12'b0} + {22'b0, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
+            level       <= 1; // level = 2 - 1 = 1スタート
+            next_addr   <= {satp_ppn, 12'b0} + {22'b0, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
         end
     end
     WALK_READY: begin
@@ -114,11 +114,11 @@ else if (sv32_enable) begin
                         2'b00: next_addr <= {validonly_pte_ppn, s_page_offset};
                     endcase
                 end else begin
-                    state <= WALK_READY;
+                    state   <= WALK_READY;
                     // 5.3.2 step 4
-                    level <= level - 2'd1;
+                    level   <= level - 2'd1;
                     // 2回目は必ずvpn0
-                    next_addr <= {validonly_pte_ppn, 12'b0} + {22'b0, s_vpn0, {PTESIZE_WIDTH{1'b0}}};
+                    next_addr<= {validonly_pte_ppn, 12'b0} + {22'b0, s_vpn0, {PTESIZE_WIDTH{1'b0}}};
                 end
             end else begin
                 state       <= REQ_READY;

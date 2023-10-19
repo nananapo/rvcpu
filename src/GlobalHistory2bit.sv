@@ -8,8 +8,8 @@ module GlobalHistory2bit #(
     input wire BrInfo   brinfo
 );
 
-localparam SIZE_PC = 2 ** WIDTH_PC;
-localparam SIZE_HIST = 2 ** WIDTH_HIST;
+localparam SIZE_PC      = 2 ** WIDTH_PC;
+localparam SIZE_HIST    = 2 ** WIDTH_HIST;
 
 localparam DEFAULT_COUNTER_VALUE = 2'b0;
 localparam DEFAULT_HISTORY_VALUE = {WIDTH_HIST{1'b0}};
@@ -21,10 +21,10 @@ initial begin
         counters[i] = DEFAULT_COUNTER_VALUE;
 end
 
-logic [WIDTH_HIST-1:0] hist = DEFAULT_HISTORY_VALUE; 
+logic [WIDTH_HIST-1:0] hist = DEFAULT_HISTORY_VALUE;
 
-wire [WIDTH_PC-1:0] pci   = pc[WIDTH_PC+2-1:2];
-wire [WIDTH_PC-1:0] u_pci = brinfo.pc[WIDTH_PC+2-1:2];
+wire [WIDTH_PC-1:0] pci     = pc[WIDTH_PC+2-1:2];
+wire [WIDTH_PC-1:0] u_pci   = brinfo.pc[WIDTH_PC+2-1:2];
 
 // TODO フェッチした時のhistが欲しいが、持ってこれない
 wire [1:0] count    = counters[hist];
@@ -35,7 +35,7 @@ assign pred_taken = count[1] == 1'b1;
 always @(posedge clk) begin
     if (brinfo.valid) begin
         hist <= {hist[WIDTH_HIST-2:0], brinfo.taken};
-        if (!(u_count == 2'b11 & brinfo.taken) & 
+        if (!(u_count == 2'b11 & brinfo.taken) &
             !(u_count == 2'b00 & !brinfo.taken)) begin
             if (brinfo.taken)
                 counters[hist] <= u_count + 2'b1;
@@ -54,7 +54,7 @@ always @(posedge clk) begin
     $display("data,fetchstage.glbh2.count,b,%b", count);
     $display("data,fetchstage.glbh2.next_pc,h,%b", next_pc);
 end
-`endif 
+`endif
 */
 
 endmodule

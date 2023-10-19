@@ -12,7 +12,7 @@ module MultUnsignedNbit #(
     output logic [SIZE*2-1:0] product       // 積
 );
 
-typedef enum logic [1:0] { 
+typedef enum logic [1:0] {
     IDLE, EXECUTE, DONE
 } statetype;
 
@@ -45,7 +45,7 @@ always @(posedge clk) begin
             if (save_multiplier[0] == 1)
                 product <= product + save_multiplicand;
             save_multiplicand   <= save_multiplicand << 1;
-            save_multiplier     <= save_multiplier >> 1; 
+            save_multiplier     <= save_multiplier >> 1;
             count               <= count + 1;
         end
         default: state <= IDLE;

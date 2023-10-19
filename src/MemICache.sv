@@ -21,7 +21,7 @@ initial begin
     if (CACHE_WIDTH < 2) begin
         $display("ICache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
         $finish;
-    end 
+    end
 end
 
 localparam INST_WIDTH       = 32;
@@ -131,7 +131,7 @@ always @(posedge clk) begin
         iresp_valid_reg <=  (state == IDLE & ireq_in.valid & cache_hit) |
                             (state == MEM_RESP_VALID);
         iresp_rdata_reg <= cache_data[req_mem_index];
-        
+
         case (state)
         IDLE: begin
             read_count  <= 0;
@@ -197,7 +197,7 @@ end
 //     $display("data,fetchstage.i$.busreq.addr,h,%b", busreq.addr);
 //     $display("data,fetchstage.i$.busresp.valid,d,%b", busresp.valid);
 //     $display("data,fetchstage.i$.busresp.rdata,h,%b", busresp.rdata);
-    
+
 //     $display("data,fetchstage.i$.busresp.save_mem_index,h,%b", req_mem_index_base + read_count);
 //     $display("data,fetchstage.i$.busresp.mem_index,h,%b", req_mem_index);
 // end

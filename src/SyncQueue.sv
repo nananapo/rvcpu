@@ -36,7 +36,7 @@ if (WIDTH == 0) begin
     end
 
 end else begin
-    localparam QUEUE_SIZE = 2 ** WIDTH; 
+    localparam QUEUE_SIZE = 2 ** WIDTH;
 
     logic [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
     logic [WIDTH-1:0] head = 0;
@@ -52,7 +52,7 @@ end else begin
             head <= tail;
         else begin
             if (wready & wvalid) begin
-                tail <= tail + 1;
+                tail        <= tail + 1;
                 queue[tail] <= wdata;
             end
             if (rready & rvalid)
@@ -60,5 +60,5 @@ end else begin
         end
     end
 end
-    
+
 endgenerate endmodule

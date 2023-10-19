@@ -76,9 +76,9 @@ always @(posedge clk) begin
         end
         D_CHECK: begin
             b_counter   <= 0;
-            s_dreq  <= dreq_in;
-            state   <=  !dreq_in.valid ? I_CHECK :
-                        !memreq_in.ready ? D_READY : D_VALID;
+            s_dreq      <= dreq_in;
+            state       <=  !dreq_in.valid ? I_CHECK :
+                            !memreq_in.ready ? D_READY : D_VALID;
         end
         D_READY: if (memreq_in.ready)  state <= D_VALID;
         D_VALID: if (memresp_in.valid) state <= I_CHECK;

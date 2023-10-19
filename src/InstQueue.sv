@@ -5,12 +5,11 @@ module InstQueue #(
 ) (
     input wire clk,
 
-    inout wire IReq     ireq,
-    inout wire IResp    iresp,
+    inout wire IReq         ireq,
+    inout wire IResp        iresp,
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp,
-
-    input wire BrInfo   brinfo
+    input wire BrInfo       brinfo
 );
 
 `include "basicparams.svh"
@@ -95,8 +94,7 @@ wire Addr   jal_target      = fetched_pc + imm_j_sext;
 wire inst_is_jal    = fetched_is_valid & inst_opcode == JAL_OP;
 wire inst_is_jalr   = fetched_is_valid & inst_opcode == JALR_OP & inst_funct3 == JALR_F3;
 wire inst_is_br     = fetched_is_valid & inst_opcode == BR_OP;
-
-wire jal_hazard = inst_is_jal & /* requested &*/ request_pc != jal_target;
+wire jal_hazard     = inst_is_jal & /* requested &*/ request_pc != jal_target;
 // TODO ここまで
 
 
@@ -136,41 +134,23 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
     initial $display("branch pred : global history");
 `else
     `define NO_PREDICITION_MODULE
-    assign pred_taken = 0; 
+    assign pred_taken = 0;
     initial $display("no branch prediction module is selected");
 `endif
 
 `ifdef DEBUG
     wire Addr __next_pc = jal_hazard ? jal_target + 4 :
-                            inst_is_br ? next_pc_pred + 4: 
+                            inst_is_br ? next_pc_pred + 4:
                             pc + 4;
     assign next_pc = __next_pc === 32'hxxxxxxxx ? 32'h0 : __next_pc;
 `else
     // ここではbranch_hazard時のpcを指定しない。
     // branch_hazardはalways内で処理
     assign next_pc =    jal_hazard ? jal_target + 4 :
-                        inst_is_br ? next_pc_pred + 4: 
+                        inst_is_br ? next_pc_pred + 4:
                         pc + 4;
 `endif
 
-
-
-
-
-
-
-`ifdef PRINT_MEMPERF
-int perf_counter = 0;
-int clk_count = 0;
-always @(posedge clk) begin
-    perf_counter += {31'b0, requested & memresp.valid};
-    if (clk_count % 10_000_000 == 0) begin
-        $display("iperf : %d", perf_counter);
-        perf_counter = 0;
-    end
-    clk_count += 1;
-end
-`endif
 
 assign memreq.valid = buf_wready;
 assign memreq.addr  =   branch_hazard ? ireq.addr :
@@ -188,11 +168,11 @@ always @(posedge clk) begin
         `ifdef PRINT_DEBUGINFO
             $display("info,fetchstage.event.branch_hazard,branch hazard");
         `endif
-        pc          <= ireq.addr;
-        requested   <= 0;
-        request_pc  <= ireq.addr;
-        last_fetched_pc  <= 32'h0;
-        last_fetched_inst <= 32'h0;
+        pc                  <= ireq.addr;
+        requested           <= 0;
+        request_pc          <= ireq.addr;
+        last_fetched_pc     <= 32'h0;
+        last_fetched_inst   <= 32'h0;
     end else begin
         if (jal_hazard) begin
             `ifdef PRINT_DEBUGINFO
@@ -238,6 +218,19 @@ always @(posedge clk) begin
     end
 end
 
+`ifdef PRINT_MEMPERF
+int perf_counter = 0;
+int clk_count = 0;
+always @(posedge clk) begin
+    perf_counter += {31'b0, requested & memresp.valid};
+    if (clk_count % 10_000_000 == 0) begin
+        $display("iperf : %d", perf_counter);
+        perf_counter = 0;
+    end
+    clk_count += 1;
+end
+`endif
+
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,fetchstage.pc,h,%b", pc);
@@ -250,7 +243,7 @@ always @(posedge clk) begin
     if (ireq.valid) begin
         $display("data,fetchstage.ireq.addr,h,%b", ireq.addr);
     end
-    
+
     $display("data,fetchstage.iresp.valid,b,%b", iresp.valid);
     if (iresp.valid) begin
         $display("data,fetchstage.iresp.ready,b,%b", iresp.ready);

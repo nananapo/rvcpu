@@ -30,10 +30,10 @@ end
 always @(posedge clk) begin
     if (valid & rf_wen & reg_addr != 0) begin
         regfile[reg_addr] <= wdata;
-    end    
+    end
 end
 
-`ifdef PRINT_DEBUGINFO 
+`ifdef PRINT_DEBUGINFO
 UIntX inst_count    = 0;
 always @(posedge clk) begin
     if (valid) inst_count += 1;

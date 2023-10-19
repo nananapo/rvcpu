@@ -69,11 +69,11 @@ assign mdreq.is_signed  = ctrl.sign_sel == OP_SIGNED;
 assign mdreq.op1        = op1_data;
 assign mdreq.op2        = op2_data;
 
-assign is_stall         = valid & 
+assign is_stall         = valid &
                             (
-                                (is_new & state == IDLE & is_muldiv) |   // 計算前
-                                state == WAIT_READY |                      // 待ち
-                                (state == WAIT_CALC & !mdresp.valid)       // 計算中
+                                is_new & state == IDLE & is_muldiv |    // 計算前
+                                state == WAIT_READY |                   // 待ち
+                                state == WAIT_CALC & !mdresp.valid      // 計算中
                             );
 
 assign next_alu_out     = state == WAIT_CALC ? mdresp.result : alu_out;
@@ -87,7 +87,7 @@ assign branch_target    =   (
 always @(posedge clk) begin
     if (flush | !valid) begin
         // TODO kill muldiv
-        state <= IDLE; 
+        state <= IDLE;
     end else begin
         case (state)
             IDLE: if (is_muldiv) begin
@@ -103,7 +103,7 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef PRINT_DEBUGINFO 
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,exestage.valid,b,%b", valid);
     $display("data,exestage.inst_id,h,%b", valid ? inst_id : IID_X);

@@ -43,16 +43,16 @@ wire s_is_clint     = CLINT_OFFSET <= s_dreq.addr & s_dreq.addr <= CLINT_END;
 wire s_is_memory    = !s_is_uart_tx & !s_is_uart_rx & !s_is_clint;
 
 wire cmd_start  = (state == IDLE | state == WAIT_READY) & dreq.valid;
-wire cmd_ready  =   is_uart_tx ? cmd_uart_tx_ready : 
+wire cmd_ready  =   is_uart_tx ? cmd_uart_tx_ready :
                     is_uart_rx ? cmd_uart_rx_ready :
                     is_clint   ? cmd_clint_ready :
                     memreq_in.ready;
-                    
+
 /* verilator lint_off UNOPTFLAT */
 wire s_valid   = s_dreq.valid & (
                     (s_is_memory  & memresp_in.valid) |
-                    (s_is_uart_tx & cmd_uart_tx_rvalid) | 
-                    (s_is_uart_rx & cmd_uart_rx_rvalid) | 
+                    (s_is_uart_tx & cmd_uart_tx_rvalid) |
+                    (s_is_uart_rx & cmd_uart_rx_rvalid) |
                     (s_is_clint   & cmd_clint_rvalid) );
 /* verilator lint_on UNOPTFLAT */
 
@@ -79,8 +79,8 @@ always @(posedge clk) begin
             s_dreq  <= dreq_in;
             state   <= cmd_ready ? WAIT_VALID : WAIT_READY;
         end
-        WAIT_READY: if (cmd_ready) state <= WAIT_VALID;
-        WAIT_VALID: if (s_valid) state <= IDLE;
+        WAIT_READY: if (cmd_ready)  state <= WAIT_VALID;
+        WAIT_VALID: if (s_valid)    state <= IDLE;
         default: state <= IDLE;
     endcase
 end

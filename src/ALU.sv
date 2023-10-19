@@ -1,6 +1,6 @@
 module ALU #(
     parameter ENABLE_ALU    = 1'b0,
-    parameter ENABLE_BRANCH = 1'b0 
+    parameter ENABLE_BRANCH = 1'b0
 )(
     input wire AluSel   i_exe,
     input wire BrSel    br_exe,
@@ -20,7 +20,7 @@ function [$bits(UIntX)-1:0] alu_func(
     input UIntX     op1_data,
     input UIntX     op2_data
 );
-    case (fun) 
+    case (fun)
         ALU_ADD  : alu_func = op1_data + op2_data;
         ALU_SUB  : alu_func = op1_data - op2_data;
         ALU_AND  : alu_func = op1_data & op2_data;
@@ -29,7 +29,7 @@ function [$bits(UIntX)-1:0] alu_func(
         ALU_SLL  : alu_func = op1_data << op2_data[4:0];
         ALU_SRL  : alu_func = op1_data >> op2_data[4:0];
         ALU_SRA  : alu_func = $signed($signed(op1_data) >>> op2_data[4:0]);
-        ALU_SLT  : alu_func = sign_sel == OP_SIGNED ? 
+        ALU_SLT  : alu_func = sign_sel == OP_SIGNED ?
                                 {{XLEN-1{1'b0}}, ($signed(op1_data) < $signed(op2_data))} : // SLT
                                 {{XLEN-1{1'b0}}, op1_data < op2_data}; // SLTU
         ALU_JALR : alu_func = (op1_data + op2_data) & (~1);
@@ -41,18 +41,18 @@ function [$bits(UIntX)-1:0] alu_func(
 endfunction
 
 function br_func(
-    input BrSel fun,
+    input BrSel     fun,
     input SignSel   sign_sel,
-    input UIntX op1_data,
-    input UIntX op2_data
+    input UIntX     op1_data,
+    input UIntX     op2_data
 );
-    case(fun) 
+    case(fun)
         BR_BEQ  : br_func = (op1_data == op2_data);
         BR_BNE  : br_func = !(op1_data == op2_data);
-        BR_BLT  : br_func = sign_sel == OP_SIGNED ? 
+        BR_BLT  : br_func = sign_sel == OP_SIGNED ?
                                 ($signed(op1_data) < $signed(op2_data)) :
                                 (op1_data < op2_data);
-        BR_BGE  : br_func = sign_sel == OP_SIGNED ? 
+        BR_BGE  : br_func = sign_sel == OP_SIGNED ?
                                 !($signed(op1_data) < $signed(op2_data)) :
                                 !(op1_data < op2_data);
         default : br_func = 1'b0;

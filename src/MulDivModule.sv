@@ -41,7 +41,7 @@ wire [`XLEN:0]      d_remainder;
 
 wire [`XLEN:0] op1ext = s_req.is_signed ?
                 {s_req.op1[`XLEN-1], s_req.op1} : {1'b0, s_req.op1};
-wire [`XLEN:0] op2ext = s_req.is_signed & (is_div | sel != ALU_MULHSU) ? 
+wire [`XLEN:0] op2ext = s_req.is_signed & (is_div | sel != ALU_MULHSU) ?
                 {s_req.op2[`XLEN-1], s_req.op2} : {1'b0, s_req.op2};
 
 always @(posedge clk) case (state)
@@ -56,8 +56,8 @@ always @(posedge clk) case (state)
     end
     WAIT_CALC: begin
         if ((is_mul & m_valid) | (is_div & d_valid)) begin
-            state       <= RESULT;
-            case (s_req.sel) 
+            state <= RESULT;
+            case (s_req.sel)
                 ALU_DIV    : result <= d_quotient[`XLEN-1:0];
                 ALU_REM    : result <= d_remainder[`XLEN-1:0];
                 ALU_MUL    : result <= m_product[`XLEN-1:0];
@@ -68,7 +68,7 @@ always @(posedge clk) case (state)
         end
     end
     RESULT: begin
-        state       <= IDLE;
+        state <= IDLE;
     end
     default: begin
         $display("MulDivModule : Unknown state %d", state);

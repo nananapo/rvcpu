@@ -9,7 +9,7 @@ module MMIO_uart_tx #(
     input  wire UIntX   req_addr,
     input  wire         req_wen,
     input  wire UIntX   req_wdata,
-    
+
     output wire         resp_valid,
     output wire UIntX   resp_rdata
 );

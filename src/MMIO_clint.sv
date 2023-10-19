@@ -8,7 +8,7 @@ module MMIO_clint #(
     input  wire Addr    req_addr,
     input  wire         req_wen,
     input  wire UIntX   req_wdata,
-    
+
     output wire     resp_valid,
     output UInt32   resp_rdata,
 
@@ -25,7 +25,7 @@ initial mtimecmp = 64'hffff_ffff_ffff_ffff;
 
 always @(posedge clk) begin
     `ifdef XLEN32
-        case (req_addr) 
+        case (req_addr)
             CLINT_MTIME:    resp_rdata <= mtime[31:0];
             CLINT_MTIMEH:   resp_rdata <= mtime[63:32];
             CLINT_MTIMECMP: resp_rdata <= mtimecmp[31:0];
@@ -33,20 +33,20 @@ always @(posedge clk) begin
             default: begin end
         endcase
         if (req_wen) begin
-            case (req_addr) 
+            case (req_addr)
                 CLINT_MTIMECMP: mtimecmp[31:0]  <= req_wdata;
                 CLINT_MTIMECMPH:mtimecmp[63:32] <= req_wdata;
                 default: begin end
             endcase
         end
     `elsif XLEN64
-        case (req_addr) 
+        case (req_addr)
             CLINT_MTIME:    resp_rdata <= mtime;
             CLINT_MTIMECMP: resp_rdata <= mtimecmp;
             default: begin end
         endcase
         if (req_wen) begin
-            case (req_addr) 
+            case (req_addr)
                 CLINT_MTIMECMP: mtimecmp <= req_wdata;
                 default: begin end
             endcase

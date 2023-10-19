@@ -41,7 +41,7 @@ initial begin
     if (CACHE_WIDTH < 2) begin
         $display("DCache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
         $finish;
-    end 
+    end
     for (int i = 0; i < CACHE_SIZE; i++) begin
         cache_valid[i] = 0;
         cache_modified[i] = 0;
@@ -83,7 +83,7 @@ assign busreq.addr  =   state == READ_READY ? dreq.addr :
                         /* state == WB_LOOP_CHECK ? */ wb_addr;
 assign busreq.wen   =   state == READ_READY ? 1'b0 :
                         // WRITE_READY と WB_LOOP_CHECK はwen = 1
-                        state == WRITE_READY ? 1'b1 : 
+                        state == WRITE_READY ? 1'b1 :
                         /* state == WB_LOOP_CHECK ? */ 1'b1;
 assign busreq.wdata =   wb_data;
 
@@ -122,7 +122,7 @@ always @(posedge clk) begin
                             cache_hit |            // cache hit
                             !need_wb & dreq.wen    // ライトバックが必要なくて、そのまま上書きする
                         )) |
-                        state == RESP_VALID | // read 
+                        state == RESP_VALID | // read
                         state == WRITE_READY & (busreq.ready & dreq.wen); // writeback -> write
     dresp_rdata_reg <= cache_data[mem_index];
 
@@ -132,7 +132,7 @@ always @(posedge clk) begin
             $display("info,memstage.d$.event.wb_req,force writeback requested. state : %d count : %d", state, modified_count);
         `endif
     end
-    
+
     case (state)
     IDLE: begin
         if (do_writeback | writeback_requested) begin
@@ -187,7 +187,7 @@ always @(posedge clk) begin
                             // とりあえずmodifiedとして登録する
                             cache_modified[info_index]  <= 1;
                             modified_count              <= modified_count + 1;
-                            
+
                             `ifdef PRINT_DEBUGINFO
                                 $display("info,memstage.d$.event.modified, write with no wb : %h <= %h", dreq.addr, dreq.wdata);
                             `endif
@@ -235,7 +235,7 @@ always @(posedge clk) begin
                 cache_addrs[info_index]     <= dreq.addr;
                 cache_valid[info_index]     <= 1;
                 cache_modified[info_index]  <= 1;
-                
+
                 `ifdef PRINT_DEBUGINFO
                     $display("info,memstage.d$.event.write_as_mod,0x%h <= %h", dreq.addr, dreq.wdata);
                 `endif
@@ -260,7 +260,7 @@ always @(posedge clk) begin
                 state   <= WB_LOOP_READY;
                 wb_addr <= cache_addrs[wb_loop_address];
                 wb_data <= cache_data[wb_loop_address];
-                
+
                 `ifdef PRINT_DEBUGINFO
                     $display("info,memstage.d$.event.loop_need_wb,%h <= %h is modified, needs writeback", cache_addrs[wb_loop_address], cache_data[wb_loop_address]);
                 `endif
