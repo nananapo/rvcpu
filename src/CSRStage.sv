@@ -651,7 +651,7 @@ always @(posedge clk) begin
     $display("info,csrstage.mepc,0x%h", mepc);
     $display("info,csrstage.sepc,0x%h", sepc);
 
-    if (ctrl.fence_i || ctrl.svinval) begin
+    if (ctrl.fence_i) begin
         $display("data,csrstage.$.do_wb,b,%b", cache_cntr.do_writeback);
         $display("data,csrstage.$.is_wbed_all,b,%b", cache_cntr.is_writebacked_all);
         $display("data,csrstage.$.invalidate_i$,b,%b", cache_cntr.invalidate_icache);
