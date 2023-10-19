@@ -471,19 +471,24 @@ logic last_cause_trap   = 0;
 
 wire undone_fence_i = ctrl.fence_i && !cache_cntr.is_writebacked_all;
 
+wire fence_clocked = ctrl.fence_i && !undone_fence_i && inst_clock == 2'b0;
+
 assign is_stall     = valid && (
                 ( is_new && (this_cause_trap || cmd_is_xret || cmd_is_write || trap_nochange)) || 
-                (!is_new && undone_fence_i)
+                (!is_new && undone_fence_i || fence_clocked)
 );
-assign csr_is_trap  = valid && !is_new && (last_cause_trap || undone_fence_i);
+assign csr_is_trap  = valid && !is_new && (last_cause_trap || undone_fence_i || fence_clocked);
 assign csr_keep_trap= trap_nochange;
 
 assign cache_cntr.do_writeback      = is_new && ctrl.fence_i;
 assign cache_cntr.invalidate_icache = is_new && ctrl.fence_i;
 
+logic [1:0] inst_clock = 0;
+
 always @(posedge clk) begin
     last_cause_trap <= this_cause_trap || cmd_is_xret;
     if (valid && is_new) begin
+        inst_clock <= 0;
         // trapを起こす
         if (trap_nochange) begin
             trap_vector <= pc + 4;
@@ -550,6 +555,7 @@ always @(posedge clk) begin
         end
     end
     if (valid && !is_new) begin
+        inst_clock <= inst_clock + 1;
         if (can_write && cmd_is_write) begin
             $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
             case (addr)
