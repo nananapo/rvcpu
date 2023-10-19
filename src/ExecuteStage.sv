@@ -79,9 +79,11 @@ assign is_stall         = valid &&
 assign next_alu_out     = state == WAIT_CALC ? mdresp.result : alu_out;
 assign branch_taken     = valid && 
                           (ctrl.jmp_pc_flg || ctrl.jmp_reg_flg || alu_branch_take);
-assign branch_target    = ctrl.jmp_pc_flg ? pc + imm_j :
-                          ctrl.jmp_reg_flg ? op1_data + op2_data :
-                          pc + imm_b;
+assign branch_target    =   (
+                            ctrl.jmp_pc_flg ? pc + imm_j :
+                            ctrl.jmp_reg_flg ? op1_data + op2_data :
+                            pc + imm_b
+                            ) & (~1);
 
 always @(posedge clk) begin
     if (flush || !valid) begin
