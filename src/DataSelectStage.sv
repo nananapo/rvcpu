@@ -27,30 +27,6 @@ module DataSelectStage
 
 `include "basicparams.svh"
 
-wire UInt5 rs1_addr = inst[19:15];
-wire UInt5 rs2_addr = inst[24:20];
-
-/*  datahazard */
-wire is1_zero    = rs1_addr == 0;
-wire is2_zero    = rs2_addr == 0;
-wire hazard_exe1 = fw_exe.valid & fw_exe.addr == rs1_addr & !is1_zero;
-wire hazard_exe2 = fw_exe.valid & fw_exe.addr == rs2_addr & !is2_zero;
-wire hazard_mem1 = fw_mem.valid & fw_mem.addr == rs1_addr & !is1_zero;
-wire hazard_mem2 = fw_mem.valid & fw_mem.addr == rs2_addr & !is2_zero;
-wire hazard_csr1 = fw_csr.valid & fw_csr.addr == rs1_addr & !is1_zero;
-wire hazard_csr2 = fw_csr.valid & fw_csr.addr == rs2_addr & !is2_zero;
-wire hazard_wbk1 = fw_wbk.valid & fw_wbk.addr == rs1_addr & !is1_zero;
-wire hazard_wbk2 = fw_wbk.valid & fw_wbk.addr == rs2_addr & !is2_zero;
-
-assign is_datahazard = valid & ((  hazard_exe1 ? !fw_exe.fwdable :
-                                    hazard_mem1 ? !fw_mem.fwdable :
-                                    hazard_csr1 ? !fw_csr.fwdable :
-                                    hazard_wbk1 ? !fw_wbk.fwdable : 0) |
-                                (   hazard_exe2 ? !fw_exe.fwdable :
-                                    hazard_mem2 ? !fw_mem.fwdable :
-                                    hazard_csr2 ? !fw_csr.fwdable :
-                                    hazard_wbk2 ? !fw_wbk.fwdable : 0));
-
 function [$bits(UIntX)-1:0] gen_op1data(
     input Op1Sel   op1_sel,
     input Addr     pc,
@@ -79,6 +55,30 @@ case(op2_sel)
     default : gen_op2data = 0;
 endcase
 endfunction
+
+wire UInt5 rs1_addr = inst[19:15];
+wire UInt5 rs2_addr = inst[24:20];
+
+/*  datahazard */
+wire is1_zero    = rs1_addr == 0;
+wire is2_zero    = rs2_addr == 0;
+wire hazard_exe1 = fw_exe.valid & fw_exe.addr == rs1_addr & !is1_zero;
+wire hazard_exe2 = fw_exe.valid & fw_exe.addr == rs2_addr & !is2_zero;
+wire hazard_mem1 = fw_mem.valid & fw_mem.addr == rs1_addr & !is1_zero;
+wire hazard_mem2 = fw_mem.valid & fw_mem.addr == rs2_addr & !is2_zero;
+wire hazard_csr1 = fw_csr.valid & fw_csr.addr == rs1_addr & !is1_zero;
+wire hazard_csr2 = fw_csr.valid & fw_csr.addr == rs2_addr & !is2_zero;
+wire hazard_wbk1 = fw_wbk.valid & fw_wbk.addr == rs1_addr & !is1_zero;
+wire hazard_wbk2 = fw_wbk.valid & fw_wbk.addr == rs2_addr & !is2_zero;
+
+assign is_datahazard = valid & ((  hazard_exe1 ? !fw_exe.fwdable :
+                                    hazard_mem1 ? !fw_mem.fwdable :
+                                    hazard_csr1 ? !fw_csr.fwdable :
+                                    hazard_wbk1 ? !fw_wbk.fwdable : 0) |
+                                (   hazard_exe2 ? !fw_exe.fwdable :
+                                    hazard_mem2 ? !fw_mem.fwdable :
+                                    hazard_csr2 ? !fw_csr.fwdable :
+                                    hazard_wbk2 ? !fw_wbk.fwdable : 0));
 
 // zero判定はWriteback Stage
 wire UIntX rs1_data =   hazard_exe1 ? fw_exe.wdata :

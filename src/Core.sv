@@ -28,6 +28,10 @@ module Core #(
 `include "csrparam.svh"
 `include "basicparams.svh"
 
+function is_ialigned( input Addr addr );
+  is_ialigned = addr[1:0] == 2'b00;
+endfunction
+
 // id reg
 logic       id_valid    = 0;
 // TODO メモリエラーをnopかつvalidとして流す
@@ -190,12 +194,6 @@ wire branch_fail            =   exe_valid & (exe_is_new | !exe_br_checked) &
 wire branch_hazard_now      =   csr_is_trap | branch_fail;
 wire Addr  branch_target    =   csr_is_trap ? csr_trap_vector :
                                 exe_branch_taken ? exe_branch_target : exe_pc + 4;
-
-function is_ialigned(
-    input Addr addr
-);
-  is_ialigned = addr[1:0] == 2'b00;
-endfunction
 
 always @(posedge clk) begin
 

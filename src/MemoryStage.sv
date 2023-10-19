@@ -36,15 +36,6 @@ typedef enum logic [1:0]
     WAIT_WVALID
 } statetype;
 
-statetype state = IDLE;
-
-logic   is_cmd_executed = 0;
-
-// TODO logic   is_wen_replaced = 0;
-MemSel  replace_mem_wen = MEN_X;
-wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X :
-                                    state != IDLE ? replace_mem_wen : ctrl.mem_wen);
-
 function [$bits(UIntX)-1:0] gen_amo_wdata(
     input AextSel   a_sel,
     input SignSel   sign_sel,
@@ -62,6 +53,15 @@ function [$bits(UIntX)-1:0] gen_amo_wdata(
         default:        gen_amo_wdata = DATA_X;
     endcase
 endfunction
+
+statetype state = IDLE;
+
+logic   is_cmd_executed = 0;
+
+// TODO logic   is_wen_replaced = 0;
+MemSel  replace_mem_wen = MEN_X;
+wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X :
+                                    state != IDLE ? replace_mem_wen : ctrl.mem_wen);
 
 /*
 # A拡張の扱い

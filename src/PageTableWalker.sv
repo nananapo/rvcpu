@@ -18,6 +18,14 @@ module PageTableWalker #(
     input wire  kill
 );
 
+
+// 5.1.11
+// MODE(1) | ASID(9) | PPN(22)
+// Table 23
+// MODE = 0 : Bare (物理アドレスと同じ), ASID, PPNも0にする必要がある
+//            0ではないなら動作はUNSPECIFIED！こわいね
+// MODE = 1 : Sv32, ページングが有効
+
 // 単純にするため、
 // * IDLEからとりあえずREADYに遷移
 typedef enum logic [2:0] {

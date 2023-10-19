@@ -31,10 +31,27 @@ localparam LINE_INST_COUNT  = 8;
 localparam LINE_WIDTH       = INST_WIDTH * LINE_INST_COUNT;
 localparam LINE_DATA_ADDR_WIDTH = LINE_INST_WIDTH + ADDR_WIDTH;
 
-localparam ADDR_DISMISS_WIDTH = LINE_INST_WIDTH + 2;
-localparam CACHE_LENGTH     = 2 ** ADDR_WIDTH;
+localparam ADDR_DISMISS_WIDTH   = LINE_INST_WIDTH + 2;
+localparam CACHE_LENGTH         = 2 ** ADDR_WIDTH;
 
 typedef logic [ADDR_WIDTH-1:0] CacheIndex;
+
+typedef enum logic [1:0] {
+    IDLE,
+    MEM_WAIT_READY,
+    MEM_READ_VALID,
+    MEM_RESP_VALID
+} statetype;
+
+function [$bits(CacheIndex)-1:0] calc_cache_addr( input UIntX addr );
+    calc_cache_addr = addr[ADDR_WIDTH-1 + ADDR_DISMISS_WIDTH:ADDR_DISMISS_WIDTH];
+endfunction
+
+function [$bits(UIntX)-1:0] normalize_addr( input UIntX addr );
+    normalize_addr = {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
+endfunction
+
+statetype state = IDLE;
 
 UInt32  cache_data[CACHE_LENGTH * LINE_INST_COUNT -1:0]; // 1列
 Addr    cache_addrs[CACHE_LENGTH-1:0];
@@ -45,24 +62,6 @@ initial begin
         cache_valid[i] = 0;
     end
 end
-
-typedef enum logic [1:0] {
-    IDLE,
-    MEM_WAIT_READY,
-    MEM_READ_VALID,
-    MEM_RESP_VALID
-} statetype;
-
-statetype state = IDLE;
-
-function [$bits(CacheIndex)-1:0] calc_cache_addr( input UIntX addr );
-    calc_cache_addr = addr[ADDR_WIDTH-1 + ADDR_DISMISS_WIDTH:ADDR_DISMISS_WIDTH];
-endfunction
-
-function [$bits(UIntX)-1:0] normalize_addr( input UIntX addr );
-    normalize_addr = {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
-endfunction
-
 
 CacheReq s_ireq;
 wire CacheReq ireq = state == IDLE ? ireq_in : s_ireq;

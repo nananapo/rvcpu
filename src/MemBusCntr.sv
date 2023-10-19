@@ -22,15 +22,6 @@ typedef enum logic [2:0] {
     D_VALID
 } statetype;
 
-statetype state = I_CHECK;
-
-assign ireq_in.ready    = state == I_CHECK;
-assign dreq_in.ready    = state == D_CHECK;
-
-assign memreq_in.valid  =   (state == I_READY | state == D_READY) |
-                            (state == I_CHECK & ireq_in.valid) |
-                            (state == D_CHECK & dreq_in.valid);
-
 function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (
     input statetype state,
     input MemBusReq ireq_in,
@@ -46,6 +37,16 @@ function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (
         default: memcmd = {ADDR_X, 1'b0, XBIT_32};
     endcase
 endfunction
+
+statetype state = I_CHECK;
+
+assign ireq_in.ready    = state == I_CHECK;
+assign dreq_in.ready    = state == D_CHECK;
+
+assign memreq_in.valid  =   (state == I_READY | state == D_READY) |
+                            (state == I_CHECK & ireq_in.valid) |
+                            (state == D_CHECK & dreq_in.valid);
+
 assign {
     memreq_in.addr, memreq_in.wen, memreq_in.wdata
 } = memcmd(state, ireq_in, dreq_in, s_ireq, s_dreq);
