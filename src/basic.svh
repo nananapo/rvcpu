@@ -93,11 +93,6 @@ typedef enum logic [1:0] {
     SIZE_D = 2'b11
 } MemSize;
 
-typedef enum logic {
-    REN_X   = 1'b0,
-    REN_S   = 1'b1
-} RwenSel;
-
 typedef enum logic [1:0] {
     WB_ALU,
     WB_MEM,
@@ -138,7 +133,7 @@ typedef struct packed
     Op2Sel      op2_sel;
     MemSel      mem_wen;
     MemSize     mem_size;
-    RwenSel     rf_wen;
+    logic       rf_wen;
     WbSel       wb_sel;
     logic [4:0] wb_addr;
     CsrCmd      csr_cmd;

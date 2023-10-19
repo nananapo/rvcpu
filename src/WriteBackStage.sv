@@ -4,7 +4,7 @@ module WriteBackStage(
     input wire Addr     pc,
     input wire Inst     inst,
     input wire IId      inst_id,
-    input wire RwenSel  rf_wen,
+    input wire          rf_wen,
     input wire UInt5    reg_addr,
     input wire UIntX    wdata,
 
@@ -28,7 +28,7 @@ initial begin
 end
 
 always @(posedge clk) begin
-    if (valid && rf_wen == REN_S && reg_addr != 0) begin
+    if (valid && rf_wen && reg_addr != 0) begin
         regfile[reg_addr] <= wdata;
     end    
 end

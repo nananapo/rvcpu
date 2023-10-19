@@ -129,7 +129,7 @@ logic       wb_valid;
 Addr        wb_pc;
 Inst        wb_inst;
 IId         wb_inst_id;
-RwenSel     wb_rf_wen;
+logic       wb_rf_wen;
 UInt5       wb_reg_addr;
 UIntX       wb_wdata;
 wire UIntX  wb_regfile[31:0];
@@ -253,7 +253,7 @@ always @(posedge clk) begin
                             id_ctrl.csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE :
                             id_ctrl.csr_cmd == CSR_EBREAK ? CAUSE_BREAKPOINT : 0;
         // forwarding
-        ds_fw.valid     <= id_valid && id_ctrl.rf_wen == REN_S;
+        ds_fw.valid     <= id_valid && id_ctrl.rf_wen;
         ds_fw.fwdable   <= id_ctrl.wb_sel == WB_PC;
         ds_fw.addr      <= id_ctrl.wb_addr;
         ds_fw.wdata     <= id_pc + 4;
