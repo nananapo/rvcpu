@@ -377,59 +377,17 @@ wire [31:0] sip = {
 
 logic [31:0] mtinst   = 0;
 logic [31:0] mtvec2   = 0;
-
 logic [31:0] stvec    = 0;
-logic [31:0] sscratch = 0;
-logic [31:0] sepc     = 0;
-logic [31:0] scause   = 0;
 
 // 3.1.7
 // MODE = Direct(0)  : BASE
 // MODE = Vectored(1): BASE + cause * 4
-wire [31:0] mtvec_addr = mtvec[1:0] == XTVEC_DIRECT ? mtvec : {mtvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
-wire [31:0] stvec_addr = stvec[1:0] == XTVEC_DIRECT ? stvec : {stvec[31:2], 2'b0} + {interrupt_cause[29:0], 2'b0};
+wire [31:0] mtvec_addr = mtvec[1:0] == XTVEC_DIRECT ? mtvec : {mtvec[31:2], 2'b0} + {cause_intr[29:0], 2'b0};
+wire [31:0] stvec_addr = stvec[1:0] == XTVEC_DIRECT ? stvec : {stvec[31:2], 2'b0} + {cause_intr[29:0], 2'b0};
 
-// 3.1.6.1
-// 3.1.9
-wire global_mie = mode == M_MODE ? mstatus_mie : 1;
-wire global_sie = mode == S_MODE ? mstatus_sie : mode == U_MODE;
-
-wire raise_expt = trapinfo.valid;
-
-// 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
-// S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
-// TODO interruptが発生しないのに発生してしまう?かと思ったが、0が0なので発生しないようだ
-wire interrupt_to_mmode = mideleg[interrupt_cause[4:0]] == 0;
-wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
-wire trap_nochange = ctrl.fence_i;
-wire trap_to_mmode = mode == M_MODE | (raise_expt ? exception_to_mmode : interrupt_to_mmode);
-
-// interruptが起こりそうかどうか
-wire raise_intr = (interrupt_to_mmode ? global_mie : global_sie) &
-(
-    (mip_meip & mie_meie) |
-    (mip_msip & mie_msie) |
-    (mip_mtip & mie_mtie) |
-    (mip_seip & mie_seie) |
-    (mip_ssip & mie_ssie) |
-    (mip_stip & mie_stie)
-);
-
-// 3.1.9
-// Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
-// priority order: MEI, MSI, MTI, SEI, SSI, STI.
-// TODO mip_* & mie_*をまとめる
-wire [31:0] interrupt_cause = (
-    (mip_meip & mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
-    (mip_msip & mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
-    (mip_mtip & mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT :
-    (mip_seip & mie_seie) ? CAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
-    (mip_ssip & mie_ssie) ? CAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
-    (mip_stip & mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT :
-    32'b0
-);
-wire [31:0] exception_cause = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
-wire [31:0] trap_cause = raise_expt ? exception_cause : interrupt_cause;
+logic [31:0] sscratch = 0;
+logic [31:0] sepc     = 0;
+logic [31:0] scause   = 0;
 
 wire UIntX  wdata = gen_wdata(csr_cmd, op1_data, rdata);
 wire UIntX  rdata = can_read ? gen_rdata( // TODO 例外で不要になる
@@ -456,14 +414,54 @@ wire UIntX  rdata = can_read ? gen_rdata( // TODO 例外で不要になる
     scause,
     satp
 ) : 32'b0;
+
+// TRAP
+wire raise_expt = trapinfo.valid;
+wire [31:0] cause_expt = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
+
+// 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
+// S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
+// TODO interruptが発生しないのに発生してしまう?かと思ったが、0が0なので発生しないようだ
+wire intr_toM  = mideleg[cause_intr[4:0]] == 0;
+wire expt_toM  = medeleg[cause_expt[4:0]] == 0;
+wire trap_toM  = mode == M_MODE | (raise_expt ? expt_toM : intr_toM);
+
+// interruptが起こりそうかどうか
+wire raise_intr =   (intr_toM ? // 3.1.9
+                        (mode == M_MODE ? mstatus_mie : 1) :
+                        (mode == S_MODE ? mstatus_sie : mode == U_MODE)
+                    ) & (
+                        (mip_meip & mie_meie) |
+                        (mip_msip & mie_msie) |
+                        (mip_mtip & mie_mtie) |
+                        (mip_seip & mie_seie) |
+                        (mip_ssip & mie_ssie) |
+                        (mip_stip & mie_stie)
+                    );
+
+// 3.1.9
+// Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
+// priority order: MEI, MSI, MTI, SEI, SSI, STI.
+// TODO mip_* & mie_*をまとめる
+wire [31:0] cause_intr = (
+                            (mip_meip & mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
+                            (mip_msip & mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
+                            (mip_mtip & mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT :
+                            (mip_seip & mie_seie) ? CAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
+                            (mip_ssip & mie_ssie) ? CAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
+                            (mip_stip & mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT :
+                            32'b0
+                        );
+wire [31:0] cause_trap = raise_expt ? cause_expt : cause_intr;
+
 UIntX       rdata_saved;
 assign      next_csr_rdata = rdata_saved;
 
 wire this_raise_trap    = raise_expt | raise_intr;
 logic last_raise_trap   = 0;
 
+wire trap_nochange  = ctrl.fence_i; // TODO 改名
 wire undone_fence_i = ctrl.fence_i & !cache_cntr.is_writebacked_all;
-
 wire fence_clocked  = ctrl.fence_i & !undone_fence_i & inst_clock == 2'b0;
 
 assign is_stall     = valid & (
@@ -491,12 +489,12 @@ always @(posedge clk) begin
         end else if (this_raise_trap) begin
             `ifdef PRINT_DEBUGINFO
                 $display("info,csrstage.trap.pc,0x%h", pc);
-                $display("info,csrstage.trap.to_mmode,%b", trap_to_mmode);
-                $display("info,csrstage.trap.cause,0x%h", trap_cause);
+                $display("info,csrstage.trap.to_mmode,%b", trap_toM);
+                $display("info,csrstage.trap.cause,0x%h", cause_trap);
             `endif
-            if (trap_to_mmode) begin
+            if (trap_toM) begin
                 mode         <= M_MODE;
-                mcause       <= trap_cause;
+                mcause       <= cause_trap;
                 mepc         <= pc;
                 mstatus_mpie <= mstatus_mie;
                 mstatus_mie  <= 0;
@@ -504,7 +502,7 @@ always @(posedge clk) begin
                 trap_vector  <= mtvec_addr;
             end else begin
                 mode         <= S_MODE;
-                scause       <= trap_cause;
+                scause       <= cause_trap;
                 sepc         <= pc;
                 mstatus_spie <= mstatus_sie;
                 mstatus_sie  <= 0;
@@ -632,15 +630,13 @@ always @(posedge clk) begin
     $display("data,csrstage.mstatus,h,%b", mstatus);
     $display("data,csrstage.mstatus.mie,b,%b", mstatus_mie);
     $display("data,csrstage.mstatus.sie,b,%b", mstatus_sie);
-    $display("data,csrstage.interrupt_to_mmode,b,%b", interrupt_to_mmode);
-    $display("data,csrstage.global_mie,b,%b", global_mie);
-    $display("data,csrstage.global_sie,b,%b", global_sie);
+    $display("data,csrstage.intr_to_mmode,b,%b", intr_toM);
     $display("data,csrstage.mip,b,%b", mip);
     $display("data,csrstage.mie,b,%b", mie);
     $display("data,csrstage.medeleg,h,%b", medeleg);
     $display("data,csrstage.mideleg,h,%b", mideleg);
-    $display("info,csrstage.mtvec,0x%h", mtvec_addr);
-    $display("info,csrstage.stvec,0x%h", stvec_addr);
+    $display("info,csrstage.mtvec,0x%h", mtvec);
+    $display("info,csrstage.stvec,0x%h", stvec);
     $display("info,csrstage.mepc,0x%h", mepc);
     $display("info,csrstage.sepc,0x%h", sepc);
 
