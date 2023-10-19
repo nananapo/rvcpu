@@ -386,7 +386,7 @@ always @(posedge clk) begin
     wb_pc           <= csr_pc;
     wb_inst         <= csr_inst;
     wb_inst_id      <= csr_inst_id;
-    wb_rf_wen       <= csr_ctrl.rf_wen;
+    wb_rf_wen       <= !csr_trap.valid && csr_ctrl.rf_wen; // trapの時は書き込まない
     wb_reg_addr     <= csr_ctrl.wb_addr;
     wb_wdata        <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata; // fwと等しい
     // forwarding
