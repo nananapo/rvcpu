@@ -69,7 +69,7 @@ wire [9:0]  validonly_pte_ppn0 = memresp.rdata[19:10];
 wire [21:0] validonly_pte_ppn  = memresp.rdata[31:10];
 
 assign sv32_req_ready   = state == IDLE;
-assign sv32_req_valid   = state == WALK_READY || state == REQ_READY;
+assign sv32_req_valid   = state == WALK_READY | state == REQ_READY;
 assign sv32_req_addr    = next_addr[31:0];
 assign sv32_resp_valid  = state == REQ_END;
 assign sv32_resp_addr   = s_req.addr;
@@ -101,7 +101,7 @@ else if (sv32_enable) begin
                 // levelのチェックは例外を起こさない (まだ起こす仕組みが実装できない)
                 // RかXが1ならPTEが見つかった
                 // level == 11 (-1 or 2)ならアウト
-                if (level == 2'b11 || validonly_pte_R || validonly_pte_X) begin
+                if (level == 2'b11 | validonly_pte_R | validonly_pte_X) begin
                     state <= REQ_READY;
                     // 5.3.2 step 8
                     // Sv32 physical address

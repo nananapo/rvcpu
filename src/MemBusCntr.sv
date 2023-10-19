@@ -27,8 +27,8 @@ statetype state = I_CHECK;
 assign ireq_in.ready    = state == I_CHECK;
 assign dreq_in.ready    = state == D_CHECK;
 
-assign memreq_in.valid  =   (state == I_READY || state == D_READY) ||
-                            (state == I_CHECK & ireq_in.valid) ||
+assign memreq_in.valid  =   (state == I_READY | state == D_READY) |
+                            (state == I_CHECK & ireq_in.valid) |
                             (state == D_CHECK & dreq_in.valid);
 
 function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (

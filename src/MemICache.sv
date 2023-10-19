@@ -127,7 +127,7 @@ always @(posedge clk) begin
             $display("info,fetchstage.i$.event.invalidated,Invalidated all cache!");
         `endif
     end else begin
-        iresp_valid_reg <=  (state == IDLE & ireq_in.valid & cache_hit) ||
+        iresp_valid_reg <=  (state == IDLE & ireq_in.valid & cache_hit) |
                             (state == MEM_RESP_VALID);
         iresp_rdata_reg <= cache_data[req_mem_index];
         

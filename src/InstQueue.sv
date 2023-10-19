@@ -71,7 +71,7 @@ Inst last_fetched_inst  = 32'h0;
 
 
 // TODO この処理を適切な場所に移動したい。
-wire fetched_is_valid   = !requested || memresp.valid;
+wire fetched_is_valid   = !requested | memresp.valid;
 wire Addr fetched_pc    = requested ? request_pc : last_fetched_pc;
 wire Inst fetched_inst  = requested ? memresp.rdata : last_fetched_inst;
 

@@ -40,7 +40,7 @@ statetype state = IDLE;
 
 logic   is_cmd_executed = 0;
 
-// logic   is_wen_replaced = 0;
+// TODO logic   is_wen_replaced = 0;
 MemSel  replace_mem_wen = MEN_X;
 wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X : 
                                     state != IDLE ? replace_mem_wen : ctrl.mem_wen);
@@ -75,8 +75,8 @@ Addr aext_reserved_address = ADDR_MAX; // TODO validを用意してXにする
 wire sc_executable  = aext_reserved_address == alu_out; // SCを実行するかどうか
 logic sc_succeeded  = 0;
 
-wire is_store   = mem_wen == MEN_S || (mem_wen == MEN_A & ctrl.a_sel == ASEL_SC);
-wire is_load    = mem_wen == MEN_L || (mem_wen == MEN_A & ctrl.a_sel != ASEL_SC); // sc以外(lr, amo)は必ずloadする
+wire is_store   = mem_wen == MEN_S | (mem_wen == MEN_A & ctrl.a_sel == ASEL_SC);
+wire is_load    = mem_wen == MEN_L | (mem_wen == MEN_A & ctrl.a_sel != ASEL_SC); // sc以外(lr, amo)は必ずloadする
 
 wire memu_cmd_ready   = dreq.ready;
 wire memu_valid       = dresp.valid;
@@ -97,7 +97,7 @@ assign dreq.wmask   = ctrl.mem_size;
 // TODO error
 assign next_trapinfo = trapinfo;
 
-assign is_stall = valid & (state != IDLE || (!is_cmd_executed & mem_wen != MEN_X));
+assign is_stall = valid & (state != IDLE | (!is_cmd_executed & mem_wen != MEN_X));
 
 UIntX  saved_mem_rdata;
 
@@ -140,7 +140,7 @@ assign next_mem_rdata =
 `endif
 
 always @(posedge clk) begin
-    if (!valid || mem_wen == MEN_X) begin
+    if (!valid | mem_wen == MEN_X) begin
         state           <= IDLE;
         is_cmd_executed <= 0;
         replace_mem_wen <= MEN_X;
@@ -233,12 +233,12 @@ end
 
 `ifdef PRINT_DEBUGINFO 
 always @(posedge clk) begin
-    $display("data,memstage.valid,b,%b", valid || invalid_by_trap);
+    $display("data,memstage.valid,b,%b", valid | invalid_by_trap);
     if (invalid_by_trap) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");
     end
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", valid || invalid_by_trap ? inst_id : IID_X);
+    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? inst_id : IID_X);
     if (valid) begin
         $display("data,memstage.pc,h,%b", pc);
         $display("data,memstage.inst,h,%b", inst);

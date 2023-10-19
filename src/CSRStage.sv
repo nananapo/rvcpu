@@ -337,16 +337,16 @@ wire [31:0] trap_cause = trapinfo.valid ? exception_cause : interrupt_cause;
 wire interrupt_to_mmode = mideleg[interrupt_cause[4:0]] == 0;
 wire exception_to_mmode = medeleg[exception_cause[4:0]] == 0;
 wire trap_nochange = ctrl.fence_i;
-wire trap_to_mmode = mode == M_MODE || (trapinfo.valid ? exception_to_mmode : interrupt_to_mmode);
+wire trap_to_mmode = mode == M_MODE | (trapinfo.valid ? exception_to_mmode : interrupt_to_mmode);
 
 // trapが起こりそうかどうか
 wire may_interrupt = (interrupt_to_mmode ? global_mie : global_sie) &
 (
-    (mip_meip & mie_meie) ||
-    (mip_msip & mie_msie) ||
-    (mip_mtip & mie_mtie) ||
-    (mip_seip & mie_seie) ||
-    (mip_ssip & mie_ssie) ||
+    (mip_meip & mie_meie) |
+    (mip_msip & mie_msie) |
+    (mip_mtip & mie_mtie) |
+    (mip_seip & mie_seie) |
+    (mip_ssip & mie_ssie) |
     (mip_stip & mie_stie)
 );
 
@@ -463,10 +463,10 @@ wire can_access     = addr[9:8] <= mode;
 wire can_read       = can_access;
 wire can_write      = can_access & addr[11:10] != 2'b11;
 
-wire cmd_is_write   = csr_cmd == CSR_W || csr_cmd == CSR_S || csr_cmd == CSR_C;
-wire cmd_is_xret    = csr_cmd == CSR_SRET || csr_cmd == CSR_MRET;
+wire cmd_is_write   = csr_cmd == CSR_W | csr_cmd == CSR_S | csr_cmd == CSR_C;
+wire cmd_is_xret    = csr_cmd == CSR_SRET | csr_cmd == CSR_MRET;
 
-wire this_cause_trap    = trapinfo.valid || may_interrupt;
+wire this_cause_trap    = trapinfo.valid | may_interrupt;
 logic last_cause_trap   = 0;
 
 wire undone_fence_i = ctrl.fence_i & !cache_cntr.is_writebacked_all;
@@ -474,10 +474,10 @@ wire undone_fence_i = ctrl.fence_i & !cache_cntr.is_writebacked_all;
 wire fence_clocked = ctrl.fence_i & !undone_fence_i & inst_clock == 2'b0;
 
 assign is_stall     = valid & (
-                ( is_new & (this_cause_trap || cmd_is_xret || cmd_is_write || trap_nochange)) || 
-                (!is_new & undone_fence_i || fence_clocked)
+                ( is_new & (this_cause_trap | cmd_is_xret | cmd_is_write | trap_nochange)) | 
+                (!is_new & undone_fence_i | fence_clocked)
 );
-assign csr_is_trap  = valid & !is_new & (last_cause_trap || undone_fence_i || fence_clocked);
+assign csr_is_trap  = valid & !is_new & (last_cause_trap | undone_fence_i | fence_clocked);
 assign csr_keep_trap= trap_nochange;
 
 assign cache_cntr.do_writeback      = is_new & ctrl.fence_i;
@@ -486,7 +486,7 @@ assign cache_cntr.invalidate_icache = is_new & ctrl.fence_i;
 logic [1:0] inst_clock = 0;
 
 always @(posedge clk) begin
-    last_cause_trap <= this_cause_trap || cmd_is_xret;
+    last_cause_trap <= this_cause_trap | cmd_is_xret;
     if (valid & is_new) begin
         inst_clock <= 0;
         // trapを起こす
@@ -657,7 +657,7 @@ always @(posedge clk) begin
         $display("data,csrstage.$.invalidate_i$,b,%b", cache_cntr.invalidate_icache);
     end
 
-    if (valid & (csr_cmd != CSR_X || this_cause_trap)) begin
+    if (valid & (csr_cmd != CSR_X | this_cause_trap)) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);

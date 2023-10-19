@@ -76,7 +76,7 @@ assign dresp_in.valid   = dresp_valid_reg;
 assign dresp_in.rdata   = dresp_rdata_reg;
 assign dresp_in.error   = dresp_error_reg;
 
-assign busreq.valid =   state == READ_READY || state == WRITE_READY || state == WB_LOOP_READY;
+assign busreq.valid =   state == READ_READY | state == WRITE_READY | state == WB_LOOP_READY;
 assign busreq.addr  =   state == READ_READY ? dreq.addr :
                         // WRITE_READY と WB_LOOP_CHECK はwb_addrを使う
                         state == WRITE_READY ? wb_addr :
@@ -119,10 +119,10 @@ end
 always @(posedge clk) begin
     // TODO これきれいにできない？
     dresp_valid_reg <=  (state == IDLE & (
-                            cache_hit ||            // cache hit
+                            cache_hit |            // cache hit
                             !need_wb & dreq.wen    // ライトバックが必要なくて、そのまま上書きする
-                        )) ||
-                        state == RESP_VALID || // read 
+                        )) |
+                        state == RESP_VALID | // read 
                         state == WRITE_READY & (busreq.ready & dreq.wen); // writeback -> write
     dresp_rdata_reg <= cache_data[mem_index];
 
@@ -135,7 +135,7 @@ always @(posedge clk) begin
     
     case (state)
     IDLE: begin
-        if (do_writeback || writeback_requested) begin
+        if (do_writeback | writeback_requested) begin
             state               <= WB_LOOP_CHECK;
             writeback_requested <= 0;
             wb_loop_address     <= 0;
