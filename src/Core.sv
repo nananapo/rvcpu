@@ -204,13 +204,12 @@ always @(posedge clk) begin
         `endif
     end else if (!id_stall) begin
         if (iresp.valid) begin
-            id_valid    <= 1;
-            id_pc       <= iresp.addr;
-            id_inst     <= iresp.inst;
-            id_inst_id  <= iresp.inst_id;
-
+            id_valid        <= 1; // TODO この1はiresp.validにできるが....
+            id_trap.valid   <= 0; // TODO if trap
+            id_pc           <= iresp.addr;
+            id_inst         <= iresp.inst;
+            id_inst_id      <= iresp.inst_id;
             exe_br_checked  <= 0;
-            // TODO trap
         end else begin
             id_valid    <= 0;
             id_trap     <= 0;
@@ -271,25 +270,32 @@ always @(posedge clk) begin
     end else if (exe_stall) begin
         exe_is_new      <= 0;
     end else begin
-        exe_valid       <= ds_valid && !ds_datahazard;
-        exe_is_new      <= 1;
-        exe_pc          <= ds_pc;
-        exe_inst        <= ds_inst;
-        exe_inst_id     <= ds_inst_id;
-        exe_ctrl        <= ds_ctrl;
-        exe_imm_i       <= ds_imm_i;
-        exe_imm_b       <= ds_imm_b;
-        exe_imm_j       <= ds_imm_j;
-        exe_op1_data    <= ds_op1_data;
-        exe_op2_data    <= ds_op2_data;
-        exe_rs2_data    <= ds_rs2_data;
-        // trap
-        exe_trap        <= (ds_valid && !ds_datahazard) ? ds_trap : 0;
-        // forwarding
-        exe_fw.valid    <= (ds_valid && !ds_datahazard) && ds_fw.valid;
-        exe_fw.fwdable  <= ds_fw.fwdable;
-        exe_fw.addr     <= ds_fw.addr;
-        exe_fw.wdata    <= ds_fw.wdata;
+        if (ds_datahazard) begin
+            exe_valid   <= 0;
+            exe_is_new  <= 1;
+            exe_trap    <= 0;
+            exe_fw      <= 0;
+        end else begin
+            exe_valid       <= ds_valid;
+            exe_is_new      <= 1;
+            exe_pc          <= ds_pc;
+            exe_inst        <= ds_inst;
+            exe_inst_id     <= ds_inst_id;
+            exe_ctrl        <= ds_ctrl;
+            exe_imm_i       <= ds_imm_i;
+            exe_imm_b       <= ds_imm_b;
+            exe_imm_j       <= ds_imm_j;
+            exe_op1_data    <= ds_op1_data;
+            exe_op2_data    <= ds_op2_data;
+            exe_rs2_data    <= ds_rs2_data;
+            // trap
+            exe_trap        <= ds_valid ? ds_trap : 0;
+            // forwarding
+            exe_fw.valid    <= ds_valid && ds_fw.valid;
+            exe_fw.fwdable  <= ds_fw.fwdable;
+            exe_fw.addr     <= ds_fw.addr;
+            exe_fw.wdata    <= ds_fw.wdata;
+        end
     end
 
     // exe -> mem
@@ -304,23 +310,34 @@ always @(posedge clk) begin
     end else if (mem_stall) begin
         mem_is_new      <= 0;
     end else begin
-        mem_valid       <= exe_valid && !exe_calc_stall && !exe_branch_stall;
-        mem_is_new      <= 1;
-        mem_pc          <= exe_pc;
-        mem_inst        <= exe_inst;
-        mem_inst_id     <= exe_inst_id;
-        mem_ctrl        <= exe_ctrl;
-        mem_imm_i       <= exe_imm_i;
-        mem_alu_out     <= exe_alu_out;
-        mem_op1_data    <= exe_op1_data;
-        mem_rs2_data    <= exe_rs2_data;
-        // trap
-        mem_trap        <= (exe_valid && !exe_calc_stall && !exe_branch_stall) ? exe_trap : 0;
-        // forwarding
-        mem_fw.valid    <= (exe_valid && !exe_calc_stall && !exe_branch_stall) && exe_fw.valid;
-        mem_fw.fwdable  <= exe_fw.fwdable || exe_ctrl.wb_sel == WB_ALU;
-        mem_fw.addr     <= exe_fw.addr;
-        mem_fw.wdata    <= exe_fw.fwdable ? exe_fw.wdata : exe_alu_out;
+        if (exe_calc_stall || exe_branch_stall) begin
+            mem_valid   <= 0;
+            mem_is_new  <= 1;
+            mem_trap    <= 0;
+            mem_fw      <= 0;
+        end else begin
+            mem_valid       <= exe_valid;
+            mem_is_new      <= 1;
+            mem_pc          <= exe_pc;
+            mem_inst        <= exe_inst;
+            mem_inst_id     <= exe_inst_id;
+            mem_ctrl        <= exe_ctrl;
+            mem_imm_i       <= exe_imm_i;
+            mem_alu_out     <= exe_alu_out;
+            mem_op1_data    <= exe_op1_data;
+            mem_rs2_data    <= exe_rs2_data;
+            // trap
+            mem_trap.valid  <= exe_valid && (
+                                exe_trap.valid ||
+                                (exe_branch_taken && !is_ialigned(exe_branch_target)));
+            mem_trap.cause  <= exe_trap.valid ? exe_trap.cause :
+                                (exe_branch_taken && !is_ialigned(exe_branch_target)) ? CAUSE_INSTRUCTION_ADDRESS_MISALIGNED : 0;
+            // forwarding
+            mem_fw.valid    <= exe_valid && exe_fw.valid;
+            mem_fw.fwdable  <= exe_fw.fwdable || exe_ctrl.wb_sel == WB_ALU;
+            mem_fw.addr     <= exe_fw.addr;
+            mem_fw.wdata    <= exe_fw.fwdable ? exe_fw.wdata : exe_alu_out;
+        end
     end
 
     // mem -> csr
@@ -332,23 +349,30 @@ always @(posedge clk) begin
     end else if (csr_stall) begin
         csr_is_new      <= 0;
     end else begin
-        csr_valid       <= mem_valid && !mem_memory_stall;
-        csr_is_new      <= 1;
-        csr_pc          <= mem_pc;
-        csr_inst        <= mem_inst;
-        csr_inst_id     <= mem_inst_id;
-        csr_ctrl        <= mem_ctrl;
-        csr_imm_i       <= mem_imm_i;
-        csr_alu_out     <= mem_alu_out;
-        csr_mem_rdata   <= mem_mem_rdata;
-        csr_op1_data    <= mem_op1_data;
-        // trap
-        csr_trap        <= (mem_valid && !mem_memory_stall) ? mem_next_trap : 0;
-        // forwarding
-        csr_fw.valid    <= (mem_valid && !mem_memory_stall) && mem_fw.valid;
-        csr_fw.fwdable  <= mem_fw.fwdable || mem_ctrl.wb_sel == WB_MEM;
-        csr_fw.addr     <= mem_fw.addr;
-        csr_fw.wdata    <= mem_fw.fwdable ? mem_fw.wdata : mem_mem_rdata;
+        if (mem_memory_stall) begin
+            csr_valid       <= csr_keep_trap;
+            csr_is_new      <= 0;
+            csr_trap        <= 0;
+            csr_fw          <= 0;
+        end else begin
+            csr_valid       <= mem_valid;
+            csr_is_new      <= 1;
+            csr_pc          <= mem_pc;
+            csr_inst        <= mem_inst;
+            csr_inst_id     <= mem_inst_id;
+            csr_ctrl        <= mem_ctrl;
+            csr_imm_i       <= mem_imm_i;
+            csr_alu_out     <= mem_alu_out;
+            csr_mem_rdata   <= mem_mem_rdata;
+            csr_op1_data    <= mem_op1_data;
+            // trap
+            csr_trap        <= mem_valid ? mem_next_trap : 0;
+            // forwarding
+            csr_fw.valid    <= mem_valid && mem_fw.valid;
+            csr_fw.fwdable  <= mem_fw.fwdable || mem_ctrl.wb_sel == WB_MEM;
+            csr_fw.addr     <= mem_fw.addr;
+            csr_fw.wdata    <= mem_fw.fwdable ? mem_fw.wdata : mem_mem_rdata;
+        end
     end
 
     // csr -> wb (no stall)
