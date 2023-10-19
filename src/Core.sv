@@ -224,15 +224,15 @@ always @(posedge clk) begin
 
     // id -> ds
     if (branch_hazard_now) begin
-        ds_valid        <= 0;
-        ds_is_new       <= 1;
-        ds_trap         <= 0;
-        ds_fw           <= 0;
+        ds_valid    <= 0;
+        ds_is_new   <= 1;
+        ds_trap     <= 0;
+        ds_fw       <= 0;
         `ifdef PRINT_DEBUGINFO
             $display("info,datastage.event.pipeline_flush,pipeline flush");
         `endif
     end else if (ds_stall) begin
-        ds_is_new       <= 0;
+        ds_is_new   <= 0;
     end else begin
         ds_valid        <= id_valid;
         ds_is_new       <= 1;
@@ -247,7 +247,6 @@ always @(posedge clk) begin
         ds_imm_u        <= id_imm_u;
         ds_imm_z        <= id_imm_z;
         // trap
-        // TODO *_validをtrapとfwのvalidでコピーしているのが冗長なので、functionか何かにする
         ds_trap.valid   <= id_valid &&
                             (   id_trap.valid ||
                                 id_is_illegal ||
@@ -266,15 +265,15 @@ always @(posedge clk) begin
 
     // ds -> exe
     if (csr_is_trap) begin
-        exe_valid       <= 0;
-        exe_is_new      <= 1;
-        exe_trap        <= 0;
-        exe_fw          <= 0;
+        exe_valid   <= 0;
+        exe_is_new  <= 1;
+        exe_trap    <= 0;
+        exe_fw      <= 0;
         `ifdef PRINT_DEBUGINFO
             $display("info,exestage.event.pipeline_flush,pipeline flush");
         `endif
     end else if (exe_stall) begin
-        exe_is_new      <= 0;
+        exe_is_new  <= 0;
     end else begin
         if (ds_datahazard) begin
             exe_valid   <= 0;
@@ -306,15 +305,15 @@ always @(posedge clk) begin
 
     // exe -> mem
     if (csr_is_trap) begin
-        mem_valid       <= 0;
-        mem_is_new      <= 1;
-        mem_trap        <= 0;
-        mem_fw          <= 0;
+        mem_valid   <= 0;
+        mem_is_new  <= 1;
+        mem_trap    <= 0;
+        mem_fw      <= 0;
         `ifdef PRINT_DEBUGINFO
             $display("info,memstage.event.pipeline_flush,pipeline flush");
         `endif
     end else if (mem_stall) begin
-        mem_is_new      <= 0;
+        mem_is_new  <= 0;
     end else begin
         if (exe_calc_stall || exe_branch_stall) begin
             mem_valid   <= 0;
@@ -348,12 +347,12 @@ always @(posedge clk) begin
 
     // mem -> csr
     if (csr_is_trap) begin
-        csr_valid       <= csr_keep_trap;
-        csr_is_new      <= 0;
-        csr_trap        <= 0;
-        csr_fw          <= 0;
+        csr_valid   <= csr_keep_trap;
+        csr_is_new  <= 0;
+        csr_trap    <= 0;
+        csr_fw      <= 0;
     end else if (csr_stall) begin
-        csr_is_new      <= 0;
+        csr_is_new  <= 0;
     end else begin
         if (mem_memory_stall) begin
             csr_valid       <= csr_keep_trap;
