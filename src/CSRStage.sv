@@ -30,31 +30,8 @@ module CSRStage #(
     output wire CacheCntrInfo   cache_cntr
 );
 
-modetype    mode = M_MODE;
-Addr        satp = ADDR_ZERO;
-
-assign cache_cntr.mode  = mode;
-assign cache_cntr.satp  = satp;
-
 `include "csrparam.svh"
 `include "basicparams.svh"
-
-initial begin
-    // 起動時はM-mode  (EEI)
-    mode = M_MODE;
-    satp = 0;
-end
-
-wire CsrCmd csr_cmd = ctrl.csr_cmd;
-wire UInt12 addr    = imm_i[11:0];
-
-// 2.1 CSR Address Mapping Conventions
-wire can_access     = addr[9:8] <= mode;
-wire can_read       = can_access;
-wire can_write      = can_access & addr[11:10] != 2'b11;
-
-wire cmd_is_write   = csr_cmd == CSR_W | csr_cmd == CSR_S | csr_cmd == CSR_C;
-wire cmd_is_xret    = csr_cmd == CSR_SRET | csr_cmd == CSR_MRET;
 
 typedef enum logic [11:0] {
     // Counters and Timers
@@ -207,15 +184,39 @@ case (addr)
 endcase
 endfunction
 
-wire mstatus_sd  = 0;
+modetype    mode = M_MODE;
+Addr        satp = ADDR_ZERO;
+
+assign cache_cntr.mode  = mode;
+assign cache_cntr.satp  = satp;
+
+initial begin
+    // 起動時はM-mode  (EEI)
+    mode = M_MODE;
+    satp = 0;
+end
+
+wire CsrCmd csr_cmd = ctrl.csr_cmd;
+wire UInt12 addr    = imm_i[11:0];
+
+// 2.1 CSR Address Mapping Conventions
+wire can_access     = addr[9:8] <= mode |
+                        mode == S_MODE & mstatus_tvm & addr == ADDR_SATP; // mstatus.TVM
+wire is_readonly    = addr[11:10] == 2'b11;
+
+wire cmd_is_write   = csr_cmd == CSR_W | csr_cmd == CSR_S | csr_cmd == CSR_C;
+wire cmd_is_xret    = csr_cmd == CSR_SRET | csr_cmd == CSR_MRET;
+
+
+// MSTATUS
+wire mstatus_sd     = 0;
 // 3.1.6.5 Trap SRET : 1のとき、S-modeでSRETするとillegal instruction exceptionが発生する
 logic mstatus_tsr   = 0;
 // 3.1.6.5 Timwout Wait : 1のとき、WFIが一定時間内に完了しない場合にillegal instruction exceptionが発生する
 // 実装を簡単にするため、1のときは待機しないで例外を発生させる
-logic mstatus_tw    = 0; 
-
-// TODO 作る?
-wire mstatus_tvm = 0; // 3.1.6.5 SFENCE.VMA or SINVAL.VMA をサポートしないのでサポートしない
+logic mstatus_tw    = 0;
+// 3.1.6.5 Trap Virtual Memory : 1のとき、S-modeでsatpを編集, SFENCE.VMA/SINVAL.VMAを実行しようとするとillegal instruction exceptionが発生する
+logic mstatus_tvm   = 0;
 
 // TODO 作る
 wire mstatus_mxr = 0; // 3.1.6.3
@@ -559,13 +560,14 @@ always @(posedge clk) begin
     end
     if (valid & !is_new) begin
         inst_clock <= inst_clock + 1;
-        if (can_write & cmd_is_write & !csr_no_wb) begin
+        if (cmd_is_write & can_access & !is_readonly & !csr_no_wb) begin
             $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
             case (addr)
                 // Machine Trap Setup
                 ADDR_MSTATUS: begin
                     mstatus_tsr     <= wdata[22];
                     mstatus_tw      <= wdata[21];
+                    mstatus_tvm     <= wdata[20];
                     mstatus_mpp     <= wdata[12:11];
                     mstatus_spp     <= wdata[8];
                     mstatus_mpie    <= wdata[7];
