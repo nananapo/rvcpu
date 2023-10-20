@@ -483,7 +483,7 @@ assign csr_is_trap  = valid & !is_new & (last_raise_trap | undone_fence_i | fenc
 assign csr_keep_trap= trap_nochange;
 
 assign cache_cntr.i_mode            = mode;
-assign cache_cntr.d_mode            = mode == M_MODE & mstatus_mprv ? mstatus_mpp : mode;
+assign cache_cntr.d_mode            = modetype'(mode == M_MODE & mstatus_mprv ? modetype'(mstatus_mpp) : mode);
 assign cache_cntr.satp              = satp;
 assign cache_cntr.do_writeback      = is_new & ctrl.fence_i;
 assign cache_cntr.invalidate_icache = is_new & ctrl.fence_i;
