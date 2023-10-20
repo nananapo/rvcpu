@@ -222,24 +222,31 @@ wire mstatus_sum = 0; // 3.1.6.3
 // 3.1.6.3 Modify PRiVilege
 // 0のとき、普通にふるまう
 // 1のとき、load/storeはMPPがmodeになっているかのようにアドレストランスレーション, プロテクションを行う。命令読み込みは影響を受けない
-logic mstatus_mprv      = 0;
-wire [1:0] mstatus_xs = 0; // 3.1.6.6 サポートしない
-wire [1:0] mstatus_fs = 0; // 3.1.6.6 サポートしない
+logic mstatus_mprv  = 0;
+// 3.1.6.6 サポートしない
+// F拡張を実装していないので必要ない
+wire [1:0] mstatus_xs   = 0;
+wire [1:0] mstatus_fs   = 0;
 // M-modeにトラップするときに、現在のmodeが書き込まれる。
 // EEI : 初期値はM-mode
 logic [1:0] mstatus_mpp = M_MODE;
-wire [1:0] mstatus_vs = 0; // 3.1.6.6 サポートしない
+// 3.1.6.6 サポートしない, v系は実装していないはずなので必要ない
+wire [1:0] mstatus_vs   = 0;
 // S-modeにトラップするときに、現在のmodeが書き込まれる。
 // EEI : 初期値はU-mode
-logic mstatus_spp       = U_MODE[0];
-logic mstatus_mpie = 0; // S-modeでtrapしても書き込まれない
-wire mstatus_ube = 0; // 3.1.6.4 サポートしない
-logic mstatus_spie = 0; // S-modeでtrapした時、sieが書き込まれる
-logic mstatus_mie  = 0; // M-modeでtrapしたとき、クリアされる
-logic mstatus_sie  = 0; // S-modeでtrapしたとき、クリアされる
-
-wire mstatush_mbe = 0; // 3.1.6.4 サポートしない
-wire mstatush_sbe = 0; // 3.1.6.4 サポートしない
+logic mstatus_spp   = U_MODE[0];
+// M-modeにトラップするときに、現在のMIEが書き込まれる
+logic mstatus_mpie  = 0;
+// 3.1.6.4 サポートしない, エンディアンを変更できる
+wire mstatus_ube    = 0;
+// S-modeにトラップするときに、現在のSIEが書き込まれる
+logic mstatus_spie  = 0;
+// Interrupt Enable Bit
+logic mstatus_mie   = 0;
+logic mstatus_sie   = 0;
+// 3.1.6.4 サポートしない, エンディアンを変更できる
+wire mstatush_mbe   = 0;
+wire mstatush_sbe   = 0;
 
 wire [31:0] mstatus = {
     mstatus_sd,
