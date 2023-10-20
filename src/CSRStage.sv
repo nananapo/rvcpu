@@ -390,7 +390,7 @@ logic [31:0] sepc     = 0;
 logic [31:0] scause   = 0;
 
 wire UIntX  wdata = gen_wdata(csr_cmd, op1_data, rdata);
-wire UIntX  rdata = can_read ? gen_rdata( // TODO 例外で不要になる
+wire UIntX  rdata = gen_rdata(
     addr,
     reg_cycle,
     reg_time,
@@ -413,15 +413,17 @@ wire UIntX  rdata = can_read ? gen_rdata( // TODO 例外で不要になる
     sepc,
     scause,
     satp
-) : 32'b0;
+);
 
 // TRAP
-wire raise_expt = trapinfo.valid;
-wire [31:0] cause_expt = trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0);
+wire csr_access_fault   = valid && cmd_is_write && !can_access;
+wire        raise_expt  = trapinfo.valid | csr_access_fault;
+wire UIntX  cause_expt  = trapinfo.valid ?
+                            trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0) :
+                            csr_access_fault ? CAUSE_ILLEGAL_INSTRUCTION : 0;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
-// TODO interruptが発生しないのに発生してしまう?かと思ったが、0が0なので発生しないようだ
 wire intr_toM  = mideleg[cause_intr[4:0]] == 0;
 wire expt_toM  = medeleg[cause_expt[4:0]] == 0;
 wire trap_toM  = mode == M_MODE | (raise_expt ? expt_toM : intr_toM);
