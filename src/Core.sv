@@ -607,7 +607,8 @@ end
 `endif
 
 int abn_clk_count = 0;
-always @(negedge clk) abn_clk_count++;
+always @(negedge clk)
+    abn_clk_count++;
 
 Addr last_ds_pc     = 0;
 Addr last_exe_pc    = 0;
@@ -619,34 +620,34 @@ int exe_same_count  = 0;
 int mem_same_count  = 0;
 int csr_same_count  = 0;
 
-task abnormal_countup(
-    input Addr pc,
-    inout Addr last_pc,
-    inout int  count
-);
-    if (pc == last_pc)
-        count += 1;
-    else
-        count = 0;
+always @(posedge clk) begin
+    ds_same_count  <= ds_pc  == last_ds_pc  ? ds_same_count  + 1 : 0;
+    exe_same_count <= exe_pc == last_exe_pc ? exe_same_count + 1 : 0;
+    mem_same_count <= mem_pc == last_mem_pc ? mem_same_count + 1 : 0;
+    csr_same_count <= csr_pc == last_csr_pc ? csr_same_count + 1 : 0;
 
-    if (count >= `ABNORMAL_STOP_THRESHOLD) begin
+    last_ds_pc  <= ds_pc;
+    last_exe_pc <= exe_pc;
+    last_mem_pc <= mem_pc;
+    last_csr_pc <= csr_pc;
+
+    if (    ds_same_count  >= `ABNORMAL_STOP_THRESHOLD |
+            exe_same_count >= `ABNORMAL_STOP_THRESHOLD |
+            mem_same_count >= `ABNORMAL_STOP_THRESHOLD |
+            csr_same_count >= `ABNORMAL_STOP_THRESHOLD ) begin
         $display("!!!FORCE STOP!!!");
         $display("[%d - %d clock]", abn_clk_count - `ABNORMAL_STOP_THRESHOLD, abn_clk_count);
-        $display(" ds.pc = %h, for %d clock", last_ds_pc , ds_same_count );
-        $display("exe.pc = %h, for %d clock", last_exe_pc, exe_same_count);
-        $display("mem.pc = %h, for %d clock", last_mem_pc, mem_same_count);
-        $display("csr.pc = %h, for %d clock", last_csr_pc, csr_same_count);
+        $display("name(valid) pc");
+        $display(" id(%d) pc = %h", id_valid, id_pc);
+        $display(" ds(%d) pc = %h, for %d clock", ds_valid, last_ds_pc , ds_same_count );
+        $display("exe(%d) pc = %h, for %d clock", exe_valid, last_exe_pc, exe_same_count);
+        $display("mem(%d) pc = %h, for %d clock", mem_valid, last_mem_pc, mem_same_count);
+        $display("csr(%d) pc = %h, for %d clock", csr_valid, last_csr_pc, csr_same_count);
+        $display(" wb(%d) pc = %h", wb_valid, wb_pc);
+        $fflush;
         $finish;
+        $finish; // TODO なぜか2回finishしないと終了しない
     end
-
-    last_pc <= pc;
-endtask
-
-always @(posedge clk) begin
-    abnormal_countup(ds_pc , last_ds_pc , ds_same_count );
-    abnormal_countup(exe_pc, last_exe_pc, exe_same_count);
-    abnormal_countup(mem_pc, last_mem_pc, mem_same_count);
-    abnormal_countup(csr_pc, last_csr_pc, csr_same_count);
 end
 `endif
 /////////////////////////////////////////////////////////////////////////////
