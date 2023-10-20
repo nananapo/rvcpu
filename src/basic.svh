@@ -141,6 +141,7 @@ typedef struct packed
     logic   jmp_reg_flg;
     logic   svinval;
     logic   fence_i;
+    logic   wfi;
     AextSel a_sel;
 } Ctrl;
 

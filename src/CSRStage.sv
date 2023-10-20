@@ -208,12 +208,11 @@ endcase
 endfunction
 
 wire mstatus_sd  = 0;
-
-// 3.1.6.5 Trap SRET 1のとき、S-modeでSRETするとillegal instruction exceptionにする
+// 3.1.6.5 Trap SRET : 1のとき、S-modeでSRETするとillegal instruction exceptionが発生する
 logic mstatus_tsr   = 0;
-
-// TODO 作る？
-wire mstatus_tw  = 0; // 3.1.6.5 WFI instruction をサポートしないのでサポートしない
+// 3.1.6.5 Timwout Wait : 1のとき、WFIが一定時間内に完了しない場合にillegal instruction exceptionが発生する
+// 実装を簡単にするため、1のときは待機しないで例外を発生させる
+logic mstatus_tw    = 0; 
 
 // TODO 作る?
 wire mstatus_tvm = 0; // 3.1.6.5 SFENCE.VMA or SINVAL.VMA をサポートしないのでサポートしない
@@ -420,10 +419,12 @@ wire csr_access_fault   = cmd_is_write & !can_access;
 wire csr_xret_no_priv   =   csr_cmd == CSR_MRET & mode != M_MODE |
                             csr_cmd == CSR_SRET & mode < S_MODE |
                             csr_cmd == CSR_SRET & mode == S_MODE & mstatus_tsr;
+wire wfi_tw_nowait      = ctrl.wfi & mstatus_tw;
+
 wire        raise_expt  = trapinfo.valid | valid & (csr_access_fault | csr_xret_no_priv);
 wire UIntX  cause_expt  = trapinfo.valid ?
                             trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0) :
-                            csr_access_fault & csr_xret_no_priv? CAUSE_ILLEGAL_INSTRUCTION : 0;
+                            csr_access_fault | csr_xret_no_priv | wfi_tw_nowait ? CAUSE_ILLEGAL_INSTRUCTION : 0;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
@@ -558,6 +559,7 @@ always @(posedge clk) begin
                 // Machine Trap Setup
                 ADDR_MSTATUS: begin
                     mstatus_tsr     <= wdata[22];
+                    mstatus_tw      <= wdata[21];
                     mstatus_mpp     <= wdata[12:11];
                     mstatus_spp     <= wdata[8];
                     mstatus_mpie    <= wdata[7];
