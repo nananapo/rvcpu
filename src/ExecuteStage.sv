@@ -60,7 +60,7 @@ MulDivModule #() muldiv (
     .resp(mdresp)
 );
 
-wire is_muldiv          = i_exe == ALU_DIV |i_exe == ALU_REM |
+wire is_muldiv          = i_exe == ALU_DIV | i_exe == ALU_REM |
                           i_exe == ALU_MUL | i_exe == ALU_MULH | i_exe == ALU_MULHSU;
 
 assign mdreq.valid      = valid & ((is_new & state == IDLE & is_muldiv) | state == WAIT_READY);
@@ -90,7 +90,7 @@ always @(posedge clk) begin
         state <= IDLE;
     end else begin
         case (state)
-            IDLE: if (is_muldiv) begin
+            IDLE: if (is_new & is_muldiv) begin
                 state <= mdreq.ready ? WAIT_CALC : WAIT_READY;
             end
             WAIT_READY: if (mdreq.ready) state <= WAIT_CALC;
