@@ -1,4 +1,3 @@
-// TODO trapinfo
 module InstQueue #(
     parameter QUEUE_SIZE = 16,
     parameter INITIAL_ADDR = 32'h0
@@ -18,7 +17,9 @@ module InstQueue #(
 typedef struct packed {
     Addr    addr;
     Inst    inst;
-    IId     inst_id;
+    IId     inst_id; // TODO IIdを削除する
+    logic   error;
+    FaultTy errty;
 } BufType;
 
 wire buf_kill;
@@ -32,10 +33,14 @@ assign buf_wvalid       = requested & memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.rdata;
 assign buf_wdata.inst_id= inst_id - IID_ONE;
+assign buf_wdata.error  = memresp.error;
+assign buf_wdata.errty  = memresp.errty;
 
 assign iresp.addr       = buf_rdata.addr;
 assign iresp.inst       = buf_rdata.inst;
 assign iresp.inst_id    = buf_rdata.inst_id;
+assign iresp.error      = buf_rdata.error;
+assign iresp.errty      = buf_rdata.errty;
 
 SyncQueue #(
     .DATA_SIZE($bits(BufType)),
@@ -70,7 +75,7 @@ Inst last_fetched_inst  = 32'h0;
 
 
 // TODO この処理を適切な場所に移動したい。
-wire fetched_is_valid   = !requested | memresp.valid;
+wire fetched_is_valid   = !requested | (memresp.valid & !memresp.error);
 wire Addr fetched_pc    = requested ? request_pc : last_fetched_pc;
 wire Inst fetched_inst  = requested ? memresp.rdata : last_fetched_inst;
 
@@ -238,6 +243,8 @@ always @(posedge clk) begin
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
     $display("data,fetchstage.requesting_pc,h,%b", memreq.addr);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
+    $display("data,fetchstage.error,d,%b", memresp.error);
+    $display("data,fetchstage.errty,d,%b", memresp.errty);
 
     $display("data,fetchstage.ireq.valid,b,%b", ireq.valid);
     if (ireq.valid) begin

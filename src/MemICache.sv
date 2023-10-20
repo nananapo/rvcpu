@@ -2,7 +2,6 @@
 
 // direct map
 // wenは無視
-// TODO メモリの範囲外エラーを全く考慮しないようにしたい
 module MemICache #(
     parameter CACHE_WIDTH = 8
 )(
@@ -83,6 +82,7 @@ assign ireq_in.ready    = state == IDLE;
 assign iresp_in.valid   = iresp_valid_reg;
 assign iresp_in.rdata   = iresp_rdata_reg;
 assign iresp_in.error   = iresp_error_reg;
+assign iresp_in.errty   = FE_ACCESS_FAULT;
 
 assign busreq.valid = state == MEM_WAIT_READY;
 assign busreq.addr  = normalize_addr(ireq.addr) + read_count * 4;

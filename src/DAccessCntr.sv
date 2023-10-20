@@ -1,13 +1,11 @@
 module DAccessCntr (
-    input wire clk,
-    inout wire DReq     dreq,
-    inout wire DResp    dresp,
+    input wire              clk,
+    input wire              reset,
+    inout wire DReq         dreq,
+    inout wire DResp        dresp,
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp
 );
-
-// TODO ミスアラインの例外について調べる
-// TODO エラーを全く見てない、伝播させてない
 
 typedef enum logic [3:0] {
     IDLE,
@@ -21,7 +19,8 @@ typedef enum logic [3:0] {
     STORE_READY,
     STORE_VALID,
     STORE_READY2,
-    STORE_VALID2
+    STORE_VALID2,
+    ERROR
 } statetype;
 
 statetype state = IDLE;
@@ -62,13 +61,15 @@ wire require_load = (!sis_w | saddr_lb != 2'b00);
 // この命令は2回loadする必要があるか
 wire is_load_twice = (sis_w & saddr_lb != 2'b00) | (sis_h & saddr_lb == 2'd3);
 
-logic [31:0]  saved_rdata1;
-logic [31:0]  saved_rdata2;
+UInt32  saved_rdata1;
+UInt32  saved_rdata2;
 
-logic [31:0]  store_wdata1;
-logic [31:0]  store_wdata2;
+UInt32  store_wdata1;
+UInt32  store_wdata2;
 
-logic [31:0]  load_result;
+UInt32  load_result;
+logic   error_result = 0;
+FaultTy errty_result = FE_ACCESS_FAULT;
 
 assign memreq.valid = state == LOAD_READY  | state == LOAD_READY2 | state == STORE_READY | state == STORE_READY2;
 assign memreq.addr  = state == LOAD_READY  | state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;
@@ -77,14 +78,23 @@ assign memreq.wdata = state == STORE_READY ? store_wdata1 : store_wdata2;
 
 assign dresp.valid  =   state == LOAD_PUSH |
                         state == STORE_VALID & !is_load_twice & memresp.valid |
-                        state == STORE_VALID2 & memresp.valid;
+                        state == STORE_VALID2 & memresp.valid |
+                        state == ERROR;
+assign dresp.error  = error_result;
+assign dresp.errty  = errty_result;
 assign dresp.addr   = sdreq.addr;
 assign dresp.rdata  = load_result;
 
 assign dreq.ready   = state == IDLE;
 
-always @(posedge clk) begin
+always @(posedge clk) if (reset) state <= IDLE; else begin
     case (state)
+    IDLE: begin
+        sdreq <= dreq;
+        if (dreq.valid) begin
+            state <= statetype'(dreq.wen ? STORE_CHECK : LOAD_READY);
+        end
+    end
     LOAD_READY: begin
         if (memreq.ready) begin
             state <= LOAD_VALID;
@@ -92,8 +102,14 @@ always @(posedge clk) begin
     end
     LOAD_VALID: begin
         if (memresp.valid) begin
-            state <= statetype'(is_load_twice ? LOAD_READY2 : LOAD_END);
-            saved_rdata1 <= memresp.rdata;
+            error_result    <= memresp.error;
+            errty_result    <= memresp.errty;
+            if (memresp.error) begin
+                state           <= ERROR;
+            end else begin
+                state           <= statetype'(is_load_twice ? LOAD_READY2 : LOAD_END);
+                saved_rdata1    <= memresp.rdata;
+            end
         end
     end
     LOAD_READY2: begin
@@ -103,8 +119,14 @@ always @(posedge clk) begin
     end
     LOAD_VALID2: begin
         if (memresp.valid) begin
-            state <= LOAD_END;
-            saved_rdata2 <= memresp.rdata;
+            error_result    <= memresp.error;
+            errty_result    <= memresp.errty;
+            if (memresp.error) begin
+                state           <= ERROR;
+            end else begin
+                state           <= LOAD_END;
+                saved_rdata2    <= memresp.rdata;
+            end
         end
     end
     LOAD_END: begin
@@ -158,7 +180,13 @@ always @(posedge clk) begin
     end
     STORE_VALID: begin
         if (memresp.valid) begin
-            state <= statetype'(is_load_twice ? STORE_READY2 : IDLE);
+            error_result    <= memresp.error;
+            errty_result    <= memresp.errty;
+            if (memresp.error) begin
+                state   <= ERROR;
+            end else begin
+                state   <= statetype'(is_load_twice ? STORE_READY2 : IDLE);
+            end
         end
     end
     STORE_READY2: begin
@@ -168,14 +196,19 @@ always @(posedge clk) begin
     end
     STORE_VALID2: begin
         if (memresp.valid) begin
-            state <= IDLE;
+            error_result    <= memresp.error;
+            errty_result    <= memresp.errty;
+            if (memresp.error) begin
+                state   <= ERROR;
+            end else begin
+                state   <= IDLE;
+            end
         end
     end
-    default/*IDLE*/: begin
-        sdreq <= dreq;
-        if (dreq.valid) begin
-            state <= statetype'(dreq.wen ? STORE_CHECK : LOAD_READY);
-        end
+    ERROR: state <= IDLE;
+    default: begin
+        $display("DAccessCntr.sv : Unknown state %d", state);
+        $finish;
     end
     endcase
 end

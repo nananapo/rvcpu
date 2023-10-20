@@ -75,6 +75,7 @@ assign dreq_in.ready    = state == IDLE;
 assign dresp_in.valid   = dresp_valid_reg;
 assign dresp_in.rdata   = dresp_rdata_reg;
 assign dresp_in.error   = dresp_error_reg;
+assign dresp_in.errty   = FE_ACCESS_FAULT;
 
 assign busreq.valid =   state == READ_READY | state == WRITE_READY | state == WB_LOOP_READY;
 assign busreq.addr  =   state == READ_READY ? dreq.addr :

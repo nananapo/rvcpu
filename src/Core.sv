@@ -34,8 +34,7 @@ endfunction
 
 // id reg
 logic       id_valid    = 0;
-// TODO メモリエラーをnopかつvalidとして流す
-TrapInfo    id_trap     = 0; // TODO assign
+TrapInfo    id_trap     = 0;
 Addr        id_pc       = ADDR_X;
 Inst        id_inst     = INST_NOP;
 IId         id_inst_id;
@@ -210,8 +209,10 @@ always @(posedge clk) begin
         `endif
     end else if (!id_stall) begin
         if (iresp.valid) begin
-            id_valid        <= 1; // TODO この1はiresp.validにできるが....
-            id_trap.valid   <= 0; // TODO if trap
+            id_valid        <= 1;
+            id_trap.valid   <= iresp.error;
+            id_trap.cause   <= iresp.errty == FE_ACCESS_FAULT ?
+                                CAUSE_INSTRUCTION_ACCESS_FAULT : CAUSE_INSTRUCTION_PAGE_FAULT;
             id_pc           <= iresp.addr;
             id_inst         <= iresp.inst;
             id_inst_id      <= iresp.inst_id;

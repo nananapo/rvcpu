@@ -214,11 +214,14 @@ logic mstatus_tsr   = 0;
 logic mstatus_tw    = 0;
 // 3.1.6.5 Trap Virtual Memory : 1のとき、S-modeでsatpを編集, SFENCE.VMA/SINVAL.VMAを実行しようとするとillegal instruction exceptionが発生する
 logic mstatus_tvm   = 0;
-
-// TODO 作る
-wire mstatus_mxr = 0; // 3.1.6.3
-wire mstatus_sum = 0; // 3.1.6.3
-
+// 3.1.6.3 Make eXecutable Readable
+// Address translationで、leaf PTEのX = 1でもloadできるようにするかどうか -> storeはできない？
+logic mstatus_mxr   = 0;
+// 3.1.6.3 permit Supervisor User Memory access
+// 0のとき、S-modeでU=1にload, storeしようとするとfaultする
+// 1のとき、faultしない。
+// modeはMPRVに従う
+logic mstatus_sum   = 0;
 // 3.1.6.3 Modify PRiVilege
 // 0のとき、普通にふるまう
 // 1のとき、load/storeはMPPがmodeになっているかのようにアドレストランスレーション, プロテクションを行う。命令読み込みは影響を受けない
@@ -491,6 +494,8 @@ assign csr_keep_trap= trap_nochange;
 
 assign cache_cntr.i_mode            = mode;
 assign cache_cntr.d_mode            = modetype'(mode == M_MODE & mstatus_mprv ? modetype'(mstatus_mpp) : mode);
+assign cache_cntr.mxr               = mstatus_mxr;
+assign cache_cntr.sum               = mstatus_sum;
 assign cache_cntr.satp              = satp;
 assign cache_cntr.do_writeback      = is_new & ctrl.fence_i;
 assign cache_cntr.invalidate_icache = is_new & ctrl.fence_i;
@@ -584,6 +589,8 @@ always @(posedge clk) begin
                     mstatus_tsr     <= wdata[22];
                     mstatus_tw      <= wdata[21];
                     mstatus_tvm     <= wdata[20];
+                    mstatus_mxr     <= wdata[19];
+                    mstatus_sum     <= wdata[18];
                     mstatus_mprv    <= wdata[17];
                     mstatus_mpp     <= wdata[12:11];
                     mstatus_spp     <= wdata[8];
@@ -623,9 +630,11 @@ always @(posedge clk) begin
                 ADDR_MTVAL2: mtvec2 <= wdata;
                 // Supervisor Trap Setup
                 ADDR_SSTATUS: begin
-                    mstatus_spp <= wdata[8];
-                    mstatus_spie<= wdata[5];
-                    mstatus_sie <= wdata[1];
+                    mstatus_mxr     <= wdata[19];
+                    mstatus_sum     <= wdata[18];
+                    mstatus_spp     <= wdata[8];
+                    mstatus_spie    <= wdata[5];
+                    mstatus_sie     <= wdata[1];
                 end
                 ADDR_SIE: begin
                     mie_seie <= wdata[9];
