@@ -1,10 +1,11 @@
 module MMIO_Cntr #(
     parameter FMAX_MHz = 27
 ) (
-    input  wire clk,
+    input  wire         clk,
+    input  wire         reset,
 
-    input  wire uart_rx,
-    output wire uart_tx,
+    input  wire         uart_rx,
+    output wire         uart_tx,
     input  wire UInt64  mtime,
     output wire UInt64  mtimecmp,
 
@@ -66,6 +67,8 @@ assign dreq_in.ready    = state == IDLE | (state == WAIT_VALID & s_valid);
 assign dresp_in.valid   = s_valid;
 assign dresp_in.addr    = s_dreq.addr;
 assign dresp_in.rdata   = s_rdata;
+assign dresp_in.error   = s_is_memory ? memresp_in.error : 0;
+assign dresp_in.errty   = s_is_memory ? memresp_in.errty : FE_ACCESS_FAULT;
 
 assign memreq_in.valid  = is_memory & cmd_start;
 assign memreq_in.addr   = dreq.addr;
@@ -73,7 +76,7 @@ assign memreq_in.wen    = dreq.wen;
 assign memreq_in.wdata  = dreq.wdata;
 assign memreq_in.wmask  = dreq.wmask;
 
-always @(posedge clk) begin
+always @(posedge clk) if (reset) state <= IDLE; else begin
     case (state)
         IDLE: if (dreq_in.valid) begin
             s_dreq  <= dreq_in;

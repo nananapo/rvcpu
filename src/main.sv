@@ -134,16 +134,19 @@ MemICache #() memicache (
 );
 
 PageTableWalker #(
-    .LOG_ENABLE(0)
+    .LOG_ENABLE(0),
+    .EXECUTE_MODE(1)
 ) iptw (
     .clk(clk_in),
+    .reset(ireq_core_iq.valid),
     .preq(icreq_iq_ptw),
     .presp(icresp_iq_ptw),
     .memreq(icreq_ptw_cache),
     .memresp(icresp_ptw_cache),
-    .csr_mode(cache_cntr.i_mode),
-    .csr_satp(cache_cntr.satp),
-    .kill(ireq_core_iq.valid)
+    .mode(cache_cntr.i_mode),
+    .satp(cache_cntr.satp),
+    .mxr(cache_cntr.mxr),
+    .sum(cache_cntr.sum)
 );
 
 InstQueue #() instqueue (
@@ -167,20 +170,24 @@ MemDCache #() memdcache (
 );
 
 PageTableWalker #(
-    .LOG_ENABLE(0)
+    .LOG_ENABLE(0),
+    .EXECUTE_MODE(0)
 ) dptw (
     .clk(clk_in),
+    .reset(1'b0),
     .preq(dcreq_acntr_ptw),
     .presp(dcresp_acntr_ptw),
     .memreq(dcreq_ptw_cache),
     .memresp(dcresp_ptw_cache),
-    .csr_mode(cache_cntr.d_mode),
-    .csr_satp(cache_cntr.satp),
-    .kill(1'b0)
+    .mode(cache_cntr.d_mode),
+    .satp(cache_cntr.satp),
+    .mxr(cache_cntr.mxr),
+    .sum(cache_cntr.sum)
 );
 
 DAccessCntr #() daccesscntr (
     .clk(clk_in),
+    .reset(1'b0),
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
     .memreq(dcreq_acntr_ptw),
@@ -191,6 +198,7 @@ MMIO_Cntr #(
     .FMAX_MHz(FMAX_MHz)
 ) memmapcntr (
     .clk(clk_in),
+    .reset(1'b0),
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
     .mtime(reg_time),

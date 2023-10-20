@@ -27,6 +27,7 @@ module MemoryStage
 );
 
 `include "basicparams.svh"
+`include "csrparam.svh"
 
 typedef enum logic [1:0]
 {
@@ -94,8 +95,23 @@ assign dreq.wdata   =
                         gen_amo_wdata(ctrl.a_sel, ctrl.sign_sel, saved_mem_rdata, rs2_data);
 assign dreq.wmask   = ctrl.mem_size;
 
-// TODO error
-assign next_trapinfo = trapinfo;
+// MEN_Xは未定義
+function is_store_cmd(
+    input MemSel cmd,
+    input AextSel asel
+);
+    is_store_cmd = !(cmd == MEN_L | cmd == MEN_A & asel == ASEL_LR);
+endfunction
+
+assign next_trapinfo.valid = ctrl.mem_wen == MEN_X ? trapinfo.valid : dresp.error;
+assign next_trapinfo.cause =    ctrl.mem_wen == MEN_X ? trapinfo.cause :
+                                dresp.error ? (
+                                    dresp.errty == FE_ACCESS_FAULT ? (
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_ACCESS_FAULT : CAUSE_LOAD_ACCESS_FAULT
+                                    ) : (
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_PAGE_FAULT : CAUSE_LOAD_PAGE_FAULT
+                                    )
+                                ): 0;
 
 assign is_stall = valid & (state != IDLE | (!is_cmd_executed & mem_wen != MEN_X));
 
