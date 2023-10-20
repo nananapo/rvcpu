@@ -48,8 +48,8 @@ https://github.com/users/nananapo/projects/1/views/2
 * 4byteアラインされていない命令フェッチは行えなくした
 * CSRステージをEXEと同時に実行させるようにした
 * レジスタ(またはフォワーディングされる)のデータを受け取る処理をIDステージから分離して新しいステージ(DS)を作成した
-* kanata log formatに対応(log/convert2kanata.py)し、Konataでパイプラインの状態を見れるようにした
-* ログを読みやすくするスクリプトを作成した (log/convert2humanreadable.py)
+* kanata log formatに対応(log/log2kanata.py)し、Konataでパイプラインの状態を見れるようにした
+* ログを読みやすくするスクリプトを作成した (log/log2human.py)
 * CoreMarkを動作させた
 
 
@@ -103,7 +103,7 @@ ff000200            : UART RX (1024文字のキュー)
 ## デバッグログについて
 
 $display、$writeで出力しているデバッグ情報は、分析しやすくすることを目的として下記のフォーマットで出力しています。  
-数字は必ず2進数で出力しているため、そのまま人が読むのは難しいです。人にとって読みやすい形にログを変換するには、log/convert2humanreadable.pyを使用します。
+数字は必ず2進数で出力しているため、そのまま人が読むのは難しいです。人にとって読みやすい形にログを変換するには、log/log2human.pyを使用します。
 
 ### フォーマット
 
@@ -131,4 +131,4 @@ info,情報名,テキスト
 ![image](https://github.com/nananapo/rvcpu/assets/26675945/e1ced527-0668-405a-a5f0-2200868b8baa)
 [Kanata Log Format](https://github.com/shioyadan/Konata/blob/master/docs/kanata-log-format.md)は、パイプラインの状態を表すことができるログのフォーマットです。[shioyadan/Konata](https://github.com/shioyadan/Konata)で表示することができます。
 
-デバッグログをkanataに変換するためには、log/convert2kanata.pyを使用します。
+デバッグログをkanataに変換するためには、log/log2kanata.pyを使用します。
