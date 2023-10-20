@@ -13,7 +13,7 @@ module MultNbit #(
     output logic signed [SIZE*2-1:0]product         // 積
 );
 
-typedef enum logic { 
+typedef enum logic {
     IDLE, WAIT
 } statetype;
 
@@ -48,7 +48,7 @@ always @(posedge clk) begin
         IDLE: begin
             if (start) begin
                 state           <= WAIT;
-                result_is_minus <= is_signed && ($signed(multiplier) < $signed({SIZE{1'b0}})) != ($signed(multiplicand) < $signed({SIZE{1'b0}}));
+                result_is_minus <= is_signed & ($signed(multiplier) < $signed({SIZE{1'b0}})) != ($signed(multiplicand) < $signed({SIZE{1'b0}}));
             end
         end
         WAIT:

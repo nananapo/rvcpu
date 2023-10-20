@@ -26,17 +26,17 @@ if (WIDTH == 0) begin
     assign rdata  = data;
 
     always @(posedge clk) begin
-        if (is_empty && wvalid) begin
+        if (is_empty & wvalid) begin
             is_empty    <= 0;
             data        <= wdata;
         end
-        if (!is_empty && rready) begin
+        if (!is_empty & rready) begin
             is_empty    <= 1;
         end
     end
 
 end else begin
-    localparam QUEUE_SIZE = 2 ** WIDTH; 
+    localparam QUEUE_SIZE = 2 ** WIDTH;
 
     logic [DATA_SIZE-1:0] queue[QUEUE_SIZE-1:0];
     logic [WIDTH-1:0] head = 0;
@@ -51,14 +51,14 @@ end else begin
         if (kill)
             head <= tail;
         else begin
-            if (wready && wvalid) begin
-                tail <= tail + 1;
+            if (wready & wvalid) begin
+                tail        <= tail + 1;
                 queue[tail] <= wdata;
             end
-            if (rready && rvalid)
+            if (rready & rvalid)
                 head <= head + 1;
         end
     end
 end
-    
+
 endgenerate endmodule

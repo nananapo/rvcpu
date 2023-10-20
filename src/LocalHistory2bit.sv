@@ -38,8 +38,8 @@ assign pred_taken = count[1] == 1'b1;
 
 always @(posedge clk) begin
     if (brinfo.valid) begin
-        if (!(u_count == 2'b11 && brinfo.taken) && 
-            !(u_count == 2'b00 && !brinfo.taken)) begin
+        if (!(u_count == 2'b11 & brinfo.taken) &
+            !(u_count == 2'b00 & !brinfo.taken)) begin
             if (brinfo.taken)
                 counters[u_phti] <= u_count + 2'b1;
             else
@@ -48,8 +48,6 @@ always @(posedge clk) begin
         history[u_histi] <= {history[u_histi][WIDTH_HIST-2:0], brinfo.taken};
     end
 end
-
-
 
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
@@ -60,7 +58,6 @@ always @(posedge clk) begin
     $display("data,fetchstage.lpht.count,b,%b", count);
     $display("data,fetchstage.lpht.taken,h,%b", pred_taken);
 end
-`endif 
-
+`endif
 
 endmodule

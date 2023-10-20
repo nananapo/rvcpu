@@ -29,7 +29,7 @@ initial begin
     // $display("MemoryDelay : %d cycle", DELAY_CYCLE);
     `ifdef MEM_ZERO_CLEAR
     for (int l = 0; l < MEM_SIZE; l++)
-        mem[l] = 32'b0;     
+        mem[l] = 32'b0;
     `endif
     if (FILEPATH != "") begin
         $readmemh(FILEPATH, mem);
@@ -39,7 +39,7 @@ end
 
 wire MemAddr addr_shift = req_addr[MEM_WIDTH+2 -1:2];
 
-typedef enum logic { 
+typedef enum logic {
     S_IDLE, S_DELAY
 } statetype;
 statetype state = S_IDLE;
@@ -61,7 +61,7 @@ always @(posedge clk) begin
         resp_addr <= req_addr;
         if (DELAY_CYCLE == 0) begin
             valid_old <= req_valid;
-            error_old <= req_valid && !addr_is_valid;
+            error_old <= req_valid & !addr_is_valid;
         end else begin
             if (req_valid) begin
                 valid_old <= !addr_is_valid;
@@ -80,7 +80,7 @@ always @(posedge clk) begin
             mem[addr_shift][23:16],
             mem[addr_shift][31:24]
         };
-        if (req_valid && req_wen) begin
+        if (req_valid & req_wen) begin
             mem[addr_shift] <= {
                 req_wdata[7:0],
                 req_wdata[15:8],
@@ -88,13 +88,27 @@ always @(posedge clk) begin
                 req_wdata[31:24]
             };
         end
+        // `ifdef PRINT_DEBUGINFO
+        // if (req_valid) begin
+        //     if (req_wen)
+        //         $display("info,memstage.rawmem.store,0x%h <= %h", req_addr, req_wdata);
+        //     else
+        //         $display("info,memstage.rawmem.load,0x%h : %h", req_addr, {
+        //             mem[addr_shift][7:0],
+        //             mem[addr_shift][15:8],
+        //             mem[addr_shift][23:16],
+        //             mem[addr_shift][31:24]
+        //         });
+        // end
+        // `endif
     end
     S_DELAY: begin
         if (delay_count + 1 == DELAY_CYCLE) begin
             state       <= S_IDLE;
             valid_old   <= 1;
-        end else 
+        end else begin
             delay_count <= delay_count + 1;
+        end
     end
     endcase
 end

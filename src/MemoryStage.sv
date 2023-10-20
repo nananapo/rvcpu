@@ -27,6 +27,7 @@ module MemoryStage
 );
 
 `include "basicparams.svh"
+`include "csrparam.svh"
 
 typedef enum logic [1:0]
 {
@@ -35,15 +36,6 @@ typedef enum logic [1:0]
     WAIT_RVALID,
     WAIT_WVALID
 } statetype;
-
-statetype state = IDLE;
-
-logic   is_cmd_executed = 0;
-
-// logic   is_wen_replaced = 0;
-MemSel  replace_mem_wen = MEN_X;
-wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X : 
-                                    state != IDLE ? replace_mem_wen : ctrl.mem_wen);
 
 function [$bits(UIntX)-1:0] gen_amo_wdata(
     input AextSel   a_sel,
@@ -63,6 +55,15 @@ function [$bits(UIntX)-1:0] gen_amo_wdata(
     endcase
 endfunction
 
+statetype state = IDLE;
+
+logic   is_cmd_executed = 0;
+
+// TODO logic   is_wen_replaced = 0;
+MemSel  replace_mem_wen = MEN_X;
+wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X :
+                                    state != IDLE ? replace_mem_wen : ctrl.mem_wen);
+
 /*
 # A拡張の扱い
 予約できるのは1つのみ。
@@ -75,17 +76,17 @@ Addr aext_reserved_address = ADDR_MAX; // TODO validを用意してXにする
 wire sc_executable  = aext_reserved_address == alu_out; // SCを実行するかどうか
 logic sc_succeeded  = 0;
 
-wire is_store   = mem_wen == MEN_S || (mem_wen == MEN_A && ctrl.a_sel == ASEL_SC);
-wire is_load    = mem_wen == MEN_L || (mem_wen == MEN_A && ctrl.a_sel != ASEL_SC); // sc以外(lr, amo)は必ずloadする
+wire is_store   = mem_wen == MEN_S | (mem_wen == MEN_A & ctrl.a_sel == ASEL_SC);
+wire is_load    = mem_wen == MEN_L | (mem_wen == MEN_A & ctrl.a_sel != ASEL_SC); // sc以外(lr, amo)は必ずloadする
 
 wire memu_cmd_ready   = dreq.ready;
 wire memu_valid       = dresp.valid;
 wire UIntX memu_rdata = dresp.rdata;
 
-assign dreq.valid   = state == WAIT_READY && valid && !is_cmd_executed && mem_wen != MEN_X;
+assign dreq.valid   = state == WAIT_READY & valid & !is_cmd_executed & mem_wen != MEN_X;
 assign dreq.wen     = is_store;
 assign dreq.addr    = alu_out;
-assign dreq.wdata   = 
+assign dreq.wdata   =
                     `ifdef RISCV_TESTS
                         alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
                     `endif
@@ -94,10 +95,25 @@ assign dreq.wdata   =
                         gen_amo_wdata(ctrl.a_sel, ctrl.sign_sel, saved_mem_rdata, rs2_data);
 assign dreq.wmask   = ctrl.mem_size;
 
-// TODO error
-assign next_trapinfo = trapinfo;
+// MEN_Xは未定義
+function is_store_cmd(
+    input MemSel cmd,
+    input AextSel asel
+);
+    is_store_cmd = !(cmd == MEN_L | cmd == MEN_A & asel == ASEL_LR);
+endfunction
 
-assign is_stall = valid && (state != IDLE || (!is_cmd_executed && mem_wen != MEN_X));
+assign next_trapinfo.valid = ctrl.mem_wen == MEN_X ? trapinfo.valid : dresp.error;
+assign next_trapinfo.cause =    ctrl.mem_wen == MEN_X ? trapinfo.cause :
+                                dresp.error ? (
+                                    dresp.errty == FE_ACCESS_FAULT ? (
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_ACCESS_FAULT : CAUSE_LOAD_ACCESS_FAULT
+                                    ) : (
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_PAGE_FAULT : CAUSE_LOAD_PAGE_FAULT
+                                    )
+                                ): 0;
+
+assign is_stall = valid & (state != IDLE | (!is_cmd_executed & mem_wen != MEN_X));
 
 UIntX  saved_mem_rdata;
 
@@ -110,7 +126,7 @@ function [$bits(UIntX)-1:0] gen_rdata(
     input logic     sc_succeeded
 );
     if (mem_type == MEN_A) begin
-        case (a_sel) 
+        case (a_sel)
             ASEL_LR: gen_rdata = mem_rdata;
             ASEL_SC: gen_rdata = sc_succeeded ? DATA_ZERO : {{XLEN-1{1'b0}}, 1'b1};
             default: gen_rdata = mem_rdata; // AMO : read-modify-write
@@ -127,20 +143,20 @@ function [$bits(UIntX)-1:0] gen_rdata(
     end
 endfunction
 
-assign next_mem_rdata = 
+assign next_mem_rdata =
                         `ifdef RISCV_TESTS
                             alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
                         `endif
                             gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
 
 `ifdef RISCV_TESTS
-    assign exit = valid && is_store && alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] != 8'b0101_0000;
+    assign exit = valid & is_store & alu_out == RISCVTESTS_EXIT_ADDR & rs2_data[15:8] != 8'b0101_0000;
 `else
     assign exit = 0;
 `endif
 
 always @(posedge clk) begin
-    if (!valid || mem_wen == MEN_X) begin
+    if (!valid | mem_wen == MEN_X) begin
         state           <= IDLE;
         is_cmd_executed <= 0;
         replace_mem_wen <= MEN_X;
@@ -151,7 +167,7 @@ always @(posedge clk) begin
                     state   <= WAIT_WVALID;
                     `ifdef RISCV_TESTS
                         // riscv-testsのデバッグ出力
-                        if (alu_out == RISCVTESTS_EXIT_ADDR && rs2_data[15:8] == 8'b0101_0000) begin
+                        if (alu_out == RISCVTESTS_EXIT_ADDR & rs2_data[15:8] == 8'b0101_0000) begin
                             $write("%c", rs2_data[7:0]);
                         end
                     `endif
@@ -164,7 +180,7 @@ always @(posedge clk) begin
             if (memu_valid) begin
                 saved_mem_rdata <= memu_rdata;
                 // A拡張で、LR, SCではないものはStoreする
-                if (mem_wen == MEN_A && ctrl.a_sel != ASEL_LR && ctrl.a_sel != ASEL_SC) begin
+                if (mem_wen == MEN_A & ctrl.a_sel != ASEL_LR & ctrl.a_sel != ASEL_SC) begin
                     state           <= WAIT_READY;
                     replace_mem_wen <= MEN_S;
                 end else begin
@@ -209,7 +225,7 @@ always @(posedge clk) begin
                     endcase
                 end else begin
                     // LOAD, STORE
-                    state <= WAIT_READY; 
+                    state <= WAIT_READY;
                 end
             end
         end
@@ -231,14 +247,14 @@ end
 `endif
 /////////////////////////////////////////////////////////////////////////////
 
-`ifdef PRINT_DEBUGINFO 
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
-    $display("data,memstage.valid,b,%b", valid || invalid_by_trap);
+    $display("data,memstage.valid,b,%b", valid | invalid_by_trap);
     if (invalid_by_trap) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");
     end
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", valid || invalid_by_trap ? inst_id : IID_X);
+    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? inst_id : IID_X);
     if (valid) begin
         $display("data,memstage.pc,h,%b", pc);
         $display("data,memstage.inst,h,%b", inst);

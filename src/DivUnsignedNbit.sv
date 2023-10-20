@@ -14,7 +14,7 @@ module DivUnsignedNbit #(
     output logic [SIZE-1:0] remainder   // 余り
 );
 
-typedef enum logic [2:0] { 
+typedef enum logic [2:0] {
     IDLE, DONE, DONE_ERROR, FIND_ONE, DIVIDE
 } statetype;
 
@@ -26,7 +26,7 @@ logic [SIZE + SIZE - 1:0] shifted_divisor;
 logic [SIZE-1:0] save_divisor;
 
 assign ready = state == IDLE;
-assign valid = state == DONE || state == DONE_ERROR;
+assign valid = state == DONE | state == DONE_ERROR;
 assign error = state == DONE_ERROR;
 
 always @(posedge clk) begin

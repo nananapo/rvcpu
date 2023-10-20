@@ -33,8 +33,8 @@ wire UIntS mod_divisor  = is_signed ? (divisor  > $signed({SIZE{1'b0}}) ? diviso
 wire UIntS mod_quotient;
 wire UIntS mod_remainder;
 
-assign quotient     = !error && result_div_is_minus ? $signed($signed(0) - $signed(mod_quotient)) : mod_quotient;
-assign remainder    = !error && result_rem_is_minus ? $signed($signed(0) - $signed(mod_remainder)) : mod_remainder;
+assign quotient     = !error & result_div_is_minus ? $signed($signed(0) - $signed(mod_quotient)) : mod_quotient;
+assign remainder    = !error & result_rem_is_minus ? $signed($signed(0) - $signed(mod_remainder)) : mod_remainder;
 
 DivUnsignedNbit #(
     .SIZE(SIZE)
@@ -56,9 +56,9 @@ always @(posedge clk) begin
         IDLE: begin
             if (start) begin
                 state               <= WAIT;
-                result_div_is_minus <= is_signed && 
+                result_div_is_minus <= is_signed &
                                         ($signed(dividend) < $signed({SIZE{1'b0}})) != ($signed(divisor) < $signed({SIZE{1'b0}}));
-                result_rem_is_minus <= is_signed && 
+                result_rem_is_minus <= is_signed &
                                         ($signed(dividend) < $signed({SIZE{1'b0}}));
             end
         end

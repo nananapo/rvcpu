@@ -60,25 +60,24 @@ MulDivModule #() muldiv (
     .resp(mdresp)
 );
 
-wire is_muldiv          = i_exe == ALU_DIV ||i_exe == ALU_REM ||
-                          i_exe == ALU_MUL || i_exe == ALU_MULH || i_exe == ALU_MULHSU;
+wire is_muldiv          = i_exe == ALU_DIV |i_exe == ALU_REM |
+                          i_exe == ALU_MUL | i_exe == ALU_MULH | i_exe == ALU_MULHSU;
 
-assign mdreq.valid      = valid && ((is_new && state == IDLE && is_muldiv) || state == WAIT_READY);
+assign mdreq.valid      = valid & ((is_new & state == IDLE & is_muldiv) | state == WAIT_READY);
 assign mdreq.sel        = i_exe;
 assign mdreq.is_signed  = ctrl.sign_sel == OP_SIGNED;
 assign mdreq.op1        = op1_data;
 assign mdreq.op2        = op2_data;
 
-assign is_stall         = valid && 
+assign is_stall         = valid &
                             (
-                                (is_new && state == IDLE && is_muldiv) ||   // 計算前
-                                state == WAIT_READY ||                      // 待ち
-                                (state == WAIT_CALC && !mdresp.valid)       // 計算中
+                                is_new & state == IDLE & is_muldiv |    // 計算前
+                                state == WAIT_READY |                   // 待ち
+                                state == WAIT_CALC & !mdresp.valid      // 計算中
                             );
 
 assign next_alu_out     = state == WAIT_CALC ? mdresp.result : alu_out;
-assign branch_taken     = valid && 
-                          (ctrl.jmp_pc_flg || ctrl.jmp_reg_flg || alu_branch_take);
+assign branch_taken     = valid & (ctrl.jmp_pc_flg | ctrl.jmp_reg_flg | alu_branch_take);
 assign branch_target    =   (
                             ctrl.jmp_pc_flg ? pc + imm_j :
                             ctrl.jmp_reg_flg ? op1_data + op2_data :
@@ -86,9 +85,9 @@ assign branch_target    =   (
                             ) & (~1);
 
 always @(posedge clk) begin
-    if (flush || !valid) begin
+    if (flush | !valid) begin
         // TODO kill muldiv
-        state <= IDLE; 
+        state <= IDLE;
     end else begin
         case (state)
             IDLE: if (is_muldiv) begin
@@ -104,7 +103,7 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef PRINT_DEBUGINFO 
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,exestage.valid,b,%b", valid);
     $display("data,exestage.inst_id,h,%b", valid ? inst_id : IID_X);
@@ -117,7 +116,7 @@ always @(posedge clk) begin
         $display("data,exestage.op2_data,h,%b", op2_data);
         $display("data,exestage.is_stall,b,%b", is_stall);
         $display("data,exestage.is_muldiv,b,%b", is_muldiv);
-        $display("data,exestage.jmp_flg,d,%b", ctrl.jmp_reg_flg || ctrl.jmp_pc_flg);
+        $display("data,exestage.jmp_flg,d,%b", ctrl.jmp_reg_flg | ctrl.jmp_pc_flg);
         $display("data,exestage.branch_taken,b,%b", branch_taken);
         $display("data,exestage.branch_target,h,%b", branch_target);
     end

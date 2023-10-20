@@ -1,5 +1,7 @@
 `default_nettype none
 
+// TODO ステージの接続にinterfaceを多用したい
+
 module Core #(
     parameter FMAX_MHz = 27
 )(
@@ -26,10 +28,13 @@ module Core #(
 `include "csrparam.svh"
 `include "basicparams.svh"
 
+function is_ialigned( input Addr addr );
+  is_ialigned = addr[1:0] == 2'b00;
+endfunction
+
 // id reg
 logic       id_valid    = 0;
-// TODO メモリエラーをnopかつvalidとして流す
-TrapInfo    id_trap     = 0; // TODO assign
+TrapInfo    id_trap     = 0;
 Addr        id_pc       = ADDR_X;
 Inst        id_inst     = INST_NOP;
 IId         id_inst_id;
@@ -45,10 +50,10 @@ wire UIntX  id_imm_u;
 wire UIntX  id_imm_z;
 
 // ds reg
-logic       ds_is_new = 0;
-logic       ds_valid = 0;
+logic       ds_is_new   = 0;
+logic       ds_valid    = 0;
 Addr        ds_pc;
-TrapInfo    ds_trap = 0;
+TrapInfo    ds_trap     = 0;
 Inst        ds_inst;
 IId         ds_inst_id;
 Ctrl        ds_ctrl;
@@ -66,9 +71,9 @@ wire UIntX  ds_op2_data;
 wire UIntX  ds_rs2_data;
 
 // exe
-logic       exe_is_new = 0;
-logic       exe_valid = 0;
-TrapInfo    exe_trap = 0;
+logic       exe_is_new  = 0;
+logic       exe_valid   = 0;
+TrapInfo    exe_trap    = 0;
 Addr        exe_pc;
 Inst        exe_inst;
 IId         exe_inst_id;
@@ -87,9 +92,9 @@ wire        exe_calc_stall;
 wire UIntX  exe_alu_out;
 
 // mem reg
-logic       mem_is_new = 0;
-logic       mem_valid = 0;
-TrapInfo    mem_trap = 0;
+logic       mem_is_new  = 0;
+logic       mem_valid   = 0;
+TrapInfo    mem_trap    = 0;
 Addr        mem_pc;
 Inst        mem_inst;
 IId         mem_inst_id;
@@ -105,9 +110,9 @@ wire UIntX      mem_mem_rdata;
 wire TrapInfo   mem_next_trap;
 
 // csr reg
-logic       csr_is_new = 0;
-logic       csr_valid = 0;
-TrapInfo    csr_trap = 0;
+logic       csr_is_new  = 0;
+logic       csr_valid   = 0;
+TrapInfo    csr_trap    = 0;
 Addr        csr_pc;
 Inst        csr_inst;
 IId         csr_inst_id;
@@ -145,22 +150,22 @@ FwCtrl  wb_fw;
 assign gp = wb_regfile[3];
 
 // id/dsがvalidではないか、branchに失敗したクロックは保持
-wire exe_branch_stall = (!ds_valid && !id_valid && (exe_is_new || !exe_br_checked)) || branch_fail;
+wire exe_branch_stall = (!ds_valid & !id_valid & (exe_is_new | !exe_br_checked)) | branch_fail;
 
 // stall
 // 各ステージに新しく値を流してはいけないかどうか
 wire csr_stall  = csr_cmd_stall;
-wire mem_stall  = mem_memory_stall || (mem_valid && csr_stall);
+wire mem_stall  = mem_memory_stall | (mem_valid & csr_stall);
 
-wire exe_stall  =   exe_calc_stall ||
-                    (exe_valid && mem_stall) ||
+wire exe_stall  =   exe_calc_stall |
+                    (exe_valid & mem_stall) |
                     exe_branch_stall;// 分岐予測の判定用
-wire ds_stall   = ds_datahazard || (ds_valid && exe_stall);
-wire id_stall   = id_valid && ds_stall;
+wire ds_stall   = ds_datahazard | (ds_valid & exe_stall);
+wire id_stall   = id_valid & ds_stall;
 wire if_stall   = id_stall;
 
 // IF Stage
-assign iresp.ready  = !exited && !if_stall;
+assign iresp.ready  = !exited & !if_stall;
 
 // 最後のクロックでの分岐ハザード状態
 // このレジスタを介してireqすることで、EXE, CSRステージとinstqueueが直接つながらないようにする。
@@ -182,18 +187,12 @@ end
 // hazardが起きると1になり、命令がidに供給されると0に戻る
 logic exe_br_checked = 0;
 
-wire branch_fail            =   exe_valid && (exe_is_new || !exe_br_checked) &&
-                                ( ds_valid ? (exe_branch_taken && ds_pc != exe_branch_target) || (!exe_branch_taken && ds_pc != exe_pc + 4)
-                                : id_valid ? (exe_branch_taken && id_pc != exe_branch_target) || (!exe_branch_taken && id_pc != exe_pc + 4) : 1'b0 );
-wire branch_hazard_now      =   csr_is_trap || branch_fail;
+wire branch_fail            =   exe_valid & (exe_is_new | !exe_br_checked) &
+                                ( ds_valid ? (exe_branch_taken & ds_pc != exe_branch_target) | (!exe_branch_taken & ds_pc != exe_pc + 4)
+                                : id_valid ? (exe_branch_taken & id_pc != exe_branch_target) | (!exe_branch_taken & id_pc != exe_pc + 4) : 1'b0 );
+wire branch_hazard_now      =   csr_is_trap | branch_fail;
 wire Addr  branch_target    =   csr_is_trap ? csr_trap_vector :
                                 exe_branch_taken ? exe_branch_target : exe_pc + 4;
-
-function is_ialigned(
-    input Addr addr
-);
-  is_ialigned = addr[1:0] == 2'b00;
-endfunction
 
 always @(posedge clk) begin
 
@@ -202,7 +201,7 @@ always @(posedge clk) begin
     end
 
     // if -> id
-    if (branch_hazard_now || branch_hazard_last_clock) begin
+    if (branch_hazard_now | branch_hazard_last_clock) begin
         id_valid    <= 0;
         id_trap     <= 0;
         `ifdef PRINT_DEBUGINFO
@@ -210,8 +209,10 @@ always @(posedge clk) begin
         `endif
     end else if (!id_stall) begin
         if (iresp.valid) begin
-            id_valid        <= 1; // TODO この1はiresp.validにできるが....
-            id_trap.valid   <= 0; // TODO if trap
+            id_valid        <= 1;
+            id_trap.valid   <= iresp.error;
+            id_trap.cause   <= iresp.errty == FE_ACCESS_FAULT ?
+                                CAUSE_INSTRUCTION_ACCESS_FAULT : CAUSE_INSTRUCTION_PAGE_FAULT;
             id_pc           <= iresp.addr;
             id_inst         <= iresp.inst;
             id_inst_id      <= iresp.inst_id;
@@ -247,17 +248,17 @@ always @(posedge clk) begin
         ds_imm_u        <= id_imm_u;
         ds_imm_z        <= id_imm_z;
         // trap
-        ds_trap.valid   <= id_valid &&
-                            (   id_trap.valid ||
-                                id_is_illegal ||
-                                id_ctrl.csr_cmd == CSR_ECALL ||
+        ds_trap.valid   <= id_valid &
+                            (   id_trap.valid |
+                                id_is_illegal |
+                                id_ctrl.csr_cmd == CSR_ECALL |
                                 id_ctrl.csr_cmd == CSR_EBREAK);
-        ds_trap.cause   <= id_trap.valid ? id_trap.cause : 
+        ds_trap.cause   <= id_trap.valid ? id_trap.cause :
                             id_is_illegal ? CAUSE_ILLEGAL_INSTRUCTION :
                             id_ctrl.csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE :
                             id_ctrl.csr_cmd == CSR_EBREAK ? CAUSE_BREAKPOINT : 0;
         // forwarding
-        ds_fw.valid     <= id_valid && id_ctrl.rf_wen;
+        ds_fw.valid     <= id_valid & id_ctrl.rf_wen;
         ds_fw.fwdable   <= id_ctrl.wb_sel == WB_PC;
         ds_fw.addr      <= id_ctrl.wb_addr;
         ds_fw.wdata     <= id_pc + 4;
@@ -296,7 +297,7 @@ always @(posedge clk) begin
             // trap
             exe_trap        <= ds_valid ? ds_trap : 0;
             // forwarding
-            exe_fw.valid    <= ds_valid && ds_fw.valid;
+            exe_fw.valid    <= ds_valid & ds_fw.valid;
             exe_fw.fwdable  <= ds_fw.fwdable;
             exe_fw.addr     <= ds_fw.addr;
             exe_fw.wdata    <= ds_fw.wdata;
@@ -315,7 +316,7 @@ always @(posedge clk) begin
     end else if (mem_stall) begin
         mem_is_new  <= 0;
     end else begin
-        if (exe_calc_stall || exe_branch_stall) begin
+        if (exe_calc_stall | exe_branch_stall) begin
             mem_valid   <= 0;
             mem_is_new  <= 1;
             mem_trap    <= 0;
@@ -332,14 +333,14 @@ always @(posedge clk) begin
             mem_op1_data    <= exe_op1_data;
             mem_rs2_data    <= exe_rs2_data;
             // trap
-            mem_trap.valid  <= exe_valid && (
-                                exe_trap.valid ||
-                                (exe_branch_taken && !is_ialigned(exe_branch_target)));
+            mem_trap.valid  <= exe_valid & (
+                                exe_trap.valid |
+                                (exe_branch_taken & !is_ialigned(exe_branch_target)));
             mem_trap.cause  <= exe_trap.valid ? exe_trap.cause :
-                                (exe_branch_taken && !is_ialigned(exe_branch_target)) ? CAUSE_INSTRUCTION_ADDRESS_MISALIGNED : 0;
+                                (exe_branch_taken & !is_ialigned(exe_branch_target)) ? CAUSE_INSTRUCTION_ADDRESS_MISALIGNED : 0;
             // forwarding
-            mem_fw.valid    <= exe_valid && exe_fw.valid;
-            mem_fw.fwdable  <= exe_fw.fwdable || exe_ctrl.wb_sel == WB_ALU;
+            mem_fw.valid    <= exe_valid & exe_fw.valid;
+            mem_fw.fwdable  <= exe_fw.fwdable | exe_ctrl.wb_sel == WB_ALU;
             mem_fw.addr     <= exe_fw.addr;
             mem_fw.wdata    <= exe_fw.fwdable ? exe_fw.wdata : exe_alu_out;
         end
@@ -373,8 +374,8 @@ always @(posedge clk) begin
             // trap
             csr_trap        <= mem_valid ? mem_next_trap : 0;
             // forwarding
-            csr_fw.valid    <= mem_valid && mem_fw.valid;
-            csr_fw.fwdable  <= mem_fw.fwdable || mem_ctrl.wb_sel == WB_MEM;
+            csr_fw.valid    <= mem_valid & mem_fw.valid;
+            csr_fw.fwdable  <= mem_fw.fwdable | mem_ctrl.wb_sel == WB_MEM;
             csr_fw.addr     <= mem_fw.addr;
             csr_fw.wdata    <= mem_fw.fwdable ? mem_fw.wdata : mem_mem_rdata;
         end
@@ -389,7 +390,7 @@ always @(posedge clk) begin
         wb_pc           <= csr_pc;
         wb_inst         <= csr_inst;
         wb_inst_id      <= csr_inst_id;
-        wb_rf_wen       <= !csr_trap.valid && csr_ctrl.rf_wen; // trapの時は書き込まない
+        wb_rf_wen       <= !csr_trap.valid & csr_ctrl.rf_wen; // trapの時は書き込まない
         wb_reg_addr     <= csr_ctrl.wb_addr;
         wb_wdata        <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata; // fwと等しい
         // forwarding
@@ -472,10 +473,10 @@ MemoryStage #() memorystage
 (
     .clk(clk),
     .valid(
-        mem_valid && 
-        !csr_trap.valid &&
-        csr_ctrl.csr_cmd != CSR_SRET &&
-        csr_ctrl.csr_cmd != CSR_MRET &&
+        mem_valid &
+        !csr_trap.valid &
+        csr_ctrl.csr_cmd != CSR_SRET &
+        csr_ctrl.csr_cmd != CSR_MRET &
         !csr_ctrl.fence_i),
     .is_new(mem_is_new),
     .trapinfo(mem_trap),
@@ -494,14 +495,14 @@ MemoryStage #() memorystage
 
     .is_stall(mem_memory_stall),
     .exit(exit)
-    
+
     `ifdef PRINT_DEBUGINFO
         ,
         .invalid_by_trap(
-            mem_valid && (
-            csr_trap.valid ||
-            csr_ctrl.csr_cmd == CSR_SRET ||
-            csr_ctrl.csr_cmd == CSR_MRET || 
+            mem_valid & (
+            csr_trap.valid |
+            csr_ctrl.csr_cmd == CSR_SRET |
+            csr_ctrl.csr_cmd == CSR_MRET |
             csr_ctrl.fence_i)
         )
     `endif
@@ -524,7 +525,7 @@ CSRStage #(
     .op1_data(csr_op1_data),
 
     .next_csr_rdata(csr_csr_rdata),
-    
+
     .is_stall(csr_cmd_stall),
     .csr_is_trap(csr_is_trap),
     .csr_keep_trap(csr_keep_trap),
@@ -548,24 +549,25 @@ WriteBackStage #() wbstage(
     .rf_wen(wb_rf_wen),
     .reg_addr(wb_reg_addr),
     .wdata(wb_wdata),
-    
+
     .regfile(wb_regfile)
 );
 
 //////////////////////////////// 分岐情報を渡す ///////////////////////////////
 // invalidで初期化
+// TODO iidを使わなくする
 initial begin
     brinfo.valid = 0;
 end
 IId send_brinfo_exe_last = IID_RANDOM;
 always @(posedge clk) begin
     if (exe_valid) send_brinfo_exe_last <= exe_inst_id;
-    brinfo.valid    <=  exe_valid &&
-                        exe_inst_id != send_brinfo_exe_last &&
-                        (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg);
+    brinfo.valid    <=  exe_valid &
+                        exe_inst_id != send_brinfo_exe_last &
+                        (exe_ctrl.br_exe != BR_X | exe_ctrl.jmp_reg_flg);
     brinfo.pc       <= exe_pc;
     brinfo.is_br    <= exe_ctrl.br_exe != BR_X;
-    brinfo.is_jmp   <= exe_ctrl.jmp_pc_flg || exe_ctrl.jmp_reg_flg;
+    brinfo.is_jmp   <= exe_ctrl.jmp_pc_flg | exe_ctrl.jmp_reg_flg;
     brinfo.taken    <= exe_branch_taken;
     brinfo.target   <= exe_branch_target;
 end
@@ -573,21 +575,21 @@ end
 
 //////////////////////////////// 予測の成功率を表示する ///////////////////////
 `ifdef PRINT_BRANCH_ACCURACY
-int all_br_count = 0;
-int all_inst_count = 0;
-int fail_count = 0;
-localparam COUNT = 1_000_000;
+int all_br_count    = 0;
+int all_inst_count  = 0;
+int fail_count      = 0;
+localparam COUNT    = 1_000_000;
 always @(posedge clk) begin
-    if (exe_valid && exe_inst_id != send_brinfo_exe_last) begin
+    if (exe_valid & exe_inst_id != send_brinfo_exe_last) begin
         if (all_inst_count >= COUNT) begin
             $display("MPKI : %d , %d%%", fail_count / (COUNT / 1000), (all_br_count - fail_count) * 100 / all_br_count);
-            fail_count = 0;
-            all_inst_count = 0;
-            all_br_count = 0;
+            fail_count      = 0;
+            all_inst_count  = 0;
+            all_br_count    = 0;
         end else begin
-            if (exe_ctrl.br_exe != BR_X || exe_ctrl.jmp_reg_flg) begin
-                fail_count += branch_fail ? 1 : 0;
-                all_br_count += 1;
+            if (exe_ctrl.br_exe != BR_X | exe_ctrl.jmp_reg_flg) begin
+                fail_count      += branch_fail ? 1 : 0;
+                all_br_count    += 1;
             end
             all_inst_count = all_inst_count + 1;
         end

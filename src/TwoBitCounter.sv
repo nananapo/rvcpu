@@ -43,10 +43,10 @@ always @(posedge clk) begin
             counters[upc2i]  <= DEFAULT_COUNTER_VALUE;
         end else begin
             // 端ではなければ動かす
-            if (!(counters[upc2i] == 2'b11 && saved_brinfo.taken) &&
-                !(counters[upc2i] == 2'b00 && !saved_brinfo.taken)) begin
-                counters[upc2i] = counters[upc2i] + (saved_brinfo.taken ? 1 : -1); 
-            end 
+            if (!(counters[upc2i] == 2'b11 & saved_brinfo.taken) &
+                !(counters[upc2i] == 2'b00 & !saved_brinfo.taken)) begin
+                counters[upc2i] = counters[upc2i] + (saved_brinfo.taken ? 1 : -1);
+            end
         end
     end
 end

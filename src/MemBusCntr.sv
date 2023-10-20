@@ -22,15 +22,6 @@ typedef enum logic [2:0] {
     D_VALID
 } statetype;
 
-statetype state = I_CHECK;
-
-assign ireq_in.ready    = state == I_CHECK;
-assign dreq_in.ready    = state == D_CHECK;
-
-assign memreq_in.valid  =   (state == I_READY || state == D_READY) ||
-                            (state == I_CHECK && ireq_in.valid) ||
-                            (state == D_CHECK && dreq_in.valid);
-
 function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (
     input statetype state,
     input MemBusReq ireq_in,
@@ -46,15 +37,25 @@ function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (
         default: memcmd = {ADDR_X, 1'b0, XBIT_32};
     endcase
 endfunction
+
+statetype state = I_CHECK;
+
+assign ireq_in.ready    = state == I_CHECK;
+assign dreq_in.ready    = state == D_CHECK;
+
+assign memreq_in.valid  =   (state == I_READY | state == D_READY) |
+                            (state == I_CHECK & ireq_in.valid) |
+                            (state == D_CHECK & dreq_in.valid);
+
 assign {
     memreq_in.addr, memreq_in.wen, memreq_in.wdata
 } = memcmd(state, ireq_in, dreq_in, s_ireq, s_dreq);
 
-assign iresp_in.valid = state == I_VALID && memresp_in.valid;
+assign iresp_in.valid = state == I_VALID & memresp_in.valid;
 assign iresp_in.addr  = s_ireq.addr;
 assign iresp_in.rdata = memresp_in.rdata;
 
-assign dresp_in.valid = state == D_VALID && memresp_in.valid;
+assign dresp_in.valid = state == D_VALID & memresp_in.valid;
 assign dresp_in.addr  = s_dreq.addr;
 assign dresp_in.rdata = memresp_in.rdata;
 
@@ -76,9 +77,9 @@ always @(posedge clk) begin
         end
         D_CHECK: begin
             b_counter   <= 0;
-            s_dreq  <= dreq_in;
-            state   <=  !dreq_in.valid ? I_CHECK :
-                        !memreq_in.ready ? D_READY : D_VALID;
+            s_dreq      <= dreq_in;
+            state       <=  !dreq_in.valid ? I_CHECK :
+                            !memreq_in.ready ? D_READY : D_VALID;
         end
         D_READY: if (memreq_in.ready)  state <= D_VALID;
         D_VALID: if (memresp_in.valid) state <= I_CHECK;

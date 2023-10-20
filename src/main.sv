@@ -9,7 +9,7 @@ module main #(
     input  wire clk27MHz,
     input  wire uart_rx,
     output wire uart_tx,
-    
+
     output logic [5:0]  led
 `ifdef DEBUG
     ,
@@ -30,7 +30,7 @@ always @(posedge clk_in) begin
     if (exit) begin
         exited <= 1;
     end
-    led[5:0] = ~gp[5:0];
+    led[5:0] <= ~gp[5:0];
 end
 
 // Counter and Timers
@@ -134,16 +134,19 @@ MemICache #() memicache (
 );
 
 PageTableWalker #(
-    .LOG_ENABLE(0)
+    .LOG_ENABLE(0),
+    .EXECUTE_MODE(1)
 ) iptw (
     .clk(clk_in),
+    .reset(ireq_core_iq.valid),
     .preq(icreq_iq_ptw),
     .presp(icresp_iq_ptw),
     .memreq(icreq_ptw_cache),
     .memresp(icresp_ptw_cache),
-    .csr_mode(cache_cntr.mode),
-    .csr_satp(cache_cntr.satp),
-    .kill(ireq_core_iq.valid)
+    .mode(cache_cntr.i_mode),
+    .satp(cache_cntr.satp),
+    .mxr(cache_cntr.mxr),
+    .sum(cache_cntr.sum)
 );
 
 InstQueue #() instqueue (
@@ -167,20 +170,24 @@ MemDCache #() memdcache (
 );
 
 PageTableWalker #(
-    .LOG_ENABLE(0)
+    .LOG_ENABLE(0),
+    .EXECUTE_MODE(0)
 ) dptw (
     .clk(clk_in),
+    .reset(1'b0),
     .preq(dcreq_acntr_ptw),
     .presp(dcresp_acntr_ptw),
     .memreq(dcreq_ptw_cache),
     .memresp(dcresp_ptw_cache),
-    .csr_mode(cache_cntr.mode),
-    .csr_satp(cache_cntr.satp),
-    .kill(1'b0)
+    .mode(cache_cntr.d_mode),
+    .satp(cache_cntr.satp),
+    .mxr(cache_cntr.mxr),
+    .sum(cache_cntr.sum)
 );
 
 DAccessCntr #() daccesscntr (
     .clk(clk_in),
+    .reset(1'b0),
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
     .memreq(dcreq_acntr_ptw),
@@ -191,6 +198,7 @@ MMIO_Cntr #(
     .FMAX_MHz(FMAX_MHz)
 ) memmapcntr (
     .clk(clk_in),
+    .reset(1'b0),
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
     .mtime(reg_time),
@@ -206,7 +214,7 @@ Core #(
     .FMAX_MHz(FMAX_MHz)
 ) core (
     .clk(clk_in),
-    
+
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
     .reg_mtime(reg_time),

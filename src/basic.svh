@@ -126,30 +126,31 @@ typedef enum logic [3:0] {
 
 typedef struct packed 
 {
-    AluSel      i_exe;
-    BrSel       br_exe;
-    SignSel     sign_sel;
-    Op1Sel      op1_sel;
-    Op2Sel      op2_sel;
-    MemSel      mem_wen;
-    MemSize     mem_size;
-    logic       rf_wen;
-    WbSel       wb_sel;
-    logic [4:0] wb_addr;
-    CsrCmd      csr_cmd;
-    logic       jmp_pc_flg;
-    logic       jmp_reg_flg;
-    logic       svinval;
-    logic       fence_i;
-    AextSel     a_sel;
+    AluSel  i_exe;
+    BrSel   br_exe;
+    SignSel sign_sel;
+    Op1Sel  op1_sel;
+    Op2Sel  op2_sel;
+    MemSel  mem_wen;
+    MemSize mem_size;
+    logic   rf_wen;
+    WbSel   wb_sel;
+    UInt5   wb_addr;
+    CsrCmd  csr_cmd;
+    logic   jmp_pc_flg;
+    logic   jmp_reg_flg;
+    logic   svinval;
+    logic   fence_i;
+    logic   wfi;
+    AextSel a_sel;
 } Ctrl;
 
 typedef struct packed
 {
-    logic       valid;
-    logic       fwdable;
-    logic [4:0] addr;
-    UIntX       wdata;
+    logic   valid;
+    logic   fwdable;
+    UInt5   addr;
+    UIntX   wdata;
 } FwCtrl;
 
 typedef struct packed {

@@ -51,7 +51,7 @@ always @(posedge clk) begin
                 txState     <= TX_STATE_WRITE;
                 txBitNumber <= 0;
                 txCounter   <= 0;
-            end else 
+            end else
                 txCounter   <= txCounter + 1;
         end
         TX_STATE_WRITE: begin
@@ -64,7 +64,7 @@ always @(posedge clk) begin
                     txBitNumber <= txBitNumber + 1;
                 end
                 txCounter <= 0;
-            end else 
+            end else
                 txCounter <= txCounter + 1;
         end
         TX_STATE_STOP_BIT: begin
@@ -72,7 +72,7 @@ always @(posedge clk) begin
             if ((txCounter + 1) == DELAY_FRAMES) begin
                 txState     <= TX_STATE_DEBOUNCE;
                 txCounter   <= 0;
-            end else 
+            end else
                 txCounter <= txCounter + 1;
         end
         TX_STATE_DEBOUNCE: begin

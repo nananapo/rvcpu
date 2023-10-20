@@ -116,6 +116,7 @@ Disassembly of section .text.init:
  190:	34129073          	csrw	mepc,t0
  194:	f1402573          	csrr	a0,mhartid
  198:	30200073          	mret
+
  19c:	80000537          	lui	a0,0x80000
  1a0:	00002597          	auipc	a1,0x2
  1a4:	e6058593          	add	a1,a1,-416 # 2000 <begin_signature>
@@ -123,6 +124,7 @@ Disassembly of section .text.init:
  1ac:	00a5e5b3          	or	a1,a1,a0
  1b0:	18059073          	csrw	satp,a1
  1b4:	12000073          	sfence.vma
+ # satp <= 80000002
  1b8:	000215b7          	lui	a1,0x21
  1bc:	80058593          	add	a1,a1,-2048 # 20800 <_end+0x1e7f0>
  1c0:	3005a073          	csrs	mstatus,a1
@@ -130,6 +132,7 @@ Disassembly of section .text.init:
  1c8:	00100393          	li	t2,1
  1cc:	00002517          	auipc	a0,0x2
  1d0:	e2752e23          	sw	t2,-452(a0) # 2008 <dummy>
+ # t2 = 1, 2008 <= 1
  1d4:	00300193          	li	gp,3
  1d8:	000415b7          	lui	a1,0x41
  1dc:	80058593          	add	a1,a1,-2048 # 40800 <_end+0x3e7f0>

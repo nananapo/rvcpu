@@ -27,36 +27,12 @@ module DataSelectStage
 
 `include "basicparams.svh"
 
-wire UInt5 rs1_addr = inst[19:15];
-wire UInt5 rs2_addr = inst[24:20];
-
-/*  datahazard */
-wire is1_zero    = rs1_addr == 0;
-wire is2_zero    = rs2_addr == 0;
-wire hazard_exe1 = fw_exe.valid && fw_exe.addr == rs1_addr && !is1_zero;
-wire hazard_exe2 = fw_exe.valid && fw_exe.addr == rs2_addr && !is2_zero;
-wire hazard_mem1 = fw_mem.valid && fw_mem.addr == rs1_addr && !is1_zero;
-wire hazard_mem2 = fw_mem.valid && fw_mem.addr == rs2_addr && !is2_zero;
-wire hazard_csr1 = fw_csr.valid && fw_csr.addr == rs1_addr && !is1_zero;
-wire hazard_csr2 = fw_csr.valid && fw_csr.addr == rs2_addr && !is2_zero;
-wire hazard_wbk1 = fw_wbk.valid && fw_wbk.addr == rs1_addr && !is1_zero;
-wire hazard_wbk2 = fw_wbk.valid && fw_wbk.addr == rs2_addr && !is2_zero;
-
-assign is_datahazard = valid && ((  hazard_exe1 ? !fw_exe.fwdable :
-                                    hazard_mem1 ? !fw_mem.fwdable :
-                                    hazard_csr1 ? !fw_csr.fwdable :
-                                    hazard_wbk1 ? !fw_wbk.fwdable : 0) ||
-                                (   hazard_exe2 ? !fw_exe.fwdable :
-                                    hazard_mem2 ? !fw_mem.fwdable :
-                                    hazard_csr2 ? !fw_csr.fwdable :
-                                    hazard_wbk2 ? !fw_wbk.fwdable : 0));
-
 function [$bits(UIntX)-1:0] gen_op1data(
     input Op1Sel   op1_sel,
     input Addr     pc,
     input UIntX    imm_z
 );
-case(op1_sel) 
+case(op1_sel)
     OP1_PC  : gen_op1data = pc;
     OP1_IMZ : gen_op1data = imm_z;
     default : gen_op1data = 0;
@@ -71,7 +47,7 @@ function [$bits(UIntX)-1:0] gen_op2data(
     input UIntX     imm_j,
     input UIntX     imm_u
 );
-case(op2_sel) 
+case(op2_sel)
     OP2_IMI : gen_op2data = imm_i;
     OP2_IMS : gen_op2data = imm_s;
     OP2_IMJ : gen_op2data = imm_j;
@@ -80,25 +56,49 @@ case(op2_sel)
 endcase
 endfunction
 
+wire UInt5 rs1_addr = inst[19:15];
+wire UInt5 rs2_addr = inst[24:20];
+
+/*  datahazard */
+wire is1_zero    = rs1_addr == 0;
+wire is2_zero    = rs2_addr == 0;
+wire hazard_exe1 = fw_exe.valid & fw_exe.addr == rs1_addr & !is1_zero;
+wire hazard_exe2 = fw_exe.valid & fw_exe.addr == rs2_addr & !is2_zero;
+wire hazard_mem1 = fw_mem.valid & fw_mem.addr == rs1_addr & !is1_zero;
+wire hazard_mem2 = fw_mem.valid & fw_mem.addr == rs2_addr & !is2_zero;
+wire hazard_csr1 = fw_csr.valid & fw_csr.addr == rs1_addr & !is1_zero;
+wire hazard_csr2 = fw_csr.valid & fw_csr.addr == rs2_addr & !is2_zero;
+wire hazard_wbk1 = fw_wbk.valid & fw_wbk.addr == rs1_addr & !is1_zero;
+wire hazard_wbk2 = fw_wbk.valid & fw_wbk.addr == rs2_addr & !is2_zero;
+
+assign is_datahazard = valid & ((  hazard_exe1 ? !fw_exe.fwdable :
+                                    hazard_mem1 ? !fw_mem.fwdable :
+                                    hazard_csr1 ? !fw_csr.fwdable :
+                                    hazard_wbk1 ? !fw_wbk.fwdable : 0) |
+                                (   hazard_exe2 ? !fw_exe.fwdable :
+                                    hazard_mem2 ? !fw_mem.fwdable :
+                                    hazard_csr2 ? !fw_csr.fwdable :
+                                    hazard_wbk2 ? !fw_wbk.fwdable : 0));
+
 // zero判定はWriteback Stage
 wire UIntX rs1_data =   hazard_exe1 ? fw_exe.wdata :
-                        hazard_mem1 ? fw_mem.wdata : 
-                        hazard_csr1 ? fw_csr.wdata : 
+                        hazard_mem1 ? fw_mem.wdata :
+                        hazard_csr1 ? fw_csr.wdata :
                         hazard_wbk1 ? fw_wbk.wdata : regfile[rs1_addr];
 
 wire UIntX rs2_data =   hazard_exe2 ? fw_exe.wdata :
-                        hazard_mem2 ? fw_mem.wdata : 
-                        hazard_csr2 ? fw_csr.wdata : 
+                        hazard_mem2 ? fw_mem.wdata :
+                        hazard_csr2 ? fw_csr.wdata :
                         hazard_wbk2 ? fw_wbk.wdata : regfile[rs2_addr];
 
 // op1_data, op2_data, rs2_dataはここで設定する
-assign next_op1_data    = ctrl.op1_sel == OP1_RS1 ? rs1_data : 
+assign next_op1_data    = ctrl.op1_sel == OP1_RS1 ? rs1_data :
                             gen_op1data(ctrl.op1_sel, pc, imm_z);
 assign next_op2_data    = ctrl.op2_sel == OP2_RS2W ? rs2_data :
                             gen_op2data(ctrl.op2_sel, rs2_addr, imm_i, imm_s, imm_j, imm_u);
 assign next_rs2_data    = rs2_data;
 
-`ifdef PRINT_DEBUGINFO 
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) begin
     $display("data,datastage.valid,b,%b", valid);
     $display("data,datastage.inst_id,h,%b", valid ? inst_id : IID_X);
