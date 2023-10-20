@@ -44,7 +44,9 @@ assign iresp.errty      = buf_rdata.errty;
 
 SyncQueue #(
     .DATA_SIZE($bits(BufType)),
-    .WIDTH($clog2(QUEUE_SIZE))
+    .WIDTH($clog2(QUEUE_SIZE)),
+    .WREADY_NEXT(1),
+    .LOG(0)
 ) resqueue (
     .clk(clk),
     .kill(buf_kill),
