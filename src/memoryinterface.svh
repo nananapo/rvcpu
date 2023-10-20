@@ -76,7 +76,8 @@ typedef struct packed {
 } CacheResp;
 
 typedef struct packed {
-    modetype    mode;
+    modetype    i_mode;
+    modetype    d_mode;
     Addr        satp;
     logic       do_writeback;
     logic       is_writebacked_all;

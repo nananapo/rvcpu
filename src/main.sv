@@ -141,7 +141,7 @@ PageTableWalker #(
     .presp(icresp_iq_ptw),
     .memreq(icreq_ptw_cache),
     .memresp(icresp_ptw_cache),
-    .csr_mode(cache_cntr.mode),
+    .csr_mode(cache_cntr.i_mode),
     .csr_satp(cache_cntr.satp),
     .kill(ireq_core_iq.valid)
 );
@@ -174,7 +174,7 @@ PageTableWalker #(
     .presp(dcresp_acntr_ptw),
     .memreq(dcreq_ptw_cache),
     .memresp(dcresp_ptw_cache),
-    .csr_mode(cache_cntr.mode),
+    .csr_mode(cache_cntr.d_mode),
     .csr_satp(cache_cntr.satp),
     .kill(1'b0)
 );

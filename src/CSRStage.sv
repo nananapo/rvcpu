@@ -187,9 +187,6 @@ endfunction
 modetype    mode = M_MODE;
 Addr        satp = ADDR_ZERO;
 
-assign cache_cntr.mode  = mode;
-assign cache_cntr.satp  = satp;
-
 initial begin
     // 起動時はM-mode  (EEI)
     mode = M_MODE;
@@ -222,12 +219,19 @@ logic mstatus_tvm   = 0;
 wire mstatus_mxr = 0; // 3.1.6.3
 wire mstatus_sum = 0; // 3.1.6.3
 
-wire mstatus_mprv= 0; // 3.1.6.3 サポートしない
+// 3.1.6.3 Modify PRiVilege
+// 0のとき、普通にふるまう
+// 1のとき、load/storeはMPPがmodeになっているかのようにアドレストランスレーション, プロテクションを行う。命令読み込みは影響を受けない
+logic mstatus_mprv      = 0;
 wire [1:0] mstatus_xs = 0; // 3.1.6.6 サポートしない
 wire [1:0] mstatus_fs = 0; // 3.1.6.6 サポートしない
-logic [1:0] mstatus_mpp = M_MODE; // S-modeでtrapしても書き込まれない // 初期値をM-modeにする
+// M-modeにトラップするときに、現在のmodeが書き込まれる。
+// EEI : 初期値はM-mode
+logic [1:0] mstatus_mpp = M_MODE;
 wire [1:0] mstatus_vs = 0; // 3.1.6.6 サポートしない
-logic mstatus_spp  = 0; // S-modeでtrapしたとき、アクティブなモードが書き込まれる
+// S-modeにトラップするときに、現在のmodeが書き込まれる。
+// EEI : 初期値はU-mode
+logic mstatus_spp       = U_MODE[0];
 logic mstatus_mpie = 0; // S-modeでtrapしても書き込まれない
 wire mstatus_ube = 0; // 3.1.6.4 サポートしない
 logic mstatus_spie = 0; // S-modeでtrapした時、sieが書き込まれる
@@ -478,6 +482,9 @@ assign is_stall     = valid & (
 assign csr_is_trap  = valid & !is_new & (last_raise_trap | undone_fence_i | fence_clocked);
 assign csr_keep_trap= trap_nochange;
 
+assign cache_cntr.i_mode            = mode;
+assign cache_cntr.d_mode            = mode == M_MODE & mstatus_mprv ? mstatus_mpp : mode;
+assign cache_cntr.satp              = satp;
 assign cache_cntr.do_writeback      = is_new & ctrl.fence_i;
 assign cache_cntr.invalidate_icache = is_new & ctrl.fence_i;
 
@@ -539,6 +546,7 @@ always @(posedge clk) begin
                     csr_no_wb       <= 1;
                     mstatus_mie     <= mstatus_mpie;
                     mode            <= modetype'(mstatus_mpp);
+                    mstatus_mprv    <= 0;
                     mstatus_mpie    <= 1;
                     mstatus_mpp     <= U_MODE;
                     trap_vector     <= mepc;
@@ -547,6 +555,7 @@ always @(posedge clk) begin
                     csr_no_wb       <= 1;
                     mstatus_sie     <= mstatus_spie;
                     mode            <= modetype'({1'b0, mstatus_spp});
+                    mstatus_mprv    <= 0;
                     mstatus_spie    <= 1;
                     mstatus_spp     <= U_MODE[0];
                     trap_vector     <= sepc;
@@ -568,6 +577,7 @@ always @(posedge clk) begin
                     mstatus_tsr     <= wdata[22];
                     mstatus_tw      <= wdata[21];
                     mstatus_tvm     <= wdata[20];
+                    mstatus_mprv    <= wdata[17];
                     mstatus_mpp     <= wdata[12:11];
                     mstatus_spp     <= wdata[8];
                     mstatus_mpie    <= wdata[7];
