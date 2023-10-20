@@ -598,6 +598,59 @@ end
 `endif
 /////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////// バグの可能性がある怪しい挙動を補足する ////////
+`ifdef DETECT_ABNORMAL_STALL
+
+`ifndef ABNORMAL_STOP_THRESHOLD
+    `define ABNORMAL_STOP_THRESHOLD 100000
+    initial $display("WARNING : ABNORMAL_STOP_THRESHOLD is not set, default to %d", `ABNORMAL_STOP_THRESHOLD);
+`endif
+
+int abn_clk_count = 0;
+always @(negedge clk) abn_clk_count++;
+
+Addr last_ds_pc     = 0;
+Addr last_exe_pc    = 0;
+Addr last_mem_pc    = 0;
+Addr last_csr_pc    = 0;
+
+int ds_same_count   = 0;
+int exe_same_count  = 0;
+int mem_same_count  = 0;
+int csr_same_count  = 0;
+
+task abnormal_countup(
+    input Addr pc,
+    inout Addr last_pc,
+    inout int  count
+);
+    if (pc == last_pc)
+        count += 1;
+    else
+        count = 0;
+
+    if (count >= `ABNORMAL_STOP_THRESHOLD) begin
+        $display("!!!FORCE STOP!!!");
+        $display("[%d - %d clock]", abn_clk_count - `ABNORMAL_STOP_THRESHOLD, abn_clk_count);
+        $display(" ds.pc = %h, for %d clock", last_ds_pc , ds_same_count );
+        $display("exe.pc = %h, for %d clock", last_exe_pc, exe_same_count);
+        $display("mem.pc = %h, for %d clock", last_mem_pc, mem_same_count);
+        $display("csr.pc = %h, for %d clock", last_csr_pc, csr_same_count);
+        $finish;
+    end
+
+    last_pc <= pc;
+endtask
+
+always @(posedge clk) begin
+    abnormal_countup(ds_pc , last_ds_pc , ds_same_count );
+    abnormal_countup(exe_pc, last_exe_pc, exe_same_count);
+    abnormal_countup(mem_pc, last_mem_pc, mem_same_count);
+    abnormal_countup(csr_pc, last_csr_pc, csr_same_count);
+end
+`endif
+/////////////////////////////////////////////////////////////////////////////
+
 `ifdef PRINT_DEBUGINFO
 int clk_count = 0;
 always @(negedge clk) begin
