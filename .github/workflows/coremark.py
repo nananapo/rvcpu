@@ -10,7 +10,7 @@ def get_lines(cmd):
             break
 
 startCount = 0
-for line in get_lines(cmd='cd ../../src && timeout 7200 obj_dir/Vtest_verilator'):
+for line in get_lines(cmd='cd ../../src && timeout 1800 obj_dir/Vtest_verilator'):
     print(line, end="")
     if "Correct operation validated" in line:
         exit(0)
