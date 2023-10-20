@@ -481,6 +481,7 @@ assign cache_cntr.do_writeback      = is_new & ctrl.fence_i;
 assign cache_cntr.invalidate_icache = is_new & ctrl.fence_i;
 
 logic [1:0] inst_clock = 0;
+logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行されないようにするためのフラグ
 
 always @(posedge clk) begin
     last_raise_trap <= this_raise_trap | cmd_is_xret;
@@ -489,10 +490,12 @@ always @(posedge clk) begin
         // trapを起こす
         if (trap_nochange) begin
             trap_vector <= pc + 4;
+            csr_no_wb   <= 1;
             `ifdef PRINT_DEBUGINFO
                 $display("info,csrstage.trap.nochange,0x%h", pc);
             `endif
         end else if (this_raise_trap) begin
+            csr_no_wb   <= 1;
             `ifdef PRINT_DEBUGINFO
                 $display("info,csrstage.trap.pc,0x%h", pc);
                 $display("info,csrstage.trap.to_mmode,%b", trap_toM);
@@ -532,6 +535,7 @@ always @(posedge clk) begin
             // mret, sretを処理する
             case (csr_cmd)
                 CSR_MRET: begin
+                    csr_no_wb       <= 1;
                     mstatus_mie     <= mstatus_mpie;
                     mode            <= modetype'(mstatus_mpp);
                     mstatus_mpie    <= 1;
@@ -539,6 +543,7 @@ always @(posedge clk) begin
                     trap_vector     <= mepc;
                 end
                 CSR_SRET: begin
+                    csr_no_wb       <= 1;
                     mstatus_sie     <= mstatus_spie;
                     mode            <= modetype'({1'b0, mstatus_spp});
                     mstatus_spie    <= 1;
@@ -546,14 +551,15 @@ always @(posedge clk) begin
                     trap_vector     <= sepc;
                 end
                 default: begin
-                    trap_vector     <= ADDR_MAX;
+                    csr_no_wb   <= 0;
+                    trap_vector <= 0;
                 end
             endcase
         end
     end
     if (valid & !is_new) begin
         inst_clock <= inst_clock + 1;
-        if (can_write & cmd_is_write) begin
+        if (can_write & cmd_is_write & !csr_no_wb) begin
             $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
             case (addr)
                 // Machine Trap Setup
