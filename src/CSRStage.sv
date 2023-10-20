@@ -209,8 +209,8 @@ endfunction
 
 wire mstatus_sd  = 0;
 
-// TODO 作る？
-wire mstatus_tsr = 0; // 3.1.6.5 サポートしない。1ならS-modeでSRETするとillegal instruction exceptionにする
+// 3.1.6.5 Trap SRET 1のとき、S-modeでSRETするとillegal instruction exceptionにする
+logic mstatus_tsr   = 0;
 
 // TODO 作る？
 wire mstatus_tw  = 0; // 3.1.6.5 WFI instruction をサポートしないのでサポートしない
@@ -416,11 +416,14 @@ wire UIntX  rdata = gen_rdata(
 );
 
 // TRAP
-wire csr_access_fault   = valid && cmd_is_write && !can_access;
-wire        raise_expt  = trapinfo.valid | csr_access_fault;
+wire csr_access_fault   = cmd_is_write & !can_access;
+wire csr_xret_no_priv   =   csr_cmd == CSR_MRET & mode != M_MODE |
+                            csr_cmd == CSR_SRET & mode < S_MODE |
+                            csr_cmd == CSR_SRET & mode == S_MODE & mstatus_tsr;
+wire        raise_expt  = trapinfo.valid | valid & (csr_access_fault | csr_xret_no_priv);
 wire UIntX  cause_expt  = trapinfo.valid ?
                             trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0) :
-                            csr_access_fault ? CAUSE_ILLEGAL_INSTRUCTION : 0;
+                            csr_access_fault & csr_xret_no_priv? CAUSE_ILLEGAL_INSTRUCTION : 0;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
@@ -554,12 +557,13 @@ always @(posedge clk) begin
             case (addr)
                 // Machine Trap Setup
                 ADDR_MSTATUS: begin
-                    mstatus_mpp  <= wdata[12:11];
-                    mstatus_spp  <= wdata[8];
-                    mstatus_mpie <= wdata[7];
-                    mstatus_spie <= wdata[5];
-                    mstatus_mie  <= wdata[3];
-                    mstatus_sie  <= wdata[1];
+                    mstatus_tsr     <= wdata[22];
+                    mstatus_mpp     <= wdata[12:11];
+                    mstatus_spp     <= wdata[8];
+                    mstatus_mpie    <= wdata[7];
+                    mstatus_spie    <= wdata[5];
+                    mstatus_mie     <= wdata[3];
+                    mstatus_sie     <= wdata[1];
                 end
                 ADDR_MEDELEG: medeleg <= wdata;
                 ADDR_MIDELEG: begin
