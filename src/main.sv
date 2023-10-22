@@ -147,7 +147,9 @@ MemICache #() memicache (
 
 PageTableWalker #(
     .LOG_ENABLE(0),
-    .EXECUTE_MODE(1)
+    .EXECUTE_MODE(1),
+    .LOG_ENABLE(0),
+    .LOG_AS("memstage")
 ) iptw (
     .clk(clk_in),
     .reset(ireq_core_iq.valid),
@@ -198,7 +200,9 @@ MemDCache #() memdcache (
 
 PageTableWalker #(
     .LOG_ENABLE(0),
-    .EXECUTE_MODE(0)
+    .EXECUTE_MODE(0),
+    .LOG_ENABLE(1),
+    .LOG_AS("memstage")
 ) dptw (
     .clk(clk_in),
     .reset(1'b0),

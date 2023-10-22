@@ -3,6 +3,7 @@ module PageTableWalker #(
     parameter PAGESIZE_WIDTH    = 12,
     parameter PTESIZE_WIDTH     = 2,
     parameter LOG_ENABLE        = 0,
+    parameter LOG_AS            = "fetchstage",
     parameter EXECUTE_MODE      = 0
 ) (
     input wire clk,
@@ -247,31 +248,33 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (can_output_log) if (LOG_ENABLE) begin
     if (sv32_enable) begin
-        $display("data,fetchstage.ptw.state,d,%b", state);
-        $display("data,fetchstage.ptw.reset,b,%b", reset);
-        $display("data,fetchstage.ptw.satp,h,%b", satp);
-        $display("data,fetchstage.ptw.mode,d,%b", mode);
-        $display("data,fetchstage.ptw.proc_pc,h,%b", state == IDLE ? preq.addr : s_req.addr);
-        $display("data,fetchstage.ptw.next_addr,h,%b", next_addr[31:0]);
+        $display("data,%s.ptw.state,d,%b", LOG_AS, state);
+        $display("data,%s.ptw.reset,b,%b", LOG_AS, reset);
+        $display("data,%s.ptw.satp,h,%b", LOG_AS, satp);
+        $display("data,%s.ptw.mode,d,%b", LOG_AS, mode);
+        $display("data,%s.ptw.proc_pc,h,%b", LOG_AS, state == IDLE ? preq.addr : s_req.addr);
+        $display("data,%s.ptw.next_addr,h,%b", LOG_AS, next_addr[31:0]);
 
-        // $display("data,fetchstage.ptw.memreq.ready,b,%b", memreq.ready);
-        // $display("data,fetchstage.ptw.memreq.valid,b,%b", memreq.valid);
-        // $display("data,fetchstage.ptw.memreq.addr,h,%b", memreq.addr);
-        // $display("data,fetchstage.ptw.memresp.valid,b,%b", memresp.valid);
-        // $display("data,fetchstage.ptw.memresp.rdata,h,%b", memresp.rdata);
+        $display("data,%s.ptw.memreq.ready,b,%b", LOG_AS, memreq.ready);
+        $display("data,%s.ptw.memreq.valid,b,%b", LOG_AS, memreq.valid);
+        $display("data,%s.ptw.memreq.addr,h,%b", LOG_AS, memreq.addr);
+        $display("data,%s.ptw.memreq.wen,b,%b", LOG_AS, memreq.wen);
+        $display("data,%s.ptw.memreq.wdata,h,%b", LOG_AS, memreq.wdata);
+        $display("data,%s.ptw.memresp.valid,b,%b", LOG_AS, memresp.valid);
+        $display("data,%s.ptw.memresp.rdata,h,%b", LOG_AS, memresp.rdata);
 
-        // $display("data,fetchstage.ptw.level,d,%b", level);
-        // $display("data,fetchstage.ptw.pte.R,b,%b", pte_R);
-        // $display("data,fetchstage.ptw.pte.X,b,%b", pte_X);
-        // $display("data,fetchstage.ptw.pte.V,b,%b", pte_V);
+        $display("data,%s.ptw.level,d,%b", LOG_AS, level);
+        $display("data,%s.ptw.pte.R,b,%b", LOG_AS, pte_R);
+        $display("data,%s.ptw.pte.X,b,%b", LOG_AS, pte_X);
+        $display("data,%s.ptw.pte.V,b,%b", LOG_AS, pte_V);
 
-        // $display("data,fetchstage.ptw.satp.ppn,h,%b", satp_ppn);
-        // $display("data,fetchstage.ptw.pte.ppn[1],h,%b", pte_ppn1);
-        // $display("data,fetchstage.ptw.pte.ppn[0],h,%b", pte_ppn0);
-        // $display("data,fetchstage.ptw.pte.ppn,h,%b", pte_ppn);
+        $display("data,%s.ptw.satp.ppn,h,%b", LOG_AS, satp_ppn);
+        $display("data,%s.ptw.pte.ppn[1],h,%b", LOG_AS, pte_ppn1);
+        $display("data,%s.ptw.pte.ppn[0],h,%b", LOG_AS, pte_ppn0);
+        $display("data,%s.ptw.pte.ppn,h,%b", LOG_AS, pte_ppn);
 
-        // $display("data,fetchstage.ptw.vpn[1],h,%b", s_vpn1);
-        // $display("data,fetchstage.ptw.vpn[0],h,%b", s_vpn0);
+        $display("data,%s.ptw.vpn[1],h,%b", LOG_AS, s_vpn1);
+        $display("data,%s.ptw.vpn[0],h,%b", LOG_AS, s_vpn0);
     end
 end
 `endif
