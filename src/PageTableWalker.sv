@@ -16,9 +16,12 @@ module PageTableWalker #(
     input wire modetype     mode,
     input wire [31:0]       satp,
     input wire              mxr,
-    input wire              sum,
+    input wire              sum
 
-    input wire              can_output_log
+`ifdef PRINT_DEBUGINFO
+    ,
+    input wire can_output_log
+`endif
 );
 
 

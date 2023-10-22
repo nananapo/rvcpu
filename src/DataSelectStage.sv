@@ -22,9 +22,12 @@ module DataSelectStage
     input wire FwCtrl   fw_mem,
     input wire FwCtrl   fw_csr,
     input wire FwCtrl   fw_wbk,
-    output wire         is_datahazard,
+    output wire         is_datahazard
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 `include "basicparams.svh"

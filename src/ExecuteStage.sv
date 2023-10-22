@@ -20,9 +20,12 @@ module ExecuteStage
 
     output wire         branch_taken,
     output wire Addr    branch_target,
-    output wire         is_stall,
+    output wire         is_stall
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 `include "basicparams.svh"

@@ -8,9 +8,12 @@ module InstQueue #(
     inout wire IResp        iresp,
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp,
-    input wire BrInfo       brinfo,
+    input wire BrInfo       brinfo
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 `include "basicparams.svh"

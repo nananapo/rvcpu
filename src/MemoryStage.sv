@@ -18,10 +18,12 @@ module MemoryStage
     inout wire DResp        dresp,
 
     output logic            is_stall,
-    output wire             exit,
+    output wire             exit
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
-
+`endif
     `ifdef PRINT_DEBUGINFO
         ,
         input wire         invalid_by_trap

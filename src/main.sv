@@ -122,8 +122,12 @@ MemBusCntr #() membuscntr (
     .dreq_in(mbreq_dcache),
     .dresp_in(mbresp_dcache),
     .memreq_in(mbreq_mem),
-    .memresp_in(mbresp_mem),
+    .memresp_in(mbresp_mem)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 /* ---- Inst ---- */
@@ -133,8 +137,12 @@ MemICache #() memicache (
     .ireq_in(icreq_ptw_cache),
     .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
-    .busresp(mbresp_icache),
+    .busresp(mbresp_icache)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 PageTableWalker #(
@@ -150,8 +158,12 @@ PageTableWalker #(
     .mode(cache_cntr.i_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
-    .sum(cache_cntr.sum),
+    .sum(cache_cntr.sum)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 InstQueue #() instqueue (
@@ -160,8 +172,12 @@ InstQueue #() instqueue (
     .iresp(iresp_core_iq),
     .memreq(icreq_iq_ptw),
     .memresp(icresp_iq_ptw),
-    .brinfo(brinfo),
+    .brinfo(brinfo)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 /* ---- Data ---- */
@@ -172,8 +188,12 @@ MemDCache #() memdcache (
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache),
     .do_writeback(cache_cntr.do_writeback),
-    .is_writebacked_all(cache_cntr.is_writebacked_all),
+    .is_writebacked_all(cache_cntr.is_writebacked_all)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 PageTableWalker #(
@@ -189,8 +209,12 @@ PageTableWalker #(
     .mode(cache_cntr.d_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
-    .sum(cache_cntr.sum),
+    .sum(cache_cntr.sum)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 DAccessCntr #() daccesscntr (
@@ -199,8 +223,12 @@ DAccessCntr #() daccesscntr (
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
     .memreq(dcreq_acntr_ptw),
-    .memresp(dcresp_acntr_ptw),
+    .memresp(dcresp_acntr_ptw)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 MMIO_Cntr #(
@@ -215,8 +243,12 @@ MMIO_Cntr #(
     .dreq_in(dreq_core_mmio),
     .dresp_in(dresp_core_mmio),
     .memreq_in(dreq_mmio_acntr),
-    .memresp_in(dresp_mmio_acntr),
+    .memresp_in(dresp_mmio_acntr)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 /* ---- Core ---- */
@@ -240,8 +272,12 @@ Core #(
     .gp(gp),
     .exit(exit),
 
-    .exited(exited),
+    .exited(exited)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 endmodule

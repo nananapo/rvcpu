@@ -11,9 +11,12 @@ module MMIO_uart_tx #(
     input  wire UIntX   req_wdata,
 
     output wire         resp_valid,
-    output wire UIntX   resp_rdata,
+    output wire UIntX   resp_rdata
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 `include "basicparams.svh"

@@ -22,8 +22,12 @@ module Core #(
     output wire CacheCntrInfo   cache_cntr,
 
     output logic    exit,
-    output UIntX    gp,
-    output wire     can_output_log
+    output UIntX    gp
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    output wire can_output_log
+`endif
 );
 
 `include "csrparam.svh"
@@ -448,9 +452,12 @@ DataSelectStage #() dataselectstage
     .fw_exe(exe_fw),
     .fw_mem(mem_fw),
     .fw_csr(csr_fw),
-    .fw_wbk(wb_fw),
+    .fw_wbk(wb_fw)
 
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 ExecuteStage #() executestage
@@ -473,9 +480,12 @@ ExecuteStage #() executestage
 
     .branch_taken(exe_branch_taken),
     .branch_target(exe_branch_target),
-    .is_stall(exe_calc_stall),
+    .is_stall(exe_calc_stall)
 
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 MemoryStage #() memorystage
@@ -503,9 +513,12 @@ MemoryStage #() memorystage
     .dresp(dresp),
 
     .is_stall(mem_memory_stall),
-    .exit(exit),
+    .exit(exit)
 
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 
     `ifdef PRINT_DEBUGINFO
         ,
@@ -547,9 +560,12 @@ CSRStage #(
     .reg_mtime(reg_mtime),
     .reg_mtimecmp(reg_mtimecmp),
 
-    .cache_cntr(cache_cntr),
+    .cache_cntr(cache_cntr)
 
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 WriteBackStage #() wbstage(
@@ -563,8 +579,12 @@ WriteBackStage #() wbstage(
     .reg_addr(wb_reg_addr),
     .wdata(wb_wdata),
 
-    .regfile(wb_regfile),
+    .regfile(wb_regfile)
+
+`ifdef PRINT_DEBUGINFO
+    ,
     .can_output_log(can_output_log)
+`endif
 );
 
 //////////////////////////////// 分岐情報を渡す ///////////////////////////////

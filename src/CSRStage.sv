@@ -27,9 +27,12 @@ module CSRStage #(
     input wire UInt64   reg_mtime,
     input wire UInt64   reg_mtimecmp,
 
-    output wire CacheCntrInfo   cache_cntr,
+    output wire CacheCntrInfo   cache_cntr
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 `include "csrparam.svh"

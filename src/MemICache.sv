@@ -11,9 +11,12 @@ module MemICache #(
     inout wire CacheReq     ireq_in,
     inout wire CacheResp    iresp_in,
     inout wire MemBusReq    busreq,
-    inout wire MemBusResp   busresp,
+    inout wire MemBusResp   busresp
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 localparam ADDR_WIDTH = CACHE_WIDTH;

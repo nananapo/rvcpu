@@ -5,9 +5,12 @@ module MemBusCntr (
     inout wire MemBusReq    dreq_in,
     inout wire MemBusResp   dresp_in,
     inout wire MemBusReq    memreq_in,
-    inout wire MemBusResp   memresp_in,
+    inout wire MemBusResp   memresp_in
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 `include "basicparams.svh"

@@ -4,9 +4,12 @@ module DAccessCntr (
     inout wire DReq         dreq,
     inout wire DResp        dresp,
     inout wire CacheReq     memreq,
-    inout wire CacheResp    memresp,
+    inout wire CacheResp    memresp
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 typedef enum logic [3:0] {

@@ -8,7 +8,9 @@ module WriteBackStage(
     input wire UInt5    reg_addr,
     input wire UIntX    wdata,
 
-    output wire         can_output_log,
+`ifdef PRINT_DEBUGINFO
+    output wire can_output_log,
+`endif
     output UIntX        regfile[31:0]
 );
 
@@ -50,8 +52,6 @@ always @(posedge clk) if (can_output_log) begin
         $display("data,wbstage.inst_count,d,%b", inst_count);
     end
 end
-`endif
-
 `ifdef START_LOG_INST_COUNT
     int sl_inst_count = 0;
     always @(posedge clk) begin
@@ -60,6 +60,8 @@ end
     assign can_output_log = sl_inst_count > `START_LOG_INST_COUNT;
 `else
     assign can_output_log = 1;
+`endif
+
 `endif
 
 `ifdef END_INST_COUNT

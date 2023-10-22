@@ -19,9 +19,12 @@ module MemDCache #(
     // ただし、stateがIDLEになるのを待つ (ライトバック中だと壊れる)
     input wire              do_writeback,
     // すべてのデータがwritebackされている(変更されていない)かどうか
-    output wire             is_writebacked_all,
+    output wire             is_writebacked_all
 
+`ifdef PRINT_DEBUGINFO
+    ,
     input wire can_output_log
+`endif
 );
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
