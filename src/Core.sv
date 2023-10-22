@@ -133,6 +133,7 @@ wire        csr_keep_trap;
 wire Addr   csr_trap_vector;
 // csr -> wb wire
 wire UIntX  csr_csr_rdata;
+wire        csr_no_wb;
 
 // wb reg
 logic       wb_valid;
@@ -395,7 +396,7 @@ always @(posedge clk) begin
         wb_valid   <= 0;
         wb_fw      <= 0;
     end else begin
-        wb_valid        <= csr_valid;
+        wb_valid        <= !csr_no_wb & csr_valid;
         wb_pc           <= csr_pc;
         wb_inst         <= csr_inst;
         wb_inst_id      <= csr_inst_id;
@@ -547,8 +548,10 @@ CSRStage #(
     .ctrl(csr_ctrl),
     .imm_i(csr_imm_i),
     .op1_data(csr_op1_data),
+    .alu_out(csr_alu_out),
 
     .next_csr_rdata(csr_csr_rdata),
+    .next_no_wb(csr_no_wb),
 
     .is_stall(csr_cmd_stall),
     .csr_is_trap(csr_is_trap),
