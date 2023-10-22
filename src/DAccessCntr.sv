@@ -4,7 +4,9 @@ module DAccessCntr (
     inout wire DReq         dreq,
     inout wire DResp        dresp,
     inout wire CacheReq     memreq,
-    inout wire CacheResp    memresp
+    inout wire CacheResp    memresp,
+
+    input wire can_output_log
 );
 
 typedef enum logic [3:0] {
@@ -214,7 +216,7 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,dmemucntr.state,d,%b", state);
     $display("data,dmemucntr.saved_rdata1,h,%b", saved_rdata1);
     $display("data,dmemucntr.saved_rdata2,h,%b", saved_rdata2);

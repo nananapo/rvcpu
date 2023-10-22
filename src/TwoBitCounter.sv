@@ -53,7 +53,7 @@ end
 
 /*
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,btb.request_pc,h,%b", pc);
     $display("data,btb.predict_pc,h,%b", next_pc);
     $display("data,btb.pc_index,b,%b", pc2i);

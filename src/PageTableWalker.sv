@@ -16,7 +16,9 @@ module PageTableWalker #(
     input wire modetype     mode,
     input wire [31:0]       satp,
     input wire              mxr,
-    input wire              sum
+    input wire              sum,
+
+    input wire              can_output_log
 );
 
 
@@ -240,7 +242,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (LOG_ENABLE) begin
+always @(posedge clk) if (can_output_log) if (LOG_ENABLE) begin
     if (sv32_enable) begin
         $display("data,fetchstage.ptw.state,d,%b", state);
         $display("data,fetchstage.ptw.reset,b,%b", reset);

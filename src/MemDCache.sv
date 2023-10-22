@@ -19,7 +19,9 @@ module MemDCache #(
     // ただし、stateがIDLEになるのを待つ (ライトバック中だと壊れる)
     input wire              do_writeback,
     // すべてのデータがwritebackされている(変更されていない)かどうか
-    output wire             is_writebacked_all
+    output wire             is_writebacked_all,
+
+    input wire can_output_log
 );
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
@@ -141,6 +143,7 @@ always @(posedge clk) begin
             writeback_requested <= 0;
             wb_loop_address     <= 0;
             `ifdef PRINT_DEBUGINFO
+            if (can_output_log)
                 $display("info,memstage.d$.event.start,start force writeback.");
             `endif
         end else begin
@@ -156,11 +159,13 @@ always @(posedge clk) begin
                             cache_modified[info_index]  <= 1;
                             modified_count              <= modified_count + 1;
                             `ifdef PRINT_DEBUGINFO
+                            if (can_output_log)
                                 $display("info,memstage.d$.event.modified,cache modified %h", dreq.addr);
                             `endif
                         end
                     end
                     `ifdef PRINT_DEBUGINFO
+                    if (can_output_log)
                         $display("info,memstage.d$.event.cache_hit,%h wen:%d", dreq.addr, dreq.wen);
                     `endif
                 end else begin
@@ -175,6 +180,7 @@ always @(posedge clk) begin
                         cache_valid[info_index]     <= 0;
                         cache_modified[info_index]  <= 0;
                         `ifdef PRINT_DEBUGINFO
+                        if (can_output_log)
                             $display("info,memstage.d$.event.need_wb,l/swith wb : %h", dreq.addr);
                         `endif
                     end else begin
@@ -190,6 +196,7 @@ always @(posedge clk) begin
                             modified_count              <= modified_count + 1;
 
                             `ifdef PRINT_DEBUGINFO
+                            if (can_output_log)
                                 $display("info,memstage.d$.event.modified, write with no wb : %h <= %h", dreq.addr, dreq.wdata);
                             `endif
                         end else begin
@@ -238,6 +245,7 @@ always @(posedge clk) begin
                 cache_modified[info_index]  <= 1;
 
                 `ifdef PRINT_DEBUGINFO
+                if (can_output_log)
                     $display("info,memstage.d$.event.write_as_mod,0x%h <= %h", dreq.addr, dreq.wdata);
                 `endif
             end else begin
@@ -252,6 +260,7 @@ always @(posedge clk) begin
         if (is_writebacked_all) begin
             state <= IDLE;
             `ifdef PRINT_DEBUGINFO
+            if (can_output_log)
                 $display("info,memstage.d$.event.done_wb,Writebacked all modified data on D$.");
             `endif
         end else begin
@@ -263,6 +272,7 @@ always @(posedge clk) begin
                 wb_data <= cache_data[wb_loop_address];
 
                 `ifdef PRINT_DEBUGINFO
+                if (can_output_log)
                     $display("info,memstage.d$.event.loop_need_wb,%h <= %h is modified, needs writeback", cache_addrs[wb_loop_address], cache_data[wb_loop_address]);
                 `endif
             end
@@ -284,7 +294,7 @@ always @(posedge clk) begin
 end
 
 // `ifdef PRINT_DEBUGINFO
-// always @(posedge clk) begin
+// always @(posedge clk) if (can_output_log) begin
 //     $display("data,memstage.d$.state,d,%b", state);
 //     if (dreq_in.valid & state == IDLE) begin
 //         $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);

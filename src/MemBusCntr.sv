@@ -5,7 +5,9 @@ module MemBusCntr (
     inout wire MemBusReq    dreq_in,
     inout wire MemBusResp   dresp_in,
     inout wire MemBusReq    memreq_in,
-    inout wire MemBusResp   memresp_in
+    inout wire MemBusResp   memresp_in,
+
+    input wire can_output_log
 );
 
 `include "basicparams.svh"
@@ -92,7 +94,7 @@ end
 
 
 // `ifdef PRINT_DEBUGINFO
-// always @(posedge clk) begin
+// always @(posedge clk) if (can_output_log) begin
 //     $display("data,fetchstage.buscntr.state,d,%b", state);
 //     if (memreq_in.valid) begin
 //         $display("data,fetchstage.buscntr.memreq.ready,d,%b", memreq_in.ready);

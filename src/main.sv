@@ -33,6 +33,8 @@ always @(posedge clk_in) begin
     led[5:0] <= ~gp[5:0];
 end
 
+wire can_output_log;
+
 // Counter and Timers
 UInt64 reg_cycle = 0;
 UInt64 reg_time  = 0;
@@ -120,7 +122,8 @@ MemBusCntr #() membuscntr (
     .dreq_in(mbreq_dcache),
     .dresp_in(mbresp_dcache),
     .memreq_in(mbreq_mem),
-    .memresp_in(mbresp_mem)
+    .memresp_in(mbresp_mem),
+    .can_output_log(can_output_log)
 );
 
 /* ---- Inst ---- */
@@ -130,7 +133,8 @@ MemICache #() memicache (
     .ireq_in(icreq_ptw_cache),
     .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
-    .busresp(mbresp_icache)
+    .busresp(mbresp_icache),
+    .can_output_log(can_output_log)
 );
 
 PageTableWalker #(
@@ -146,7 +150,8 @@ PageTableWalker #(
     .mode(cache_cntr.i_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
-    .sum(cache_cntr.sum)
+    .sum(cache_cntr.sum),
+    .can_output_log(can_output_log)
 );
 
 InstQueue #() instqueue (
@@ -155,7 +160,8 @@ InstQueue #() instqueue (
     .iresp(iresp_core_iq),
     .memreq(icreq_iq_ptw),
     .memresp(icresp_iq_ptw),
-    .brinfo(brinfo)
+    .brinfo(brinfo),
+    .can_output_log(can_output_log)
 );
 
 /* ---- Data ---- */
@@ -166,7 +172,8 @@ MemDCache #() memdcache (
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache),
     .do_writeback(cache_cntr.do_writeback),
-    .is_writebacked_all(cache_cntr.is_writebacked_all)
+    .is_writebacked_all(cache_cntr.is_writebacked_all),
+    .can_output_log(can_output_log)
 );
 
 PageTableWalker #(
@@ -182,7 +189,8 @@ PageTableWalker #(
     .mode(cache_cntr.d_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
-    .sum(cache_cntr.sum)
+    .sum(cache_cntr.sum),
+    .can_output_log(can_output_log)
 );
 
 DAccessCntr #() daccesscntr (
@@ -191,7 +199,8 @@ DAccessCntr #() daccesscntr (
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
     .memreq(dcreq_acntr_ptw),
-    .memresp(dcresp_acntr_ptw)
+    .memresp(dcresp_acntr_ptw),
+    .can_output_log(can_output_log)
 );
 
 MMIO_Cntr #(
@@ -206,7 +215,8 @@ MMIO_Cntr #(
     .dreq_in(dreq_core_mmio),
     .dresp_in(dresp_core_mmio),
     .memreq_in(dreq_mmio_acntr),
-    .memresp_in(dresp_mmio_acntr)
+    .memresp_in(dresp_mmio_acntr),
+    .can_output_log(can_output_log)
 );
 
 /* ---- Core ---- */
@@ -230,7 +240,8 @@ Core #(
     .gp(gp),
     .exit(exit),
 
-    .exited(exited)
+    .exited(exited),
+    .can_output_log(can_output_log)
 );
 
 endmodule

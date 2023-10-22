@@ -11,7 +11,9 @@ module MMIO_uart_tx #(
     input  wire UIntX   req_wdata,
 
     output wire         resp_valid,
-    output wire UIntX   resp_rdata
+    output wire UIntX   resp_rdata,
+
+    input wire can_output_log
 );
 
 `include "basicparams.svh"
@@ -50,7 +52,9 @@ assign resp_rdata   = DATA_Z;
 always @(posedge clk) begin
     if (q_rready & q_rvalid) begin
         `ifdef PRINT_DEBUGINFO
-            $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
+            if (can_output_log) begin
+                $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
+            end
         `else
             $write("%c", q_rdata);
             $fflush();

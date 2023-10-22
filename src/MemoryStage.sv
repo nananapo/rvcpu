@@ -18,7 +18,9 @@ module MemoryStage
     inout wire DResp        dresp,
 
     output logic            is_stall,
-    output wire             exit
+    output wire             exit,
+
+    input wire can_output_log
 
     `ifdef PRINT_DEBUGINFO
         ,
@@ -248,7 +250,7 @@ end
 /////////////////////////////////////////////////////////////////////////////
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,memstage.valid,b,%b", valid | invalid_by_trap);
     if (invalid_by_trap) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");

@@ -8,6 +8,7 @@ module WriteBackStage(
     input wire UInt5    reg_addr,
     input wire UIntX    wdata,
 
+    output wire         can_output_log,
     output UIntX        regfile[31:0]
 );
 
@@ -34,11 +35,11 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-UIntX inst_count    = 0;
+int inst_count    = 0;
 always @(posedge clk) begin
     if (valid) inst_count += 1;
 end
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,wbstage.valid,b,%b", valid);
     $display("data,wbstage.inst_id,h,%b", valid ? inst_id : IID_X);
     if (valid) begin
@@ -47,6 +48,42 @@ always @(posedge clk) begin
         $display("data,wbstage.wb_addr,d,%b", reg_addr);
         $display("data,wbstage.wb_data,h,%b", wdata);
         $display("data,wbstage.inst_count,d,%b", inst_count);
+    end
+end
+`endif
+
+`ifdef START_LOG_INST_COUNT
+    int sl_inst_count = 0;
+    always @(posedge clk) begin
+        if (valid) sl_inst_count += 1;
+    end
+    assign can_output_log = sl_inst_count > `START_LOG_INST_COUNT;
+`else
+    assign can_output_log = 1;
+`endif
+
+`ifdef END_INST_COUNT
+int en_inst_count = 0;
+always @(posedge clk) begin
+    if (valid) en_inst_count += 1;
+    if (en_inst_count == `END_INST_COUNT) begin
+        $finish;
+        $finish;
+        $finish;
+    end
+end
+`endif
+
+`ifdef PRINT_LIGHT_WBLOG
+int lb_inst_count = 0;
+always @(posedge clk) begin
+    if (valid) begin
+        lb_inst_count += 1;
+        if (can_output_log) begin
+            $display("[%d] %h", lb_inst_count, pc);
+            if (rf_wen & reg_addr != 0)
+                $display("reg[%d] <= %h", reg_addr, wdata);
+        end
     end
 end
 `endif

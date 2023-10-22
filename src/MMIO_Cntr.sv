@@ -12,7 +12,9 @@ module MMIO_Cntr #(
     inout  wire DReq    dreq_in,
     inout  wire DResp   dresp_in,
     inout  wire DReq    memreq_in,
-    inout  wire DResp   memresp_in
+    inout  wire DResp   memresp_in,
+
+    input wire can_output_log
 );
 
 `include "basicparams.svh"
@@ -128,7 +130,9 @@ MMIO_uart_tx #(
     .req_wen(dreq.wen),
     .req_wdata(dreq.wdata),
     .resp_valid(cmd_uart_tx_rvalid),
-    .resp_rdata(cmd_uart_tx_rdata)
+    .resp_rdata(cmd_uart_tx_rdata),
+
+    .can_output_log(can_output_log)
 );
 
 MMIO_clint #(
