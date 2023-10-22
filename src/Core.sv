@@ -399,7 +399,7 @@ always @(posedge clk) begin
         wb_reg_addr     <= csr_ctrl.wb_addr;
         wb_wdata        <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata; // fwと等しい
         // forwarding
-        wb_fw.valid     <= csr_valid;
+        wb_fw.valid     <= csr_fw.valid & csr_valid;
         wb_fw.fwdable   <= 1;
         wb_fw.addr      <= csr_fw.addr;
         wb_fw.wdata     <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata;
