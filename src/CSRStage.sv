@@ -611,19 +611,21 @@ always @(posedge clk) begin
                     csr_no_wb       <= 1;
                     mstatus_mie     <= mstatus_mpie;
                     mode            <= modetype'(mstatus_mpp);
-                    mstatus_mprv    <= 0;
                     mstatus_mpie    <= 1;
                     mstatus_mpp     <= U_MODE;
                     trap_vector     <= mepc;
+                    if (modetype'(mstatus_mpp) != M_MODE)
+                        mstatus_mprv <= 0;
                 end
                 CSR_SRET: begin
                     csr_no_wb       <= 1;
                     mstatus_sie     <= mstatus_spie;
                     mode            <= modetype'({1'b0, mstatus_spp});
-                    mstatus_mprv    <= 0;
                     mstatus_spie    <= 1;
                     mstatus_spp     <= U_MODE[0];
                     trap_vector     <= sepc;
+                    if (modetype'({1'b0, mstatus_spp}) != M_MODE)
+                        mstatus_mprv <= 0;
                 end
                 default: begin
                     csr_no_wb   <= 0;
