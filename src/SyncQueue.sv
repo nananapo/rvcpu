@@ -45,7 +45,8 @@ end else begin
     logic [WIDTH-1:0] tail = 0;
 
     wire p_max  = tail + {{WIDTH-1{1'b0}}, 1'b1 } == head;
-    wire p_max2 = tail + {{WIDTH-2{1'b0}}, 2'b10} == head;
+
+    wire p_max2 = WIDTH == 1 ? tail + 1 == head : tail + {{WIDTH-2 >= 0 ? WIDTH-2 : 0{1'b0}}, 2'b10} == head;
 
     wire actual_wready = !p_max;
 

@@ -108,6 +108,7 @@ UIntX       mem_imm_i;
 UIntX       mem_alu_out;
 UIntX       mem_op1_data;
 UIntX       mem_rs2_data;
+Addr        mem_btarget;
 // mem wire
 wire        mem_memory_stall;
 // mem -> csr wire
@@ -126,6 +127,7 @@ UIntX       csr_imm_i;
 UIntX       csr_alu_out;
 UIntX       csr_op1_data;
 UIntX       csr_mem_rdata;
+Addr        csr_btarget;
 // csr wire
 wire        csr_cmd_stall;
 wire        csr_is_trap;
@@ -133,6 +135,7 @@ wire        csr_keep_trap;
 wire Addr   csr_trap_vector;
 // csr -> wb wire
 wire UIntX  csr_csr_rdata;
+wire        csr_no_wb;
 
 // wb reg
 logic       wb_valid;
@@ -347,6 +350,7 @@ always @(posedge clk) begin
                                 (exe_branch_taken & !is_ialigned(exe_branch_target)));
             mem_trap.cause  <= exe_trap.valid ? exe_trap.cause :
                                 (exe_branch_taken & !is_ialigned(exe_branch_target)) ? CAUSE_INSTRUCTION_ADDRESS_MISALIGNED : 0;
+            mem_btarget     <= exe_branch_target;
             // forwarding
             mem_fw.valid    <= exe_valid & exe_fw.valid;
             mem_fw.fwdable  <= exe_fw.fwdable | exe_ctrl.wb_sel == WB_ALU;
@@ -382,6 +386,7 @@ always @(posedge clk) begin
             csr_op1_data    <= mem_op1_data;
             // trap
             csr_trap        <= mem_valid ? mem_next_trap : 0;
+            csr_btarget     <= mem_btarget;
             // forwarding
             csr_fw.valid    <= mem_valid & mem_fw.valid;
             csr_fw.fwdable  <= mem_fw.fwdable | mem_ctrl.wb_sel == WB_MEM;
@@ -395,7 +400,7 @@ always @(posedge clk) begin
         wb_valid   <= 0;
         wb_fw      <= 0;
     end else begin
-        wb_valid        <= csr_valid;
+        wb_valid        <= !csr_no_wb & csr_valid;
         wb_pc           <= csr_pc;
         wb_inst         <= csr_inst;
         wb_inst_id      <= csr_inst_id;
@@ -496,7 +501,9 @@ MemoryStage #() memorystage
         !csr_trap.valid &
         csr_ctrl.csr_cmd != CSR_SRET &
         csr_ctrl.csr_cmd != CSR_MRET &
-        !csr_ctrl.fence_i),
+        !csr_ctrl.fence_i &
+        !csr_ctrl.sfence &
+        !csr_ctrl.svinval),
     .is_new(mem_is_new),
     .trapinfo(mem_trap),
     .pc(mem_pc),
@@ -527,7 +534,9 @@ MemoryStage #() memorystage
             csr_trap.valid |
             csr_ctrl.csr_cmd == CSR_SRET |
             csr_ctrl.csr_cmd == CSR_MRET |
-            csr_ctrl.fence_i)
+            csr_ctrl.fence_i |
+            csr_ctrl.sfence |
+            csr_ctrl.svinval)
         )
     `endif
 );
@@ -547,8 +556,11 @@ CSRStage #(
     .ctrl(csr_ctrl),
     .imm_i(csr_imm_i),
     .op1_data(csr_op1_data),
+    .alu_out(csr_alu_out),
+    .btarget(csr_btarget),
 
     .next_csr_rdata(csr_csr_rdata),
+    .next_no_wb(csr_no_wb),
 
     .is_stall(csr_cmd_stall),
     .csr_is_trap(csr_is_trap),
@@ -720,6 +732,8 @@ always @(posedge clk) if (can_output_log) begin
         $display("data,decodestage.decode.jmp_pc,d,%b", id_ctrl.jmp_pc_flg);
         $display("data,decodestage.decode.jmp_reg,d,%b", id_ctrl.jmp_reg_flg);
         $display("data,decodestage.decode.fence_i,d,%b", id_ctrl.fence_i);
+        $display("data,decodestage.decode.sfence,d,%b", id_ctrl.sfence);
+        $display("data,decodestage.decode.svinval,d,%b", id_ctrl.svinval);
         $display("data,decodestage.decode.imm_i,h,%b", id_imm_i);
         $display("data,decodestage.decode.imm_s,h,%b", id_imm_s);
         $display("data,decodestage.decode.imm_b,h,%b", id_imm_b);
