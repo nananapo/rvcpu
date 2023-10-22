@@ -493,6 +493,7 @@ ExecuteStage #() executestage
 `endif
 );
 
+// TODO CSRでmstatus.MPRVを書き込む直後にMEM系があるときのタイミングがシビアなのをどうにかする
 MemoryStage #() memorystage
 (
     .clk(clk),

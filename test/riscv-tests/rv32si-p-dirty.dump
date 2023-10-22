@@ -117,6 +117,7 @@ Disassembly of section .text.init:
  194:	f1402573          	csrr	a0,mhartid
  198:	30200073          	mret
 
+ # Turn on VM
  19c:	80000537          	lui	a0,0x80000
  1a0:	00002597          	auipc	a1,0x2
  1a4:	e6058593          	add	a1,a1,-416 # 2000 <begin_signature>
@@ -125,6 +126,8 @@ Disassembly of section .text.init:
  1b0:	18059073          	csrw	satp,a1
  1b4:	12000073          	sfence.vma
  # satp <= 80000002
+
+ # Try a faulting store to make sure dirty bit is not set
  1b8:	000215b7          	lui	a1,0x21
  1bc:	80058593          	add	a1,a1,-2048 # 20800 <_end+0x1e7f0>
  1c0:	3005a073          	csrs	mstatus,a1
@@ -132,28 +135,44 @@ Disassembly of section .text.init:
  1c8:	00100393          	li	t2,1
  1cc:	00002517          	auipc	a0,0x2
  1d0:	e2752e23          	sw	t2,-452(a0) # 2008 <dummy>
- # t2 = 1, 2008 <= 1
+ # t2 = 1, 失敗 : 2008 <= 1
+
+ # Set SUM=1 so user memory access is permitted
  1d4:	00300193          	li	gp,3
  1d8:	000415b7          	lui	a1,0x41
  1dc:	80058593          	add	a1,a1,-2048 # 40800 <_end+0x3e7f0>
  1e0:	3005a073          	csrs	mstatus,a1
+
+ # Make sure SUM=1 works
  1e4:	00002297          	auipc	t0,0x2
  1e8:	e242a283          	lw	t0,-476(t0) # 2008 <dummy>
  1ec:	10029c63          	bnez	t0,304 <die>
+
+ # Try a non-faulting store to make sure dirty bit is set
  1f0:	00002517          	auipc	a0,0x2
  1f4:	e0752c23          	sw	t2,-488(a0) # 2008 <dummy>
+
+ # Make sure it succeeded
  1f8:	00002297          	auipc	t0,0x2
  1fc:	e102a283          	lw	t0,-496(t0) # 2008 <dummy>
  200:	10729263          	bne	t0,t2,304 <die>
+
+ # Leave MPRV
  204:	000202b7          	lui	t0,0x20
  208:	3002b073          	csrc	mstatus,t0
+
+ # Make sure D bit is set
  20c:	00002297          	auipc	t0,0x2
- 210:	df42a283          	lw	t0,-524(t0) # 2000 <begin_signature>
+ 210:	df42a283          	lw	t0,-524(t0) # 2000 <begin_signature> # 5f = 95
  214:	0c000513          	li	a0,192
- 218:	00a2f2b3          	and	t0,t0,a0
+ 218:	00a2f2b3          	and	t0,t0,a0 # 64
  21c:	0ea29463          	bne	t0,a0,304 <die>
+
+ # Enter MPRV again
  220:	000202b7          	lui	t0,0x20
  224:	3002a073          	csrs	mstatus,t0
+
+ # Make sure that superpage entries trap when PPN LSBs are set.
  228:	00400193          	li	gp,4
  22c:	00002517          	auipc	a0,0x2
  230:	dd452503          	lw	a0,-556(a0) # 2000 <begin_signature>
@@ -164,6 +183,8 @@ Disassembly of section .text.init:
  244:	00002297          	auipc	t0,0x2
  248:	daa2ae23          	sw	a0,-580(t0) # 2000 <begin_signature>
  24c:	0b80006f          	j	304 <die>
+
+ 
  250:	0ff0000f          	fence
  254:	00100193          	li	gp,1
  258:	05d00893          	li	a7,93
