@@ -153,9 +153,9 @@ assign ctrl.mem_size = MemSize'(F3[1:0]);
 assign ctrl.wb_addr     = wb_addr;
 assign ctrl.jmp_pc_flg  = OP == JAL_OP;
 assign ctrl.jmp_reg_flg = F3 == JALR_F3 & OP == JALR_OP;
-assign ctrl.fence_i     =   (OP == MISC_MEM_OP & F3 == FENCEI_F3) |
-                            (OP == SYSTEM_OP & F7 == SFENCE_VMA_F7 & F3 == PRIV_F3 & wb_addr == 5'b0) |
-                            (OP == SYSTEM_OP & (F7 == SVINVAL_SINVAL_VMA_F7 | F7 == SVINVAL_SFENCE_F7) & F3 == SVINVAL_F3);
+assign ctrl.fence_i     = OP == MISC_MEM_OP & F3 == FENCEI_F3;
+assign ctrl.sfence      = OP == SYSTEM_OP & F7 == SFENCE_VMA_F7 & F3 == PRIV_F3 & wb_addr == 5'b0;
+assign ctrl.svinval     = OP == SYSTEM_OP & (F7 == SVINVAL_SINVAL_VMA_F7 | F7 == SVINVAL_SFENCE_F7) & F3 == SVINVAL_F3;
 assign ctrl.wfi         = inst == WFI;
 
 endmodule

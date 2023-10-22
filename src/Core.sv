@@ -497,7 +497,9 @@ MemoryStage #() memorystage
         !csr_trap.valid &
         csr_ctrl.csr_cmd != CSR_SRET &
         csr_ctrl.csr_cmd != CSR_MRET &
-        !csr_ctrl.fence_i),
+        !csr_ctrl.fence_i &
+        !csr_ctrl.sfence &
+        !csr_ctrl.svinval),
     .is_new(mem_is_new),
     .trapinfo(mem_trap),
     .pc(mem_pc),
@@ -528,7 +530,9 @@ MemoryStage #() memorystage
             csr_trap.valid |
             csr_ctrl.csr_cmd == CSR_SRET |
             csr_ctrl.csr_cmd == CSR_MRET |
-            csr_ctrl.fence_i)
+            csr_ctrl.fence_i |
+            csr_ctrl.sfence |
+            csr_ctrl.svinval)
         )
     `endif
 );
@@ -723,6 +727,8 @@ always @(posedge clk) if (can_output_log) begin
         $display("data,decodestage.decode.jmp_pc,d,%b", id_ctrl.jmp_pc_flg);
         $display("data,decodestage.decode.jmp_reg,d,%b", id_ctrl.jmp_reg_flg);
         $display("data,decodestage.decode.fence_i,d,%b", id_ctrl.fence_i);
+        $display("data,decodestage.decode.sfence,d,%b", id_ctrl.sfence);
+        $display("data,decodestage.decode.svinval,d,%b", id_ctrl.svinval);
         $display("data,decodestage.decode.imm_i,h,%b", id_imm_i);
         $display("data,decodestage.decode.imm_s,h,%b", id_imm_s);
         $display("data,decodestage.decode.imm_b,h,%b", id_imm_b);

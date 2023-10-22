@@ -139,8 +139,9 @@ typedef struct packed
     CsrCmd  csr_cmd;
     logic   jmp_pc_flg;
     logic   jmp_reg_flg;
-    logic   svinval;
     logic   fence_i;
+    logic   sfence;
+    logic   svinval;
     logic   wfi;
     AextSel a_sel;
 } Ctrl;

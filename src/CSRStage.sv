@@ -208,8 +208,8 @@ wire CsrCmd csr_cmd = ctrl.csr_cmd;
 wire UInt12 addr    = imm_i[11:0];
 
 // 2.1 CSR Address Mapping Conventions
-wire can_access     = addr[9:8] <= mode |
-                        mode == S_MODE & mstatus_tvm & addr == ADDR_SATP; // mstatus.TVM
+wire can_access     =   addr == ADDR_SATP & mode == S_MODE ? !mstatus_tvm :
+                        addr[9:8] <= mode;
 wire is_readonly    = addr[11:10] == 2'b11;
 
 wire cmd_is_write   = csr_cmd == CSR_W | csr_cmd == CSR_S | csr_cmd == CSR_C;
@@ -449,12 +449,15 @@ wire csr_access_fault   = cmd_is_write & !can_access;
 wire csr_xret_no_priv   =   csr_cmd == CSR_MRET & mode != M_MODE |
                             csr_cmd == CSR_SRET & mode < S_MODE |
                             csr_cmd == CSR_SRET & mode == S_MODE & mstatus_tsr;
+wire sfence_no_priv     =  (ctrl.sfence | ctrl.svinval) & (
+                            mode == U_MODE |
+                            mstatus_tvm & mode == S_MODE);
 wire wfi_tw_nowait      = ctrl.wfi & mstatus_tw;
 
-wire        raise_expt  = trapinfo.valid | valid & (csr_access_fault | csr_xret_no_priv);
+wire        raise_expt  = trapinfo.valid | valid & (csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait);
 wire UIntX  cause_expt  = trapinfo.valid ?
                             trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0) :
-                            csr_access_fault | csr_xret_no_priv | wfi_tw_nowait ? CAUSE_ILLEGAL_INSTRUCTION : 0;
+                            csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait ? CAUSE_ILLEGAL_INSTRUCTION : 0;
 
 // 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
 // S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
@@ -490,36 +493,67 @@ wire [31:0] cause_intr = (
                         );
 wire [31:0] cause_trap = raise_expt ? cause_expt : cause_intr;
 
+function [$bits(UIntX)-1:0] gen_expt_xtval(
+    input UIntX     cause,
+    input Addr      pc,
+    input UIntX     inst,
+    input UIntX     alu_out
+);
+    case (cause)
+        CAUSE_BREAKPOINT,
+        CAUSE_INSTRUCTION_ADDRESS_MISALIGNED,
+        CAUSE_INSTRUCTION_ACCESS_FAULT,
+        CAUSE_INSTRUCTION_PAGE_FAULT:
+            gen_expt_xtval = pc;
+        CAUSE_LOAD_ADDRESS_MISALIGNED,
+        CAUSE_LOAD_ACCESS_FAULT,
+        CAUSE_LOAD_PAGE_FAULT,
+        CAUSE_STORE_AMO_ADDRESS_MISALIGNED,
+        CAUSE_STORE_AMO_ACCESS_FAULT,
+        CAUSE_STORE_AMO_PAGE_FAULT:
+            gen_expt_xtval = alu_out;
+        CAUSE_ILLEGAL_INSTRUCTION:
+            gen_expt_xtval = inst;
+        default:
+            gen_expt_xtval = 0;
+    endcase
+endfunction
+
+wire UIntX  expt_xtval = gen_expt_xtval(cause_expt, pc, inst, alu_out);
+
 UIntX       rdata_saved;
 assign      next_csr_rdata = rdata_saved;
 
 wire this_raise_trap    = raise_expt | raise_intr;
 logic last_raise_trap   = 0;
 
-wire trap_nochange  = ctrl.fence_i; // TODO 改名
-wire undone_fence_i = ctrl.fence_i & !cache_cntr.is_writebacked_all;
-wire fence_clocked  = ctrl.fence_i & !undone_fence_i & inst_clock == 2'b0;
+wire is_fence       = ctrl.fence_i | (!sfence_no_priv & (ctrl.sfence | ctrl.svinval));
+wire trap_nochange  = is_fence; // TODO 改名
+wire undone_fence_i = is_fence & !cache_cntr.is_writebacked_all;
+wire fence_clocked  = is_fence & !undone_fence_i & inst_clock == 2'b0;
 
 assign is_stall     = valid & (
                 ( is_new & (this_raise_trap | cmd_is_xret | cmd_is_write | trap_nochange)) |
                 (!is_new & undone_fence_i | fence_clocked)
 );
-assign csr_is_trap  = valid & !is_new & (last_raise_trap | undone_fence_i | fence_clocked);
+assign csr_is_trap  = valid & !is_new & (last_raise_trap | cmd_is_xret | undone_fence_i | fence_clocked);
 assign csr_keep_trap= trap_nochange;
+
+assign next_no_wb   = valid & (this_raise_trap | last_raise_trap); // TODO xretは除外
 
 assign cache_cntr.i_mode            = mode;
 assign cache_cntr.d_mode            = modetype'(mode == M_MODE & mstatus_mprv ? modetype'(mstatus_mpp) : mode);
 assign cache_cntr.mxr               = mstatus_mxr;
 assign cache_cntr.sum               = mstatus_sum;
 assign cache_cntr.satp              = satp;
-assign cache_cntr.do_writeback      = is_new & ctrl.fence_i;
-assign cache_cntr.invalidate_icache = is_new & ctrl.fence_i;
+assign cache_cntr.do_writeback      = is_new & is_fence;
+assign cache_cntr.invalidate_icache = is_new & is_fence;
 
 logic [1:0] inst_clock = 0;
 logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行されないようにするためのフラグ
 
 always @(posedge clk) begin
-    last_raise_trap <= this_raise_trap | cmd_is_xret;
+    last_raise_trap <= this_raise_trap;
     if (valid & is_new) begin
         inst_clock <= 0;
         // trapを起こす
@@ -701,7 +735,7 @@ always @(posedge clk) if (can_output_log) begin
     $display("info,csrstage.mepc,0x%h", mepc);
     $display("info,csrstage.sepc,0x%h", sepc);
 
-    if (ctrl.fence_i) begin
+    if (is_fence) begin
         $display("data,csrstage.$.do_wb,b,%b", cache_cntr.do_writeback);
         $display("data,csrstage.$.is_wbed_all,b,%b", cache_cntr.is_writebacked_all);
         $display("data,csrstage.$.invalidate_i$,b,%b", cache_cntr.invalidate_icache);
@@ -709,6 +743,7 @@ always @(posedge clk) if (can_output_log) begin
 
     if (valid & (csr_cmd != CSR_X | this_raise_trap)) begin
         $display("data,csrstage.csr_cmd,d,%b", csr_cmd);
+        $display("data,csrstage.can_access,d,%b", can_access);
         $display("data,csrstage.addr,h,%b", addr);
         $display("data,csrstage.wdata,h,%b", wdata);
         $display("data,csrstage.rdata,h,%b", next_csr_rdata);
