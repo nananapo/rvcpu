@@ -184,7 +184,7 @@ always @(posedge clk) begin
                         cache_modified[info_index]  <= 0;
                         `ifdef PRINT_DEBUGINFO
                         if (can_output_log)
-                            $display("info,memstage.d$.event.need_wb,l/swith wb : %h", dreq.addr);
+                            $display("info,memstage.d$.event.need_wb,l/s with wb : %h", dreq.addr);
                         `endif
                     end else begin
                         if (dreq.wen) begin
@@ -200,7 +200,7 @@ always @(posedge clk) begin
 
                             `ifdef PRINT_DEBUGINFO
                             if (can_output_log)
-                                $display("info,memstage.d$.event.modified, write with no wb : %h <= %h", dreq.addr, dreq.wdata);
+                                $display("info,memstage.d$.event.modified,write with no wb : %h <= %h", dreq.addr, dreq.wdata);
                             `endif
                         end else begin
                             // 読む
