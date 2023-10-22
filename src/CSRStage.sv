@@ -15,6 +15,7 @@ module CSRStage #(
     input wire UIntX    imm_i,
     input wire UIntX    op1_data,
     input wire UIntX    alu_out,
+    input wire Addr     btarget,
 
     output wire UIntX   next_csr_rdata,
     output wire         next_no_wb,
@@ -500,8 +501,9 @@ function [$bits(UIntX)-1:0] gen_expt_xtval(
     input UIntX     alu_out
 );
     case (cause)
+        CAUSE_INSTRUCTION_ADDRESS_MISALIGNED:
+            gen_expt_xtval = btarget;
         CAUSE_BREAKPOINT,
-        CAUSE_INSTRUCTION_ADDRESS_MISALIGNED,
         CAUSE_INSTRUCTION_ACCESS_FAULT,
         CAUSE_INSTRUCTION_PAGE_FAULT:
             gen_expt_xtval = pc;

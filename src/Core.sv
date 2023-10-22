@@ -108,6 +108,7 @@ UIntX       mem_imm_i;
 UIntX       mem_alu_out;
 UIntX       mem_op1_data;
 UIntX       mem_rs2_data;
+Addr        mem_btarget;
 // mem wire
 wire        mem_memory_stall;
 // mem -> csr wire
@@ -126,6 +127,7 @@ UIntX       csr_imm_i;
 UIntX       csr_alu_out;
 UIntX       csr_op1_data;
 UIntX       csr_mem_rdata;
+Addr        csr_btarget;
 // csr wire
 wire        csr_cmd_stall;
 wire        csr_is_trap;
@@ -348,6 +350,7 @@ always @(posedge clk) begin
                                 (exe_branch_taken & !is_ialigned(exe_branch_target)));
             mem_trap.cause  <= exe_trap.valid ? exe_trap.cause :
                                 (exe_branch_taken & !is_ialigned(exe_branch_target)) ? CAUSE_INSTRUCTION_ADDRESS_MISALIGNED : 0;
+            mem_btarget     <= exe_branch_target;
             // forwarding
             mem_fw.valid    <= exe_valid & exe_fw.valid;
             mem_fw.fwdable  <= exe_fw.fwdable | exe_ctrl.wb_sel == WB_ALU;
@@ -383,6 +386,7 @@ always @(posedge clk) begin
             csr_op1_data    <= mem_op1_data;
             // trap
             csr_trap        <= mem_valid ? mem_next_trap : 0;
+            csr_btarget     <= mem_btarget;
             // forwarding
             csr_fw.valid    <= mem_valid & mem_fw.valid;
             csr_fw.fwdable  <= mem_fw.fwdable | mem_ctrl.wb_sel == WB_MEM;
@@ -553,6 +557,7 @@ CSRStage #(
     .imm_i(csr_imm_i),
     .op1_data(csr_op1_data),
     .alu_out(csr_alu_out),
+    .btarget(csr_btarget),
 
     .next_csr_rdata(csr_csr_rdata),
     .next_no_wb(csr_no_wb),
