@@ -52,8 +52,10 @@ wire [21:0] satp_ppn = satp[21:0];
 statetype state  = IDLE;
 wire sv32_enable = mode != M_MODE & satp_mode == 1;
 
+// TODO まとめる
 wire        sv32_req_ready;
 wire        sv32_req_valid;
+wire        sv32_req_wen;
 wire [31:0] sv32_req_addr;
 wire        sv32_resp_valid;
 wire [31:0] sv32_resp_addr;
@@ -64,7 +66,7 @@ FaultTy     sv32_resp_errty = FE_ACCESS_FAULT;
 assign preq.ready   = sv32_enable ? sv32_req_ready  : memreq.ready;
 assign memreq.valid = sv32_enable ? sv32_req_valid  : preq.valid;
 assign memreq.addr  = sv32_enable ? sv32_req_addr   : preq.addr;
-assign memreq.wen   = !EXECUTE_MODE & (sv32_enable ? s_req.wen : preq.wen); // EXECUTE_MODEでは、必ずloadしかしない
+assign memreq.wen   = sv32_enable ? sv32_req_wen : preq.wen;
 assign memreq.wdata = sv32_enable ? s_req.wdata     : preq.wdata;
 assign presp.valid  = sv32_enable ? sv32_resp_valid : memresp.valid;
 assign presp.rdata  = sv32_enable ? sv32_resp_rdata : memresp.rdata;
@@ -108,7 +110,7 @@ wire pte_X  = memresp.rdata[3]; // Executable
 // U-modeでアクセスできるかどうか
 // SUM=1のとき、S-modeでもアクセスできるようになる。
 // SUMにかかわらず、S-modeはU=1なページを実行できない
-wire pte_U  = memresp.rdata[4]; 
+wire pte_U  = memresp.rdata[4];
 wire pte_G  = memresp.rdata[5]; // Global mappingが何かわからない
 // キャッシュの実装の都合上、命令用のPTWはAを変更しない。Dは元から変更されない。
 wire pte_A  = memresp.rdata[6]; // 最後にAが0にされてからアクセスされたかどうか
@@ -137,6 +139,9 @@ wire [21:0] pte_ppn     = memresp.rdata[31:10];
 
 assign sv32_req_ready   = state == IDLE;
 assign sv32_req_valid   = state == WALK_READY | state == REQ_READY | state == WAIT_SET_AD_READY;
+assign sv32_req_wen     = !EXECUTE_MODE & (
+                            state == REQ_READY & s_req.wen |
+                            state == WAIT_SET_AD_READY);
 assign sv32_req_addr    = next_addr[31:0];
 assign sv32_resp_valid  = state == REQ_END;
 assign sv32_resp_addr   = s_req.addr;
@@ -144,8 +149,8 @@ assign sv32_resp_rdata  = result_rdata;
 
 UIntX   last_pte = 0;
 Addr    last_addr= 0;
-wire last_pte_A  = last_pte[6];
-wire last_pte_D  = last_pte[7];
+wire    last_pte_A  = last_pte[6];
+wire    last_pte_D  = last_pte[7];
 
 always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
     case (state)
@@ -158,10 +163,11 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             next_addr   <= {satp_ppn, 12'b0} + {22'b0, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
         end
     end
-    WALK_READY: if (memreq.ready) state <= WALK_VALID;
-    WALK_VALID: if (memresp.valid) begin
-        last_pte    <= memresp.rdata;
+    WALK_READY: if (memreq.ready) begin
+        state <= WALK_VALID;
         last_addr   <= sv32_req_addr;
+    end
+    WALK_VALID: if (memresp.valid) begin
         // メモリがエラー
         // Vが立っていない
         // W=1なのにR=0
@@ -177,8 +183,8 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             !pte_V |
             pte_W & (!pte_R) |
             pte_G |
-            !is_leaf_node & (pte_A | pte_D) | 
-            mode == S_MODE & EXECUTE_MODE & pte_U | 
+            !is_leaf_node & (pte_A | pte_D) |
+            mode == S_MODE & EXECUTE_MODE & pte_U |
             mode == S_MODE & !EXECUTE_MODE & pte_U & !sum |
             is_leaf_node & EXECUTE_MODE & !pte_X |
             is_leaf_node & !EXECUTE_MODE & (s_req.wen & !pte_W | !s_req.wen & !pte_R & (!mxr | !pte_X)) |
@@ -188,16 +194,24 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             sv32_resp_error <= 1;
             sv32_resp_errty <= FaultTy'(memresp.error ? FE_ACCESS_FAULT : FE_PAGE_FAULT);
         end else if (is_leaf_node) begin
-            // 5.3.2 step 4
-            state <= REQ_READY;
-            // 5.3.2 step 8
-            // Sv32 physical address
-            // ppn[1], ppn[0], page offset
-            // 12    , 10    , 12
-            if (level == 2'b01)
-                next_addr <= {pte_ppn1, s_vpn0, s_page_offset};
-            else
-                next_addr <= {pte_ppn, s_page_offset};
+            // 5.3.2 step 6
+            // superpageがmisalignかどうか調べる
+            if (level == 2'b01 & pte_ppn0 != 0) begin
+                state           <= REQ_END;
+                sv32_resp_error <= 1;
+                sv32_resp_errty <= FE_PAGE_FAULT;
+            end else begin
+                state       <= REQ_READY;
+                last_pte    <= memresp.rdata;
+                // 5.3.2 step 8
+                // Sv32 physical address
+                // ppn[1], ppn[0], page offset
+                // 12    , 10    , 12
+                if (level == 2'b01)
+                    next_addr <= {pte_ppn1, s_vpn0, s_page_offset};
+                else
+                    next_addr <= {pte_ppn, s_page_offset};
+            end
         end else begin
             state   <= WALK_READY;
             // 5.3.2 step 4
@@ -228,7 +242,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
                 state       <= WAIT_SET_AD_READY;
                 next_addr   <= {2'b0, last_addr};
                 s_req.wen   <= 1;
-                s_req.wdata <= last_pte | 
+                s_req.wdata <= last_pte |
                                 {25'b0, 1'b1, 6'b0} |       // A
                                 {24'b0, s_req.wen, 7'b0};   // D
             end else begin
