@@ -28,6 +28,11 @@ module CSRStage #(
     input wire UInt64   reg_mtimecmp,
 
     output wire CacheCntrInfo   cache_cntr
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    input wire can_output_log
+`endif
 );
 
 `include "csrparam.svh"
@@ -660,7 +665,7 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,csrstage.valid,b,%b", valid);
     $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);
     if (valid) begin

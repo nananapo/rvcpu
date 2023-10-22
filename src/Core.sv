@@ -23,6 +23,11 @@ module Core #(
 
     output logic    exit,
     output UIntX    gp
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    output wire can_output_log
+`endif
 );
 
 `include "csrparam.svh"
@@ -205,7 +210,8 @@ always @(posedge clk) begin
         id_valid    <= 0;
         id_trap     <= 0;
         `ifdef PRINT_DEBUGINFO
-            $display("info,decodestage.event.pipeline_flush,pipeline flush");
+            if (can_output_log)
+                $display("info,decodestage.event.pipeline_flush,pipeline flush");
         `endif
     end else if (!id_stall) begin
         if (iresp.valid) begin
@@ -230,7 +236,8 @@ always @(posedge clk) begin
         ds_trap     <= 0;
         ds_fw       <= 0;
         `ifdef PRINT_DEBUGINFO
-            $display("info,datastage.event.pipeline_flush,pipeline flush");
+            if (can_output_log)
+                $display("info,datastage.event.pipeline_flush,pipeline flush");
         `endif
     end else if (ds_stall) begin
         ds_is_new   <= 0;
@@ -271,7 +278,8 @@ always @(posedge clk) begin
         exe_trap    <= 0;
         exe_fw      <= 0;
         `ifdef PRINT_DEBUGINFO
-            $display("info,exestage.event.pipeline_flush,pipeline flush");
+            if (can_output_log)
+                $display("info,exestage.event.pipeline_flush,pipeline flush");
         `endif
     end else if (exe_stall) begin
         exe_is_new  <= 0;
@@ -311,7 +319,8 @@ always @(posedge clk) begin
         mem_trap    <= 0;
         mem_fw      <= 0;
         `ifdef PRINT_DEBUGINFO
-            $display("info,memstage.event.pipeline_flush,pipeline flush");
+            if (can_output_log)
+                $display("info,memstage.event.pipeline_flush,pipeline flush");
         `endif
     end else if (mem_stall) begin
         mem_is_new  <= 0;
@@ -394,7 +403,7 @@ always @(posedge clk) begin
         wb_reg_addr     <= csr_ctrl.wb_addr;
         wb_wdata        <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata; // fwと等しい
         // forwarding
-        wb_fw.valid     <= csr_valid;
+        wb_fw.valid     <= csr_fw.valid & csr_valid;
         wb_fw.fwdable   <= 1;
         wb_fw.addr      <= csr_fw.addr;
         wb_fw.wdata     <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata;
@@ -444,6 +453,11 @@ DataSelectStage #() dataselectstage
     .fw_mem(mem_fw),
     .fw_csr(csr_fw),
     .fw_wbk(wb_fw)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 ExecuteStage #() executestage
@@ -467,6 +481,11 @@ ExecuteStage #() executestage
     .branch_taken(exe_branch_taken),
     .branch_target(exe_branch_target),
     .is_stall(exe_calc_stall)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 MemoryStage #() memorystage
@@ -495,6 +514,11 @@ MemoryStage #() memorystage
 
     .is_stall(mem_memory_stall),
     .exit(exit)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 
     `ifdef PRINT_DEBUGINFO
         ,
@@ -537,6 +561,11 @@ CSRStage #(
     .reg_mtimecmp(reg_mtimecmp),
 
     .cache_cntr(cache_cntr)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 WriteBackStage #() wbstage(
@@ -551,6 +580,11 @@ WriteBackStage #() wbstage(
     .wdata(wb_wdata),
 
     .regfile(wb_regfile)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 //////////////////////////////// 分岐情報を渡す ///////////////////////////////
@@ -598,20 +632,75 @@ end
 `endif
 /////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////// バグの可能性がある怪しい挙動を補足する ////////
+`ifdef DETECT_ABNORMAL_STALL
+
+`ifndef ABNORMAL_STOP_THRESHOLD
+    `define ABNORMAL_STOP_THRESHOLD 100000
+    initial $display("WARNING : ABNORMAL_STOP_THRESHOLD is not set, default to %d", `ABNORMAL_STOP_THRESHOLD);
+`endif
+
+int abn_clk_count = 0;
+always @(negedge clk)
+    abn_clk_count++;
+
+Addr last_ds_pc     = 0;
+Addr last_exe_pc    = 0;
+Addr last_mem_pc    = 0;
+Addr last_csr_pc    = 0;
+
+int ds_same_count   = 0;
+int exe_same_count  = 0;
+int mem_same_count  = 0;
+int csr_same_count  = 0;
+
+always @(posedge clk) begin
+    ds_same_count  <= ds_pc  == last_ds_pc  ? ds_same_count  + 1 : 0;
+    exe_same_count <= exe_pc == last_exe_pc ? exe_same_count + 1 : 0;
+    mem_same_count <= mem_pc == last_mem_pc ? mem_same_count + 1 : 0;
+    csr_same_count <= csr_pc == last_csr_pc ? csr_same_count + 1 : 0;
+
+    last_ds_pc  <= ds_pc;
+    last_exe_pc <= exe_pc;
+    last_mem_pc <= mem_pc;
+    last_csr_pc <= csr_pc;
+
+    if (    ds_same_count  >= `ABNORMAL_STOP_THRESHOLD |
+            exe_same_count >= `ABNORMAL_STOP_THRESHOLD |
+            mem_same_count >= `ABNORMAL_STOP_THRESHOLD |
+            csr_same_count >= `ABNORMAL_STOP_THRESHOLD ) begin
+        $display("!!!FORCE STOP!!!");
+        $display("[%d - %d clock]", abn_clk_count - `ABNORMAL_STOP_THRESHOLD, abn_clk_count);
+        $display("name(valid) pc");
+        $display(" id(%d) pc = %h", id_valid, id_pc);
+        $display(" ds(%d) pc = %h, for %d clock", ds_valid, last_ds_pc , ds_same_count );
+        $display("exe(%d) pc = %h, for %d clock", exe_valid, last_exe_pc, exe_same_count);
+        $display("mem(%d) pc = %h, for %d clock", mem_valid, last_mem_pc, mem_same_count);
+        $display("csr(%d) pc = %h, for %d clock", csr_valid, last_csr_pc, csr_same_count);
+        $display(" wb(%d) pc = %h", wb_valid, wb_pc);
+        $fflush;
+        $finish;
+        $finish; // TODO なぜか2回finishしないと終了しない
+    end
+end
+`endif
+/////////////////////////////////////////////////////////////////////////////
+
 `ifdef PRINT_DEBUGINFO
 int clk_count = 0;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
-    $display("clock,%d", clk_count);
-
-    $display("data,decodestage.trapinfo.valid,b,%b", id_trap.valid);
-    $display("data,datastage.trapinfo.valid,b,%b", ds_trap.valid);
-    $display("data,exestage.trapinfo.valid,b,%b", exe_trap.valid);
-    $display("data,memstage.trapinfo.valid,b,%b", mem_trap.valid);
-    $display("data,csrstage.trapinfo.valid,b,%b", csr_trap.valid);
+    if (can_output_log) begin
+        $display("clock,%d", clk_count);
+        $display("data,decodestage.trapinfo.valid,b,%b", id_trap.valid);
+        $display("data,datastage.trapinfo.valid,b,%b", ds_trap.valid);
+        $display("data,exestage.trapinfo.valid,b,%b", exe_trap.valid);
+        $display("data,memstage.trapinfo.valid,b,%b", mem_trap.valid);
+        $display("data,csrstage.trapinfo.valid,b,%b", csr_trap.valid);
+    end
 end
 
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,decodestage.valid,b,%b", id_valid);
     $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : IID_X);
     if (id_valid) begin

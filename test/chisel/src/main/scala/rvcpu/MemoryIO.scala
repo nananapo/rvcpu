@@ -14,6 +14,7 @@ class CacheReq(xlen : Int) extends Bundle {
 class CacheResp(xlen : Int) extends Bundle {
     val valid   = Output(Bool())
     val error   = Output(Bool())
+    val errty   = Output(Bool()) // false : ACCESS_FAULT , true : PAGE_FAULT
     val rdata   = Output(UInt(32.W))
 }
 

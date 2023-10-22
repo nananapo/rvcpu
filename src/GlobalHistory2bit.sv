@@ -47,7 +47,7 @@ end
 
 /*
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,fetchstage.glbh2.pc,h,%b", pc);
     $display("data,fetchstage.glbh2.pci,h,%b", pci);
     $display("data,fetchstage.glbh2.hist,b,%b", hist);

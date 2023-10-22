@@ -21,6 +21,11 @@ module ExecuteStage
     output wire         branch_taken,
     output wire Addr    branch_target,
     output wire         is_stall
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    input wire can_output_log
+`endif
 );
 
 `include "basicparams.svh"
@@ -60,7 +65,7 @@ MulDivModule #() muldiv (
     .resp(mdresp)
 );
 
-wire is_muldiv          = i_exe == ALU_DIV |i_exe == ALU_REM |
+wire is_muldiv          = i_exe == ALU_DIV | i_exe == ALU_REM |
                           i_exe == ALU_MUL | i_exe == ALU_MULH | i_exe == ALU_MULHSU;
 
 assign mdreq.valid      = valid & ((is_new & state == IDLE & is_muldiv) | state == WAIT_READY);
@@ -90,7 +95,7 @@ always @(posedge clk) begin
         state <= IDLE;
     end else begin
         case (state)
-            IDLE: if (is_muldiv) begin
+            IDLE: if (is_new & is_muldiv) begin
                 state <= mdreq.ready ? WAIT_CALC : WAIT_READY;
             end
             WAIT_READY: if (mdreq.ready) state <= WAIT_CALC;
@@ -104,7 +109,7 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,exestage.valid,b,%b", valid);
     $display("data,exestage.inst_id,h,%b", valid ? inst_id : IID_X);
     if (valid) begin

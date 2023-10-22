@@ -50,7 +50,7 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,fetchstage.lpht.pc,h,%b", pc);
     $display("data,fetchstage.lpht.histi,h,%b", histi);
     $display("data,fetchstage.lpht.phti,b,%b", phti);

@@ -33,6 +33,8 @@ always @(posedge clk_in) begin
     led[5:0] <= ~gp[5:0];
 end
 
+wire can_output_log;
+
 // Counter and Timers
 UInt64 reg_cycle = 0;
 UInt64 reg_time  = 0;
@@ -121,6 +123,11 @@ MemBusCntr #() membuscntr (
     .dresp_in(mbresp_dcache),
     .memreq_in(mbreq_mem),
     .memresp_in(mbresp_mem)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 /* ---- Inst ---- */
@@ -131,6 +138,11 @@ MemICache #() memicache (
     .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
     .busresp(mbresp_icache)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 PageTableWalker #(
@@ -147,6 +159,11 @@ PageTableWalker #(
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
     .sum(cache_cntr.sum)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 InstQueue #() instqueue (
@@ -156,6 +173,11 @@ InstQueue #() instqueue (
     .memreq(icreq_iq_ptw),
     .memresp(icresp_iq_ptw),
     .brinfo(brinfo)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 /* ---- Data ---- */
@@ -167,6 +189,11 @@ MemDCache #() memdcache (
     .busresp(mbresp_dcache),
     .do_writeback(cache_cntr.do_writeback),
     .is_writebacked_all(cache_cntr.is_writebacked_all)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 PageTableWalker #(
@@ -183,6 +210,11 @@ PageTableWalker #(
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
     .sum(cache_cntr.sum)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 DAccessCntr #() daccesscntr (
@@ -192,6 +224,11 @@ DAccessCntr #() daccesscntr (
     .dresp(dresp_mmio_acntr),
     .memreq(dcreq_acntr_ptw),
     .memresp(dcresp_acntr_ptw)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 MMIO_Cntr #(
@@ -207,6 +244,11 @@ MMIO_Cntr #(
     .dresp_in(dresp_core_mmio),
     .memreq_in(dreq_mmio_acntr),
     .memresp_in(dresp_mmio_acntr)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 /* ---- Core ---- */
@@ -231,6 +273,11 @@ Core #(
     .exit(exit),
 
     .exited(exited)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
 );
 
 endmodule

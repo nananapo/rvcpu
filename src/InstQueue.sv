@@ -9,6 +9,11 @@ module InstQueue #(
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp,
     input wire BrInfo       brinfo
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    input wire can_output_log
+`endif
 );
 
 `include "basicparams.svh"
@@ -44,7 +49,9 @@ assign iresp.errty      = buf_rdata.errty;
 
 SyncQueue #(
     .DATA_SIZE($bits(BufType)),
-    .WIDTH($clog2(QUEUE_SIZE))
+    .WIDTH($clog2(QUEUE_SIZE)),
+    .WREADY_NEXT(1),
+    .LOG(0)
 ) resqueue (
     .clk(clk),
     .kill(buf_kill),
@@ -171,6 +178,7 @@ always @(posedge clk) begin
     // 分岐予測に失敗
     if (branch_hazard) begin
         `ifdef PRINT_DEBUGINFO
+        if (can_output_log)
             $display("info,fetchstage.event.branch_hazard,branch hazard");
         `endif
         pc                  <= ireq.addr;
@@ -181,6 +189,7 @@ always @(posedge clk) begin
     end else begin
         if (jal_hazard) begin
             `ifdef PRINT_DEBUGINFO
+            if (can_output_log)
                 $display("info,fetchstage.event.jal_detect,jal hazard");
             `endif
         end
@@ -188,9 +197,11 @@ always @(posedge clk) begin
             // リクエストが完了した
             if (memresp.valid) begin
                 `ifdef PRINT_DEBUGINFO
+                if (can_output_log) begin
                     $display("info,fetchstage.event.fetch_end,fetch end");
                     $display("data,fetchstage.event.pc,h,%b", request_pc);
                     $display("data,fetchstage.event.inst,h,%b", memresp.rdata);
+                end
                 `endif
 
                 last_fetched_pc   <= request_pc;
@@ -203,6 +214,7 @@ always @(posedge clk) begin
                     pc          <= next_pc;
                     inst_id     <= inst_id + 1;
                     `ifdef PRINT_DEBUGINFO
+                    if (can_output_log)
                         $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
                     `endif
                 end else
@@ -216,6 +228,7 @@ always @(posedge clk) begin
                 request_pc  <= memreq.addr;
                 inst_id     <= inst_id + 1;
                 `ifdef PRINT_DEBUGINFO
+                if (can_output_log)
                     $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
                 `endif
             end
@@ -237,7 +250,7 @@ end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,fetchstage.pc,h,%b", pc);
     $display("data,fetchstage.next_pc,h,%b", next_pc);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
@@ -267,7 +280,7 @@ end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) begin
+always @(posedge clk) if (can_output_log) begin
     $display("data,btb.update.valid,b,%b", brinfo.valid);
     $display("data,btb.update.pc,h,%b", brinfo.pc);
     $display("data,btb.update.is_br,b,%b", brinfo.is_br);

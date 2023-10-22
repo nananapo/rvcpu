@@ -12,6 +12,11 @@ module MemICache #(
     inout wire CacheResp    iresp_in,
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    input wire can_output_log
+`endif
 );
 
 localparam ADDR_WIDTH = CACHE_WIDTH;
@@ -181,7 +186,7 @@ end
 
 `ifdef PRINT_DEBUGINFO
 /* verilator lint_off WIDTH */
-// always @(posedge clk) begin
+// always @(posedge clk) if (can_output_log) begin
 //     $display("data,fetchstage.i$.state,d,%b", state);
 //     $display("data,fetchstage.i$.read_count,d,%b", read_count);
 
