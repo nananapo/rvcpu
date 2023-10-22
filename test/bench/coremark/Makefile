@@ -50,7 +50,7 @@ CORE_CFLAGS = \
 	-I./ \
 	-I$(PORT_DIR)/ \
 	-DFLAGS_STR=\"$(FLAGS_STR)\" \
-	-DCORE_DEBUG=1 \
+	# -DCORE_DEBUG=1 \
 
 ELF_FILE = $(OUTPUT_DIR)/temp.elf
 BIN_FILE = $(OUTPUT_DIR)/code.bin
