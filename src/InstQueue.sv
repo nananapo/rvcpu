@@ -36,7 +36,7 @@ wire BufType buf_rdata;
 assign buf_kill         = branch_hazard;
 assign buf_wvalid       = requested & memresp.valid;
 assign buf_wdata.addr   = request_pc;
-assign buf_wdata.inst   = memresp.rdata;
+assign buf_wdata.inst   = memresp.error ? INST_NOP : memresp.rdata;
 assign buf_wdata.inst_id= inst_id - IID_ONE;
 assign buf_wdata.error  = memresp.error;
 assign buf_wdata.errty  = memresp.errty;
