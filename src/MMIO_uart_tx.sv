@@ -52,6 +52,9 @@ Uart_tx #(
 assign resp_valid   = 1;
 assign resp_rdata   = DATA_Z;
 
+int clock_count = 0;
+always @(posedge clk) clock_count++;
+
 always @(posedge clk) begin
     if (q_rready & q_rvalid) begin
         `ifdef PRINT_DEBUGINFO
@@ -59,7 +62,11 @@ always @(posedge clk) begin
                 $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
             end
         `else
-            $write("%c", q_rdata);
+            `ifdef PRINT_UART_CLOCK
+                $write("%d : %c\n", clock_count, q_rdata);
+            `else
+                $write("%c", q_rdata);
+            `endif
             $fflush();
         `endif
     end
