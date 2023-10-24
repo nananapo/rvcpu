@@ -58,10 +58,12 @@ assign {
 
 assign iresp_in.valid = state == I_VALID & memresp_in.valid;
 assign iresp_in.addr  = s_ireq.addr;
+assign iresp_in.error = memresp_in.error;
 assign iresp_in.rdata = memresp_in.rdata;
 
 assign dresp_in.valid = state == D_VALID & memresp_in.valid;
 assign dresp_in.addr  = s_dreq.addr;
+assign dresp_in.error = memresp_in.error;
 assign dresp_in.rdata = memresp_in.rdata;
 
 logic [3:0] b_counter = 0;
