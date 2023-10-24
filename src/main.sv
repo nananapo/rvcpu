@@ -88,7 +88,7 @@ wire CacheCntrInfo  cache_cntr;
         $finish;
     end
 `endif
-`ifndef MEMORY_SIZE
+`ifndef MEMORY_WIDTH
     `define MEMORY_WIDTH 20
     initial $display("WARN : memory width (MEMORY_WIDTH) is not set. default to %d", `MEMORY_WIDTH);
 `endif
