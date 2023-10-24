@@ -31,6 +31,7 @@ FILES = test.sv \
 		TwoBitCounter.sv \
 		LocalHistory2bit.sv \
 		GlobalHistory2bit.sv \
+		MMIO_EDisk.sv
 
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TESTS -DPRINT_DEBUGINFO
