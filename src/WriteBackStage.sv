@@ -36,11 +36,15 @@ always @(posedge clk) begin
     end
 end
 
-`ifdef PRINT_DEBUGINFO
-int inst_count    = 0;
+
+logic [63:0] inst_count  = 0;
+logic [63:0] clock_count = 0;
 always @(posedge clk) begin
+    clock_count++;
     if (valid) inst_count += 1;
 end
+
+`ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (can_output_log) begin
     $display("data,wbstage.valid,b,%b", valid);
     $display("data,wbstage.inst_id,h,%b", valid ? inst_id : IID_X);
@@ -52,23 +56,31 @@ always @(posedge clk) if (can_output_log) begin
         $display("data,wbstage.inst_count,d,%b", inst_count);
     end
 end
-`ifdef START_LOG_INST_COUNT
-    int sl_inst_count = 0;
-    always @(posedge clk) begin
-        if (valid) sl_inst_count += 1;
-    end
-    assign can_output_log = sl_inst_count > `START_LOG_INST_COUNT;
-`else
-    assign can_output_log = 1;
+    `ifndef START_LOG_CLOCK_COUNT
+        `define START_LOG_CLOCK_COUNT 0
+    `endif
+    `ifdef START_LOG_INST_COUNT
+        assign can_output_log = inst_count > `START_LOG_INST_COUNT && clock_count >= `START_LOG_CLOCK_COUNT;
+    `else
+        /* verilator lint_off UNSIGNED */
+        assign can_output_log = 1 && clock_count >= `START_LOG_CLOCK_COUNT;
+        /* verilator lint_on UNSIGNED */
+    `endif
 `endif
 
+`ifdef END_CLOCK_COUNT
+always @(posedge clk) begin
+    if (`END_CLOCK_COUNT >= 0 && clock_count >= `END_CLOCK_COUNT) begin
+        $finish;
+        $finish;
+        $finish;
+    end
+end
 `endif
 
 `ifdef END_INST_COUNT
-int en_inst_count = 0;
 always @(posedge clk) begin
-    if (valid) en_inst_count += 1;
-    if (en_inst_count == `END_INST_COUNT) begin
+    if (inst_count == `END_INST_COUNT) begin
         $finish;
         $finish;
         $finish;
@@ -77,12 +89,10 @@ end
 `endif
 
 `ifdef PRINT_LIGHT_WBLOG
-int lb_inst_count = 0;
 always @(posedge clk) begin
     if (valid) begin
-        lb_inst_count += 1;
         if (can_output_log) begin
-            $display("[%d] %h", lb_inst_count, pc);
+            $display("[%d] %h", inst_count, pc);
             if (rf_wen & reg_addr != 0)
                 $display("reg[%d] <= %h", reg_addr, wdata);
         end
