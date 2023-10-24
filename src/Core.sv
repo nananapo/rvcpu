@@ -158,7 +158,7 @@ FwCtrl  wb_fw;
 assign gp = wb_regfile[3];
 
 // id/dsがvalidではないか、branchに失敗したクロックは保持
-wire exe_branch_stall = (!ds_valid & !id_valid & (exe_is_new | !exe_br_checked)) | branch_fail;
+wire exe_branch_stall = (!ds_valid & !id_valid & !exe_trap.valid & (exe_is_new | !exe_br_checked)) | branch_fail;
 
 // stall
 // 各ステージに新しく値を流してはいけないかどうか
