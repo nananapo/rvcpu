@@ -5,6 +5,10 @@ module TwoBitCounter #(
     input wire Addr     pc,         // 予測したいアドレス
     output wire         pred_taken,
     input wire BrInfo   brinfo
+    `ifdef PRINT_DEBUGINFO
+    ,
+    input wire can_output_log
+    `endif
 );
 
 localparam ADDR_SIZE = 2 ** ADDR_WIDTH;

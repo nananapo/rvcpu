@@ -126,6 +126,11 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
+
+        `ifdef PRINT_DEBUGINFO
+        ,
+        .can_output_log(can_output_log)
+        `endif
     );
     initial $display("branch pred : two bit counter");
 `elsif PRED_LOCAL
@@ -134,6 +139,11 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
+
+        `ifdef PRINT_DEBUGINFO
+        ,
+        .can_output_log(can_output_log)
+        `endif
     );
     initial $display("branch pred : local history");
 `elsif PRED_GLOBAL
@@ -142,6 +152,11 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
+
+        `ifdef PRINT_DEBUGINFO
+        ,
+        .can_output_log(can_output_log)
+        `endif
     );
     initial $display("branch pred : global history");
 `else
