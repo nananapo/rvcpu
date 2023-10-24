@@ -1,8 +1,8 @@
 module DAccessCntr (
     input wire              clk,
     input wire              reset,
-    inout wire DReq         dreq,
-    inout wire DResp        dresp,
+    inout wire CacheReq     dreq,
+    inout wire CacheResp    dresp,
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp
 
@@ -30,7 +30,7 @@ typedef enum logic [3:0] {
 
 statetype state = IDLE;
 
-DReq sdreq;
+CacheReq sdreq;
 initial begin
     sdreq.valid = 1'b0;
     sdreq.wen = 0;
@@ -87,7 +87,6 @@ assign dresp.valid  =   state == LOAD_PUSH |
                         state == ERROR;
 assign dresp.error  = error_result;
 assign dresp.errty  = errty_result;
-assign dresp.addr   = sdreq.addr;
 assign dresp.rdata  = load_result;
 
 assign dreq.ready   = state == IDLE;

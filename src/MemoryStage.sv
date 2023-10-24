@@ -14,8 +14,8 @@ module MemoryStage
     output wire TrapInfo    next_trapinfo,
     output wire UIntX       next_mem_rdata,
 
-    inout wire DReq         dreq,
-    inout wire DResp        dresp,
+    inout wire CacheReq     dreq,
+    inout wire CacheResp    dresp,
 
     output logic            is_stall,
     output wire             exit

@@ -8,16 +8,16 @@ module Core #(
     input wire  clk,
     input wire  exited,
 
-    input wire UInt64   reg_cycle,
-    input wire UInt64   reg_time,
-    input wire UInt64   reg_mtime,
-    input wire UInt64   reg_mtimecmp,
+    input wire UInt64           reg_cycle,
+    input wire UInt64           reg_time,
+    input wire UInt64           reg_mtime,
+    input wire UInt64           reg_mtimecmp,
 
-    inout wire IReq     ireq,
-    inout wire IResp    iresp,
-    output BrInfo       brinfo,
-    inout wire DReq     dreq,
-    inout wire DResp    dresp,
+    inout wire IReq             ireq,
+    inout wire IResp            iresp,
+    output BrInfo               brinfo,
+    inout wire CacheReq         dreq,
+    inout wire CacheResp        dresp,
 
     output wire CacheCntrInfo   cache_cntr,
 

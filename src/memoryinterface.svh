@@ -37,24 +37,6 @@ typedef struct packed {
 } BrInfo;
 
 typedef struct packed {
-    logic   ready; // in
-    logic   valid; // out
-    Addr    addr;  // out
-    logic   wen;   // out
-    UIntX   wdata; // out
-    MemSize wmask; // out
-} DReq;
-
-typedef struct packed {
-    logic   valid;
-    logic   error;
-    FaultTy errty;
-    Addr    addr;
-    UIntX   rdata;
-} DResp;
-
-
-typedef struct packed {
     logic   ready;
     logic   valid;
     Addr    addr;
@@ -63,7 +45,6 @@ typedef struct packed {
 } MemBusReq;
 
 typedef struct packed {
-    // logic       ready;
     logic   valid;
     logic   error;
     Addr    addr;
@@ -76,6 +57,7 @@ typedef struct packed {
     Addr    addr;
     logic   wen;
     UInt32  wdata;
+    MemSize wmask;
 } CacheReq;
 
 typedef struct packed {

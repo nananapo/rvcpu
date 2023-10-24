@@ -9,8 +9,8 @@ module MMIO_clint #(
     input  wire         req_wen,
     input  wire UIntX   req_wdata,
 
-    output wire     resp_valid,
-    output UInt32   resp_rdata,
+    output wire         resp_valid,
+    output UInt32       resp_rdata,
 
     input wire UInt64   mtime,
     output UInt64       mtimecmp
