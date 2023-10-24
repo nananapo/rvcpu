@@ -276,7 +276,7 @@ always @(posedge clk) begin
 
                 `ifdef PRINT_DEBUGINFO
                 if (can_output_log)
-                    $display("info,memstage.d$.event.loop_need_wb,%h <= %h is modified, needs writeback", cache_addrs[wb_loop_address], cache_data[wb_loop_address]);
+                    $display("info,memstage.d$.event.loop_need_wb,%h <= %h is modified. %d remains", cache_addrs[wb_loop_address], cache_data[wb_loop_address], modified_count);
                 `endif
             end
             wb_loop_address <= wb_loop_address + 1;
