@@ -1,18 +1,18 @@
 module MMIO_Cntr #(
     parameter FMAX_MHz = 27
 ) (
-    input  wire         clk,
-    input  wire         reset,
+    input  wire             clk,
+    input  wire             reset,
 
-    input  wire         uart_rx,
-    output wire         uart_tx,
-    input  wire UInt64  mtime,
-    output wire UInt64  mtimecmp,
+    input  wire             uart_rx,
+    output wire             uart_tx,
+    input  wire UInt64      mtime,
+    output wire UInt64      mtimecmp,
 
-    inout  wire DReq    dreq_in,
-    inout  wire DResp   dresp_in,
-    inout  wire DReq    memreq_in,
-    inout  wire DResp   memresp_in
+    inout  wire CacheReq    dreq_in,
+    inout  wire CacheResp   dresp_in,
+    inout  wire CacheReq    memreq_in,
+    inout  wire CacheResp   memresp_in
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -30,13 +30,13 @@ typedef enum logic [1:0] {
 } statetype;
 
 statetype state = IDLE;
-DReq  s_dreq;
+CacheReq  s_dreq;
 
 initial begin
     s_dreq.valid = 0;
 end
 
-wire DReq dreq  = state == IDLE ? dreq_in : s_dreq;
+wire CacheReq dreq = state == IDLE ? dreq_in : s_dreq;
 
 wire is_uart_tx     = dreq.addr == MMIO_ADDR_UART_TX;
 wire is_uart_rx     = dreq.addr == MMIO_ADDR_UART_RX;
@@ -70,7 +70,6 @@ wire UIntX s_rdata  =   s_is_memory  ? memresp_in.rdata :
 assign dreq_in.ready    = state == IDLE | (state == WAIT_VALID & s_valid);
 
 assign dresp_in.valid   = s_valid;
-assign dresp_in.addr    = s_dreq.addr;
 assign dresp_in.rdata   = s_rdata;
 assign dresp_in.error   = s_is_memory ? memresp_in.error : 0;
 assign dresp_in.errty   = s_is_memory ? memresp_in.errty : FE_ACCESS_FAULT;

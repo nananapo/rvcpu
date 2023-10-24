@@ -186,6 +186,7 @@ assign memreq.addr  =   branch_hazard ? ireq.addr :
                         pc;
 assign memreq.wen   = 0;
 assign memreq.wdata = ZBIT_32;
+assign memreq.wmask = SIZE_W;
 
 logic firstClk = 1;
 

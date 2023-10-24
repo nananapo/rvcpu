@@ -71,14 +71,14 @@ wire IResp      iresp_core_iq;
 
 wire MemBusReq  mbreq_dcache;
 wire MemBusResp mbresp_dcache;
-wire CacheReq   dcreq_ptw_cache;
-wire CacheResp  dcresp_ptw_cache;
-wire CacheReq   dcreq_acntr_ptw;
-wire CacheResp  dcresp_acntr_ptw;
-wire DReq       dreq_mmio_acntr;
-wire DResp      dresp_mmio_acntr;
-wire DReq       dreq_core_mmio;
-wire DResp      dresp_core_mmio;
+wire CacheReq   dreq_acntr_cache;
+wire CacheResp  dresp_acntr_cache;
+wire CacheReq   dreq_mmio_acntr;
+wire CacheResp  dresp_mmio_acntr;
+wire CacheReq   dreq_ptw_mmio;
+wire CacheResp  dresp_ptw_mmio;
+wire CacheReq   dreq_core_ptw;
+wire CacheResp  dresp_core_ptw;
 
 wire CacheCntrInfo  cache_cntr;
 
@@ -184,34 +184,12 @@ InstQueue #() instqueue (
 /* ---- Data ---- */
 MemDCache #() memdcache (
     .clk(clk_in),
-    .dreq_in(dcreq_ptw_cache),
-    .dresp_in(dcresp_ptw_cache),
+    .dreq_in(dreq_acntr_cache),
+    .dresp_in(dresp_acntr_cache),
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache),
     .do_writeback(cache_cntr.do_writeback),
     .is_writebacked_all(cache_cntr.is_writebacked_all)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
-);
-
-PageTableWalker #(
-    .EXECUTE_MODE(0),
-    .LOG_ENABLE(0),
-    .LOG_AS("memstage")
-) dptw (
-    .clk(clk_in),
-    .reset(1'b0),
-    .preq(dcreq_acntr_ptw),
-    .presp(dcresp_acntr_ptw),
-    .memreq(dcreq_ptw_cache),
-    .memresp(dcresp_ptw_cache),
-    .mode(cache_cntr.d_mode),
-    .satp(cache_cntr.satp),
-    .mxr(cache_cntr.mxr),
-    .sum(cache_cntr.sum)
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -224,8 +202,8 @@ DAccessCntr #() daccesscntr (
     .reset(1'b0),
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
-    .memreq(dcreq_acntr_ptw),
-    .memresp(dcresp_acntr_ptw)
+    .memreq(dreq_acntr_cache),
+    .memresp(dresp_acntr_cache)
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -242,10 +220,32 @@ MMIO_Cntr #(
     .uart_tx(uart_tx),
     .mtime(reg_time),
     .mtimecmp(reg_mtimecmp),
-    .dreq_in(dreq_core_mmio),
-    .dresp_in(dresp_core_mmio),
+    .dreq_in(dreq_ptw_mmio),
+    .dresp_in(dresp_ptw_mmio),
     .memreq_in(dreq_mmio_acntr),
     .memresp_in(dresp_mmio_acntr)
+
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
+);
+
+PageTableWalker #(
+    .EXECUTE_MODE(0),
+    .LOG_ENABLE(1),
+    .LOG_AS("memstage")
+) dptw (
+    .clk(clk_in),
+    .reset(1'b0),
+    .preq(dreq_core_ptw),
+    .presp(dresp_core_ptw),
+    .memreq(dreq_ptw_mmio),
+    .memresp(dresp_ptw_mmio),
+    .mode(cache_cntr.d_mode),
+    .satp(cache_cntr.satp),
+    .mxr(cache_cntr.mxr),
+    .sum(cache_cntr.sum)
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -267,8 +267,8 @@ Core #(
     .ireq(ireq_core_iq),
     .iresp(iresp_core_iq),
     .brinfo(brinfo),
-    .dreq(dreq_core_mmio),
-    .dresp(dresp_core_mmio),
+    .dreq(dreq_core_ptw),
+    .dresp(dresp_core_ptw),
     .cache_cntr(cache_cntr),
 
     .gp(gp),
