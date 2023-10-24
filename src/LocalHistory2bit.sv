@@ -6,6 +6,10 @@ module LocalHistory2bit #(
     input wire Addr     pc,         // 予測したいアドレス
     output wire         pred_taken,
     input wire BrInfo   brinfo
+    `ifdef PRINT_DEBUGINFO
+    ,
+    input wire can_output_log
+    `endif
 );
 
 localparam WIDTH_COUNTER = WIDTH_PC + WIDTH_HIST;
