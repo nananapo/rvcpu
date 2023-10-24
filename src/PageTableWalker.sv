@@ -103,18 +103,18 @@ X W R
 1 1 0 Reserved for future use.
 1 1 1 Read-write-execute page.
 */
-wire pte_V  = memresp.rdata[0]; // validかどうか
-wire pte_R  = memresp.rdata[1]; // Readable
-wire pte_W  = memresp.rdata[2]; // Writable
-wire pte_X  = memresp.rdata[3]; // Executable
+wire pte_V  = memresp.rdata[0] === 1'b1; // validかどうか
+wire pte_R  = memresp.rdata[1] === 1'b1; // Readable
+wire pte_W  = memresp.rdata[2] === 1'b1; // Writable
+wire pte_X  = memresp.rdata[3] === 1'b1; // Executable
 // U-modeでアクセスできるかどうか
 // SUM=1のとき、S-modeでもアクセスできるようになる。
 // SUMにかかわらず、S-modeはU=1なページを実行できない
-wire pte_U  = memresp.rdata[4];
-wire pte_G  = memresp.rdata[5]; // Global mappingが何かわからない
+wire pte_U  = memresp.rdata[4] === 1'b1;
+wire pte_G  = memresp.rdata[5] === 1'b1; // Global mappingが何かわからない
 // キャッシュの実装の都合上、命令用のPTWはAを変更しない。Dは元から変更されない。
-wire pte_A  = memresp.rdata[6]; // 最後にAが0にされてからアクセスされたかどうか
-wire pte_D  = memresp.rdata[7]; // 最古にDが0にされてからwriteされたかどうか
+wire pte_A  = memresp.rdata[6] === 1'b1; // 最後にAが0にされてからアクセスされたかどうか
+wire pte_D  = memresp.rdata[7] === 1'b1; // 最古にDが0にされてからwriteされたかどうか
 
 wire is_leaf_node = !(!pte_R & !pte_W & !pte_X);
 
@@ -275,6 +275,7 @@ always @(posedge clk) if (can_output_log) if (LOG_ENABLE) begin
         $display("data,%s.ptw.memreq.wen,b,%b", LOG_AS, memreq.wen);
         $display("data,%s.ptw.memreq.wdata,h,%b", LOG_AS, memreq.wdata);
         $display("data,%s.ptw.memresp.valid,b,%b", LOG_AS, memresp.valid);
+        $display("data,%s.ptw.memresp.error,b,%b", LOG_AS, memresp.error);
         $display("data,%s.ptw.memresp.rdata,h,%b", LOG_AS, memresp.rdata);
 
         $display("data,%s.ptw.level,d,%b", LOG_AS, level);
