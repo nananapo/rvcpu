@@ -32,7 +32,7 @@ always @(posedge clk) begin
             CLINT_MTIMECMPH:resp_rdata <= mtimecmp[63:32];
             default: begin end
         endcase
-        if (req_wen) begin
+        if (req_ready & req_valid & req_wen) begin
             case (req_addr)
                 CLINT_MTIMECMP: mtimecmp[31:0]  <= req_wdata;
                 CLINT_MTIMECMPH:mtimecmp[63:32] <= req_wdata;
@@ -45,7 +45,7 @@ always @(posedge clk) begin
             CLINT_MTIMECMP: resp_rdata <= mtimecmp;
             default: begin end
         endcase
-        if (req_wen) begin
+        if (req_valid & req_wen) begin
             case (req_addr)
                 CLINT_MTIMECMP: mtimecmp <= req_wdata;
                 default: begin end
