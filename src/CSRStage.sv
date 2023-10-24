@@ -196,6 +196,33 @@ case (addr)
 endcase
 endfunction
 
+function [$bits(UIntX)-1:0] gen_expt_xtval(
+    input UIntX     cause,
+    input Addr      pc,
+    input UIntX     inst,
+    input UIntX     alu_out
+);
+    case (cause)
+        CAUSE_INSTRUCTION_ADDRESS_MISALIGNED:
+            gen_expt_xtval = btarget;
+        CAUSE_BREAKPOINT,
+        CAUSE_INSTRUCTION_ACCESS_FAULT,
+        CAUSE_INSTRUCTION_PAGE_FAULT:
+            gen_expt_xtval = pc;
+        CAUSE_LOAD_ADDRESS_MISALIGNED,
+        CAUSE_LOAD_ACCESS_FAULT,
+        CAUSE_LOAD_PAGE_FAULT,
+        CAUSE_STORE_AMO_ADDRESS_MISALIGNED,
+        CAUSE_STORE_AMO_ACCESS_FAULT,
+        CAUSE_STORE_AMO_PAGE_FAULT:
+            gen_expt_xtval = alu_out;
+        CAUSE_ILLEGAL_INSTRUCTION:
+            gen_expt_xtval = inst;
+        default:
+            gen_expt_xtval = 0;
+    endcase
+endfunction
+
 modetype    mode = M_MODE;
 Addr        satp = ADDR_ZERO;
 
@@ -310,44 +337,8 @@ wire [31:0] mstatush = {26'b0, mstatush_mbe, mstatush_sbe, 4'b0};
 //                     32     ZY XWVU TSRQ PONM LKJI HGFE DCBA
 wire [31:0] misa = 32'b0100_0000_0000_0000_0001_0001_0000_0001;
 
-logic [31:0] medeleg = 0;
-// 9.4.2. Machine Interrupt Delegation Register (mideleg)
-// When the hypervisor extension is implemented, bits 10, 6, and 2 of mideleg (corresponding to the
-// standard VS-level interrupts) are each read-only one. Furthermore, if any guest external interrupts are
-// implemented (GEILEN is nonzero), bit 12 of mideleg (corresponding to supervisor-level guest external
-// interrupts) is also read-only one. VS-level interrupts and guest external interrupts are always delegated
-// past M-mode to HS-mode
-//
-// 0 SGEIP MEIP VSEIP SEIP 0 MTIP VSTIP STIP 0 MSIP VSSIP SSIP 0
-logic [15:0] mideleg_custom = 0;
-wire mideleg_sgeip  = 0; // any guest external interruptsをサポートする
-logic mideleg_meip  = 0;
-wire mideleg_vseip  = 0; // hypervisor extensionをサポートしない
-logic mideleg_seip  = 0;
-logic mideleg_mtip  = 0;
-wire mideleg_vstip  = 0; // hypervisor extensionをサポートしない
-logic mideleg_stip  = 0;
-logic mideleg_msip  = 0;
-wire mideleg_vssip  = 0; // hypervisor extensionをサポートしない
-logic mideleg_ssip  = 0;
-wire [31:0] mideleg = {
-    mideleg_custom,
-    3'b0,
-    mideleg_sgeip,
-    mideleg_meip,
-    mideleg_vseip,
-    mideleg_seip,
-    1'b0,
-    mideleg_mtip,
-    mideleg_vstip,
-    mideleg_stip,
-    1'b0,
-    mideleg_msip,
-    mideleg_vssip,
-    mideleg_ssip,
-    1'b0
-};
-
+UIntX medeleg = 0;
+UIntX mideleg = 0;
 logic mie_meie = 0; // external interrupt
 logic mie_seie = 0;
 logic mie_mtie = 0; // timer interrupt
@@ -393,7 +384,13 @@ wire [31:0] mip = {
     mip_msip, 1'b0,
     mip_ssip, 1'b0
 };
-wire [31:0] sip = {
+/*
+Restricted views of the mip and mie registers appear as the sip and sie registers for supervisor level.
+If an interrupt is delegated to S-mode by setting a bit in the mideleg register,
+it becomes visible in the sip register and is maskable using the sie register.
+Otherwise, the corresponding bits in sip and sie are read-only zero.
+*/
+wire [31:0] sip = mideleg & {
     22'b0,
     mip_seip, 1'b0,
     2'b0,
@@ -455,16 +452,14 @@ wire sfence_no_priv     =  (ctrl.sfence | ctrl.svinval) & (
                             mstatus_tvm & mode == S_MODE);
 wire wfi_tw_nowait      = ctrl.wfi & mstatus_tw;
 
-wire        raise_expt  = trapinfo.valid | valid & (csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait);
+wire        raise_expt  = valid & (trapinfo.valid | csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait);
 wire UIntX  cause_expt  = trapinfo.valid ?
                             trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0) :
                             csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait ? CAUSE_ILLEGAL_INSTRUCTION : 0;
 
-// 3.1.8. Machine Trap Delegation Registers (medeleg and mideleg)
-// S-modeに委譲されているとき、M-modeならM-modeにトラップする。S-mode, U-modeならS-modeにトラップする。
-wire intr_toM  = mideleg[cause_intr[4:0]] == 0;
-wire expt_toM  = medeleg[cause_expt[4:0]] == 0;
-wire trap_toM  = mode == M_MODE | (raise_expt ? expt_toM : intr_toM);
+wire intr_toM   = mideleg[cause_intr[4:0]] == 0 | mode == M_MODE;
+wire expt_toM   = medeleg[cause_expt[4:0]] == 0 | mode == M_MODE;
+wire trap_toM   = raise_expt ? expt_toM : intr_toM;
 
 // interruptが起こりそうかどうか
 wire raise_intr =   (intr_toM ? // 3.1.9
@@ -482,7 +477,6 @@ wire raise_intr =   (intr_toM ? // 3.1.9
 // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
 // priority order: MEI, MSI, MTI, SEI, SSI, STI.
-// TODO mip_* & mie_*をまとめる
 wire [31:0] cause_intr = (
                             (mip_meip & mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
                             (mip_msip & mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
@@ -494,39 +488,12 @@ wire [31:0] cause_intr = (
                         );
 wire [31:0] cause_trap = raise_expt ? cause_expt : cause_intr;
 
-function [$bits(UIntX)-1:0] gen_expt_xtval(
-    input UIntX     cause,
-    input Addr      pc,
-    input UIntX     inst,
-    input UIntX     alu_out
-);
-    case (cause)
-        CAUSE_INSTRUCTION_ADDRESS_MISALIGNED:
-            gen_expt_xtval = btarget;
-        CAUSE_BREAKPOINT,
-        CAUSE_INSTRUCTION_ACCESS_FAULT,
-        CAUSE_INSTRUCTION_PAGE_FAULT:
-            gen_expt_xtval = pc;
-        CAUSE_LOAD_ADDRESS_MISALIGNED,
-        CAUSE_LOAD_ACCESS_FAULT,
-        CAUSE_LOAD_PAGE_FAULT,
-        CAUSE_STORE_AMO_ADDRESS_MISALIGNED,
-        CAUSE_STORE_AMO_ACCESS_FAULT,
-        CAUSE_STORE_AMO_PAGE_FAULT:
-            gen_expt_xtval = alu_out;
-        CAUSE_ILLEGAL_INSTRUCTION:
-            gen_expt_xtval = inst;
-        default:
-            gen_expt_xtval = 0;
-    endcase
-endfunction
-
 wire UIntX  expt_xtval = gen_expt_xtval(cause_expt, pc, inst, alu_out);
 
 UIntX       rdata_saved;
 assign      next_csr_rdata = rdata_saved;
 
-wire this_raise_trap    = raise_expt | raise_intr;
+wire this_raise_trap    = valid & (raise_expt | raise_intr);
 logic last_raise_trap   = 0;
 
 wire is_fence       = ctrl.fence_i | (!sfence_no_priv & (ctrl.sfence | ctrl.svinval));
@@ -548,8 +515,8 @@ assign cache_cntr.d_mode            = modetype'(mode == M_MODE & mstatus_mprv ? 
 assign cache_cntr.mxr               = mstatus_mxr;
 assign cache_cntr.sum               = mstatus_sum;
 assign cache_cntr.satp              = satp;
-assign cache_cntr.do_writeback      = is_new & is_fence;
-assign cache_cntr.invalidate_icache = is_new & is_fence;
+assign cache_cntr.do_writeback      = valid & is_new & is_fence;
+assign cache_cntr.invalidate_icache = valid & is_new & is_fence;
 
 logic [1:0] inst_clock = 0;
 logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行されないようにするためのフラグ
@@ -563,14 +530,16 @@ always @(posedge clk) begin
             trap_vector <= pc + 4;
             csr_no_wb   <= 1;
             `ifdef PRINT_DEBUGINFO
+            if (can_output_log)
                 $display("info,csrstage.trap.nochange,0x%h", pc);
             `endif
         end else if (this_raise_trap) begin
             csr_no_wb   <= 1;
             `ifdef PRINT_DEBUGINFO
+            if (can_output_log) begin
                 $display("info,csrstage.trap.pc,0x%h", pc);
-                $display("info,csrstage.trap.to_mmode,%b", trap_toM);
                 $display("info,csrstage.trap.cause,0x%h", cause_trap);
+            end
             `endif
             if (trap_toM) begin
                 mode            <= M_MODE;
@@ -637,7 +606,10 @@ always @(posedge clk) begin
     if (valid & !is_new) begin
         inst_clock <= inst_clock + 1;
         if (cmd_is_write & can_access & !is_readonly & !csr_no_wb) begin
-            $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
+            `ifdef PRINT_DEBUGINFO
+            if (can_output_log)
+                $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
+            `endif
             case (addr)
                 // Machine Trap Setup
                 ADDR_MSTATUS: begin
@@ -654,15 +626,12 @@ always @(posedge clk) begin
                     mstatus_mie     <= wdata[3];
                     mstatus_sie     <= wdata[1];
                 end
-                ADDR_MEDELEG: medeleg <= wdata;
+                ADDR_MEDELEG: medeleg   <= wdata;
                 ADDR_MIDELEG: begin
-                    mideleg_custom  <= wdata[31:16];
-                    mideleg_meip    <= wdata[11];
-                    mideleg_seip    <= wdata[9];
-                    mideleg_mtip    <= wdata[7];
-                    mideleg_stip    <= wdata[5];
-                    mideleg_msip    <= wdata[3];
-                    mideleg_ssip    <= wdata[1];
+                    // qemuの動作を見たら、M系は立てられなかった
+                    mideleg[1]  <= wdata[1];
+                    mideleg[5]  <= wdata[5];
+                    mideleg[9]  <= wdata[9];
                 end
                 ADDR_MIE: begin
                     mie_meie <= wdata[11];
@@ -693,9 +662,10 @@ always @(posedge clk) begin
                     mstatus_sie     <= wdata[1];
                 end
                 ADDR_SIE: begin
-                    mie_seie <= wdata[9];
-                    mie_stie <= wdata[5];
-                    mie_ssie <= wdata[1];
+                    // SIEとSIPはdelegされていないと書き込めない
+                    mie_seie <= mideleg[9] & wdata[9];
+                    mie_stie <= mideleg[5] & wdata[5];
+                    mie_ssie <= mideleg[1] & wdata[1];
                 end
                 ADDR_STVEC:     stvec       <= wdata;
                 // Supervisor Trap Handling
@@ -704,9 +674,9 @@ always @(posedge clk) begin
                 ADDR_SCAUSE:    scause      <= wdata;
                 ADDR_STVAL:     stval       <= wdata;
                 ADDR_SIP: begin
-                    mip_seip <= wdata[9];
-                    mip_stip <= wdata[5];
-                    mip_ssip <= wdata[1];
+                    mip_seip <= mideleg[9] & wdata[9];
+                    mip_stip <= mideleg[5] & wdata[5];
+                    mip_ssip <= mideleg[1] & wdata[1];
                 end
                 // Supervisor Protection and Translation
                 ADDR_SATP: satp <= wdata;
@@ -729,7 +699,6 @@ always @(posedge clk) if (can_output_log) begin
     $display("data,csrstage.mstatus,h,%b", mstatus);
     $display("data,csrstage.mstatus.mie,b,%b", mstatus_mie);
     $display("data,csrstage.mstatus.sie,b,%b", mstatus_sie);
-    $display("data,csrstage.intr_to_mmode,b,%b", intr_toM);
     $display("data,csrstage.mip,b,%b", mip);
     $display("data,csrstage.mie,b,%b", mie);
     $display("data,csrstage.medeleg,h,%b", medeleg);
@@ -739,7 +708,7 @@ always @(posedge clk) if (can_output_log) begin
     $display("info,csrstage.mepc,0x%h", mepc);
     $display("info,csrstage.sepc,0x%h", sepc);
 
-    if (is_fence) begin
+    if (valid && is_fence) begin
         $display("data,csrstage.$.do_wb,b,%b", cache_cntr.do_writeback);
         $display("data,csrstage.$.is_wbed_all,b,%b", cache_cntr.is_writebacked_all);
         $display("data,csrstage.$.invalidate_i$,b,%b", cache_cntr.invalidate_icache);
