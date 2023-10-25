@@ -19,6 +19,8 @@ module Core #(
     inout wire CacheReq         dreq,
     inout wire CacheResp        dresp,
 
+    input wire                  external_interrupt_pending,
+
     output wire CacheCntrInfo   cache_cntr,
 
     output logic    exit,
@@ -568,10 +570,13 @@ CSRStage #(
     .csr_keep_trap(csr_keep_trap),
     .trap_vector(csr_trap_vector),
 
+    // TODO 改名
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
     .reg_mtime(reg_mtime),
     .reg_mtimecmp(reg_mtimecmp),
+
+    .external_interrupt_pending(external_interrupt_pending),
 
     .cache_cntr(cache_cntr)
 

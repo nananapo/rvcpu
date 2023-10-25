@@ -11,5 +11,9 @@ localparam EDISK_WEN        = 32'h8;
 localparam EDISK_DATA       = 32'h10; // DATAを読むとread , writeする
 localparam EDISK_END        = EDISK_OFFSET + EDISK_DATA + 8;
 
-localparam MMIO_ADDR_UART_TX = 32'hff000000;
-localparam MMIO_ADDR_UART_RX = 32'hff000200;
+localparam MMIO_UARTTX      = 32'hff000000;
+
+localparam MMIO_UARTRX_OFFSET   = 32'hff000010;
+localparam MMIO_UARTRX_EXISTS   = 32'h0;
+localparam MMIO_UARTRX_VALUE    = 32'h8;
+localparam MMIO_UARTRX_END      = MMIO_UARTRX_OFFSET + MMIO_UARTRX_VALUE + 8;

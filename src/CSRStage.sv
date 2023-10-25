@@ -30,6 +30,8 @@ module CSRStage #(
     input wire UInt64   reg_mtime,
     input wire UInt64   reg_mtimecmp,
 
+    input wire          external_interrupt_pending,
+
     output wire CacheCntrInfo   cache_cntr
 
 `ifdef PRINT_DEBUGINFO
@@ -571,6 +573,8 @@ always @(posedge clk) begin
             end
         end else begin
             // pending registerを更新する
+            // PLICがないのでとりあえずS-mode用にしてる
+            mip_seip <= external_interrupt_pending;
             mip_mtip <= reg_mtime >= reg_mtimecmp;
             // rdataを保存
             rdata_saved <= rdata;
