@@ -12,7 +12,9 @@ module MMIO_Cntr #(
     inout  wire CacheReq    dreq_in,
     inout  wire CacheResp   dresp_in,
     inout  wire CacheReq    memreq_in,
-    inout  wire CacheResp   memresp_in
+    inout  wire CacheResp   memresp_in,
+
+    output wire             uart_rx_pending
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -47,14 +49,14 @@ end
 wire CacheReq dreq = state == IDLE ? dreq_in : s_dreq;
 
 // TODO メモリを8000_0000以降に配置することで判定を簡略化する
-wire is_uart_tx     = dreq.addr == MMIO_ADDR_UART_TX;
-wire is_uart_rx     = dreq.addr == MMIO_ADDR_UART_RX;
+wire is_uart_tx     = dreq.addr == MMIO_UARTTX;
+wire is_uart_rx     = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, dreq.addr);
 wire is_clint       = in_range(CLINT_OFFSET, CLINT_END, dreq.addr);
 wire is_edisk       = in_range(EDISK_OFFSET, EDISK_END, dreq.addr);
 wire is_memory      = !is_uart_tx & !is_uart_rx & !is_clint & !is_edisk;
 
-wire s_is_uart_tx   = s_dreq.addr == MMIO_ADDR_UART_TX;
-wire s_is_uart_rx   = s_dreq.addr == MMIO_ADDR_UART_RX;
+wire s_is_uart_tx   = s_dreq.addr == MMIO_UARTTX;
+wire s_is_uart_rx   = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, s_dreq.addr);
 wire s_is_clint     = in_range(CLINT_OFFSET, CLINT_END, s_dreq.addr);
 wire s_is_edisk     = in_range(EDISK_OFFSET, EDISK_END, s_dreq.addr);
 wire s_is_memory    = !s_is_uart_tx & !s_is_uart_rx & !s_is_clint & !s_is_edisk;
@@ -147,11 +149,13 @@ MMIO_uart_rx #(
 
     .req_ready(cmd_uart_rx_ready),
     .req_valid(cmd_uart_rx_start),
-    .req_addr(0),
+    .req_addr({{XLEN-4{1'b0}}, dreq.addr[3:0]}),
     .req_wen(dreq.wen),
     .req_wdata(dreq.wdata),
     .resp_valid(cmd_uart_rx_rvalid),
-    .resp_rdata(cmd_uart_rx_rdata)
+    .resp_rdata(cmd_uart_rx_rdata),
+
+    .uart_rx_pending(uart_rx_pending)
 );
 
 MMIO_uart_tx #(

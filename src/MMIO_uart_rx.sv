@@ -11,23 +11,17 @@ module MMIO_uart_rx #(
     input  wire         req_wen,
     input  wire UIntX   req_wdata,
 
-    output wire     resp_valid,
-    output UInt32   resp_rdata
+    output logic        resp_valid,
+    output UInt32       resp_rdata,
+
+    // interrupt用
+    // いずれ外にPLICを作りたい
+    output wire         uart_rx_pending
 );
 
 `include "basicparams.svh"
+`include "memorymap.svh"
 
-localparam BUF_LEN = 2**BUF_WIDTH;
-typedef logic [BUF_WIDTH-1:0] BufWidth;
-
-// TODO キューのモジュールを使う
-// TODO 割り込み
-
-UInt8       buffer[BUF_LEN-1:0];
-BufWidth    head = 0;
-BufWidth    tail = 0;
-
-// UART
 wire UInt8  rx_rdata;
 wire        rx_rvalid;
 
@@ -40,20 +34,39 @@ Uart_rx #(
     .uart_rx(uart_rx)
 );
 
-assign req_ready    = 1;
-assign resp_valid   = 1;
+wire logic q_wready; // 無視
+wire logic q_rready;
+wire logic q_rvalid;
+wire UInt8 q_rdata;
+
+SyncQueue #(
+    .DATA_SIZE($bits(UInt8)),
+    .WIDTH(10)
+) queue (
+    .clk(clk),
+    .kill(1'b0),
+    .wready(q_wready),
+    .wvalid(rx_rvalid),
+    .wdata(rx_rdata),
+    .rready(q_rready),
+    .rvalid(q_rvalid),
+    .rdata(q_rdata)
+);
+
+assign  req_ready   = 1;
+initial resp_valid  = 0;
+
+assign  q_rready = req_valid && req_addr == MMIO_UARTRX_VALUE;
+
+assign  uart_rx_pending = q_rvalid;
 
 always @(posedge clk) begin
-    if (rx_rvalid) begin
-        buffer[tail] <= rx_rdata;
-        tail <= tail + 1;
-    end
+    resp_valid <= req_valid;
     if (req_valid) begin
-        if (head != tail) begin
-            resp_rdata <= {{XLEN-8{1'b0}}, buffer[head]};
-        end else begin
-            resp_rdata <= 0;
-        end
+        case (req_addr)
+        MMIO_UARTRX_EXISTS: resp_rdata <= {{XLEN-1{1'b0}}, q_rvalid};
+        MMIO_UARTRX_VALUE:  resp_rdata <= {{XLEN-8{1'b0}}, q_rdata};
+        endcase
     end
 end
 

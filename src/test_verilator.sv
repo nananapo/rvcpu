@@ -1,13 +1,13 @@
 `default_nettype none
 
 module test(
-    input wire clk
+    input wire clk,
+    input wire uart_rx
 );
 
 logic exit;
 logic [31:0] gp;
 logic [5:0] led;
-logic uart_rx = 0;
 logic uart_tx;
 
 main #() m(

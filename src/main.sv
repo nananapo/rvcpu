@@ -82,6 +82,10 @@ wire CacheResp  dresp_core_ptw;
 
 wire CacheCntrInfo  cache_cntr;
 
+wire uart_rx_pending;
+
+wire external_interrupt_pending = uart_rx_pending;
+
 `ifndef MEM_FILE
     initial begin
         $display("ERROR : initial memory file (MEM_FILE) is not set.");
@@ -223,7 +227,9 @@ MMIO_Cntr #(
     .dreq_in(dreq_ptw_mmio),
     .dresp_in(dresp_ptw_mmio),
     .memreq_in(dreq_mmio_acntr),
-    .memresp_in(dresp_mmio_acntr)
+    .memresp_in(dresp_mmio_acntr),
+
+    .uart_rx_pending(uart_rx_pending)
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -270,6 +276,8 @@ Core #(
     .dreq(dreq_core_ptw),
     .dresp(dresp_core_ptw),
     .cache_cntr(cache_cntr),
+
+    .external_interrupt_pending(external_interrupt_pending),
 
     .gp(gp),
     .exit(exit),

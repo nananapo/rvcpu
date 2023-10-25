@@ -89,9 +89,11 @@ https://github.com/users/nananapo/projects/1/views/2
 00000000 - MEM_SIZE : RAM
 f0000000 - f0000007 : mtime
 f0000008 - f000000f : mtimecmp
-ff000000            : UART TX (storeで送信)
-ff000200            : UART RX (1024文字のキュー)
+ff000000            : UART TX (storeで送信, loadの結果は不定)
+ff000010            : UART RX (0ならバッファに文字列無し, 書き込みは無視)
+ff000018            : UART RX (loadでバッファから1文字読みとる, 書き込みは無視)
 ```
+MMIOにアラインされていないアクセスをした場合の結果は不定 (禁止)
 
 ### サンプルプログラム
 
