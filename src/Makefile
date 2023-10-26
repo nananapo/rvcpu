@@ -89,4 +89,7 @@ v:
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDETECT_ABNORMAL_STALL main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DDETECT_ABNORMAL_STALL main.sv
 
+icanon:
+	gcc icanon.c -o icanon
+
 .PHONY: d v
