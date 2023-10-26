@@ -63,14 +63,14 @@ dm:
 dv:
 	echo "$$VERILATOR_ROOT is ${VERILATOR_ROOT}"
 	rm -rf obj_dir
-	verilator --cc $(DEFINE_DEBUG) -DFAST_UART ${OPTION} test_verilator.sv --exe test_kenel_verilator_main.cpp
+	verilator --cc $(DEFINE_DEBUG) -DFAST_UART ${OPTION} test_verilator.sv --exe test_verilator_main.cpp
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
 	obj_dir/Vtest_verilator
 
 dvrv:
 	echo "$$VERILATOR_ROOT is ${VERILATOR_ROOT}"
 	rm -rf obj_dir
-	verilator --cc $(DEFINE_DEBUG) -DPRINT_DEBUGINFO $(DEFINE_RISCV_TESTS) -DFAST_UART ${OPTION} test_verilator.sv --exe test_kenel_verilator_main.cpp
+	verilator --cc $(DEFINE_DEBUG) -DPRINT_DEBUGINFO $(DEFINE_RISCV_TESTS) -DFAST_UART ${OPTION} test_verilator.sv --exe test_verilator_main.cpp
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
 	obj_dir/Vtest_verilator
 
@@ -88,5 +88,8 @@ v:
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_MEMORY_UART) main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDETECT_ABNORMAL_STALL main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DDETECT_ABNORMAL_STALL main.sv
+
+icanon:
+	gcc icanon.c -o icanon
 
 .PHONY: d v

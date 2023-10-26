@@ -5,3 +5,4 @@ obj_dir/
 .metals/
 .vscode/
 .scala-build/
+icanon
