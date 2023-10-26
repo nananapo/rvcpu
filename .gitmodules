@@ -1,3 +1,3 @@
 [submodule "xv6"]
 	path = xv6
-	url = https://github.com/nananapo/xv6-riscv
+	url = https://github.com/nananapo/xv6-rv32
