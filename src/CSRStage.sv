@@ -456,7 +456,7 @@ wire wfi_tw_nowait      = ctrl.wfi & mstatus_tw;
 
 wire        raise_expt  = valid & (trapinfo.valid | csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait);
 wire UIntX  cause_expt  = trapinfo.valid ?
-                            trapinfo.cause + (csr_cmd == CSR_ECALL ? {30'b0, mode} : 0) :
+                            (csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE + {30'b0, mode} : trapinfo.cause ) :
                             csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait ? CAUSE_ILLEGAL_INSTRUCTION : 0;
 
 wire intr_toM   = mideleg[cause_intr[4:0]] == 0 | mode == M_MODE;
