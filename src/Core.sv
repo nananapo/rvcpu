@@ -21,11 +21,7 @@ module Core #(
 
     input wire                  external_interrupt_pending,
 
-    output wire CacheCntrInfo   cache_cntr,
-
-    output logic    exit,
-    output UIntX    gp
-
+    output wire CacheCntrInfo   cache_cntr
 `ifdef PRINT_DEBUGINFO
     ,
     output wire can_output_log
@@ -155,9 +151,6 @@ FwCtrl  exe_fw;
 FwCtrl  mem_fw;
 FwCtrl  csr_fw;
 FwCtrl  wb_fw;
-
-// for debug
-assign gp = wb_regfile[3];
 
 // id/dsがvalidではないか、branchに失敗したクロックは保持
 wire exe_branch_stall = (!ds_valid & !id_valid & !exe_trap.valid & (exe_is_new | !exe_br_checked)) | branch_fail;
@@ -522,8 +515,7 @@ MemoryStage #() memorystage
     .dreq(dreq),
     .dresp(dresp),
 
-    .is_stall(mem_memory_stall),
-    .exit(exit)
+    .is_stall(mem_memory_stall)
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -754,8 +746,6 @@ always @(posedge clk) if (can_output_log) begin
     $display("data,core.exe_stall,b,%b", exe_stall);
     $display("data,core.mem_stall,b,%b", mem_stall);
     $display("data,core.csr_stall,b,%b", csr_stall);
-    $display("data,core.gp,h,%b", gp);
-    $display("data,core.exit,b,%b", exit);
     `ifdef PRINT_REG
         for (int i = 1; i < 32; i++) begin
             $display("data,core.regfile[%d],h,%b", i, wb_regfile[i]);

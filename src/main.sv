@@ -13,14 +13,12 @@ module main #(
     output logic [5:0]  led
 `ifdef DEBUG
     ,
-    output wire         exit,
-    output wire UIntX   gp
+    output wire         exit
 `endif
 );
 
 `ifndef DEBUG
     wire        exit;
-    wire UIntX  gp;
 `endif
 
 wire clk_in = clk27MHz;
@@ -30,7 +28,6 @@ always @(posedge clk_in) begin
     if (exit) begin
         exited <= 1;
     end
-    led[5:0] <= ~gp[5:0];
 end
 
 wire can_output_log;
@@ -264,6 +261,7 @@ Core #(
     .FMAX_MHz(FMAX_MHz)
 ) core (
     .clk(clk_in),
+    .exited(exited),
 
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),

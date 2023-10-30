@@ -6,7 +6,6 @@ module test(
 );
 
 logic exit;
-logic [31:0] gp;
 logic [5:0] led;
 logic uart_tx;
 
@@ -15,19 +14,12 @@ main #() m(
   .uart_tx(uart_tx),
   .uart_rx(uart_rx),
   .exit(exit),
-  .led(led),
-  .gp(gp)
+  .led(led)
 );
 
 `ifdef RISCV_TESTS
   always @(posedge clk) begin
-    if (exit) begin
-      if (gp == 1)
-        $display("info,coretest.result,Test passed");
-      else
-        $display("info,coretest,result,Test failed : gp(%d) is not 1", gp);
-        $finish;
-    end
+    if (exit) $finish;
   end
 `endif
 

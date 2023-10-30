@@ -17,8 +17,7 @@ module MemoryStage
     inout wire CacheReq     dreq,
     inout wire CacheResp    dresp,
 
-    output logic            is_stall,
-    output wire             exit
+    output logic            is_stall
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -90,11 +89,7 @@ wire UIntX memu_rdata = dresp.rdata;
 assign dreq.valid   = state == WAIT_READY & valid & !is_cmd_executed & mem_wen != MEN_X;
 assign dreq.wen     = is_store;
 assign dreq.addr    = alu_out;
-assign dreq.wdata   =
-                    `ifdef RISCV_TESTS
-                        alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
-                    `endif
-                        ctrl.mem_wen != MEN_A ? rs2_data :
+assign dreq.wdata   =   ctrl.mem_wen != MEN_A ? rs2_data :
                         ctrl.a_sel == ASEL_SC ? rs2_data :
                         gen_amo_wdata(ctrl.a_sel, ctrl.sign_sel, saved_mem_rdata, rs2_data);
 assign dreq.wmask   = ctrl.mem_size;
@@ -147,17 +142,7 @@ function [$bits(UIntX)-1:0] gen_rdata(
     end
 endfunction
 
-assign next_mem_rdata =
-                        `ifdef RISCV_TESTS
-                            alu_out == RISCVTESTS_EXIT_ADDR ? DATA_ZERO :
-                        `endif
-                            gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
-
-`ifdef RISCV_TESTS
-    assign exit = valid & is_store & alu_out == RISCVTESTS_EXIT_ADDR & rs2_data[15:8] != 8'b0101_0000;
-`else
-    assign exit = 0;
-`endif
+assign next_mem_rdata = gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
 
 always @(posedge clk) begin
     if (!valid | mem_wen == MEN_X) begin
@@ -169,12 +154,6 @@ always @(posedge clk) begin
             if (memu_cmd_ready) begin
                 if (is_store) begin
                     state   <= WAIT_WVALID;
-                    `ifdef RISCV_TESTS
-                        // riscv-testsのデバッグ出力
-                        if (alu_out == RISCVTESTS_EXIT_ADDR & rs2_data[15:8] == 8'b0101_0000) begin
-                            $write("%c", rs2_data[7:0]);
-                        end
-                    `endif
                 end else begin
                     state   <= WAIT_RVALID;
                 end

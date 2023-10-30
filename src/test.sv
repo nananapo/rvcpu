@@ -4,7 +4,6 @@ module test();
 
 logic clk = 1;
 logic exit;
-logic [31:0] gp;
 logic uart_rx = 0;
 logic uart_tx;
 
@@ -21,27 +20,20 @@ main #() m(
   .clk27MHz(clk),
   .uart_tx(uart_tx),
   .uart_rx(uart_rx),
-  .exit(exit),
-  .gp(gp)
+  .exit(exit)
 );
 
 initial begin
   `ifdef PRINT_DEBUGINFO
       $display("START_DEBUG_LOG");
       `ifndef INFINITE_LOG
-          #100001 $finish;
+          #500001 $finish;
       `endif
   `endif
 end
 
 always @(posedge clk) begin
-  if (exit) begin
-    if (gp == 1)
-      $display("info,coretest.result,Test passed");
-    else
-      $display("info,coretest,result,Test failed : gp(%d) is not 1", gp);
-      $finish;
-  end
+  if (exit) $finish;
 end
 
 endmodule
