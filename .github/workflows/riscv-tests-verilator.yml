@@ -1,0 +1,67 @@
+name: riscv-tests
+run-name: Run riscv-tests
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+jobs:
+  mi-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug -v mi-p-
+  si-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug -v si-p-
+  ua-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug -v ua-p-
+  ui-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug -v ui-p-
+  ui-v:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug -v ui-v-
+  um-p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug -v um-p-
+  um-v:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-verilator
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug -v um-v-
