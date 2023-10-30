@@ -31,10 +31,11 @@ FILES = test.sv \
 		TwoBitCounter.sv \
 		LocalHistory2bit.sv \
 		GlobalHistory2bit.sv \
-		MMIO_EDisk.sv
+		MMIO_EDisk.sv \
+		MemCacheCmdArbiter.sv
 
 DEFINE_DEBUG = -DDEBUG
-DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TESTS -DPRINT_DEBUGINFO
+DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TESTS
 DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
 
 OPTION = ""
@@ -88,6 +89,7 @@ v:
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_MEMORY_UART) main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDETECT_ABNORMAL_STALL main.sv
 	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DDETECT_ABNORMAL_STALL main.sv
+	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DXZSTOP main.sv
 
 icanon:
 	gcc icanon.c -o icanon
