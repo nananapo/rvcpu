@@ -30,18 +30,25 @@ initial begin
 `endif
 end
 
-always @(posedge clk) begin
-    if (valid & rf_wen & reg_addr != 0) begin
-        regfile[reg_addr] <= wdata;
-    end
-end
-
-
 logic [63:0] inst_count  = 0;
 logic [63:0] clock_count = 0;
 always @(posedge clk) begin
     clock_count++;
     if (valid) inst_count += 1;
+end
+
+always @(posedge clk) begin
+    if (valid & rf_wen & reg_addr != 0) begin
+        regfile[reg_addr] <= wdata;
+`ifdef XZSTOP
+        for (int i = 0; i < `XLEN; i++) begin
+            if (!(wdata[i] === 1'b0 | wdata[i] === 1'b1)) begin
+                $display("ERR-XZSTOP! %h: %h <= %h", pc, reg_addr, wdata);
+                $finish;
+            end
+        end
+`endif
+    end
 end
 
 `ifdef PRINT_DEBUGINFO
