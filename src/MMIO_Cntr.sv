@@ -46,13 +46,11 @@ initial begin
     s_dreq.valid = 0;
 end
 
-wire CacheReq dreq = state == IDLE ? dreq_in : s_dreq;
-
 // TODO メモリを8000_0000以降に配置することで判定を簡略化する
-wire is_uart_tx     = dreq.addr == MMIO_UARTTX;
-wire is_uart_rx     = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, dreq.addr);
-wire is_clint       = in_range(CLINT_OFFSET, CLINT_END, dreq.addr);
-wire is_edisk       = in_range(EDISK_OFFSET, EDISK_END, dreq.addr);
+wire is_uart_tx     = dreq_in.addr == MMIO_UARTTX;
+wire is_uart_rx     = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, dreq_in.addr);
+wire is_clint       = in_range(CLINT_OFFSET, CLINT_END, dreq_in.addr);
+wire is_edisk       = in_range(EDISK_OFFSET, EDISK_END, dreq_in.addr);
 wire is_memory      = !is_uart_tx & !is_uart_rx & !is_clint & !is_edisk;
 
 wire s_is_uart_tx   = s_dreq.addr == MMIO_UARTTX;
@@ -61,7 +59,9 @@ wire s_is_clint     = in_range(CLINT_OFFSET, CLINT_END, s_dreq.addr);
 wire s_is_edisk     = in_range(EDISK_OFFSET, EDISK_END, s_dreq.addr);
 wire s_is_memory    = !s_is_uart_tx & !s_is_uart_rx & !s_is_clint & !s_is_edisk;
 
-wire cmd_start  = (state == IDLE | state == WAIT_READY) & dreq.valid;
+wire cmd_start  = !reset & (
+                    state == WAIT_READY |
+                    (state == IDLE | (state == WAIT_VALID & s_valid)) & dreq_in.valid);
 wire cmd_ready  =   is_uart_tx  ? cmd_uart_tx_ready :
                     is_uart_rx  ? cmd_uart_rx_ready :
                     is_clint    ? cmd_clint_ready :
@@ -90,11 +90,12 @@ assign dresp_in.rdata   = s_rdata;
 assign dresp_in.error   = s_is_memory ? memresp_in.error : 0;
 assign dresp_in.errty   = s_is_memory ? memresp_in.errty : FE_ACCESS_FAULT;
 
-assign memreq_in.valid  = is_memory & cmd_start;
-assign memreq_in.addr   = dreq.addr;
-assign memreq_in.wen    = dreq.wen;
-assign memreq_in.wdata  = dreq.wdata;
-assign memreq_in.wmask  = dreq.wmask;
+
+wire Addr   req_addr    = state == WAIT_READY ? s_dreq.addr : dreq_in.addr;
+wire        req_wen     = state == WAIT_READY ? s_dreq.wen  : dreq_in.wen;
+wire UIntX  req_wdata   = state == WAIT_READY ? s_dreq.wdata: dreq_in.wdata;
+wire MemSize req_wmask  = MemSize'(state == WAIT_READY ? s_dreq.wmask: dreq_in.wmask);
+wire MemSize req_pte    = MemSize'(state == WAIT_READY ? s_dreq.pte: dreq_in.pte);
 
 always @(posedge clk) if (reset) state <= IDLE; else begin
     case (state)
@@ -141,6 +142,13 @@ wire        cmd_edisk_rvalid;
 wire UIntX  cmd_edisk_rdata;
 wire        cmd_edisk_start     = is_edisk & cmd_start;
 
+assign memreq_in.valid  = is_memory & cmd_start;
+assign memreq_in.addr   = req_addr;
+assign memreq_in.wen    = req_wen;
+assign memreq_in.wdata  = req_wdata;
+assign memreq_in.wmask  = req_wmask;
+assign memreq_in.pte    = req_pte;
+
 MMIO_uart_rx #(
     .FMAX_MHz(FMAX_MHz)
 ) memmap_uartrx (
@@ -149,9 +157,9 @@ MMIO_uart_rx #(
 
     .req_ready(cmd_uart_rx_ready),
     .req_valid(cmd_uart_rx_start),
-    .req_addr({{XLEN-4{1'b0}}, dreq.addr[3:0]}),
-    .req_wen(dreq.wen),
-    .req_wdata(dreq.wdata),
+    .req_addr({{XLEN-4{1'b0}}, req_addr[3:0]}),
+    .req_wen(req_wen),
+    .req_wdata(req_wdata),
     .resp_valid(cmd_uart_rx_rvalid),
     .resp_rdata(cmd_uart_rx_rdata),
 
@@ -167,8 +175,8 @@ MMIO_uart_tx #(
     .req_ready(cmd_uart_tx_ready),
     .req_valid(cmd_uart_tx_start),
     .req_addr(0),
-    .req_wen(dreq.wen),
-    .req_wdata(dreq.wdata),
+    .req_wen(req_wen),
+    .req_wdata(req_wdata),
     .resp_valid(cmd_uart_tx_rvalid),
     .resp_rdata(cmd_uart_tx_rdata)
 
@@ -185,9 +193,9 @@ MMIO_clint #(
 
     .req_ready(cmd_clint_ready),
     .req_valid(cmd_clint_start),
-    .req_addr({{XLEN-4{1'b0}}, dreq.addr[3:0]}),
-    .req_wen(dreq.wen),
-    .req_wdata(dreq.wdata),
+    .req_addr({{XLEN-4{1'b0}}, req_addr[3:0]}),
+    .req_wen(req_wen),
+    .req_wdata(req_wdata),
     .resp_valid(cmd_clint_rvalid),
     .resp_rdata(cmd_clint_rdata),
 
@@ -200,9 +208,9 @@ MMIO_EDisk #() edisk (
 
     .req_ready(cmd_edisk_ready),
     .req_valid(cmd_edisk_start),
-    .req_addr({{XLEN-8{1'b0}}, dreq.addr[7:0]}),
-    .req_wen(dreq.wen),
-    .req_wdata(dreq.wdata),
+    .req_addr({{XLEN-8{1'b0}}, req_addr[7:0]}),
+    .req_wen(req_wen),
+    .req_wdata(req_wdata),
     .resp_valid(cmd_edisk_rvalid),
     .resp_rdata(cmd_edisk_rdata)
 );
