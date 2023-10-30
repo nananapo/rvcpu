@@ -707,6 +707,8 @@ always @(negedge clk) begin
         $display("data,exestage.trapinfo.valid,b,%b", exe_trap.valid);
         $display("data,memstage.trapinfo.valid,b,%b", mem_trap.valid);
         $display("data,csrstage.trapinfo.valid,b,%b", csr_trap.valid);
+        $display("data,csrstage.csr_is_trap,b,%b", csr_is_trap);
+        $display("data,exestage.branch_fail,b,%b", branch_fail);
     end
 end
 
