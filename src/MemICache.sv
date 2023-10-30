@@ -129,6 +129,7 @@ always @(posedge clk) begin
             cache_valid[i] = 0;
         end
         `ifdef PRINT_DEBUGINFO
+        if (can_output_log)
             $display("info,fetchstage.i$.event.invalidated,Invalidated all cache!");
         `endif
     end else begin
