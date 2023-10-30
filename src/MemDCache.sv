@@ -96,7 +96,7 @@ assign busreq.wen   =   state == READ_READY ? 1'b0 :
 assign busreq.wdata =   wb_data;
 
 wire [CACHE_WIDTH-1:0] info_index = dreq.addr[CACHE_WIDTH + 2 - 1 : 2];
-wire cache_hit  = cache_valid[info_index] & cache_addrs[info_index] == dreq.addr;
+wire cache_hit  = cache_valid[info_index] & cache_addrs[info_index] === dreq.addr;
 wire need_wb    = cache_valid[info_index] & cache_modified[info_index];
 
 wire [CACHE_WIDTH-1:0] mem_index = info_index;
@@ -181,7 +181,7 @@ always @(posedge clk) begin
                     if (dreq.wen) begin
                         cache_data[mem_index]   <= dreq.wdata;
                         // modifiedが0かつ変更するならmodifiedとする
-                        if (cache_modified[info_index] == 0 & cache_data[mem_index] != dreq.wdata) begin
+                        if (cache_modified[info_index] == 0 & cache_data[mem_index] !== dreq.wdata) begin
                             cache_modified[info_index]  <= 1;
                             modified_count              <= modified_count + 1;
                             `ifdef PRINT_DEBUGINFO
