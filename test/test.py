@@ -1,11 +1,14 @@
 import sys
+from os import system
+import os
 
 TESTS_PATH = "riscv-tests/"
 MAKE_COMMAND_IVERILOG = "make riscv-tests"
 MAKE_COMMAND_VERILATOR = "make dvrv "
 
-from os import system
-import os
+VERILATOR_MODE = False
+NODEBUG_MODE = False
+
 
 os.makedirs("../test/results", exist_ok=True)
 
@@ -30,10 +33,15 @@ def test(makecmd, filename):
             print("FAIL : "+ filename)
 
 args = sys.argv[1:]
-verilator_mode = False
-if len(args) >= 1 and args[0] == "-v":
-    verilator_mode = True
-    args = args[1:]
+def procarg():
+    global args, VERILATOR_MODE, NODEBUG_MODE
+    if len(args) >= 1 and args[0] == "-v":
+        VERILATOR_MODE = True
+        args = args[1:]
+    if len(args) >= 1 and args[0] == "-nodebug":
+        NODEBUG_MODE = True
+        args = args[1:]
+procarg()
 
 for fileName in sorted(os.listdir(TESTS_PATH)):
     if not fileName.endswith(".aligned"):
@@ -41,9 +49,15 @@ for fileName in sorted(os.listdir(TESTS_PATH)):
     abpath = os.getcwd() + "/" + TESTS_PATH + "/" + fileName
 
     if len(args) == 0 or fileName.find(args[0]) != -1:
-        mcmd = MAKE_COMMAND_VERILATOR if verilator_mode else MAKE_COMMAND_IVERILOG
-        option = " OPTION=\"-DPRED_TBC -DMEMORY_DELAY=0 -DMEM_FILE=\\\\\\\""+abpath+"\\\\\\\"\""
-        test(mcmd + option, fileName)
+        mcmd = MAKE_COMMAND_VERILATOR if VERILATOR_MODE else MAKE_COMMAND_IVERILOG
+        options = []
+        options.append("-DPRED_TBC")
+        options.append("-DMEMORY_DELAY=0")
+        options.append("-DXZSTOP")
+        options.append("-DMEM_FILE=\\\\\\\""+abpath+"\\\\\\\"")
+        if not NODEBUG_MODE:
+            options.append("-DPRINT_DEBUGINFO")
+        test(mcmd + " OPTION=\"" + " ".join(options) + "\"", fileName)
 
 results = sorted(results)
 
