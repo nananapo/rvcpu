@@ -19,6 +19,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
           m.io.req.wmask.poke(0.B)
+          m.io.req.pte.poke(0.B)
 
           var addr = 0
           for (line <- Source.fromFile(path.toString).getLines()) {
@@ -48,6 +49,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
           m.io.req.wmask.poke(0.B)
+          m.io.req.pte.poke(0.B)
 
           val lines = Source.fromFile(path.toString).getLines().toSeq
           val r = new Random
@@ -78,6 +80,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
           m.io.req.wmask.poke(0.B)
+          m.io.req.pte.poke(0.B)
 
           val r = new Random
           val rdata = Range(0, randomWriteCount).map(_ => r.nextInt(1 << 30).U)
@@ -124,6 +127,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, 4)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
         m.io.do_writeback.poke(0.B)
         m.io.req.wmask.poke(0.B)
+          m.io.req.pte.poke(0.B)
 
         var addr = 1 << memWidth
         // Request

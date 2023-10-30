@@ -20,6 +20,7 @@ class MemDCacheWrapperModule(val xlen : Int, val cacheWidth : Int) extends Modul
       }
       val io = IO(new BBIO)
       addResource("/src/basic.svh")
+      addResource("/src/basicparams.svh")
       addResource("/src/memoryinterface.svh")
       setResource("MemDCache", "/src/MemDCache.sv")
   }

@@ -10,6 +10,7 @@ class CacheReq(xlen : Int) extends Bundle {
     val wen     = Input(Bool())
     val wdata   = Input(UInt(32.W))
     val wmask   = Input(UInt(2.W))
+    val pte     = Input(UInt(2.W))
 }
 
 class CacheResp(xlen : Int) extends Bundle {
