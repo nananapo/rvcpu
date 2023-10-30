@@ -44,6 +44,8 @@ wire BrSel  br_exe  = ctrl.br_exe;
 wire UIntX alu_out;
 wire alu_branch_take;
 
+UIntX saved_result;
+
 ALU #(
     .ENABLE_ALU(1'b1),
     .ENABLE_BRANCH(1'b1)
@@ -81,7 +83,8 @@ assign is_stall         = valid &
                                 state == WAIT_CALC & !mdresp.valid      // 計算中
                             );
 
-assign next_alu_out     = state == WAIT_CALC ? mdresp.result : alu_out;
+assign next_alu_out     = state == WAIT_CALC ? mdresp.result :
+                            is_muldiv ? saved_result : alu_out;
 assign branch_taken     = valid & (ctrl.jmp_pc_flg | ctrl.jmp_reg_flg | alu_branch_take);
 assign branch_target    =   (
                             ctrl.jmp_pc_flg ? pc + imm_j :
@@ -99,7 +102,10 @@ always @(posedge clk) begin
                 state <= mdreq.ready ? WAIT_CALC : WAIT_READY;
             end
             WAIT_READY: if (mdreq.ready) state <= WAIT_CALC;
-            WAIT_CALC: if (mdresp.valid) state <= IDLE;
+            WAIT_CALC: if (mdresp.valid) begin
+                state           <= IDLE;
+                saved_result    <= mdresp.result;
+            end
             default: begin
                 $display("ExecuteStage : Unknown state %d", state);
                 $finish;
