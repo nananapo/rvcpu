@@ -35,12 +35,17 @@ def test(makecmd, filename):
 args = sys.argv[1:]
 def procarg():
     global args, VERILATOR_MODE, NODEBUG_MODE
-    if len(args) >= 1 and args[0] == "-v":
-        VERILATOR_MODE = True
-        args = args[1:]
-    if len(args) >= 1 and args[0] == "-nodebug":
-        NODEBUG_MODE = True
-        args = args[1:]
+    cont = True
+    while cont:
+        cont = False
+        if len(args) >= 1 and args[0] == "-v":
+            VERILATOR_MODE = True
+            args = args[1:]
+            cont = True
+        if len(args) >= 1 and args[0] == "-nodebug":
+            NODEBUG_MODE = True
+            args = args[1:]
+            cont = True
 procarg()
 
 for fileName in sorted(os.listdir(TESTS_PATH)):

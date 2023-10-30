@@ -46,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/install-iverilog
+      - uses: ./.github/actions/install-verilator
       - name: Test
         run: |
           cd test && python3 test.py -nodebug -v ui-v-
@@ -62,6 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/install-iverilog
+      - uses: ./.github/actions/install-verilator
       - name: Test
         run: |
           cd test && python3 test.py -nodebug -v um-v-
