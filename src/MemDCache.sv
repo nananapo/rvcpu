@@ -102,6 +102,8 @@ wire [CACHE_WIDTH-1:0] mem_index = info_index;
 
 wire is_pte_req = dreq.pte.a;
 
+logic writebacked_in_this_op;
+
 `ifdef PRINT_CACHE_MISS
 int cachemiss_count = 0;
 int cachehit_count  = 0;
@@ -159,12 +161,14 @@ always @(posedge clk) begin
     if (do_writeback & state != IDLE & state != WB_LOOP_CHECK & state != WB_LOOP_READY) begin
         writeback_requested <= 1;
         `ifdef PRINT_DEBUGINFO
+        if (can_output_log)
             $display("info,memstage.d$.event.wb_req,force writeback requested. state : %d count : %d", state, modified_count);
         `endif
     end
 
     case (state)
     IDLE: begin
+        writebacked_in_this_op <= 0;
         if (do_writeback | writeback_requested) begin
             state               <= WB_LOOP_CHECK;
             writeback_requested <= 0;
@@ -201,6 +205,8 @@ always @(posedge clk) begin
                             if (cache_data[mem_index][6] === 0 || dreq.pte.d == 1 && cache_data[mem_index][7] === 0) begin
                                 cache_modified[info_index]  <= 1;
                                 cache_data[mem_index]       <= cache_data[mem_index] | {24'h0, dreq.pte.d == 1, dreq.pte.a == 1, 6'h0};
+                                if (!cache_modified[info_index])
+                                    modified_count <= modified_count + 1;
                                 `ifdef PRINT_DEBUGINFO
                                 if (can_output_log)
                                     $display("info,memstage.d$.event.pte_modified,modified");
@@ -287,6 +293,9 @@ always @(posedge clk) begin
                             $display("info,memstage.d$.event.pte_modified,modified");
                         `endif
                     end else begin
+                        // ライトバックされていたら、countを減らす必要がある
+                        if (writebacked_in_this_op)
+                            modified_count  <= modified_count - 1;
                         cache_modified[info_index]  <= 0;
                         cache_data[mem_index]       <= busresp.rdata;
                     end
@@ -300,6 +309,7 @@ always @(posedge clk) begin
     RESP_VALID: state <= IDLE;
     WRITE_READY: begin
         if (busreq.ready) begin
+            writebacked_in_this_op <= 1;
             // ライトバックが成功したかどうかは考慮しない
             if (dreq.wen) begin
                 // ライトバック -> write
@@ -320,7 +330,9 @@ always @(posedge clk) begin
                 // ライトバック -> read
                 state           <= READ_READY;
                 // ライトバックする必要があった → countを1減らす
-                modified_count  <= modified_count - 1;
+                // PTEのreqの場合は、変更がなかったときにのみ減らす
+                if (!is_pte_req)
+                    modified_count  <= modified_count - 1;
             end
         end
     end
