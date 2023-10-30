@@ -52,12 +52,18 @@ typedef struct packed {
 } MemBusResp;
 
 typedef struct packed {
+    logic a;
+    logic d;
+} PTE_AD;
+
+typedef struct packed {
     logic   ready;
     logic   valid;
     Addr    addr;
     logic   wen;
     UInt32  wdata;
     MemSize wmask;
+    PTE_AD  pte;
 } CacheReq;
 
 typedef struct packed {

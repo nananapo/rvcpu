@@ -101,6 +101,7 @@ wire need_wb    = cache_valid[info_index] & cache_modified[info_index];
 
 wire [CACHE_WIDTH-1:0] mem_index = info_index;
 
+wire is_pte_req = dreq.pte.a;
 
 `ifdef PRINT_CACHE_MISS
 int cachemiss_count = 0;
@@ -188,6 +189,23 @@ always @(posedge clk) begin
                                 $display("info,memstage.d$.event.modified,cache modified %h", dreq.addr);
                             `endif
                         end
+                    end else begin
+                        // PTE更新
+                        if (is_pte_req) begin
+                            `ifdef PRINT_DEBUGINFO
+                            if (can_output_log)
+                                $display("info,memstage.d$.event.is_ptereq,addr:%h pte:%b actual:%b", dreq.addr, dreq.pte, cache_data[mem_index][7:6]);
+                            `endif
+                            // Aが0か、pte.dかつDが0
+                            if (cache_data[mem_index][6] === 0 || dreq.pte.d == 1 && cache_data[mem_index][7] === 0) begin
+                                cache_modified[info_index]  <= 1;
+                                cache_data[mem_index]       <= cache_data[mem_index] | {24'h0, dreq.pte.d == 1, dreq.pte.a == 1, 6'h0};
+                                `ifdef PRINT_DEBUGINFO
+                                if (can_output_log)
+                                    $display("info,memstage.d$.event.pte_modified,modified");
+                                `endif
+                            end
+                        end
                     end
                     `ifdef PRINT_DEBUGINFO
                     if (can_output_log)
@@ -248,9 +266,33 @@ always @(posedge clk) begin
             end else begin
                 state <= RESP_VALID;
                 dresp_error_reg             <= 0;
-                cache_data[mem_index]       <= busresp.rdata;
                 cache_valid[info_index]     <= 1;
-                cache_modified[info_index]  <= 0;
+
+                // PTE更新
+                if (is_pte_req) begin
+
+                    `ifdef PRINT_DEBUGINFO
+                    if (can_output_log)
+                        $display("info,memstage.d$.event.is_ptereq,addr:%h pte:%b actual:%b", dreq.addr, dreq.pte, busresp.rdata[7:6]);
+                    `endif
+
+                    // Aが0か、pte.dかつDが0
+                    if (busresp.rdata[6] === 0 || dreq.pte.d && busresp.rdata[7] === 0) begin
+                        cache_modified[info_index]  <= 1;
+                        cache_data[mem_index]       <= busresp.rdata | {24'h0, dreq.pte.d, dreq.pte.a, 6'h0};
+
+                        `ifdef PRINT_DEBUGINFO
+                        if (can_output_log)
+                            $display("info,memstage.d$.event.pte_modified,modified");
+                        `endif
+                    end else begin
+                        cache_modified[info_index]  <= 0;
+                        cache_data[mem_index]       <= busresp.rdata;
+                    end
+                end else begin
+                    cache_modified[info_index]  <= 0;
+                    cache_data[mem_index]       <= busresp.rdata;
+                end
             end
         end
     end

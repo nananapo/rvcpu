@@ -80,6 +80,7 @@ assign memreq.valid = state == LOAD_READY  | state == LOAD_READY2 | state == STO
 assign memreq.addr  = state == LOAD_READY  | state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;
 assign memreq.wen   = state == STORE_READY | state == STORE_READY2;
 assign memreq.wdata = state == STORE_READY ? store_wdata1 : store_wdata2;
+assign memreq.pte   = sdreq.pte;
 
 assign dresp.valid  =   state == LOAD_PUSH |
                         state == STORE_VALID & !is_load_twice & memresp.valid |

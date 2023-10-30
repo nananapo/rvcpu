@@ -68,8 +68,13 @@ wire IResp      iresp_core_iq;
 
 wire MemBusReq  mbreq_dcache;
 wire MemBusResp mbresp_dcache;
-wire CacheReq   dreq_acntr_cache;
-wire CacheResp  dresp_acntr_cache;
+
+wire CacheReq   dreq_arb_cache;
+wire CacheResp  dresp_arb_cache;
+wire CacheReq   dreq_arb_arb;
+wire CacheResp  dresp_arb_arb;
+wire CacheReq   dreq_acntr_arb;
+wire CacheResp  dresp_acntr_arb;
 wire CacheReq   dreq_mmio_acntr;
 wire CacheResp  dresp_mmio_acntr;
 wire CacheReq   dreq_ptw_mmio;
@@ -78,6 +83,11 @@ wire CacheReq   dreq_core_ptw;
 wire CacheResp  dresp_core_ptw;
 
 wire CacheCntrInfo  cache_cntr;
+
+wire CacheReq   iptw_pte_req;
+wire CacheResp  iptw_pte_resp;
+wire CacheReq   dptw_pte_req;
+wire CacheResp  dptw_pte_resp;
 
 wire uart_rx_pending;
 
@@ -157,6 +167,8 @@ PageTableWalker #(
     .presp(icresp_iq_ptw),
     .memreq(icreq_ptw_cache),
     .memresp(icresp_ptw_cache),
+    .ptereq(iptw_pte_req),
+    .pteresp(iptw_pte_resp),
     .mode(cache_cntr.i_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
@@ -185,8 +197,9 @@ InstQueue #() instqueue (
 /* ---- Data ---- */
 MemDCache #() memdcache (
     .clk(clk_in),
-    .dreq_in(dreq_acntr_cache),
-    .dresp_in(dresp_acntr_cache),
+    .exit_flg(exit),
+    .dreq_in(dreq_arb_cache),
+    .dresp_in(dresp_arb_cache),
     .busreq(mbreq_dcache),
     .busresp(mbresp_dcache),
     .do_writeback(cache_cntr.do_writeback),
@@ -198,13 +211,41 @@ MemDCache #() memdcache (
 `endif
 );
 
+MemCacheCmdArbiter #() dcache_arbiter1 (
+    .clk(clk_in),
+    .ireq_in(iptw_pte_req),
+    .iresp_in(iptw_pte_resp),
+    .dreq_in(dreq_arb_arb),
+    .dresp_in(dresp_arb_arb),
+    .memreq_in(dreq_arb_cache),
+    .memresp_in(dresp_arb_cache)
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
+);
+
+MemCacheCmdArbiter #() dcache_arbiter2 (
+    .clk(clk_in),
+    .ireq_in(dptw_pte_req),
+    .iresp_in(dptw_pte_resp),
+    .dreq_in(dreq_acntr_arb),
+    .dresp_in(dresp_acntr_arb),
+    .memreq_in(dreq_arb_arb),
+    .memresp_in(dresp_arb_arb)
+`ifdef PRINT_DEBUGINFO
+    ,
+    .can_output_log(can_output_log)
+`endif
+);
+
 DAccessCntr #() daccesscntr (
     .clk(clk_in),
     .reset(1'b0),
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
-    .memreq(dreq_acntr_cache),
-    .memresp(dresp_acntr_cache)
+    .memreq(dreq_acntr_arb),
+    .memresp(dresp_acntr_arb)
 
 `ifdef PRINT_DEBUGINFO
     ,
@@ -245,6 +286,8 @@ PageTableWalker #(
     .presp(dresp_core_ptw),
     .memreq(dreq_ptw_mmio),
     .memresp(dresp_ptw_mmio),
+    .ptereq(dptw_pte_req),
+    .pteresp(dptw_pte_resp),
     .mode(cache_cntr.d_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),

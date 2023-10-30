@@ -13,6 +13,8 @@ module PageTableWalker #(
     inout wire CacheResp    presp,
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp,
+    inout wire CacheReq     ptereq,
+    inout wire CacheResp    pteresp,
 
     input wire modetype     mode,
     input wire [31:0]       satp,
@@ -52,27 +54,28 @@ wire [21:0] satp_ppn = satp[21:0];
 statetype state  = IDLE;
 wire sv32_enable = mode != M_MODE & satp_mode == 1;
 
-// TODO まとめる
-wire        sv32_req_ready;
-wire        sv32_req_valid;
-wire        sv32_req_wen;
-wire [31:0] sv32_req_addr;
-wire        sv32_resp_valid;
-wire [31:0] sv32_resp_addr;
-wire [31:0] sv32_resp_rdata;
-logic       sv32_resp_error = 0;
-FaultTy     sv32_resp_errty = FE_ACCESS_FAULT;
+logic   result_error = 0;
+FaultTy result_errty = FE_ACCESS_FAULT;
 
-assign preq.ready   = sv32_enable ? sv32_req_ready  : memreq.ready;
-assign memreq.valid = sv32_enable ? sv32_req_valid  : preq.valid;
-assign memreq.addr  = sv32_enable ? sv32_req_addr   : preq.addr;
-assign memreq.wen   = sv32_enable ? sv32_req_wen    : preq.wen;
-assign memreq.wdata = sv32_enable ? s_req.wdata     : preq.wdata;
-assign memreq.wmask = sv32_enable ? s_req.wmask     : preq.wmask;
-assign presp.valid  = sv32_enable ? sv32_resp_valid : memresp.valid;
-assign presp.rdata  = sv32_enable ? sv32_resp_rdata : memresp.rdata;
-assign presp.error  = sv32_enable ? sv32_resp_error : memresp.error;
-assign presp.errty  = sv32_enable ? sv32_resp_errty : memresp.errty;
+assign preq.ready   = sv32_enable ? state == IDLE       : memreq.ready;
+assign presp.valid  = sv32_enable ? state == REQ_END    : memresp.valid;
+assign presp.rdata  = sv32_enable ? result_rdata        : memresp.rdata;
+assign presp.error  = sv32_enable ? result_error        : memresp.error;
+assign presp.errty  = sv32_enable ? result_errty        : memresp.errty;
+
+assign memreq.valid = sv32_enable ? state == REQ_READY  : preq.valid;
+assign memreq.addr  = sv32_enable ? next_addr[31:0]     : preq.addr;
+assign memreq.wen   = sv32_enable ? s_req.wen           : preq.wen;
+assign memreq.wdata = sv32_enable ? s_req.wdata         : preq.wdata;
+assign memreq.wmask = sv32_enable ? s_req.wmask         : preq.wmask;
+assign memreq.pte   = PTE_AD'(2'b00);
+
+assign ptereq.valid = state == WALK_READY | state == WAIT_SET_AD_READY;
+assign ptereq.addr  = next_addr[31:0];
+assign ptereq.wen   = 0;
+assign ptereq.wdata = 0;
+assign ptereq.wmask = SIZE_W;
+assign ptereq.pte   = PTE_AD'({state == WAIT_SET_AD_READY, state == WAIT_SET_AD_READY & s_req.wen}); // A & D
 
 // preqがリクエストしたアドレス
 CacheReq s_req;
@@ -104,18 +107,18 @@ X W R
 1 1 0 Reserved for future use.
 1 1 1 Read-write-execute page.
 */
-wire pte_V  = memresp.rdata[0] === 1'b1; // validかどうか
-wire pte_R  = memresp.rdata[1] === 1'b1; // Readable
-wire pte_W  = memresp.rdata[2] === 1'b1; // Writable
-wire pte_X  = memresp.rdata[3] === 1'b1; // Executable
+wire pte_V  = pteresp.rdata[0] === 1'b1; // validかどうか
+wire pte_R  = pteresp.rdata[1] === 1'b1; // Readable
+wire pte_W  = pteresp.rdata[2] === 1'b1; // Writable
+wire pte_X  = pteresp.rdata[3] === 1'b1; // Executable
 // U-modeでアクセスできるかどうか
 // SUM=1のとき、S-modeでもアクセスできるようになる。
 // SUMにかかわらず、S-modeはU=1なページを実行できない
-wire pte_U  = memresp.rdata[4] === 1'b1;
-wire pte_G  = memresp.rdata[5] === 1'b1; // Global mappingが何かわからない
+wire pte_U  = pteresp.rdata[4] === 1'b1;
+wire pte_G  = pteresp.rdata[5] === 1'b1; // Global mappingが何かわからない
 // キャッシュの実装の都合上、命令用のPTWはAを変更しない。Dは元から変更されない。
-wire pte_A  = memresp.rdata[6] === 1'b1; // 最後にAが0にされてからアクセスされたかどうか
-wire pte_D  = memresp.rdata[7] === 1'b1; // 最古にDが0にされてからwriteされたかどうか
+wire pte_A  = pteresp.rdata[6] === 1'b1; // 最後にAが0にされてからアクセスされたかどうか
+wire pte_D  = pteresp.rdata[7] === 1'b1; // 最古にDが0にされてからwriteされたかどうか
 
 wire is_leaf_node = !(!pte_R & !pte_W & !pte_X);
 
@@ -134,19 +137,9 @@ Gはとりあえず実装しないので、faultを発生させる
 */
 
 // PPN
-wire [11:0] pte_ppn1    = memresp.rdata[31:20];
-wire [9:0]  pte_ppn0    = memresp.rdata[19:10];
-wire [21:0] pte_ppn     = memresp.rdata[31:10];
-
-assign sv32_req_ready   = state == IDLE;
-assign sv32_req_valid   = state == WALK_READY | state == REQ_READY | state == WAIT_SET_AD_READY;
-assign sv32_req_wen     = !EXECUTE_MODE & (
-                            state == REQ_READY & s_req.wen |
-                            state == WAIT_SET_AD_READY);
-assign sv32_req_addr    = next_addr[31:0];
-assign sv32_resp_valid  = state == REQ_END;
-assign sv32_resp_addr   = s_req.addr;
-assign sv32_resp_rdata  = result_rdata;
+wire [11:0] pte_ppn1    = pteresp.rdata[31:20];
+wire [9:0]  pte_ppn0    = pteresp.rdata[19:10];
+wire [21:0] pte_ppn     = pteresp.rdata[31:10];
 
 UIntX   last_pte = 0;
 Addr    last_addr= 0;
@@ -157,6 +150,10 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
     case (state)
     IDLE: begin
         if (preq.valid) begin
+            if (EXECUTE_MODE & preq.wen) begin
+                $display("ERROR: PTE(EXECUTE MODE) with wen=1");
+                $finish;
+            end
             state       <= WALK_READY;
             s_req       <= preq;
             // 5.3.2 step 3
@@ -164,11 +161,11 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             next_addr   <= {satp_ppn, 12'b0} + {22'b0, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
         end
     end
-    WALK_READY: if (memreq.ready) begin
-        state <= WALK_VALID;
-        last_addr   <= sv32_req_addr;
+    WALK_READY: if (ptereq.ready) begin
+        state       <= WALK_VALID;
+        last_addr   <= next_addr[31:0];
     end
-    WALK_VALID: if (memresp.valid) begin
+    WALK_VALID: if (pteresp.valid) begin
         // メモリがエラー
         // Vが立っていない
         // W=1なのにR=0
@@ -180,7 +177,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
         // DATA, leftでW, Rが立っていない
         // levelが3 => 1周してしまった
         // はaccess fault
-        if (memresp.error |
+        if (pteresp.error |
             !pte_V |
             pte_W & (!pte_R) |
             pte_G |
@@ -192,18 +189,18 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             level == 2'b11 | level == 2'b10
         ) begin
             state           <= REQ_END;
-            sv32_resp_error <= 1;
-            sv32_resp_errty <= FaultTy'(memresp.error ? FE_ACCESS_FAULT : FE_PAGE_FAULT);
+            result_error    <= 1;
+            result_errty    <= FaultTy'(pteresp.error ? FE_ACCESS_FAULT : FE_PAGE_FAULT);
         end else if (is_leaf_node) begin
             // 5.3.2 step 6
             // superpageがmisalignかどうか調べる
             if (level == 2'b01 & pte_ppn0 != 0) begin
                 state           <= REQ_END;
-                sv32_resp_error <= 1;
-                sv32_resp_errty <= FE_PAGE_FAULT;
+                result_error    <= 1;
+                result_errty    <= FE_PAGE_FAULT;
             end else begin
                 state       <= REQ_READY;
-                last_pte    <= memresp.rdata;
+                last_pte    <= pteresp.rdata;
                 // 5.3.2 step 8
                 // Sv32 physical address
                 // ppn[1], ppn[0], page offset
@@ -230,29 +227,25 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
         if (memresp.valid) begin
             state           <= REQ_END;
             result_rdata    <= memresp.rdata;
-            sv32_resp_error <= memresp.error;
-            sv32_resp_errty <= memresp.errty;
+            result_error    <= memresp.error;
+            result_errty    <= memresp.errty;
         end
     end
     REQ_END: begin
-        if (EXECUTE_MODE | sv32_resp_error)
+        if (result_error)
             state <= IDLE;
         else begin
             // A, Dを書き込む条件がそろっている
             if (!last_pte_A | s_req.wen & !last_pte_D) begin
                 state       <= WAIT_SET_AD_READY;
                 next_addr   <= {2'b0, last_addr};
-                s_req.wen   <= 1;
-                s_req.wdata <= last_pte |
-                                {25'b0, 1'b1, 6'b0} |       // A
-                                {24'b0, s_req.wen, 7'b0};   // D
             end else begin
                 state <= IDLE;
             end
         end
     end
     WAIT_SET_AD_READY: begin
-        if (memreq.ready) begin
+        if (ptereq.ready) begin
             state <= IDLE;
         end
     end
@@ -270,14 +263,31 @@ always @(posedge clk) if (can_output_log) if (LOG_ENABLE) begin
         $display("data,%s.ptw.proc_pc,h,%b", LOG_AS, state == IDLE ? preq.addr : s_req.addr);
         $display("data,%s.ptw.next_addr,h,%b", LOG_AS, next_addr[31:0]);
 
-        $display("data,%s.ptw.memreq.ready,b,%b", LOG_AS, memreq.ready);
-        $display("data,%s.ptw.memreq.valid,b,%b", LOG_AS, memreq.valid);
-        $display("data,%s.ptw.memreq.addr,h,%b", LOG_AS, memreq.addr);
-        $display("data,%s.ptw.memreq.wen,b,%b", LOG_AS, memreq.wen);
-        $display("data,%s.ptw.memreq.wdata,h,%b", LOG_AS, memreq.wdata);
-        $display("data,%s.ptw.memresp.valid,b,%b", LOG_AS, memresp.valid);
-        $display("data,%s.ptw.memresp.error,b,%b", LOG_AS, memresp.error);
-        $display("data,%s.ptw.memresp.rdata,h,%b", LOG_AS, memresp.rdata);
+        // if (memreq.ready & memreq.valid) begin
+            $display("data,%s.ptw.memreq.ready,b,%b", LOG_AS, memreq.ready);
+            $display("data,%s.ptw.memreq.valid,b,%b", LOG_AS, memreq.valid);
+            $display("data,%s.ptw.memreq.addr,h,%b", LOG_AS, memreq.addr);
+            $display("data,%s.ptw.memreq.wen,b,%b", LOG_AS, memreq.wen);
+            $display("data,%s.ptw.memreq.wdata,h,%b", LOG_AS, memreq.wdata);
+        // end
+        // if (memresp.valid) begin
+            $display("data,%s.ptw.memresp.valid,b,%b", LOG_AS, memresp.valid);
+            $display("data,%s.ptw.memresp.error,b,%b", LOG_AS, memresp.error);
+            $display("data,%s.ptw.memresp.rdata,h,%b", LOG_AS, memresp.rdata);
+        // end
+
+        // if (ptereq.ready & ptereq.valid) begin
+            $display("data,%s.ptw.ptereq.ready,b,%b", LOG_AS, ptereq.ready);
+            $display("data,%s.ptw.ptereq.valid,b,%b", LOG_AS, ptereq.valid);
+            $display("data,%s.ptw.ptereq.addr,h,%b", LOG_AS, ptereq.addr);
+            $display("data,%s.ptw.ptereq.wen,b,%b", LOG_AS, ptereq.wen);
+            $display("data,%s.ptw.ptereq.wdata,h,%b", LOG_AS, ptereq.wdata);
+        // end
+        // if (pteresp.valid) begin
+            $display("data,%s.ptw.pteresp.valid,b,%b", LOG_AS, pteresp.valid);
+            $display("data,%s.ptw.pteresp.error,b,%b", LOG_AS, pteresp.error);
+            $display("data,%s.ptw.pteresp.rdata,h,%b", LOG_AS, pteresp.rdata);
+        // end
 
         $display("data,%s.ptw.level,d,%b", LOG_AS, level);
         $display("data,%s.ptw.pte.R,b,%b", LOG_AS, pte_R);
