@@ -61,12 +61,13 @@ always @(posedge clk) begin
             if (can_output_log) begin
                 $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
             end
+        `endif
+
+        `ifdef PRINT_UART_CLOCK
+            $write("%d : %c\n", clock_count, q_rdata);
+            $fflush();
         `else
-            `ifdef PRINT_UART_CLOCK
-                $write("%d : %c\n", clock_count, q_rdata);
-            `else
-                $write("%c", q_rdata);
-            `endif
+            $write("%c", q_rdata);
             $fflush();
         `endif
     end
