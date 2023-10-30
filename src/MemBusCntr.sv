@@ -93,6 +93,8 @@ always @(posedge clk) begin
         default: begin
             $display("MemBusCntr : Unknown state %d", state);
             $finish;
+            $finish;
+            $finish;
         end
     endcase
 end

@@ -214,6 +214,8 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
     default: begin
         $display("DAccessCntr.sv : Unknown state %d", state);
         $finish;
+        $finish;
+        $finish;
     end
     endcase
 end

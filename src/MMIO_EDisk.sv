@@ -74,6 +74,8 @@ always @(posedge clk) begin
     default: begin
         $display("ERROR MMIO_EDisk.sv : Unknown state %d", state);
         $finish;
+        $finish;
+        $finish;
     end
     endcase
 end

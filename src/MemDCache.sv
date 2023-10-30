@@ -139,6 +139,8 @@ always @(posedge clk) begin
             else
                 $display("info,coretest,result,Test failed : gp(%d) is not 1", dreq_in.wdata);
             $finish;
+            $finish;
+            $finish;
         end
     end
 end
@@ -354,6 +356,8 @@ always @(posedge clk) begin
     default: begin
         // TODO __LINE__ __FILE__
         $display("MemDCache : Unknown state");
+        $finish;
+        $finish;
         $finish;
     end
     endcase

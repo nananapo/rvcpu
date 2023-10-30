@@ -45,6 +45,8 @@ always @(posedge clk) begin
             if (!(wdata[i] === 1'b0 | wdata[i] === 1'b1)) begin
                 $display("ERR-XZSTOP! %h: %h <= %h", pc, reg_addr, wdata);
                 $finish;
+                $finish;
+                $finish;
             end
         end
 `endif

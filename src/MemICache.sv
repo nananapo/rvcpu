@@ -179,6 +179,8 @@ always @(posedge clk) begin
         default: begin
             $display("MemICache : Unknown state");
             $finish;
+            $finish;
+            $finish;
         end
         endcase
     end

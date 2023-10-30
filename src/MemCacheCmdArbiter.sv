@@ -85,6 +85,8 @@ always @(posedge clk) begin
         default: begin
             $display("MemCacheCmdArbiter : Unknown state %d", state);
             $finish;
+            $finish;
+            $finish;
         end
     endcase
 end

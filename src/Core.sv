@@ -689,6 +689,7 @@ always @(posedge clk) begin
         $display(" wb(%d) pc = %h", wb_valid, wb_pc);
         $fflush;
         $finish;
+        $finish;
         $finish; // TODO なぜか2回finishしないと終了しない
     end
 end
