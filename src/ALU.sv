@@ -34,8 +34,8 @@ function [$bits(UIntX)-1:0] alu_func(
                                 {{XLEN-1{1'b0}}, op1_data < op2_data}; // SLTU
         ALU_JALR : alu_func = (op1_data + op2_data) & (~1);
         ALU_COPY1: alu_func = op1_data;
-        ALU_CZERO_EQ: alu_func = op2_data == DATA_ZERO ? op1_data : DATA_ZERO;
-        ALU_CZERO_NE: alu_func = op2_data != DATA_ZERO ? op1_data : DATA_ZERO;
+        ALU_CZERO_EQ: alu_func = op2_data === DATA_ZERO ? op1_data : DATA_ZERO;
+        ALU_CZERO_NE: alu_func = op2_data !== DATA_ZERO ? op1_data : DATA_ZERO;
         default  : alu_func = DATA_X;
     endcase
 endfunction
@@ -47,8 +47,8 @@ function br_func(
     input UIntX     op2_data
 );
     case(fun)
-        BR_BEQ  : br_func = (op1_data == op2_data);
-        BR_BNE  : br_func = !(op1_data == op2_data);
+        BR_BEQ  : br_func = (op1_data === op2_data);
+        BR_BNE  : br_func = !(op1_data === op2_data);
         BR_BLT  : br_func = sign_sel == OP_SIGNED ?
                                 ($signed(op1_data) < $signed(op2_data)) :
                                 (op1_data < op2_data);
