@@ -1,5 +1,5 @@
 name: riscv-tests
-run-name: Run riscv-tests
+run-name: Run riscv-tests@iverilog
 
 on:
   push:
