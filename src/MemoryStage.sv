@@ -19,13 +19,10 @@ module MemoryStage
 
     output logic            is_stall
 
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
     `ifdef PRINT_DEBUGINFO
         ,
-        input wire         invalid_by_trap
+        input wire          can_output_log,
+        input wire          invalid_by_trap
     `endif
 );
 

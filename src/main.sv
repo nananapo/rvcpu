@@ -318,13 +318,7 @@ Core #(
     .dresp(dresp_core_ptw),
     .cache_cntr(cache_cntr),
 
-    .external_interrupt_pending(external_interrupt_pending),
-
-    .gp(gp),
-    .exit(exit),
-
-    .exited(exited)
-
+    .external_interrupt_pending(external_interrupt_pending)
 `ifdef PRINT_DEBUGINFO
     ,
     .can_output_log(can_output_log)
