@@ -270,6 +270,8 @@ always @(posedge clk) begin
                 state <= RESP_VALID;
                 dresp_error_reg         <= 1;
                 cache_valid[info_index] <= 0;
+                if (is_pte_req)
+                    modified_count  <= modified_count - 1;
             end else begin
                 state <= RESP_VALID;
                 dresp_error_reg             <= 0;
@@ -288,6 +290,9 @@ always @(posedge clk) begin
                         cache_modified[info_index]  <= 1;
                         cache_data[mem_index]       <= busresp.rdata | {24'h0, dreq.pte.d, dreq.pte.a, 6'h0};
 
+                        // ライトバックしていないときにcountを増やす
+                        if (!writebacked_in_this_op)
+                            modified_count <= modified_count + 1;
                         `ifdef PRINT_DEBUGINFO
                         if (can_output_log)
                             $display("info,memstage.d$.event.pte_modified,modified");
