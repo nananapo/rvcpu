@@ -3,7 +3,6 @@
 module test();
 
 logic clk = 1;
-logic exit;
 logic uart_rx = 0;
 logic uart_tx;
 
@@ -19,8 +18,7 @@ end
 main #() m(
   .clk27MHz(clk),
   .uart_tx(uart_tx),
-  .uart_rx(uart_rx),
-  .exit(exit)
+  .uart_rx(uart_rx)
 );
 
 initial begin
@@ -30,10 +28,6 @@ initial begin
           #500001 $finish;
       `endif
   `endif
-end
-
-always @(posedge clk) begin
-  if (exit) $finish;
 end
 
 endmodule

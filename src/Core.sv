@@ -6,7 +6,6 @@ module Core #(
     parameter FMAX_MHz = 27
 )(
     input wire  clk,
-    input wire  exited,
 
     input wire UInt64           reg_cycle,
     input wire UInt64           reg_time,
@@ -168,7 +167,7 @@ wire id_stall   = id_valid & ds_stall;
 wire if_stall   = id_stall;
 
 // IF Stage
-assign iresp.ready  = !exited & !if_stall;
+assign iresp.ready  = !if_stall;
 
 // 最後のクロックでの分岐ハザード状態
 // このレジスタを介してireqすることで、EXE, CSRステージとinstqueueが直接つながらないようにする。

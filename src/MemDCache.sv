@@ -9,7 +9,6 @@ module MemDCache #(
     parameter CACHE_WIDTH = 10
 ) (
     input wire              clk,
-    output logic            exit_flg,
     inout wire CacheReq     dreq_in,
     inout wire CacheResp    dresp_in,
     inout wire MemBusReq    busreq,
@@ -135,11 +134,11 @@ always @(posedge clk) begin
         if (dreq_in.wdata[15:8] == 8'b0101_0000) begin
             $fdisplay(STDERR, "%c", dreq_in.wdata[7:0]);
         end else begin
-            exit_flg <= 1;
             if (dreq_in.wdata === 1)
                 $display("info,coretest.result,Test passed");
             else
                 $display("info,coretest,result,Test failed : gp(%d) is not 1", dreq_in.wdata);
+            $finish;
         end
     end
 end

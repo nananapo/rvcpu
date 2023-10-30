@@ -11,24 +11,9 @@ module main #(
     output wire uart_tx,
 
     output logic [5:0]  led
-`ifdef DEBUG
-    ,
-    output wire         exit
-`endif
 );
 
-`ifndef DEBUG
-    wire        exit;
-`endif
-
 wire clk_in = clk27MHz;
-
-logic exited = 0;
-always @(posedge clk_in) begin
-    if (exit) begin
-        exited <= 1;
-    end
-end
 
 wire can_output_log;
 
@@ -197,7 +182,6 @@ InstQueue #() instqueue (
 /* ---- Data ---- */
 MemDCache #() memdcache (
     .clk(clk_in),
-    .exit_flg(exit),
     .dreq_in(dreq_arb_cache),
     .dresp_in(dresp_arb_cache),
     .busreq(mbreq_dcache),
@@ -304,7 +288,6 @@ Core #(
     .FMAX_MHz(FMAX_MHz)
 ) core (
     .clk(clk_in),
-    .exited(exited),
 
     .reg_cycle(reg_cycle),
     .reg_time(reg_time),
