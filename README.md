@@ -70,19 +70,18 @@ https://github.com/users/nananapo/projects/1/views/2
         |
     MemBusCntr---------------------
         |                         |
-        |                      DCache
-        |                         |
-     ICache                  DAccessCntr
-        |                         |
-       PTW                    MMIO_Cntr
-        |                         |
-    InstQueue                    PTW
+        |          ------------DCache
+        |          |              |----------
+     ICache        |         DAccessCntr    |
+        |          |              |         |
+       PTW----------          MMIO_Cntr     |
+        |                         |         |
+    InstQueue                    PTW---------
         |                         |
         IF -> ID -> DS -> EXE -> MEM -> CSR -> WB
                            |
                         Mul/Div
 ```
-
 
 ### メモリマップ
 ```
