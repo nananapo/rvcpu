@@ -37,7 +37,7 @@ logic   cache_modified[CACHE_SIZE-1:0];
 
 // 変更されているがライトバックされていない値のカウント
 logic [CACHE_WIDTH-1:0] modified_count = 0;
-assign is_writebacked_all = modified_count == 0;
+assign is_writebacked_all = modified_count == 0 & !writeback_requested;
 
 // writebackが要求されたが処理できていないかどうか
 logic writeback_requested = 0;
@@ -270,8 +270,6 @@ always @(posedge clk) begin
                 state <= RESP_VALID;
                 dresp_error_reg         <= 1;
                 cache_valid[info_index] <= 0;
-                if (is_pte_req)
-                    modified_count  <= modified_count - 1;
             end else begin
                 state <= RESP_VALID;
                 dresp_error_reg             <= 0;
@@ -289,18 +287,12 @@ always @(posedge clk) begin
                     if (busresp.rdata[6] === 0 || dreq.pte.d && busresp.rdata[7] === 0) begin
                         cache_modified[info_index]  <= 1;
                         cache_data[mem_index]       <= busresp.rdata | {24'h0, dreq.pte.d, dreq.pte.a, 6'h0};
-
-                        // ライトバックしていないときにcountを増やす
-                        if (!writebacked_in_this_op)
-                            modified_count <= modified_count + 1;
+                        modified_count              <= modified_count + 1;
                         `ifdef PRINT_DEBUGINFO
                         if (can_output_log)
                             $display("info,memstage.d$.event.pte_modified,modified");
                         `endif
                     end else begin
-                        // ライトバックされていたら、countを減らす必要がある
-                        if (writebacked_in_this_op)
-                            modified_count  <= modified_count - 1;
                         cache_modified[info_index]  <= 0;
                         cache_data[mem_index]       <= busresp.rdata;
                     end
@@ -334,10 +326,7 @@ always @(posedge clk) begin
             end else begin
                 // ライトバック -> read
                 state           <= READ_READY;
-                // ライトバックする必要があった → countを1減らす
-                // PTEのreqの場合は、変更がなかったときにのみ減らす
-                if (!is_pte_req)
-                    modified_count  <= modified_count - 1;
+                modified_count  <= modified_count - 1;
             end
         end
     end
