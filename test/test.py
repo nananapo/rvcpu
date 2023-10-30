@@ -8,6 +8,7 @@ MAKE_COMMAND_VERILATOR = "make dvrv "
 
 VERILATOR_MODE = False
 NODEBUG_MODE = False
+XZSTOP_MODE = False
 
 
 os.makedirs("../test/results", exist_ok=True)
@@ -34,7 +35,7 @@ def test(makecmd, filename):
 
 args = sys.argv[1:]
 def procarg():
-    global args, VERILATOR_MODE, NODEBUG_MODE
+    global args, VERILATOR_MODE, NODEBUG_MODE, XZSTOP_MODE
     cont = True
     while cont:
         cont = False
@@ -44,6 +45,10 @@ def procarg():
             cont = True
         if len(args) >= 1 and args[0] == "-nodebug":
             NODEBUG_MODE = True
+            args = args[1:]
+            cont = True
+        if len(args) >= 1 and args[0] == "-xzstop":
+            XZSTOP_MODE = True
             args = args[1:]
             cont = True
 procarg()
@@ -58,7 +63,8 @@ for fileName in sorted(os.listdir(TESTS_PATH)):
         options = []
         options.append("-DPRED_TBC")
         options.append("-DMEMORY_DELAY=0")
-        options.append("-DXZSTOP")
+        if XZSTOP_MODE:
+            options.append("-DXZSTOP")
         options.append("-DMEM_FILE=\\\\\\\""+abpath+"\\\\\\\"")
         if not NODEBUG_MODE:
             options.append("-DPRINT_DEBUGINFO")
