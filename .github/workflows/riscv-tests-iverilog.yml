@@ -33,6 +33,14 @@ jobs:
       - name: Test
         run: |
           cd test && python3 test.py -nodebug ua-p-
+  ua-v:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/install-iverilog
+      - name: Test
+        run: |
+          cd test && python3 test.py -nodebug ua-v-
   ui-p:
     runs-on: ubuntu-latest
     steps:
