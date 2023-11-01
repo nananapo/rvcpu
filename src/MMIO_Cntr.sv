@@ -40,17 +40,16 @@ initial begin
     s_dreq.valid = 0;
 end
 
-// TODO メモリを8000_0000以降に配置することで判定を簡略化する
-wire is_uart_tx     = dreq_in.addr == MemMap::UART_TX;
-wire is_uart_rx     = util::x_in_range(dreq_in.addr, MemMap::UART_RX_OFFSET,MemMap::UART_RX_END);
-wire is_clint       = util::x_in_range(dreq_in.addr, MemMap::CLINT_OFFSET,  MemMap::CLINT_END);
-wire is_edisk       = util::x_in_range(dreq_in.addr, MemMap::EDISK_OFFSET,  MemMap::EDISK_END);
+wire is_uart_tx     = MemMap::is_uart_tx_addr(dreq_in.addr);
+wire is_uart_rx     = MemMap::is_uart_rx_addr(dreq_in.addr);
+wire is_clint       = MemMap::is_clint_addr(dreq_in.addr);
+wire is_edisk       = MemMap::is_edisk_addr(dreq_in.addr);
 wire is_memory      = !is_uart_tx & !is_uart_rx & !is_clint & !is_edisk;
 
-wire s_is_uart_tx   = s_dreq.addr == MemMap::UART_TX;
-wire s_is_uart_rx   = util::x_in_range(s_dreq.addr, MemMap::UART_RX_OFFSET, MemMap::UART_RX_END);
-wire s_is_clint     = util::x_in_range(s_dreq.addr, MemMap::CLINT_OFFSET,   MemMap::CLINT_END);
-wire s_is_edisk     = util::x_in_range(s_dreq.addr, MemMap::EDISK_OFFSET,   MemMap::EDISK_END);
+wire s_is_uart_tx   = MemMap::is_uart_tx_addr(s_dreq.addr);
+wire s_is_uart_rx   = MemMap::is_uart_rx_addr(s_dreq.addr);
+wire s_is_clint     = MemMap::is_clint_addr(s_dreq.addr);
+wire s_is_edisk     = MemMap::is_edisk_addr(s_dreq.addr);
 wire s_is_memory    = !s_is_uart_tx & !s_is_uart_rx & !s_is_clint & !s_is_edisk;
 
 wire cmd_start  = !reset & (
@@ -71,6 +70,7 @@ wire s_valid   = s_dreq.valid & (
                     (s_is_edisk     & cmd_edisk_rvalid));
 /* verilator lint_on UNOPTFLAT */
 
+// TODO ここらへんの三項演算子をcaseにする
 wire UIntX s_rdata  =   s_is_memory     ? memresp_in.rdata :
                         s_is_uart_tx    ? cmd_uart_tx_rdata :
                         s_is_uart_rx    ? cmd_uart_rx_rdata :
