@@ -95,10 +95,10 @@ parameter STORE_AMO_ADDRESS_MISALIGNED   = 6;   // 0 6     Store/AMO address mis
 parameter STORE_AMO_ACCESS_FAULT         = 7;   // 0 7     Store/AMO access fault
 parameter ENVIRONMENT_CALL_FROM_U_MODE   = 8;   // 0 8     Environment call from U-mode
 parameter ENVIRONMENT_CALL_FROM_S_MODE   = 9;   // 0 9     Environment call from S-mode
-parameter ENVIRONMENT_CALL_FROM_M_MODE   = 10;  // 0 11    Environment call from M-mode
-parameter INSTRUCTION_PAGE_FAULT         = 11;  // 0 12    Instruction page fault
-parameter LOAD_PAGE_FAULT                = 12;  // 0 13    Load page fault
-parameter STORE_AMO_PAGE_FAULT           = 13;  // 0 15    Store/AMO page fault
+parameter ENVIRONMENT_CALL_FROM_M_MODE   = 11;  // 0 11    Environment call from M-mode
+parameter INSTRUCTION_PAGE_FAULT         = 12;  // 0 12    Instruction page fault
+parameter LOAD_PAGE_FAULT                = 13;  // 0 13    Load page fault
+parameter STORE_AMO_PAGE_FAULT           = 15;  // 0 15    Store/AMO page fault
 endpackage
 
 `endif
