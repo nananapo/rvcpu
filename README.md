@@ -37,10 +37,7 @@ CSR命令とメモリ命令を並列に動かす5段パイプライン
     - [x] mret命令
     - [x] M-modeでのタイマ割込み
 
-## 2023/05/22? ~ 今
-
-TODO  
-https://github.com/users/nananapo/projects/1/views/2
+## それ以降
 
 変更点
 * IFステージを消して、キューにフェッチした命令を入れていくモジュールを作成した
@@ -51,6 +48,9 @@ https://github.com/users/nananapo/projects/1/views/2
 * kanata log formatに対応(log/log2kanata.py)し、Konataでパイプラインの状態を見れるようにした
 * ログを読みやすくするスクリプトを作成した (log/log2human.py)
 * CoreMarkを動作させた
+
+0a6a3f50314b29b4c6ce5cdcaa542fa53d254398  
+xv6が動くcommit
 
 
 |  命令  |  サイクル数  |
