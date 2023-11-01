@@ -22,10 +22,23 @@ int main(int argc, char** argv) {
     dut->clk        = 0;
     dut->uart_rx    = 1;
 
+    std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
+
     fcntl(0, F_SETFL, O_NONBLOCK);
+
+    uint64_t clkCount = 0;
 
     while (1) {
         dut->clk = !dut->clk;
+
+        // if (dut->clk) {
+        //     clkCount++;
+        //     if (clkCount % 1000000 == 0) {
+        //         std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+        //         std::chrono::duration<float> elapsed = now - startTime;
+        //         cout << elapsed.count() << endl;
+        //     }
+        // }
 
         if (dut->clk == 1)
         {
