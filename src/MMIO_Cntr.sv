@@ -1,3 +1,6 @@
+`include "pkg_util.svh"
+`include "pkg_memory.svh"
+
 module MMIO_Cntr #(
     parameter FMAX_MHz = 27
 ) (
@@ -23,15 +26,6 @@ module MMIO_Cntr #(
 );
 
 `include "basicparams.svh"
-`include "memorymap.svh"
-
-function in_range(
-    input UIntX left,
-    input UIntX right,
-    input UIntX addr
-);
-    in_range = left <= addr && addr <= right;
-endfunction
 
 typedef enum logic [1:0] {
     IDLE,
@@ -47,16 +41,16 @@ initial begin
 end
 
 // TODO メモリを8000_0000以降に配置することで判定を簡略化する
-wire is_uart_tx     = dreq_in.addr == MMIO_UARTTX;
-wire is_uart_rx     = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, dreq_in.addr);
-wire is_clint       = in_range(CLINT_OFFSET, CLINT_END, dreq_in.addr);
-wire is_edisk       = in_range(EDISK_OFFSET, EDISK_END, dreq_in.addr);
+wire is_uart_tx     = dreq_in.addr == MemMap::UART_TX;
+wire is_uart_rx     = util::x_in_range(dreq_in.addr, MemMap::UART_RX_OFFSET,MemMap::UART_RX_END);
+wire is_clint       = util::x_in_range(dreq_in.addr, MemMap::CLINT_OFFSET,  MemMap::CLINT_END);
+wire is_edisk       = util::x_in_range(dreq_in.addr, MemMap::EDISK_OFFSET,  MemMap::EDISK_END);
 wire is_memory      = !is_uart_tx & !is_uart_rx & !is_clint & !is_edisk;
 
-wire s_is_uart_tx   = s_dreq.addr == MMIO_UARTTX;
-wire s_is_uart_rx   = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, s_dreq.addr);
-wire s_is_clint     = in_range(CLINT_OFFSET, CLINT_END, s_dreq.addr);
-wire s_is_edisk     = in_range(EDISK_OFFSET, EDISK_END, s_dreq.addr);
+wire s_is_uart_tx   = s_dreq.addr == MemMap::UART_TX;
+wire s_is_uart_rx   = util::x_in_range(s_dreq.addr, MemMap::UART_RX_OFFSET, MemMap::UART_RX_END);
+wire s_is_clint     = util::x_in_range(s_dreq.addr, MemMap::CLINT_OFFSET,   MemMap::CLINT_END);
+wire s_is_edisk     = util::x_in_range(s_dreq.addr, MemMap::EDISK_OFFSET,   MemMap::EDISK_END);
 wire s_is_memory    = !s_is_uart_tx & !s_is_uart_rx & !s_is_clint & !s_is_edisk;
 
 wire cmd_start  = !reset & (

@@ -1,3 +1,5 @@
+`include "pkg_csr.svh"
+
 module MemoryStage
 (
     input wire              clk,
@@ -27,7 +29,6 @@ module MemoryStage
 );
 
 `include "basicparams.svh"
-`include "csrparam.svh"
 
 typedef enum logic [1:0]
 {
@@ -103,9 +104,9 @@ assign next_trapinfo.valid = ctrl.mem_wen == MEN_X ? trapinfo.valid : dresp.erro
 assign next_trapinfo.cause =    ctrl.mem_wen == MEN_X ? trapinfo.cause :
                                 dresp.error ? (
                                     dresp.errty == FE_ACCESS_FAULT ? (
-                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_ACCESS_FAULT : CAUSE_LOAD_ACCESS_FAULT
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CsrCause::STORE_AMO_ACCESS_FAULT : CsrCause::LOAD_ACCESS_FAULT
                                     ) : (
-                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_PAGE_FAULT : CAUSE_LOAD_PAGE_FAULT
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CsrCause::STORE_AMO_PAGE_FAULT : CsrCause::LOAD_PAGE_FAULT
                                     )
                                 ): 0;
 

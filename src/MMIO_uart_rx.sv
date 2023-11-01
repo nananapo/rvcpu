@@ -1,3 +1,5 @@
+`include "pkg_memory.svh"
+
 module MMIO_uart_rx #(
     parameter FMAX_MHz  = 27,
     parameter BUF_WIDTH = 10
@@ -20,7 +22,6 @@ module MMIO_uart_rx #(
 );
 
 `include "basicparams.svh"
-`include "memorymap.svh"
 
 wire UInt8  rx_rdata;
 wire        rx_rvalid;
@@ -56,7 +57,7 @@ SyncQueue #(
 assign  req_ready   = 1;
 initial resp_valid  = 0;
 
-assign  q_rready = req_valid && req_addr == MMIO_UARTRX_VALUE;
+assign  q_rready = req_valid && req_addr == MemMap::UART_RX_VALUE;
 
 assign  uart_rx_pending = q_rvalid;
 
@@ -64,8 +65,8 @@ always @(posedge clk) begin
     resp_valid <= req_valid;
     if (req_valid) begin
         case (req_addr)
-        MMIO_UARTRX_EXISTS: resp_rdata <= {{XLEN-1{1'b0}}, q_rvalid};
-        MMIO_UARTRX_VALUE:  resp_rdata <= {{XLEN-8{1'b0}}, q_rdata};
+        MemMap::UART_RX_EXISTS: resp_rdata <= {{XLEN-1{1'b0}}, q_rvalid};
+        MemMap::UART_RX_VALUE:  resp_rdata <= {{XLEN-8{1'b0}}, q_rdata};
         endcase
     end
 end

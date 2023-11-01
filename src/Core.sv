@@ -1,5 +1,7 @@
 `default_nettype none
 
+`include "pkg_csr.svh"
+`include "pkg_util.svh"
 // TODO ステージの接続にinterfaceを多用したい
 
 module Core #(
@@ -27,12 +29,7 @@ module Core #(
 `endif
 );
 
-`include "csrparam.svh"
 `include "basicparams.svh"
-
-function is_ialigned( input Addr addr );
-  is_ialigned = addr[1:0] == 2'b00;
-endfunction
 
 // id reg
 logic       id_valid    = 0;
@@ -215,7 +212,7 @@ always @(posedge clk) begin
             id_valid        <= 1;
             id_trap.valid   <= iresp.error;
             id_trap.cause   <= iresp.errty == FE_ACCESS_FAULT ?
-                                CAUSE_INSTRUCTION_ACCESS_FAULT : CAUSE_INSTRUCTION_PAGE_FAULT;
+                                CsrCause::INSTRUCTION_ACCESS_FAULT : CsrCause::INSTRUCTION_PAGE_FAULT;
             id_pc           <= iresp.addr;
             id_inst         <= iresp.inst;
             id_inst_id      <= iresp.inst_id;
@@ -258,9 +255,9 @@ always @(posedge clk) begin
                                 id_ctrl.csr_cmd == CSR_ECALL |
                                 id_ctrl.csr_cmd == CSR_EBREAK);
         ds_trap.cause   <= id_trap.valid ? id_trap.cause :
-                            id_is_illegal ? CAUSE_ILLEGAL_INSTRUCTION :
-                            id_ctrl.csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE :
-                            id_ctrl.csr_cmd == CSR_EBREAK ? CAUSE_BREAKPOINT : 0;
+                            id_is_illegal ? CsrCause::ILLEGAL_INSTRUCTION :
+                            id_ctrl.csr_cmd == CSR_ECALL ? CsrCause::ENVIRONMENT_CALL_FROM_U_MODE :
+                            id_ctrl.csr_cmd == CSR_EBREAK ? CsrCause::BREAKPOINT : 0;
         // forwarding
         ds_fw.valid     <= id_valid & id_ctrl.rf_wen;
         ds_fw.fwdable   <= id_ctrl.wb_sel == WB_PC;
@@ -341,9 +338,9 @@ always @(posedge clk) begin
             // trap
             mem_trap.valid  <= exe_valid & (
                                 exe_trap.valid |
-                                (exe_branch_taken & !is_ialigned(exe_branch_target)));
+                                (exe_branch_taken & !util::ialigned(exe_branch_target)));
             mem_trap.cause  <= exe_trap.valid ? exe_trap.cause :
-                                (exe_branch_taken & !is_ialigned(exe_branch_target)) ? CAUSE_INSTRUCTION_ADDRESS_MISALIGNED : 0;
+                                (exe_branch_taken & !util::ialigned(exe_branch_target)) ? CsrCause::INSTRUCTION_ADDRESS_MISALIGNED : 0;
             mem_btarget     <= exe_branch_target;
             // forwarding
             mem_fw.valid    <= exe_valid & exe_fw.valid;

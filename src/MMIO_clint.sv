@@ -1,3 +1,5 @@
+`include "pkg_memory.svh"
+
 module MMIO_clint #(
     parameter FMAX_MHz = 27
 )(
@@ -16,8 +18,6 @@ module MMIO_clint #(
     output UInt64       mtimecmp
 );
 
-`include "memorymap.svh"
-
 assign req_ready    = 1;
 assign resp_valid   = 1;
 
@@ -26,28 +26,28 @@ initial mtimecmp = 64'hffff_ffff_ffff_ffff;
 always @(posedge clk) begin
     `ifdef XLEN32
         case (req_addr)
-            CLINT_MTIME:    resp_rdata <= mtime[31:0];
-            CLINT_MTIMEH:   resp_rdata <= mtime[63:32];
-            CLINT_MTIMECMP: resp_rdata <= mtimecmp[31:0];
-            CLINT_MTIMECMPH:resp_rdata <= mtimecmp[63:32];
+            MemMap::CLINT_MTIME:    resp_rdata <= mtime[31:0];
+            MemMap::CLINT_MTIMEH:   resp_rdata <= mtime[63:32];
+            MemMap::CLINT_MTIMECMP: resp_rdata <= mtimecmp[31:0];
+            MemMap::CLINT_MTIMECMPH:resp_rdata <= mtimecmp[63:32];
             default: begin end
         endcase
         if (req_ready & req_valid & req_wen) begin
             case (req_addr)
-                CLINT_MTIMECMP: mtimecmp[31:0]  <= req_wdata;
-                CLINT_MTIMECMPH:mtimecmp[63:32] <= req_wdata;
+                MemMap::CLINT_MTIMECMP: mtimecmp[31:0]  <= req_wdata;
+                MemMap::CLINT_MTIMECMPH:mtimecmp[63:32] <= req_wdata;
                 default: begin end
             endcase
         end
     `elsif XLEN64
         case (req_addr)
-            CLINT_MTIME:    resp_rdata <= mtime;
-            CLINT_MTIMECMP: resp_rdata <= mtimecmp;
+            MemMap::CLINT_MTIME:    resp_rdata <= mtime;
+            MemMap::CLINT_MTIMECMP: resp_rdata <= mtimecmp;
             default: begin end
         endcase
         if (req_valid & req_wen) begin
             case (req_addr)
-                CLINT_MTIMECMP: mtimecmp <= req_wdata;
+                MemMap::CLINT_MTIMECMP: mtimecmp <= req_wdata;
                 default: begin end
             endcase
         end
