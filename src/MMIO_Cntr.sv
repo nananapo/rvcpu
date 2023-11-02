@@ -1,23 +1,20 @@
 `include "pkg_util.svh"
 `include "pkg_memory.svh"
 
-module MMIO_Cntr #(
-    parameter FMAX_MHz = 27
-) (
+module MMIO_Cntr (
     input  wire             clk,
     input  wire             reset,
 
     input  wire             uart_rx,
     output wire             uart_tx,
-    input  wire UInt64      mtime,
-    output wire UInt64      mtimecmp,
 
     inout  wire CacheReq    dreq_in,
     inout  wire CacheResp   dresp_in,
     inout  wire CacheReq    memreq_in,
     inout  wire CacheResp   memresp_in,
 
-    output wire             uart_rx_pending
+    output wire             uart_rx_pending,
+    output wire             mti_pending
 );
 
 `include "basicparams.svh"
@@ -138,9 +135,7 @@ assign memreq_in.wdata  = req_wdata;
 assign memreq_in.wmask  = req_wmask;
 assign memreq_in.pte    = req_pte;
 
-MMIO_uart_rx #(
-    .FMAX_MHz(FMAX_MHz)
-) memmap_uartrx (
+MMIO_uart_rx memmap_uartrx (
     .clk(clk),
     .uart_rx(uart_rx),
 
@@ -155,9 +150,7 @@ MMIO_uart_rx #(
     .uart_rx_pending(uart_rx_pending)
 );
 
-MMIO_uart_tx #(
-    .FMAX_MHz(FMAX_MHz)
-) memmap_uarttx (
+MMIO_uart_tx memmap_uarttx (
     .clk(clk),
     .uart_tx(uart_tx),
 
@@ -170,9 +163,7 @@ MMIO_uart_tx #(
     .resp_rdata(cmd_uart_tx_rdata)
 );
 
-MMIO_clint #(
-    .FMAX_MHz(FMAX_MHz)
-) memmap_clint (
+MMIO_clint memmap_clint (
     .clk(clk),
 
     .req_ready(cmd_clint_ready),
@@ -182,9 +173,7 @@ MMIO_clint #(
     .req_wdata(req_wdata),
     .resp_valid(cmd_clint_rvalid),
     .resp_rdata(cmd_clint_rdata),
-
-    .mtime(mtime),
-    .mtimecmp(mtimecmp)
+    .mti_pending(mti_pending)
 );
 
 MMIO_EDisk #() edisk (

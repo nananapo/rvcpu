@@ -4,15 +4,8 @@
 `include "pkg_util.svh"
 // TODO ステージの接続にinterfaceを多用したい
 
-module Core #(
-    parameter FMAX_MHz = 27
-)(
+module Core (
     input wire  clk,
-
-    input wire UInt64           reg_cycle,
-    input wire UInt64           reg_time,
-    input wire UInt64           reg_mtime,
-    input wire UInt64           reg_mtimecmp,
 
     inout wire IReq             ireq,
     inout wire IResp            iresp,
@@ -21,6 +14,7 @@ module Core #(
     inout wire CacheResp        dresp,
 
     input wire                  external_interrupt_pending,
+    input wire                  mti_pending,
 
     output wire CacheCntrInfo   cache_cntr
 );
@@ -479,10 +473,7 @@ MemoryStage #() memorystage
     `endif
 );
 
-CSRStage #(
-    .FMAX_MHz(FMAX_MHz)
-) csrstage
-(
+CSRStage #() csrstage (
     .clk(clk),
 
     .valid(csr_valid),
@@ -503,13 +494,8 @@ CSRStage #(
     .csr_keep_trap(csr_keep_trap),
     .trap_vector(csr_trap_vector),
 
-    // TODO 改名
-    .reg_cycle(reg_cycle),
-    .reg_time(reg_time),
-    .reg_mtime(reg_mtime),
-    .reg_mtimecmp(reg_mtimecmp),
-
     .external_interrupt_pending(external_interrupt_pending),
+    .mip_mtip(mti_pending),
 
     .cache_cntr(cache_cntr)
 );

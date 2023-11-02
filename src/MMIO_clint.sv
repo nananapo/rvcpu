@@ -1,8 +1,8 @@
+`include "basic.svh"
 `include "pkg_memory.svh"
+`include "pkg_conf.svh"
 
-module MMIO_clint #(
-    parameter FMAX_MHz = 27
-)(
+module MMIO_clint (
     input  wire         clk,
 
     output wire         req_ready,
@@ -14,14 +14,27 @@ module MMIO_clint #(
     output wire         resp_valid,
     output UInt32       resp_rdata,
 
-    input wire UInt64   mtime,
-    output UInt64       mtimecmp
+    output wire         mti_pending // Machine Timer Interrupt
 );
 
 assign req_ready    = 1;
 assign resp_valid   = 1;
 
-initial mtimecmp = 64'hffff_ffff_ffff_ffff;
+UInt64 mtime    = 0;
+UInt64 mtimecmp = -1;
+
+int timecounter = 0;
+always @(posedge clk) begin
+    // mtimeをμ秒ごとにインクリメント
+    if (timecounter == conf::FREQUENCY_MHz - 1) begin
+        timecounter <= 0;
+        mtime       <= mtime + 1;
+    end else begin
+        timecounter <= timecounter + 1;
+    end
+end
+
+assign mti_pending = mtime >= mtimecmp;
 
 always @(posedge clk) begin
     `ifdef XLEN32

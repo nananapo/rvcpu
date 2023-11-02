@@ -1,7 +1,7 @@
+`include "pkg_conf.svh"
 `include "pkg_memory.svh"
 
 module MMIO_uart_rx #(
-    parameter FMAX_MHz  = 27,
     parameter BUF_WIDTH = 10
 )(
     input  wire clk,
@@ -27,7 +27,8 @@ wire UInt8  rx_rdata;
 wire        rx_rvalid;
 
 Uart_rx #(
-    .FMAX_MHz(FMAX_MHz)
+    .FREQUENCY_MHz(conf::FREQUENCY_MHz),
+    .BAUDRATE(conf::UART_BAUDRATE)
 ) rxModule(
     .clk(clk),
     .rdata(rx_rdata),

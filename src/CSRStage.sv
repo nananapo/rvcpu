@@ -1,11 +1,10 @@
 `include "pkg_util.svh"
 `include "pkg_csr.svh"
+`include "pkg_conf.svh"
 `include "basic.svh"
 `include "memoryinterface.svh"
 
-module CSRStage #(
-    parameter FMAX_MHz = 27
-) (
+module CSRStage (
     input wire              clk,
 
     input wire              valid,
@@ -26,12 +25,8 @@ module CSRStage #(
     output wire             csr_keep_trap, // validのままにするtrapかどうか
     output Addr             trap_vector,
 
-    input wire UInt64       reg_cycle,
-    input wire UInt64       reg_time,
-    input wire UInt64       reg_mtime,
-    input wire UInt64       reg_mtimecmp,
-
     input wire              external_interrupt_pending,
+    input wire              mip_mtip,
 
     output wire CacheCntrInfo   cache_cntr
 );
@@ -59,8 +54,8 @@ endfunction
 
 function [31:0] gen_rdata(
     input UInt12 addr,
-    input [63:0] reg_cycle,
-    input [63:0] reg_time,
+    input UInt64 time_,
+    input UInt64 cycle,
     input [31:0] mstatus,
     input [31:0] sstatus,
     input [31:0] mstatush,
@@ -85,10 +80,10 @@ function [31:0] gen_rdata(
 );
 case (addr)
     // Counters and Timers
-    CsrAddr::CYCLE:     gen_rdata = reg_cycle[31:0];
-    CsrAddr::TIME:      gen_rdata = reg_time[31:0];
-    CsrAddr::CYCLEH:    gen_rdata = reg_cycle[63:32];
-    CsrAddr::TIMEH:     gen_rdata = reg_time[63:32];
+    CsrAddr::CYCLE:     gen_rdata = cycle[31:0];
+    CsrAddr::TIME:      gen_rdata = time_[31:0];
+    CsrAddr::CYCLEH:    gen_rdata = cycle[63:32];
+    CsrAddr::TIMEH:     gen_rdata = time_[63:32];
     // Machine Trap Setup
     CsrAddr::MSTATUS:   gen_rdata = mstatus;
     CsrAddr::MISA:      gen_rdata = misa;
@@ -106,8 +101,8 @@ case (addr)
     CsrAddr::MTINST:    gen_rdata = mtinst;
     CsrAddr::MTVAL2:    gen_rdata = mtval2;
     // Machine Counter/Timers
-    CsrAddr::MCYCLE:    gen_rdata = reg_cycle[31:0];
-    CsrAddr::MCYCLEH:   gen_rdata = reg_cycle[63:32];
+    CsrAddr::MCYCLE:    gen_rdata = cycle[31:0];
+    CsrAddr::MCYCLEH:   gen_rdata = cycle[63:32];
     // Supervisor Trap Setup
     CsrAddr::SSTATUS:   gen_rdata = sstatus;
     CsrAddr::SIE:       gen_rdata = sie;
@@ -163,6 +158,22 @@ end
 
 wire CsrCmd csr_cmd = ctrl.csr_cmd;
 wire UInt12 addr    = imm_i[11:0];
+
+UInt64 time_ = 0;
+UInt64 cycle = 0;
+
+int timecounter = 0;
+always @(posedge clk) begin
+    // cycleは毎クロックインクリメント
+    cycle <= cycle + 1;
+    // timeをμ秒ごとにインクリメント
+    if (timecounter == conf::FREQUENCY_MHz - 1) begin
+        time_ <= time_ + 1;
+        timecounter <= 0;
+    end else begin
+        timecounter <= timecounter + 1;
+    end
+end
 
 // 2.1 CSR Address Mapping Conventions
 wire can_access     =   addr == CsrAddr::SATP & mode == S_MODE ? !mstatus_tvm :
@@ -300,7 +311,6 @@ logic [31:0] mtval      = 0;
 
 logic mip_meip = 0;
 logic mip_seip = 0;
-logic mip_mtip = 0;
 logic mip_stip = 0;
 logic mip_msip = 0;
 logic mip_ssip = 0;
@@ -346,8 +356,8 @@ logic [31:0] stval      = 0;
 wire UIntX  wdata = gen_wdata(csr_cmd, op1_data, rdata);
 wire UIntX  rdata = gen_rdata(
     addr,
-    reg_cycle,
-    reg_time,
+    time_,
+    cycle,
     mstatus,
     sstatus,
     mstatush,
@@ -489,7 +499,6 @@ always @(posedge clk) begin
             if (!raise_expt & raise_intr) begin
                      if (mip_meip & mie_meie) mip_meip <= 0;
                 else if (mip_msip & mie_msie) mip_msip <= 0;
-                else if (mip_mtip & mie_mtie) mip_mtip <= 0;
                 else if (mip_seip & mie_seie) mip_seip <= 0;
                 else if (mip_ssip & mie_ssie) mip_ssip <= 0;
                 else if (mip_stip & mie_stie) mip_stip <= 0;
@@ -498,7 +507,6 @@ always @(posedge clk) begin
             // pending registerを更新する
             // PLICがないのでとりあえずS-mode用にしてる
             mip_seip <= external_interrupt_pending;
-            mip_mtip <= reg_mtime >= reg_mtimecmp;
             // rdataを保存
             rdata_saved <= rdata;
             // mret, sretを処理する

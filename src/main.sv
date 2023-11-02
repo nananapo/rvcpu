@@ -4,9 +4,7 @@
 `include "memoryinterface.svh"
 `include "pkg_util.svh"
 
-module main #(
-    parameter FMAX_MHz = 27
-)(
+module main (
     input  wire clk27MHz,
     input  wire uart_rx,
     output wire uart_tx,
@@ -15,24 +13,6 @@ module main #(
 );
 
 wire clk_in = clk27MHz;
-
-// Counter and Timers
-UInt64 reg_cycle = 0;
-UInt64 reg_time  = 0;
-wire UInt64 reg_mtimecmp;
-
-int timecounter = 0;
-always @(posedge clk_in) begin
-    // cycleは毎クロックインクリメント
-    reg_cycle   <= reg_cycle + 1;
-    // timeをμ秒ごとにインクリメント
-    if (timecounter == FMAX_MHz - 1) begin
-        reg_time    <= reg_time + 1;
-        timecounter <= 0;
-    end else begin
-        timecounter <= timecounter + 1;
-    end
-end
 
 /* ---- Mem ---- */
 wire MemBusReq  mbreq_mem;
@@ -74,6 +54,7 @@ wire CacheReq   dptw_pte_req;
 wire CacheResp  dptw_pte_resp;
 
 wire uart_rx_pending;
+wire mti_pending;
 
 wire external_interrupt_pending = uart_rx_pending;
 
@@ -198,20 +179,17 @@ DAccessCntr #() daccesscntr (
     .memresp(dresp_acntr_arb)
 );
 
-MMIO_Cntr #(
-    .FMAX_MHz(FMAX_MHz)
-) memmapcntr (
+MMIO_Cntr memmapcntr (
     .clk(clk_in),
     .reset(1'b0),
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
-    .mtime(reg_time),
-    .mtimecmp(reg_mtimecmp),
     .dreq_in(dreq_ptw_mmio),
     .dresp_in(dresp_ptw_mmio),
     .memreq_in(dreq_mmio_acntr),
     .memresp_in(dresp_mmio_acntr),
 
+    .mti_pending(mti_pending),
     .uart_rx_pending(uart_rx_pending)
 );
 
@@ -235,16 +213,8 @@ PageTableWalker #(
 );
 
 /* ---- Core ---- */
-Core #(
-    .FMAX_MHz(FMAX_MHz)
-) core (
+Core #() core (
     .clk(clk_in),
-
-    .reg_cycle(reg_cycle),
-    .reg_time(reg_time),
-    .reg_mtime(reg_time),
-    .reg_mtimecmp(reg_mtimecmp),
-
     .ireq(ireq_core_iq),
     .iresp(iresp_core_iq),
     .brinfo(brinfo),
@@ -252,7 +222,8 @@ Core #(
     .dresp(dresp_core_ptw),
     .cache_cntr(cache_cntr),
 
-    .external_interrupt_pending(external_interrupt_pending)
+    .external_interrupt_pending(external_interrupt_pending),
+    .mti_pending(mti_pending)
 );
 
 endmodule

@@ -1,7 +1,7 @@
 module Uart_rx
 #(
-    parameter FMAX_MHz = 32'd27,
-    parameter BaudRate = 32'd115200
+    parameter FREQUENCY_MHz = 32'd27,
+    parameter BAUDRATE = 32'd115200
 )
 (
     input  wire clk,
@@ -14,7 +14,7 @@ module Uart_rx
 `ifdef FAST_UART
 localparam [31:0] DELAY_FRAMES = 2;
 `else
-localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
+localparam [31:0] DELAY_FRAMES = (FREQUENCY_MHz * 1000000) / BAUDRATE;
 `endif
 
 localparam  HALF_DELAY_WAIT = (DELAY_FRAMES / 2);

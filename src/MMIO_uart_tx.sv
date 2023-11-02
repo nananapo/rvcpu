@@ -1,8 +1,7 @@
+`include "pkg_conf.svh"
 `include "pkg_util.svh"
 
-module MMIO_uart_tx #(
-    parameter FMAX_MHz = 27
-)(
+module MMIO_uart_tx (
     input  wire clk,
     output wire uart_tx,
 
@@ -37,7 +36,8 @@ SyncQueue #(
 );
 
 Uart_tx #(
-    .FMAX_MHz(FMAX_MHz)
+    .FREQUENCY_MHz(conf::FREQUENCY_MHz),
+    .BAUDRATE(conf::UART_BAUDRATE)
 ) txModule(
     .clk(clk),
     .uart_tx(uart_tx),
