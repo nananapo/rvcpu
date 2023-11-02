@@ -1,15 +1,14 @@
 `include "pkg_util.svh"
+`include "basic.svh"
 
 module WriteBackStage(
-    input wire          clk,
-    input wire          valid,
-    input wire Addr     pc,
-    input wire Inst     inst,
-    input wire IId      inst_id,
-    input wire          rf_wen,
-    input wire UInt5    reg_addr,
-    input wire UIntX    wdata,
-    output UIntX        regfile[31:0]
+    input wire              clk,
+    input wire              valid,
+    input wire StageInfo    info,
+    input wire              rf_wen,
+    input wire UInt5        reg_addr,
+    input wire UIntX        wdata,
+    output UIntX            regfile[31:0]
 );
 
 `include "basicparams.svh"
@@ -31,7 +30,7 @@ always @(posedge clk) begin
 `ifdef XZSTOP
         for (int i = 0; i < `XLEN; i++) begin
             if (!(wdata[i] === 1'b0 | wdata[i] === 1'b1)) begin
-                $display("ERR-XZSTOP! %h: %h <= %h", pc, reg_addr, wdata);
+                $display("ERR-XZSTOP! %h: %h <= %h", info.pc, reg_addr, wdata);
                 `ffinish
             end
         end
@@ -44,10 +43,10 @@ import util::*;
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,wbstage.valid,b,%b", valid);
-    $display("data,wbstage.inst_id,h,%b", valid ? inst_id : IID_X);
+    $display("data,wbstage.inst_id,h,%b", valid ? info.inst_id : IID_X);
     if (valid) begin
-        $display("data,wbstage.pc,h,%b", pc);
-        $display("data,wbstage.inst,h,%b", inst);
+        $display("data,wbstage.pc,h,%b", info.pc);
+        $display("data,wbstage.inst,h,%b", info.inst);
         $display("data,wbstage.wb_addr,d,%b", reg_addr);
         $display("data,wbstage.wb_data,h,%b", wdata);
         $display("data,wbstage.inst_count,d,%b", inst_count);

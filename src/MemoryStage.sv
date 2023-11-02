@@ -1,5 +1,6 @@
 `include "pkg_util.svh"
 `include "pkg_csr.svh"
+`include "basic.svh"
 
 module MemoryStage
 (
@@ -7,9 +8,7 @@ module MemoryStage
     input wire              valid,
     input wire              is_new,
     input wire TrapInfo     trapinfo,
-    input wire Addr         pc,
-    input wire Inst         inst,
-    input wire IId          inst_id,
+    input wire StageInfo    info,
     input wire Ctrl         ctrl,
     input wire UIntX        alu_out,
     input wire UIntX        rs2_data,
@@ -234,10 +233,10 @@ always @(posedge clk) if (util::logEnabled()) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");
     end
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? inst_id : IID_X);
+    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? info.inst_id : IID_X);
     if (valid) begin
-        $display("data,memstage.pc,h,%b", pc);
-        $display("data,memstage.inst,h,%b", inst);
+        $display("data,memstage.pc,h,%b", info.pc);
+        $display("data,memstage.inst,h,%b", info.inst);
         $display("data,memstage.alu_out,h,%b", alu_out);
         $display("data,memstage.rs2_data,h,%b", rs2_data);
         $display("data,memstage.mem_wen,d,%b", mem_wen);

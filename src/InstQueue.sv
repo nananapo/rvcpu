@@ -19,7 +19,9 @@ module InstQueue #(
 typedef struct packed {
     Addr    addr;
     Inst    inst;
-    IId     inst_id; // TODO IIdを削除する
+    `ifdef PRINT_DEBUGINFO
+    IId     inst_id,
+    `endif
     logic   error;
     FaultTy errty;
 } BufType;
@@ -34,13 +36,17 @@ assign buf_kill         = branch_hazard;
 assign buf_wvalid       = requested & memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.error ? INST_NOP : memresp.rdata;
+`ifdef PRINT_DEBUGINFO
 assign buf_wdata.inst_id= inst_id - IID_ONE;
+`endif
 assign buf_wdata.error  = memresp.error;
 assign buf_wdata.errty  = memresp.errty;
 
 assign iresp.addr       = buf_rdata.addr;
 assign iresp.inst       = buf_rdata.inst;
+`ifdef PRINT_DEBUGINFO
 assign iresp.inst_id    = buf_rdata.inst_id;
+`endif
 assign iresp.error      = buf_rdata.error;
 assign iresp.errty      = buf_rdata.errty;
 
@@ -63,8 +69,9 @@ SyncQueue #(
 );
 
 Addr    pc      = INITIAL_ADDR;
+`ifdef PRINT_DEBUGINFO
 IId     inst_id = IID_ZERO;
-
+`endif
 logic   requested   = 0;
 Addr    request_pc  = ADDR_ZERO;
 
@@ -204,9 +211,11 @@ always @(posedge clk) begin
                     requested   <= 1;
                     request_pc  <= memreq.addr;
                     pc          <= next_pc;
+                    `ifdef PRINT_DEBUGINFO
                     inst_id     <= inst_id + 1;
                     if (util::logEnabled())
                         $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
+                    `endif
                 end else
                     requested   <= 0;
             end
@@ -216,9 +225,11 @@ always @(posedge clk) begin
                 pc          <= next_pc;
                 requested   <= 1;
                 request_pc  <= memreq.addr;
+                `ifdef PRINT_DEBUGINFO
                 inst_id     <= inst_id + 1;
                 if (util::logEnabled())
                     $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
+                `endif
             end
         end
     end

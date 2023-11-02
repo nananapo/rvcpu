@@ -9,21 +9,14 @@
 `define IALIGN 32
 `define ILEN 32
 
-`ifdef DEBUG
-    `define IID_LEN 64
-`else
-    `define IID_LEN 8
-`endif
-
-
 typedef logic [`ILEN-1:0]   Inst;
 typedef logic [`XLEN-1:0]   Addr;
 typedef logic [`XLEN-1:0]   UIntX;
-typedef logic [4:0]     UInt5;
-typedef logic [7:0]     UInt8;
-typedef logic [11:0]    UInt12;
-typedef logic [31:0]    UInt32;
-typedef logic [63:0]    UInt64;
+typedef logic [4:0]         UInt5;
+typedef logic [7:0]         UInt8;
+typedef logic [11:0]        UInt12;
+typedef logic [31:0]        UInt32;
+typedef logic [63:0]        UInt64;
 
 typedef enum logic [4:0] {
     ALU_X,
@@ -154,10 +147,6 @@ typedef struct packed
     UIntX   wdata;
 } FwCtrl;
 
-typedef struct packed {
-    logic [`IID_LEN-1:0] id;
-} IId;
-
 typedef enum logic [1:0] {
     M_MODE = 2'b11, // Machine Mode
     H_MODE = 2'b10, // Hypervisor Mode
@@ -169,5 +158,19 @@ typedef struct packed {
     logic   valid;
     UIntX   cause;
 } TrapInfo;
+
+`ifdef PRINT_DEBUGINFO
+typedef struct packed {
+    logic [63:0] id;
+} IId;
+`endif
+
+typedef struct packed {
+    Addr    pc;
+    Inst    inst;
+`ifdef PRINT_DEBUGINFO
+    IId     id;
+`endif
+} StageInfo;
 
 `endif

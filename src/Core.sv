@@ -29,10 +29,8 @@ module Core #(
 
 // id reg
 logic       id_valid    = 0;
+StageInfo   id_info     = 0;
 TrapInfo    id_trap     = 0;
-Addr        id_pc       = ADDR_X;
-Inst        id_inst     = INST_NOP;
-IId         id_inst_id;
 // id wire
 wire        id_is_illegal;
 // id -> ds wire
@@ -47,10 +45,8 @@ wire UIntX  id_imm_z;
 // ds reg
 logic       ds_is_new   = 0;
 logic       ds_valid    = 0;
-Addr        ds_pc;
+StageInfo   ds_info     = 0;
 TrapInfo    ds_trap     = 0;
-Inst        ds_inst;
-IId         ds_inst_id;
 Ctrl        ds_ctrl;
 UIntX       ds_imm_i;
 UIntX       ds_imm_s;
@@ -68,10 +64,8 @@ wire UIntX  ds_rs2_data;
 // exe
 logic       exe_is_new  = 0;
 logic       exe_valid   = 0;
+StageInfo   exe_info    = 0;
 TrapInfo    exe_trap    = 0;
-Addr        exe_pc;
-Inst        exe_inst;
-IId         exe_inst_id;
 Ctrl        exe_ctrl;
 UIntX       exe_imm_i;
 UIntX       exe_imm_b;
@@ -89,10 +83,8 @@ wire UIntX  exe_alu_out;
 // mem reg
 logic       mem_is_new  = 0;
 logic       mem_valid   = 0;
+StageInfo   mem_info    = 0;
 TrapInfo    mem_trap    = 0;
-Addr        mem_pc;
-Inst        mem_inst;
-IId         mem_inst_id;
 Ctrl        mem_ctrl;
 UIntX       mem_imm_i;
 UIntX       mem_alu_out;
@@ -108,10 +100,8 @@ wire TrapInfo   mem_next_trap;
 // csr reg
 logic       csr_is_new  = 0;
 logic       csr_valid   = 0;
+StageInfo   csr_info    = 0;
 TrapInfo    csr_trap    = 0;
-Addr        csr_pc;
-Inst        csr_inst;
-IId         csr_inst_id;
 Ctrl        csr_ctrl;
 UIntX       csr_imm_i;
 UIntX       csr_alu_out;
@@ -128,10 +118,8 @@ wire UIntX  csr_csr_rdata;
 wire        csr_no_wb;
 
 // wb reg
-logic       wb_valid;
-Addr        wb_pc;
-Inst        wb_inst;
-IId         wb_inst_id;
+logic       wb_valid = 0;
+StageInfo   wb_info;
 logic       wb_rf_wen;
 UInt5       wb_reg_addr;
 UIntX       wb_wdata;
@@ -183,11 +171,11 @@ end
 logic exe_br_checked = 0;
 
 wire branch_fail            =   exe_valid & (exe_is_new | !exe_br_checked) &
-                                ( ds_valid ? (exe_branch_taken & ds_pc != exe_branch_target) | (!exe_branch_taken & ds_pc != exe_pc + 4)
-                                : id_valid ? (exe_branch_taken & id_pc != exe_branch_target) | (!exe_branch_taken & id_pc != exe_pc + 4) : 1'b0 );
+                                ( ds_valid ? (exe_branch_taken & ds_info.pc != exe_branch_target) | (!exe_branch_taken & ds_info.pc != exe_info.pc + 4)
+                                : id_valid ? (exe_branch_taken & id_info.pc != exe_branch_target) | (!exe_branch_taken & id_info.pc != exe_info.pc + 4) : 1'b0 );
 wire branch_hazard_now      =   csr_is_trap | branch_fail;
 wire Addr  branch_target    =   csr_is_trap ? csr_trap_vector :
-                                exe_branch_taken ? exe_branch_target : exe_pc + 4;
+                                exe_branch_taken ? exe_branch_target : exe_info.pc + 4;
 
 always @(posedge clk) begin
 
@@ -207,9 +195,11 @@ always @(posedge clk) begin
             id_trap.valid   <= iresp.error;
             id_trap.cause   <= iresp.errty == FE_ACCESS_FAULT ?
                                 CsrCause::INSTRUCTION_ACCESS_FAULT : CsrCause::INSTRUCTION_PAGE_FAULT;
-            id_pc           <= iresp.addr;
-            id_inst         <= iresp.inst;
-            id_inst_id      <= iresp.inst_id;
+            id_info.pc      <= iresp.addr;
+            id_info.inst    <= iresp.inst;
+            `ifdef PRINT_DEBUGINFO
+            id_info.id      <= iresp.inst_id;
+            `endif
             exe_br_checked  <= 0;
         end else begin
             id_valid    <= 0;
@@ -230,9 +220,7 @@ always @(posedge clk) begin
     end else begin
         ds_valid        <= id_valid;
         ds_is_new       <= 1;
-        ds_pc           <= id_pc;
-        ds_inst         <= id_inst;
-        ds_inst_id      <= id_inst_id;
+        ds_info         <= id_info;
         ds_ctrl         <= id_ctrl;
         ds_imm_i        <= id_imm_i;
         ds_imm_s        <= id_imm_s;
@@ -254,7 +242,7 @@ always @(posedge clk) begin
         ds_fw.valid     <= id_valid & id_ctrl.rf_wen;
         ds_fw.fwdable   <= id_ctrl.wb_sel == WB_PC;
         ds_fw.addr      <= id_ctrl.wb_addr;
-        ds_fw.wdata     <= id_pc + 4;
+        ds_fw.wdata     <= id_info.pc + 4;
     end
 
     // ds -> exe
@@ -276,9 +264,7 @@ always @(posedge clk) begin
         end else begin
             exe_valid       <= ds_valid;
             exe_is_new      <= 1;
-            exe_pc          <= ds_pc;
-            exe_inst        <= ds_inst;
-            exe_inst_id     <= ds_inst_id;
+            exe_info        <= ds_info;
             exe_ctrl        <= ds_ctrl;
             exe_imm_i       <= ds_imm_i;
             exe_imm_b       <= ds_imm_b;
@@ -315,9 +301,7 @@ always @(posedge clk) begin
         end else begin
             mem_valid       <= exe_valid;
             mem_is_new      <= 1;
-            mem_pc          <= exe_pc;
-            mem_inst        <= exe_inst;
-            mem_inst_id     <= exe_inst_id;
+            mem_info        <= exe_info;
             mem_ctrl        <= exe_ctrl;
             mem_imm_i       <= exe_imm_i;
             mem_alu_out     <= exe_alu_out;
@@ -355,9 +339,7 @@ always @(posedge clk) begin
         end else begin
             csr_valid       <= mem_valid;
             csr_is_new      <= 1;
-            csr_pc          <= mem_pc;
-            csr_inst        <= mem_inst;
-            csr_inst_id     <= mem_inst_id;
+            csr_info        <= mem_info;
             csr_ctrl        <= mem_ctrl;
             csr_imm_i       <= mem_imm_i;
             csr_alu_out     <= mem_alu_out;
@@ -380,9 +362,7 @@ always @(posedge clk) begin
         wb_fw      <= 0;
     end else begin
         wb_valid        <= !csr_no_wb & csr_valid;
-        wb_pc           <= csr_pc;
-        wb_inst         <= csr_inst;
-        wb_inst_id      <= csr_inst_id;
+        wb_info         <= csr_info;
         wb_rf_wen       <= !csr_trap.valid & csr_ctrl.rf_wen; // trapの時は書き込まない
         wb_reg_addr     <= csr_ctrl.wb_addr;
         wb_wdata        <= csr_fw.fwdable ? csr_fw.wdata : csr_csr_rdata; // fwと等しい
@@ -396,13 +376,13 @@ end
 
 // ID Stage
 IDecode #() idecode (
-    .inst(id_inst),
+    .inst(id_info.inst),
     .is_illegal(id_is_illegal),
     .ctrl(id_ctrl)
 );
 
 ImmDecode #() immdecode (
-    .inst(id_inst),
+    .inst(id_info.inst),
     .imm_i(id_imm_i),
     .imm_s(id_imm_s),
     .imm_b(id_imm_b),
@@ -417,9 +397,7 @@ DataSelectStage #() dataselectstage
     .regfile(wb_regfile),
     .valid(ds_valid),
     .is_new(ds_is_new),
-    .pc(ds_pc),
-    .inst(ds_inst),
-    .inst_id(ds_inst_id),
+    .info(ds_info),
     .ctrl(ds_ctrl),
     .imm_i(ds_imm_i),
     .imm_s(ds_imm_s),
@@ -445,9 +423,7 @@ ExecuteStage #() executestage
     .valid(exe_valid),
     .flush(1'b0),
     .is_new(exe_is_new),
-    .pc(exe_pc),
-    .inst(exe_inst),
-    .inst_id(exe_inst_id),
+    .info(exe_info),
     .ctrl(exe_ctrl),
     .imm_b(exe_imm_b),
     .imm_j(exe_imm_j),
@@ -475,10 +451,8 @@ MemoryStage #() memorystage
         !csr_ctrl.sfence &
         !csr_ctrl.svinval),
     .is_new(mem_is_new),
+    .info(mem_info),
     .trapinfo(mem_trap),
-    .pc(mem_pc),
-    .inst(mem_inst),
-    .inst_id(mem_inst_id),
     .ctrl(mem_ctrl),
     .alu_out(mem_alu_out),
     .rs2_data(mem_rs2_data),
@@ -513,10 +487,8 @@ CSRStage #(
 
     .valid(csr_valid),
     .is_new(csr_is_new),
+    .info(csr_info),
     .trapinfo(csr_trap),
-    .pc(csr_pc),
-    .inst(csr_inst),
-    .inst_id(csr_inst_id),
     .ctrl(csr_ctrl),
     .imm_i(csr_imm_i),
     .op1_data(csr_op1_data),
@@ -546,9 +518,7 @@ WriteBackStage #() wbstage(
     .clk(clk),
 
     .valid(wb_valid),
-    .pc(wb_pc),
-    .inst(wb_inst),
-    .inst_id(wb_inst_id),
+    .info(wb_info),
     .rf_wen(wb_rf_wen),
     .reg_addr(wb_reg_addr),
     .wdata(wb_wdata),
@@ -563,7 +533,7 @@ always @(posedge clk) begin
     brinfo.valid    <=  exe_valid &
                         exe_is_new &
                         (exe_ctrl.br_exe != BR_X | exe_ctrl.jmp_reg_flg);
-    brinfo.pc       <= exe_pc;
+    brinfo.pc       <= exe_info.pc;
     brinfo.is_br    <= exe_ctrl.br_exe != BR_X;
     brinfo.is_jmp   <= exe_ctrl.jmp_pc_flg | exe_ctrl.jmp_reg_flg;
     brinfo.taken    <= exe_branch_taken;
@@ -619,15 +589,15 @@ int mem_same_count  = 0;
 int csr_same_count  = 0;
 
 always @(posedge clk) begin
-    ds_same_count  <= ds_pc  == last_ds_pc  ? ds_same_count  + 1 : 0;
-    exe_same_count <= exe_pc == last_exe_pc ? exe_same_count + 1 : 0;
-    mem_same_count <= mem_pc == last_mem_pc ? mem_same_count + 1 : 0;
-    csr_same_count <= csr_pc == last_csr_pc ? csr_same_count + 1 : 0;
+    ds_same_count  <= ds_info.pc  == last_ds_pc  ? ds_same_count  + 1 : 0;
+    exe_same_count <= exe_info.pc == last_exe_pc ? exe_same_count + 1 : 0;
+    mem_same_count <= mem_info.pc == last_mem_pc ? mem_same_count + 1 : 0;
+    csr_same_count <= csr_info.pc == last_csr_pc ? csr_same_count + 1 : 0;
 
-    last_ds_pc  <= ds_pc;
-    last_exe_pc <= exe_pc;
-    last_mem_pc <= mem_pc;
-    last_csr_pc <= csr_pc;
+    last_ds_pc  <= ds_info.pc;
+    last_exe_pc <= exe_info.pc;
+    last_mem_pc <= mem_info.pc;
+    last_csr_pc <= csr_info.pc;
 
     if (    ds_same_count  >= `ABNORMAL_STOP_THRESHOLD |
             exe_same_count >= `ABNORMAL_STOP_THRESHOLD |
@@ -636,12 +606,12 @@ always @(posedge clk) begin
         $display("!!!FORCE STOP!!!");
         $display("[%d - %d clock]", abn_clk_count - `ABNORMAL_STOP_THRESHOLD, abn_clk_count);
         $display("name(valid) pc");
-        $display(" id(%d) pc = %h", id_valid, id_pc);
+        $display(" id(%d) pc = %h", id_valid, id_info.pc);
         $display(" ds(%d) pc = %h, for %d clock", ds_valid, last_ds_pc , ds_same_count );
         $display("exe(%d) pc = %h, for %d clock", exe_valid, last_exe_pc, exe_same_count);
         $display("mem(%d) pc = %h, for %d clock", mem_valid, last_mem_pc, mem_same_count);
         $display("csr(%d) pc = %h, for %d clock", csr_valid, last_csr_pc, csr_same_count);
-        $display(" wb(%d) pc = %h", wb_valid, wb_pc);
+        $display(" wb(%d) pc = %h", wb_valid, wb_info.pc);
         `ffinish
     end
 end
@@ -668,7 +638,7 @@ always @(posedge clk) if (util::logEnabled()) begin
     $display("data,decodestage.valid,b,%b", id_valid);
     $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : IID_X);
     if (id_valid) begin
-        $display("data,decodestage.pc,h,%b", id_pc);
+        $display("data,decodestage.pc,h,%b", id_info.pc);
         $display("data,decodestage.inst,h,%b", id_inst);
         $display("data,decodestage.illegal,b,%b", id_is_illegal);
         $display("data,decodestage.decode.i_exe,d,%b", id_ctrl.i_exe);

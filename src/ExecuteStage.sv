@@ -1,27 +1,26 @@
 `include "muldiv.svh"
+`include "basic.svh"
 `include "pkg_util.svh"
 
 module ExecuteStage
 (
-    input wire          clk,
-    input wire          flush,
-    input wire          valid,
-    input wire          is_new,
-    input wire Addr     pc,
-    input wire Inst     inst,
-    input wire IId      inst_id,
-    input wire Ctrl     ctrl,
-    input wire UIntX    imm_b,
-    input wire UIntX    imm_j,
-    input wire UIntX    op1_data,
-    input wire UIntX    op2_data,
-    input wire UIntX    rs2_data,
+    input wire              clk,
+    input wire              flush,
+    input wire              valid,
+    input wire              is_new,
+    input wire StageInfo    info,
+    input wire Ctrl         ctrl,
+    input wire UIntX        imm_b,
+    input wire UIntX        imm_j,
+    input wire UIntX        op1_data,
+    input wire UIntX        op2_data,
+    input wire UIntX        rs2_data,
 
-    output wire UIntX   next_alu_out,
+    output wire UIntX       next_alu_out,
 
-    output wire         branch_taken,
-    output wire Addr    branch_target,
-    output wire         is_stall
+    output wire             branch_taken,
+    output wire Addr        branch_target,
+    output wire             is_stall
 );
 
 `include "basicparams.svh"
@@ -83,9 +82,9 @@ assign next_alu_out     = state == WAIT_CALC ? mdresp.result :
                             is_muldiv ? saved_result : alu_out;
 assign branch_taken     = valid & (ctrl.jmp_pc_flg | ctrl.jmp_reg_flg | alu_branch_take);
 assign branch_target    =   (
-                            ctrl.jmp_pc_flg ? pc + imm_j :
+                            ctrl.jmp_pc_flg ? info.pc + imm_j :
                             ctrl.jmp_reg_flg ? op1_data + op2_data :
-                            pc + imm_b
+                            info.pc + imm_b
                             ) & (~1);
 
 always @(posedge clk) begin
@@ -113,10 +112,10 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,exestage.valid,b,%b", valid);
-    $display("data,exestage.inst_id,h,%b", valid ? inst_id : IID_X);
+    $display("data,exestage.inst_id,h,%b", valid ? info.inst_id : IID_X);
     if (valid) begin
-        $display("data,exestage.pc,h,%b", pc);
-        $display("data,exestage.inst,h,%b", inst);
+        $display("data,exestage.pc,h,%b", info.pc);
+        $display("data,exestage.inst,h,%b", info.inst);
         $display("data,exestage.i_exe,d,%b", i_exe);
         $display("data,exestage.br_exe,d,%b", br_exe);
         $display("data,exestage.op1_data,h,%b", op1_data);

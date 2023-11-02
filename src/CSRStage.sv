@@ -1,38 +1,37 @@
 `include "pkg_util.svh"
 `include "pkg_csr.svh"
+`include "basic.svh"
 `include "memoryinterface.svh"
 
 module CSRStage #(
     parameter FMAX_MHz = 27
 ) (
-    input wire          clk,
+    input wire              clk,
 
-    input wire          valid,
-    input wire          is_new,
-    input wire TrapInfo trapinfo,
-    input wire Addr     pc,
-    input wire Inst     inst,
-    input wire IId      inst_id,
-    input wire Ctrl     ctrl,
-    input wire UIntX    imm_i,
-    input wire UIntX    op1_data,
-    input wire UIntX    alu_out,
-    input wire Addr     btarget,
+    input wire              valid,
+    input wire              is_new,
+    input wire TrapInfo     trapinfo,
+    input wire StageInfo    info,
+    input wire Ctrl         ctrl,
+    input wire UIntX        imm_i,
+    input wire UIntX        op1_data,
+    input wire UIntX        alu_out,
+    input wire Addr         btarget,
 
-    output wire UIntX   next_csr_rdata,
-    output wire         next_no_wb,
+    output wire UIntX       next_csr_rdata,
+    output wire             next_no_wb,
 
-    output wire         is_stall,
-    output wire         csr_is_trap,
-    output wire         csr_keep_trap, // validのままにするtrapかどうか
-    output Addr         trap_vector,
+    output wire             is_stall,
+    output wire             csr_is_trap,
+    output wire             csr_keep_trap, // validのままにするtrapかどうか
+    output Addr             trap_vector,
 
-    input wire UInt64   reg_cycle,
-    input wire UInt64   reg_time,
-    input wire UInt64   reg_mtime,
-    input wire UInt64   reg_mtimecmp,
+    input wire UInt64       reg_cycle,
+    input wire UInt64       reg_time,
+    input wire UInt64       reg_mtime,
+    input wire UInt64       reg_mtimecmp,
 
-    input wire          external_interrupt_pending,
+    input wire              external_interrupt_pending,
 
     output wire CacheCntrInfo   cache_cntr
 );
@@ -418,7 +417,7 @@ wire [31:0] cause_intr = (
                         );
 wire [31:0] cause_trap = raise_expt ? cause_expt : cause_intr;
 
-wire UIntX  expt_xtval = gen_expt_xtval(cause_expt, pc, inst, alu_out);
+wire UIntX  expt_xtval = gen_expt_xtval(cause_expt, info.pc, info.inst, alu_out);
 
 UIntX       rdata_saved;
 assign      next_csr_rdata = rdata_saved;
@@ -457,20 +456,20 @@ always @(posedge clk) begin
         inst_clock <= 0;
         // trapを起こす
         if (trap_nochange) begin
-            trap_vector <= pc + 4;
+            trap_vector <= info.pc + 4;
             csr_no_wb   <= 1;
             if (util::logEnabled())
-                $display("info,csrstage.trap.nochange,0x%h", pc);
+                $display("info,csrstage.trap.nochange,0x%h", info.pc);
         end else if (this_raise_trap) begin
             csr_no_wb   <= 1;
             if (util::logEnabled()) begin
-                $display("info,csrstage.trap.pc,0x%h", pc);
+                $display("info,csrstage.trap.pc,0x%h", info.pc);
                 $display("info,csrstage.trap.cause,0x%h", cause_trap);
             end
             if (trap_toM) begin
                 mode            <= M_MODE;
                 mcause          <= cause_trap;
-                mepc            <= pc;
+                mepc            <= info.pc;
                 mtval           <= raise_expt ? expt_xtval : mtval;
                 mstatus_mpie    <= mstatus_mie;
                 mstatus_mie     <= 0;
@@ -479,7 +478,7 @@ always @(posedge clk) begin
             end else begin
                 mode            <= S_MODE;
                 scause          <= cause_trap;
-                sepc            <= pc;
+                sepc            <= info.pc;
                 stval           <= raise_expt ? expt_xtval : stval;
                 mstatus_spie    <= mstatus_sie;
                 mstatus_sie     <= 0;

@@ -1,30 +1,29 @@
 `include "pkg_util.svh"
+`include "basic.svh"
 
 module DataSelectStage
 (
-    input wire          clk,
-    input wire UIntX    regfile[31:0],
-    input wire          valid,
-    input wire          is_new,
-    input wire Addr     pc,
-    input wire Inst     inst,
-    input wire IId      inst_id,
-    input wire Ctrl     ctrl,
-    input wire UIntX    imm_i,
-    input wire UIntX    imm_s,
-    input wire UIntX    imm_j,
-    input wire UIntX    imm_u,
-    input wire UIntX    imm_z,
+    input wire              clk,
+    input wire UIntX        regfile[31:0],
+    input wire              valid,
+    input wire              is_new,
+    input wire StageInfo    info,
+    input wire Ctrl         ctrl,
+    input wire UIntX        imm_i,
+    input wire UIntX        imm_s,
+    input wire UIntX        imm_j,
+    input wire UIntX        imm_u,
+    input wire UIntX        imm_z,
 
-    output wire UIntX   next_op1_data,
-    output wire UIntX   next_op2_data,
-    output wire UIntX   next_rs2_data,
+    output wire UIntX       next_op1_data,
+    output wire UIntX       next_op2_data,
+    output wire UIntX       next_rs2_data,
 
-    input wire FwCtrl   fw_exe,
-    input wire FwCtrl   fw_mem,
-    input wire FwCtrl   fw_csr,
-    input wire FwCtrl   fw_wbk,
-    output wire         is_datahazard
+    input wire FwCtrl       fw_exe,
+    input wire FwCtrl       fw_mem,
+    input wire FwCtrl       fw_csr,
+    input wire FwCtrl       fw_wbk,
+    output wire             is_datahazard
 );
 
 `include "basicparams.svh"
@@ -58,8 +57,9 @@ case(op2_sel)
 endcase
 endfunction
 
-wire UInt5 rs1_addr = inst[19:15];
-wire UInt5 rs2_addr = inst[24:20];
+// TODO 先にデコードしておく
+wire UInt5 rs1_addr = info.inst[19:15];
+wire UInt5 rs2_addr = info.inst[24:20];
 
 /*  datahazard */
 wire is1_zero    = rs1_addr == 0;
@@ -95,7 +95,7 @@ wire UIntX rs2_data =   hazard_exe2 ? fw_exe.wdata :
 
 // op1_data, op2_data, rs2_dataはここで設定する
 assign next_op1_data    = ctrl.op1_sel == OP1_RS1 ? rs1_data :
-                            gen_op1data(ctrl.op1_sel, pc, imm_z);
+                            gen_op1data(ctrl.op1_sel, info.pc, imm_z);
 assign next_op2_data    = ctrl.op2_sel == OP2_RS2W ? rs2_data :
                             gen_op2data(ctrl.op2_sel, rs2_addr, imm_i, imm_s, imm_j, imm_u);
 assign next_rs2_data    = rs2_data;
@@ -103,10 +103,10 @@ assign next_rs2_data    = rs2_data;
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,datastage.valid,b,%b", valid);
-    $display("data,datastage.inst_id,h,%b", valid ? inst_id : IID_X);
+    $display("data,datastage.inst_id,h,%b", valid ? info.inst_id : IID_X);
     if (valid) begin
-        $display("data,datastage.pc,h,%b", pc);
-        $display("data,datastage.inst,h,%b", inst);
+        $display("data,datastage.pc,h,%b", info.pc);
+        $display("data,datastage.inst,h,%b", info.inst);
         $display("data,datastage.decode.op1_sel,d,%b", ctrl.op1_sel);
         $display("data,datastage.decode.op2_sel,d,%b", ctrl.op2_sel);
         $display("data,datastage.decode.op1_data,h,%b", next_op1_data);

@@ -23,7 +23,9 @@ typedef struct packed {
     FaultTy errty;
     Addr    addr;
     Inst    inst;
+    `ifdef PRINT_DEBUGINFO
     IId     inst_id;
+    `endif
     // logic   is_c;
 } IResp;
 
