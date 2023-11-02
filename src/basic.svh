@@ -160,16 +160,30 @@ typedef struct packed {
 } TrapInfo;
 
 `ifdef PRINT_DEBUGINFO
-typedef struct packed {
-    logic [63:0] id;
-} IId;
+package iid;
+    parameter X     = 64'bx;
+    parameter ZERO  = 64'd0;
+    parameter ONE   = 64'd1;
+
+    typedef struct packed {
+        logic [63:0] id;
+    } Ty;
+
+    function logic [63:0] inc(Ty iid);
+        inc = iid.id + ONE;
+    endfunction
+
+    function logic [63:0] dec(Ty iid);
+        inc = iid.id - ONE;
+    endfunction
+endpackage
 `endif
 
 typedef struct packed {
     Addr    pc;
     Inst    inst;
 `ifdef PRINT_DEBUGINFO
-    IId     id;
+    iid::Ty id;
 `endif
 } StageInfo;
 

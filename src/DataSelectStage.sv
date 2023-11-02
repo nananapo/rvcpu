@@ -103,7 +103,7 @@ assign next_rs2_data    = rs2_data;
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,datastage.valid,b,%b", valid);
-    $display("data,datastage.inst_id,h,%b", valid ? info.inst_id : IID_X);
+    $display("data,datastage.inst_id,h,%b", valid ? info.inst_id : iid::X);
     if (valid) begin
         $display("data,datastage.pc,h,%b", info.pc);
         $display("data,datastage.inst,h,%b", info.inst);

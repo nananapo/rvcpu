@@ -11,7 +11,7 @@ assign memresp.ready= iresp.ready;
 assign iresp.addr   = memresp.addr;
 assign iresp.inst   = //TODO
 `ifdef PRINT_DEBUGINFO
-assign inst_id      = IID_X; // unused
+assign inst_id      = iid::X; // unused
 `endif
 
 // 1.5.1. Expanded Instruction-Length Encoding

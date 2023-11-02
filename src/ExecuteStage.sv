@@ -112,7 +112,7 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,exestage.valid,b,%b", valid);
-    $display("data,exestage.inst_id,h,%b", valid ? info.inst_id : IID_X);
+    $display("data,exestage.inst_id,h,%b", valid ? info.inst_id : iid::X);
     if (valid) begin
         $display("data,exestage.pc,h,%b", info.pc);
         $display("data,exestage.inst,h,%b", info.inst);

@@ -233,7 +233,7 @@ always @(posedge clk) if (util::logEnabled()) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");
     end
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? info.inst_id : IID_X);
+    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? info.inst_id : iid::X);
     if (valid) begin
         $display("data,memstage.pc,h,%b", info.pc);
         $display("data,memstage.inst,h,%b", info.inst);

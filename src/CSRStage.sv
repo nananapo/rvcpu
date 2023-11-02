@@ -622,7 +622,7 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,csrstage.valid,b,%b", valid);
-    $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);
+    $display("data,csrstage.inst_id,h,%b", valid ? inst_id : iid::X);
     if (valid) begin
         $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", inst);

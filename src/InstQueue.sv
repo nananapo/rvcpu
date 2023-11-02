@@ -1,4 +1,5 @@
 `include "pkg_util.svh"
+`include "basic.svh"
 
 module InstQueue #(
     parameter QUEUE_SIZE = 16,
@@ -37,7 +38,7 @@ assign buf_wvalid       = requested & memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.error ? INST_NOP : memresp.rdata;
 `ifdef PRINT_DEBUGINFO
-assign buf_wdata.inst_id= inst_id - IID_ONE;
+assign buf_wdata.inst_id= iid::dec(inst_id);
 `endif
 assign buf_wdata.error  = memresp.error;
 assign buf_wdata.errty  = memresp.errty;
@@ -70,7 +71,7 @@ SyncQueue #(
 
 Addr    pc      = INITIAL_ADDR;
 `ifdef PRINT_DEBUGINFO
-IId     inst_id = IID_ZERO;
+IId     inst_id = iid::ZERO;
 `endif
 logic   requested   = 0;
 Addr    request_pc  = ADDR_ZERO;

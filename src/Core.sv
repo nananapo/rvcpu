@@ -622,7 +622,7 @@ end
 
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,decodestage.valid,b,%b", id_valid);
-    $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : IID_X);
+    $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : iid::X);
     if (id_valid) begin
         $display("data,decodestage.pc,h,%b", id_info.pc);
         $display("data,decodestage.inst,h,%b", id_inst);
