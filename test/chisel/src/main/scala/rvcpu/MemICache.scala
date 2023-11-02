@@ -18,6 +18,7 @@ class MemICacheWrapperModule(val xlen : Int, val cacheWidth : Int) extends Modul
           val clk = Input(Clock())
       }
       val io = IO(new BBIO)
+      addResource("/src/pkg_util.svh")
       addResource("/src/basic.svh")
       addResource("/src/memoryinterface.svh")
       setResource("MemICache", "/src/MemICache.sv")
