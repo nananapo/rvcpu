@@ -74,7 +74,7 @@ always @(posedge clk) begin
     VALID: state <= IDLE;
     default: begin
         $display("ERROR MMIO_EDisk.sv : Unknown state %d", state);
-        util::ffinish();
+        `ffinish
     end
     endcase
 end

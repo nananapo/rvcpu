@@ -80,7 +80,7 @@ wire external_interrupt_pending = uart_rx_pending;
 `ifndef MEM_FILE
     initial begin
         $display("ERROR : initial memory file (MEM_FILE) is not set.");
-        util::ffinish();
+        `ffinish
     end
 `endif
 `ifndef MEMORY_WIDTH

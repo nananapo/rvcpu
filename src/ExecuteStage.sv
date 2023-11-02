@@ -104,7 +104,7 @@ always @(posedge clk) begin
             end
             default: begin
                 $display("ExecuteStage : Unknown state %d", state);
-                util::ffinish();
+                `ffinish
             end
         endcase
     end

@@ -73,7 +73,7 @@ always @(posedge clk) case (state)
     end
     default: begin
         $display("MulDivModule : Unknown state %d", state);
-        util::ffinish();
+        `ffinish
     end
 endcase
 

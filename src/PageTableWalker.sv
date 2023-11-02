@@ -149,7 +149,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
         if (preq.valid) begin
             if (EXECUTE_MODE & preq.wen) begin
                 $display("ERROR: PTE(EXECUTE MODE) with wen=1");
-                util::ffinish();
+                `ffinish
             end
             state       <= WALK_READY;
             s_req       <= preq;

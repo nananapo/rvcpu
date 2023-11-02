@@ -81,7 +81,7 @@ always @(posedge clk) begin
         D_VALID: if (memresp_in.valid) state <= I_CHECK;
         default: begin
             $display("MemCacheCmdArbiter : Unknown state %d", state);
-            util::ffinish();
+            `ffinish
         end
     endcase
 end
