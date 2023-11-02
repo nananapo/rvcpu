@@ -1,116 +1,38 @@
+`include "pkg_util.svh"
+`include "pkg_csr.svh"
+`include "pkg_conf.svh"
+`include "basic.svh"
 `include "memoryinterface.svh"
 
-module CSRStage #(
-    parameter FMAX_MHz = 27
-) (
-    input wire          clk,
+module CSRStage (
+    input wire              clk,
 
-    input wire          valid,
-    input wire          is_new,
-    input wire TrapInfo trapinfo,
-    input wire Addr     pc,
-    input wire Inst     inst,
-    input wire IId      inst_id,
-    input wire Ctrl     ctrl,
-    input wire UIntX    imm_i,
-    input wire UIntX    op1_data,
-    input wire UIntX    alu_out,
-    input wire Addr     btarget,
+    input wire              valid,
+    input wire              is_new,
+    input wire TrapInfo     trapinfo,
+    input wire StageInfo    info,
+    input wire Ctrl         ctrl,
+    input wire UIntX        imm_i,
+    input wire UIntX        op1_data,
+    input wire UIntX        alu_out,
+    input wire Addr         btarget,
 
-    output wire UIntX   next_csr_rdata,
-    output wire         next_no_wb,
+    output wire UIntX       next_csr_rdata,
+    output wire             next_no_wb,
 
-    output wire         is_stall,
-    output wire         csr_is_trap,
-    output wire         csr_keep_trap, // validのままにするtrapかどうか
-    output Addr         trap_vector,
+    output wire             is_stall,
+    output wire             csr_is_trap,
+    output wire             csr_keep_trap, // validのままにするtrapかどうか
+    output Addr             trap_vector,
 
-    input wire UInt64   reg_cycle,
-    input wire UInt64   reg_time,
-    input wire UInt64   reg_mtime,
-    input wire UInt64   reg_mtimecmp,
-
-    input wire          external_interrupt_pending,
+    input wire              external_interrupt_pending,
+    input wire              mip_mtip,
 
     output wire CacheCntrInfo   cache_cntr
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
-`include "csrparam.svh"
 `include "basicparams.svh"
 
-typedef enum logic [11:0] {
-    // Counters and Timers
-    ADDR_CYCLE      = 12'hc00,
-    ADDR_TIME       = 12'hc01,
-    // ADDR_INSTRET    = 12'hc02, // read-only 0
-    // ADDR_HPMCOUNTER~= 12'hc03 ~ 12'hc1f, // read-only 0
-    ADDR_CYCLEH     = 12'hc80,
-    ADDR_TIMEH      = 12'hc81,
-    // ADDR_INSTRETH    = 12'hc82,
-    // ADDR_HPMCOUNTERH~= 12'hc83 ~ 12'hc9f, // read-only 0
-
-    // Supervisor Trap Setup
-    ADDR_SSTATUS    = 12'h100,
-    ADDR_SIE        = 12'h104,
-    ADDR_STVEC      = 12'h105,
-    ADDR_SCOUNTEREN = 12'h106, // 5.1.5 U-modeがcycle, time, instret, or hpmcounternにアクセスできるかどうかのフラグ
-    // Supervisor Configuration
-    // ADDR_SENVCFG    = 12'h10a, // read-only 0
-    // Supervisor Trap Handling
-    ADDR_SSCRATCH   = 12'h140,
-    ADDR_SEPC       = 12'h141,
-    ADDR_SCAUSE     = 12'h142,
-    ADDR_STVAL      = 12'h143,
-    ADDR_SIP        = 12'h144,
-    // Supervisor Protection and Translation
-    ADDR_SATP       = 12'h180,
-    // Debug/Trace Registers
-    // ADDR_SCONTEXT   = 12'h5a8
-
-    // Machine Information Registers
-    // ADDR_MVENDORID  = 12'hf11, // read-only 0
-    // ADDR_MARCHID    = 12'hf12, // read-only 0
-    // ADDR_MIMPID     = 12'hf13, // read-only 0
-    // ADDR_MHARTID    = 12'hf14, // read-only 0
-    // ADDR_MCONFIGPTR = 12'hf15, // read-only 0
-    // Machine Trap Setup
-    ADDR_MSTATUS    = 12'h300,
-    ADDR_MISA       = 12'h301, // RV32IM(A)
-    ADDR_MEDELEG    = 12'h302,
-    ADDR_MIDELEG    = 12'h303,
-    ADDR_MIE        = 12'h304,
-    ADDR_MTVEC      = 12'h305,
-    ADDR_MCOUNTEREN = 12'h306,
-    ADDR_MSTATUSH   = 12'h310,
-    // Machine Trap Handling
-    ADDR_MSCRATCH   = 12'h340, // 自由
-    ADDR_MEPC       = 12'h341, // M-modeにトラップするとき、仮想アドレスに設定する
-    ADDR_MCAUSE     = 12'h342, // trapするときに書き込む。上位1bitでInterruptかを判断する
-    ADDR_MTVAL      = 12'h343, // exceptionなら実装によって書き込まれる。だが、read-only zeroでもよい
-    ADDR_MIP        = 12'h344, // 3.1.9
-    ADDR_MTINST     = 12'h34a, // 9.4.5
-    ADDR_MTVAL2     = 12'h34b,
-    // Machine Configuration
-    // ADDR_MENVCFG    = 12'h30A, // 未確認
-    // ADDR_MENVCFGH   = 12'h31A, // 未確認
-    // ADDR_MSECCFG    = 12'h747, // 未確認
-    // ADDR_MSECCFGH   = 12'h757, // 未確認
-    // Machine Memory Protection
-    // ADDR_PMPADDR0   = 12'h3B0, // read-only 0 // 実装しない
-    // ADDR_PMPCFG0    = 12'h3A0, // read-only 0 // 実装しない
-    // Machine Non-Maskable Interrupt Handling
-    // 未確認
-    // Machine Counter/Timers
-    ADDR_MCYCLE     = 12'hb00,
-    ADDR_MINSTRET   = 12'hb02,
-    ADDR_MCYCLEH    = 12'hb80,
-    ADDR_MINSTRETH  = 12'hb82
-} csr_addr_type;
 
 typedef enum logic [1:0] {
     XTVEC_DIRECT   = 2'b00,
@@ -132,8 +54,8 @@ endfunction
 
 function [31:0] gen_rdata(
     input UInt12 addr,
-    input [63:0] reg_cycle,
-    input [63:0] reg_time,
+    input UInt64 time_,
+    input UInt64 cycle,
     input [31:0] mstatus,
     input [31:0] sstatus,
     input [31:0] mstatush,
@@ -158,42 +80,42 @@ function [31:0] gen_rdata(
 );
 case (addr)
     // Counters and Timers
-    ADDR_CYCLE:     gen_rdata = reg_cycle[31:0];
-    ADDR_TIME:      gen_rdata = reg_time[31:0];
-    ADDR_CYCLEH:    gen_rdata = reg_cycle[63:32];
-    ADDR_TIMEH:     gen_rdata = reg_time[63:32];
+    CsrAddr::CYCLE:     gen_rdata = cycle[31:0];
+    CsrAddr::TIME:      gen_rdata = time_[31:0];
+    CsrAddr::CYCLEH:    gen_rdata = cycle[63:32];
+    CsrAddr::TIMEH:     gen_rdata = time_[63:32];
     // Machine Trap Setup
-    ADDR_MSTATUS:   gen_rdata = mstatus;
-    ADDR_MISA:      gen_rdata = misa;
-    ADDR_MEDELEG:   gen_rdata = medeleg;
-    ADDR_MIDELEG:   gen_rdata = mideleg;
-    ADDR_MIE:       gen_rdata = mie;
-    ADDR_MTVEC:     gen_rdata = mtvec;
-    ADDR_MSTATUSH:  gen_rdata = mstatush;
+    CsrAddr::MSTATUS:   gen_rdata = mstatus;
+    CsrAddr::MISA:      gen_rdata = misa;
+    CsrAddr::MEDELEG:   gen_rdata = medeleg;
+    CsrAddr::MIDELEG:   gen_rdata = mideleg;
+    CsrAddr::MIE:       gen_rdata = mie;
+    CsrAddr::MTVEC:     gen_rdata = mtvec;
+    CsrAddr::MSTATUSH:  gen_rdata = mstatush;
     // Machine Trap Handling
-    ADDR_MSCRATCH:  gen_rdata = mscratch;
-    ADDR_MEPC:      gen_rdata = mepc;
-    ADDR_MCAUSE:    gen_rdata = mcause;
-    ADDR_MTVAL:     gen_rdata = mtval;
-    ADDR_MIP:       gen_rdata = mip;
-    ADDR_MTINST:    gen_rdata = mtinst;
-    ADDR_MTVAL2:    gen_rdata = mtval2;
+    CsrAddr::MSCRATCH:  gen_rdata = mscratch;
+    CsrAddr::MEPC:      gen_rdata = mepc;
+    CsrAddr::MCAUSE:    gen_rdata = mcause;
+    CsrAddr::MTVAL:     gen_rdata = mtval;
+    CsrAddr::MIP:       gen_rdata = mip;
+    CsrAddr::MTINST:    gen_rdata = mtinst;
+    CsrAddr::MTVAL2:    gen_rdata = mtval2;
     // Machine Counter/Timers
-    ADDR_MCYCLE:    gen_rdata = reg_cycle[31:0];
-    ADDR_MCYCLEH:   gen_rdata = reg_cycle[63:32];
+    CsrAddr::MCYCLE:    gen_rdata = cycle[31:0];
+    CsrAddr::MCYCLEH:   gen_rdata = cycle[63:32];
     // Supervisor Trap Setup
-    ADDR_SSTATUS:   gen_rdata = sstatus;
-    ADDR_SIE:       gen_rdata = sie;
-    ADDR_STVEC:     gen_rdata = stvec;
+    CsrAddr::SSTATUS:   gen_rdata = sstatus;
+    CsrAddr::SIE:       gen_rdata = sie;
+    CsrAddr::STVEC:     gen_rdata = stvec;
     // Supervisor Trap Handling
-    ADDR_SSCRATCH:  gen_rdata = sscratch;
-    ADDR_SEPC:      gen_rdata = sepc;
-    ADDR_SCAUSE:    gen_rdata = scause;
-    ADDR_STVAL:     gen_rdata = stval;
-    // ADDR_STVAL:     gen_rdata = stval;
-    ADDR_SIP:       gen_rdata = sip;
+    CsrAddr::SSCRATCH:  gen_rdata = sscratch;
+    CsrAddr::SEPC:      gen_rdata = sepc;
+    CsrAddr::SCAUSE:    gen_rdata = scause;
+    CsrAddr::STVAL:     gen_rdata = stval;
+    // CsrAddr::STVAL:     gen_rdata = stval;
+    CsrAddr::SIP:       gen_rdata = sip;
     // Supervisor Protection and Translation
-    ADDR_SATP:      gen_rdata = satp;
+    CsrAddr::SATP:      gen_rdata = satp;
     default:        gen_rdata = 32'b0;
 endcase
 endfunction
@@ -205,20 +127,20 @@ function [$bits(UIntX)-1:0] gen_expt_xtval(
     input UIntX     alu_out
 );
     case (cause)
-        CAUSE_INSTRUCTION_ADDRESS_MISALIGNED:
+        CsrCause::INSTRUCTION_ADDRESS_MISALIGNED:
             gen_expt_xtval = btarget;
-        CAUSE_BREAKPOINT,
-        CAUSE_INSTRUCTION_ACCESS_FAULT,
-        CAUSE_INSTRUCTION_PAGE_FAULT:
+        CsrCause::BREAKPOINT,
+        CsrCause::INSTRUCTION_ACCESS_FAULT,
+        CsrCause::INSTRUCTION_PAGE_FAULT:
             gen_expt_xtval = pc;
-        CAUSE_LOAD_ADDRESS_MISALIGNED,
-        CAUSE_LOAD_ACCESS_FAULT,
-        CAUSE_LOAD_PAGE_FAULT,
-        CAUSE_STORE_AMO_ADDRESS_MISALIGNED,
-        CAUSE_STORE_AMO_ACCESS_FAULT,
-        CAUSE_STORE_AMO_PAGE_FAULT:
+        CsrCause::LOAD_ADDRESS_MISALIGNED,
+        CsrCause::LOAD_ACCESS_FAULT,
+        CsrCause::LOAD_PAGE_FAULT,
+        CsrCause::STORE_AMO_ADDRESS_MISALIGNED,
+        CsrCause::STORE_AMO_ACCESS_FAULT,
+        CsrCause::STORE_AMO_PAGE_FAULT:
             gen_expt_xtval = alu_out;
-        CAUSE_ILLEGAL_INSTRUCTION:
+        CsrCause::ILLEGAL_INSTRUCTION:
             gen_expt_xtval = inst;
         default:
             gen_expt_xtval = 0;
@@ -237,8 +159,24 @@ end
 wire CsrCmd csr_cmd = ctrl.csr_cmd;
 wire UInt12 addr    = imm_i[11:0];
 
+UInt64 time_ = 0;
+UInt64 cycle = 0;
+
+int timecounter = 0;
+always @(posedge clk) begin
+    // cycleは毎クロックインクリメント
+    cycle <= cycle + 1;
+    // timeをμ秒ごとにインクリメント
+    if (timecounter == conf::FREQUENCY_MHz - 1) begin
+        time_ <= time_ + 1;
+        timecounter <= 0;
+    end else begin
+        timecounter <= timecounter + 1;
+    end
+end
+
 // 2.1 CSR Address Mapping Conventions
-wire can_access     =   addr == ADDR_SATP & mode == S_MODE ? !mstatus_tvm :
+wire can_access     =   addr == CsrAddr::SATP & mode == S_MODE ? !mstatus_tvm :
                         addr[9:8] <= mode;
 wire is_readonly    = addr[11:10] == 2'b11;
 
@@ -373,7 +311,6 @@ logic [31:0] mtval      = 0;
 
 logic mip_meip = 0;
 logic mip_seip = 0;
-logic mip_mtip = 0;
 logic mip_stip = 0;
 logic mip_msip = 0;
 logic mip_ssip = 0;
@@ -419,8 +356,8 @@ logic [31:0] stval      = 0;
 wire UIntX  wdata = gen_wdata(csr_cmd, op1_data, rdata);
 wire UIntX  rdata = gen_rdata(
     addr,
-    reg_cycle,
-    reg_time,
+    time_,
+    cycle,
     mstatus,
     sstatus,
     mstatush,
@@ -456,8 +393,8 @@ wire wfi_tw_nowait      = ctrl.wfi & mstatus_tw;
 
 wire        raise_expt  = valid & (trapinfo.valid | csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait);
 wire UIntX  cause_expt  = trapinfo.valid ?
-                            (csr_cmd == CSR_ECALL ? CAUSE_ENVIRONMENT_CALL_FROM_U_MODE + {30'b0, mode} : trapinfo.cause ) :
-                            csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait ? CAUSE_ILLEGAL_INSTRUCTION : 0;
+                            (csr_cmd == CSR_ECALL ? CsrCause::ENVIRONMENT_CALL_FROM_U_MODE + {30'b0, mode} : trapinfo.cause ) :
+                            csr_access_fault | csr_xret_no_priv | sfence_no_priv | wfi_tw_nowait ? CsrCause::ILLEGAL_INSTRUCTION : 0;
 
 wire intr_toM   = mideleg[cause_intr[4:0]] == 0 | mode == M_MODE;
 wire expt_toM   = medeleg[cause_expt[4:0]] == 0 | mode == M_MODE;
@@ -480,17 +417,17 @@ wire raise_intr =   (intr_toM ? // 3.1.9
 // Multiple simultaneous interrupts destined for M-mode are handled in the following decreasing
 // priority order: MEI, MSI, MTI, SEI, SSI, STI.
 wire [31:0] cause_intr = (
-                            (mip_meip & mie_meie) ? CAUSE_MACHINE_EXTERNAL_INTERRUPT :
-                            (mip_msip & mie_msie) ? CAUSE_MACHINE_SOFTWARE_INTERRUPT :
-                            (mip_mtip & mie_mtie) ? CAUSE_MACHINE_TIMER_INTERRUPT :
-                            (mip_seip & mie_seie) ? CAUSE_SUPERVISOR_EXTERNAL_INTERRUPT :
-                            (mip_ssip & mie_ssie) ? CAUSE_SUPERVISOR_SOFTWARE_INTERRUPT :
-                            (mip_stip & mie_stie) ? CAUSE_SUPERVISOR_TIMER_INTERRUPT :
+                            (mip_meip & mie_meie) ? CsrCause::MACHINE_EXTERNAL_INTERRUPT :
+                            (mip_msip & mie_msie) ? CsrCause::MACHINE_SOFTWARE_INTERRUPT :
+                            (mip_mtip & mie_mtie) ? CsrCause::MACHINE_TIMER_INTERRUPT :
+                            (mip_seip & mie_seie) ? CsrCause::SUPERVISOR_EXTERNAL_INTERRUPT :
+                            (mip_ssip & mie_ssie) ? CsrCause::SUPERVISOR_SOFTWARE_INTERRUPT :
+                            (mip_stip & mie_stie) ? CsrCause::SUPERVISOR_TIMER_INTERRUPT :
                             32'b0
                         );
 wire [31:0] cause_trap = raise_expt ? cause_expt : cause_intr;
 
-wire UIntX  expt_xtval = gen_expt_xtval(cause_expt, pc, inst, alu_out);
+wire UIntX  expt_xtval = gen_expt_xtval(cause_expt, info.pc, info.inst, alu_out);
 
 UIntX       rdata_saved;
 assign      next_csr_rdata = rdata_saved;
@@ -529,24 +466,20 @@ always @(posedge clk) begin
         inst_clock <= 0;
         // trapを起こす
         if (trap_nochange) begin
-            trap_vector <= pc + 4;
+            trap_vector <= info.pc + 4;
             csr_no_wb   <= 1;
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
-                $display("info,csrstage.trap.nochange,0x%h", pc);
-            `endif
+            if (util::logEnabled())
+                $display("info,csrstage.trap.nochange,0x%h", info.pc);
         end else if (this_raise_trap) begin
             csr_no_wb   <= 1;
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log) begin
-                $display("info,csrstage.trap.pc,0x%h", pc);
+            if (util::logEnabled()) begin
+                $display("info,csrstage.trap.pc,0x%h", info.pc);
                 $display("info,csrstage.trap.cause,0x%h", cause_trap);
             end
-            `endif
             if (trap_toM) begin
                 mode            <= M_MODE;
                 mcause          <= cause_trap;
-                mepc            <= pc;
+                mepc            <= info.pc;
                 mtval           <= raise_expt ? expt_xtval : mtval;
                 mstatus_mpie    <= mstatus_mie;
                 mstatus_mie     <= 0;
@@ -555,7 +488,7 @@ always @(posedge clk) begin
             end else begin
                 mode            <= S_MODE;
                 scause          <= cause_trap;
-                sepc            <= pc;
+                sepc            <= info.pc;
                 stval           <= raise_expt ? expt_xtval : stval;
                 mstatus_spie    <= mstatus_sie;
                 mstatus_sie     <= 0;
@@ -566,7 +499,6 @@ always @(posedge clk) begin
             if (!raise_expt & raise_intr) begin
                      if (mip_meip & mie_meie) mip_meip <= 0;
                 else if (mip_msip & mie_msie) mip_msip <= 0;
-                else if (mip_mtip & mie_mtie) mip_mtip <= 0;
                 else if (mip_seip & mie_seie) mip_seip <= 0;
                 else if (mip_ssip & mie_ssie) mip_ssip <= 0;
                 else if (mip_stip & mie_stie) mip_stip <= 0;
@@ -575,7 +507,6 @@ always @(posedge clk) begin
             // pending registerを更新する
             // PLICがないのでとりあえずS-mode用にしてる
             mip_seip <= external_interrupt_pending;
-            mip_mtip <= reg_mtime >= reg_mtimecmp;
             // rdataを保存
             rdata_saved <= rdata;
             // mret, sretを処理する
@@ -610,13 +541,11 @@ always @(posedge clk) begin
     if (valid & !is_new) begin
         inst_clock <= inst_clock + 1;
         if (cmd_is_write & can_access & !is_readonly & !csr_no_wb) begin
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
+            if (util::logEnabled())
                 $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
-            `endif
             case (addr)
                 // Machine Trap Setup
-                ADDR_MSTATUS: begin
+                CsrAddr::MSTATUS: begin
                     mstatus_tsr     <= wdata[22];
                     mstatus_tw      <= wdata[21];
                     mstatus_tvm     <= wdata[20];
@@ -630,14 +559,14 @@ always @(posedge clk) begin
                     mstatus_mie     <= wdata[3];
                     mstatus_sie     <= wdata[1];
                 end
-                ADDR_MEDELEG: medeleg   <= wdata;
-                ADDR_MIDELEG: begin
+                CsrAddr::MEDELEG: medeleg   <= wdata;
+                CsrAddr::MIDELEG: begin
                     // qemuの動作を見たら、M系は立てられなかった
                     mideleg[1]  <= wdata[1];
                     mideleg[5]  <= wdata[5];
                     mideleg[9]  <= wdata[9];
                 end
-                ADDR_MIE: begin
+                CsrAddr::MIE: begin
                     mie_meie <= wdata[11];
                     mie_seie <= wdata[9];
                     mie_mtie <= wdata[7];
@@ -645,45 +574,45 @@ always @(posedge clk) begin
                     mie_msie <= wdata[3];
                     mie_ssie <= wdata[1];
                 end
-                ADDR_MTVEC:     mtvec       <= wdata;
+                CsrAddr::MTVEC:     mtvec       <= wdata;
                 // Machine Trap Handling
-                ADDR_MSCRATCH:  mscratch    <= wdata;
-                ADDR_MEPC:      mepc        <= {wdata[31:2], 2'b00};
-                ADDR_MCAUSE:    mcause      <= wdata;
-                ADDR_MTVAL:     mtval       <= wdata;
-                ADDR_MIP: begin
+                CsrAddr::MSCRATCH:  mscratch    <= wdata;
+                CsrAddr::MEPC:      mepc        <= {wdata[31:2], 2'b00};
+                CsrAddr::MCAUSE:    mcause      <= wdata;
+                CsrAddr::MTVAL:     mtval       <= wdata;
+                CsrAddr::MIP: begin
                     mip_seip <= wdata[9];
                     mip_stip <= wdata[5];
                     mip_ssip <= wdata[1];
                 end
-                ADDR_MTVAL2:    mtval2      <= wdata;
+                CsrAddr::MTVAL2:    mtval2      <= wdata;
                 // Supervisor Trap Setup
-                ADDR_SSTATUS: begin
+                CsrAddr::SSTATUS: begin
                     mstatus_mxr     <= wdata[19];
                     mstatus_sum     <= wdata[18];
                     mstatus_spp     <= wdata[8];
                     mstatus_spie    <= wdata[5];
                     mstatus_sie     <= wdata[1];
                 end
-                ADDR_SIE: begin
+                CsrAddr::SIE: begin
                     // SIEとSIPはdelegされていないと書き込めない
                     mie_seie <= mideleg[9] & wdata[9];
                     mie_stie <= mideleg[5] & wdata[5];
                     mie_ssie <= mideleg[1] & wdata[1];
                 end
-                ADDR_STVEC:     stvec       <= wdata;
+                CsrAddr::STVEC:     stvec       <= wdata;
                 // Supervisor Trap Handling
-                ADDR_SSCRATCH:  sscratch    <= wdata;
-                ADDR_SEPC:      sepc        <= wdata;
-                ADDR_SCAUSE:    scause      <= wdata;
-                ADDR_STVAL:     stval       <= wdata;
-                ADDR_SIP: begin
+                CsrAddr::SSCRATCH:  sscratch    <= wdata;
+                CsrAddr::SEPC:      sepc        <= wdata;
+                CsrAddr::SCAUSE:    scause      <= wdata;
+                CsrAddr::STVAL:     stval       <= wdata;
+                CsrAddr::SIP: begin
                     mip_seip <= mideleg[9] & wdata[9];
                     mip_stip <= mideleg[5] & wdata[5];
                     mip_ssip <= mideleg[1] & wdata[1];
                 end
                 // Supervisor Protection and Translation
-                ADDR_SATP: satp <= wdata;
+                CsrAddr::SATP: satp <= wdata;
                 default: begin end
             endcase
         end
@@ -691,9 +620,9 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,csrstage.valid,b,%b", valid);
-    $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);
+    $display("data,csrstage.inst_id,h,%b", valid ? inst_id : iid::X);
     if (valid) begin
         $display("data,csrstage.pc,h,%b", pc);
         $display("data,csrstage.inst,h,%b", inst);

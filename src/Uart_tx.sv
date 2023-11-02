@@ -1,7 +1,7 @@
 module Uart_tx
 #(
-    parameter FMAX_MHz = 32'd27,
-    parameter BaudRate = 32'd115200
+    parameter FREQUENCY_MHz = 32'd27,
+    parameter BAUDRATE = 32'd115200
 )
 (
     input  wire         clk,        // system clock
@@ -15,13 +15,21 @@ module Uart_tx
     assign ready = 1;
 `else
 
-localparam [31:0] DELAY_FRAMES = (FMAX_MHz * 1000000) / BaudRate;
+localparam [31:0] DELAY_FRAMES = (FREQUENCY_MHz * 1000000) / BAUDRATE;
 
-logic [3:0]   txState     = 0;
-logic [31:0]  txCounter   = 0;
-logic [2:0]   txBitNumber = 0;
+typedef enum logic [2:0] {
+    IDLE,
+    START_BIT,
+    WRITE,
+    STOP_BIT,
+    DEBOUNCE
+} statetype;
 
-logic [7:0]   dataCopy    = 0;
+statetype   txState     = IDLE;
+int         txCounter   = 0;
+logic [2:0] txBitNumber = 0;
+
+logic [7:0] dataCopy    = 0;
 
 logic txPin = 1;
 assign uart_tx = txPin;
@@ -29,55 +37,53 @@ assign uart_tx = txPin;
 logic readyPin = 1;
 assign ready = readyPin;
 
-localparam TX_STATE_IDLE        = 0;
-localparam TX_STATE_START_BIT   = 1;
-localparam TX_STATE_WRITE       = 2;
-localparam TX_STATE_STOP_BIT    = 3;
-localparam TX_STATE_DEBOUNCE    = 4;
-
 always @(posedge clk) begin
     case (txState)
-        TX_STATE_IDLE: begin
+        IDLE: begin
             if (start == 1) begin
                 readyPin    <= 0;
-                txState     <= TX_STATE_START_BIT;
+                txState     <= START_BIT;
                 txCounter   <= 0;
                 dataCopy    <= data;
             end
         end
-        TX_STATE_START_BIT: begin
+        START_BIT: begin
             txPin <= 0;
             if ((txCounter + 1) == DELAY_FRAMES) begin
-                txState     <= TX_STATE_WRITE;
+                txState     <= WRITE;
                 txBitNumber <= 0;
                 txCounter   <= 0;
             end else
                 txCounter   <= txCounter + 1;
         end
-        TX_STATE_WRITE: begin
+        WRITE: begin
             txPin <= dataCopy[txBitNumber];
             if ((txCounter + 1) == DELAY_FRAMES) begin
                 if (txBitNumber == 3'b111) begin
-                    txState <= TX_STATE_STOP_BIT;
+                    txState <= STOP_BIT;
                 end else begin
-                    txState     <= TX_STATE_WRITE;
+                    txState     <= WRITE;
                     txBitNumber <= txBitNumber + 1;
                 end
                 txCounter <= 0;
             end else
                 txCounter <= txCounter + 1;
         end
-        TX_STATE_STOP_BIT: begin
+        STOP_BIT: begin
             txPin <= 1;
             if ((txCounter + 1) == DELAY_FRAMES) begin
-                txState     <= TX_STATE_DEBOUNCE;
+                txState     <= DEBOUNCE;
                 txCounter   <= 0;
             end else
                 txCounter <= txCounter + 1;
         end
-        TX_STATE_DEBOUNCE: begin
-            txState     <= TX_STATE_IDLE;
+        DEBOUNCE: begin
+            txState     <= IDLE;
             readyPin    <= 1;
+        end
+        default: begin
+            $display("Uart_tx.sv : Unknown state %d", txState);
+            `ffinish
         end
     endcase
 end

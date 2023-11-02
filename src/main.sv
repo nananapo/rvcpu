@@ -2,10 +2,9 @@
 
 `include "basic.svh"
 `include "memoryinterface.svh"
+`include "pkg_util.svh"
 
-module main #(
-    parameter FMAX_MHz = 27
-)(
+module main (
     input  wire clk27MHz,
     input  wire uart_rx,
     output wire uart_tx,
@@ -14,26 +13,6 @@ module main #(
 );
 
 wire clk_in = clk27MHz;
-
-wire can_output_log;
-
-// Counter and Timers
-UInt64 reg_cycle = 0;
-UInt64 reg_time  = 0;
-wire UInt64 reg_mtimecmp;
-
-int timecounter = 0;
-always @(posedge clk_in) begin
-    // cycleは毎クロックインクリメント
-    reg_cycle   <= reg_cycle + 1;
-    // timeをμ秒ごとにインクリメント
-    if (timecounter == FMAX_MHz - 1) begin
-        reg_time    <= reg_time + 1;
-        timecounter <= 0;
-    end else begin
-        timecounter <= timecounter + 1;
-    end
-end
 
 /* ---- Mem ---- */
 wire MemBusReq  mbreq_mem;
@@ -75,13 +54,14 @@ wire CacheReq   dptw_pte_req;
 wire CacheResp  dptw_pte_resp;
 
 wire uart_rx_pending;
+wire mti_pending;
 
 wire external_interrupt_pending = uart_rx_pending;
 
 `ifndef MEM_FILE
     initial begin
         $display("ERROR : initial memory file (MEM_FILE) is not set.");
-        $finish;
+        `ffinish
     end
 `endif
 `ifndef MEMORY_WIDTH
@@ -119,11 +99,6 @@ MemBusCntr #() membuscntr (
     .dresp_in(mbresp_dcache),
     .memreq_in(mbreq_mem),
     .memresp_in(mbresp_mem)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 /* ---- Inst ---- */
@@ -134,11 +109,6 @@ MemICache #() memicache (
     .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
     .busresp(mbresp_icache)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 PageTableWalker #(
@@ -158,11 +128,6 @@ PageTableWalker #(
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
     .sum(cache_cntr.sum)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 InstQueue #() instqueue (
@@ -172,11 +137,6 @@ InstQueue #() instqueue (
     .memreq(icreq_iq_ptw),
     .memresp(icresp_iq_ptw),
     .brinfo(brinfo)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 /* ---- Data ---- */
@@ -188,11 +148,6 @@ MemDCache #() memdcache (
     .busresp(mbresp_dcache),
     .do_writeback(cache_cntr.do_writeback),
     .is_writebacked_all(cache_cntr.is_writebacked_all)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 MemCacheCmdArbiter #() dcache_arbiter1 (
@@ -203,10 +158,6 @@ MemCacheCmdArbiter #() dcache_arbiter1 (
     .dresp_in(dresp_arb_arb),
     .memreq_in(dreq_arb_cache),
     .memresp_in(dresp_arb_cache)
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 MemCacheCmdArbiter #() dcache_arbiter2 (
@@ -217,46 +168,29 @@ MemCacheCmdArbiter #() dcache_arbiter2 (
     .dresp_in(dresp_acntr_arb),
     .memreq_in(dreq_arb_arb),
     .memresp_in(dresp_arb_arb)
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
-DAccessCntr #() daccesscntr (
+MisalignCntr #() dmiscntr (
     .clk(clk_in),
     .reset(1'b0),
     .dreq(dreq_mmio_acntr),
     .dresp(dresp_mmio_acntr),
     .memreq(dreq_acntr_arb),
     .memresp(dresp_acntr_arb)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
-MMIO_Cntr #(
-    .FMAX_MHz(FMAX_MHz)
-) memmapcntr (
+MMIO_Cntr memmapcntr (
     .clk(clk_in),
     .reset(1'b0),
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
-    .mtime(reg_time),
-    .mtimecmp(reg_mtimecmp),
     .dreq_in(dreq_ptw_mmio),
     .dresp_in(dresp_ptw_mmio),
     .memreq_in(dreq_mmio_acntr),
     .memresp_in(dresp_mmio_acntr),
 
+    .mti_pending(mti_pending),
     .uart_rx_pending(uart_rx_pending)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 PageTableWalker #(
@@ -276,24 +210,11 @@ PageTableWalker #(
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
     .sum(cache_cntr.sum)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 /* ---- Core ---- */
-Core #(
-    .FMAX_MHz(FMAX_MHz)
-) core (
+Core #() core (
     .clk(clk_in),
-
-    .reg_cycle(reg_cycle),
-    .reg_time(reg_time),
-    .reg_mtime(reg_time),
-    .reg_mtimecmp(reg_mtimecmp),
-
     .ireq(ireq_core_iq),
     .iresp(iresp_core_iq),
     .brinfo(brinfo),
@@ -301,11 +222,8 @@ Core #(
     .dresp(dresp_core_ptw),
     .cache_cntr(cache_cntr),
 
-    .external_interrupt_pending(external_interrupt_pending)
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
+    .external_interrupt_pending(external_interrupt_pending),
+    .mti_pending(mti_pending)
 );
 
 endmodule

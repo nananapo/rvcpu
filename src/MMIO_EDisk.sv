@@ -1,3 +1,6 @@
+`include "pkg_util.svh"
+`include "pkg_memory.svh"
+
 module MMIO_EDisk (
     input  wire         clk,
 
@@ -9,8 +12,6 @@ module MMIO_EDisk (
     output wire         resp_valid,
     output UInt32       resp_rdata
 );
-
-`include "memorymap.svh"
 
 typedef enum logic [1:0] {
     IDLE,
@@ -46,17 +47,17 @@ always @(posedge clk) begin
     case (state)
     IDLE: if (req_valid) begin
         case (req_addr)
-        EDISK_ADDR: begin
+        MemMap::EDISK_ADDR: begin
             state       <= VALID;
             resp_rdata  <= edisk_addr;
             if (req_wen) edisk_addr <= req_wdata;
         end
-        EDISK_WEN: begin
+        MemMap::EDISK_WEN: begin
             state       <= VALID;
             resp_rdata  <= {{`XLEN-1{1'b0}}, edisk_wen};
             if (req_wen) edisk_wen <= req_wdata[0];
         end
-        EDISK_DATA: begin
+        MemMap::EDISK_DATA: begin
             state           <= COMMIT;
             edisk_rwdata    <= req_wdata;
         end
@@ -73,9 +74,7 @@ always @(posedge clk) begin
     VALID: state <= IDLE;
     default: begin
         $display("ERROR MMIO_EDisk.sv : Unknown state %d", state);
-        $finish;
-        $finish;
-        $finish;
+        `ffinish
     end
     endcase
 end

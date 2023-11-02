@@ -8,7 +8,7 @@
         <File path="src/Core.sv" type="file.verilog" enable="1"/>
         <File path="src/ALU.sv" type="file.verilog" enable="1"/>
         <File path="src/CSRStage.sv" type="file.verilog" enable="1"/>
-        <File path="src/DAccessCntr.sv" type="file.verilog" enable="1"/>
+        <File path="src/MisalignCntr.sv" type="file.verilog" enable="1"/>
         <File path="src/DataSelectStage.sv" type="file.verilog" enable="1"/>
         <File path="src/IDecode.sv" type="file.verilog" enable="1"/>
         <File path="src/ImmDecode.sv" type="file.verilog" enable="1"/>
@@ -37,7 +37,10 @@
         <File path="src/WriteBackStage.sv" type="file.verilog" enable="1"/>
         <File path="src/basic.svh" type="file.verilog" enable="1"/>
         <File path="src/basicparams.svh" type="file.verilog" enable="1"/>
-        <File path="src/csrparam.svh" type="file.verilog" enable="1"/>
+        <File path="src/pkg_csr.svh" type="file.verilog" enable="1"/>
+        <File path="src/pkg_util.svh" type="file.verilog" enable="1"/>
+        <File path="src/pkg_conf.svh" type="file.verilog" enable="1"/>
+        <File path="src/pkg_memory.svh" type="file.verilog" enable="1"/>
         <File path="src/inst.svh" type="file.verilog" enable="1"/>
         <File path="src/memoryinterface.sv" type="file.verilog" enable="1"/>
         <File path="src/main.sv" type="file.verilog" enable="1"/>

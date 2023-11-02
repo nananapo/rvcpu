@@ -1,37 +1,23 @@
-module MMIO_Cntr #(
-    parameter FMAX_MHz = 27
-) (
+`include "pkg_util.svh"
+`include "pkg_memory.svh"
+
+module MMIO_Cntr (
     input  wire             clk,
     input  wire             reset,
 
     input  wire             uart_rx,
     output wire             uart_tx,
-    input  wire UInt64      mtime,
-    output wire UInt64      mtimecmp,
 
     inout  wire CacheReq    dreq_in,
     inout  wire CacheResp   dresp_in,
     inout  wire CacheReq    memreq_in,
     inout  wire CacheResp   memresp_in,
 
-    output wire             uart_rx_pending
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
+    output wire             uart_rx_pending,
+    output wire             mti_pending
 );
 
 `include "basicparams.svh"
-`include "memorymap.svh"
-
-function in_range(
-    input UIntX left,
-    input UIntX right,
-    input UIntX addr
-);
-    in_range = left <= addr && addr <= right;
-endfunction
 
 typedef enum logic [1:0] {
     IDLE,
@@ -46,17 +32,16 @@ initial begin
     s_dreq.valid = 0;
 end
 
-// TODO メモリを8000_0000以降に配置することで判定を簡略化する
-wire is_uart_tx     = dreq_in.addr == MMIO_UARTTX;
-wire is_uart_rx     = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, dreq_in.addr);
-wire is_clint       = in_range(CLINT_OFFSET, CLINT_END, dreq_in.addr);
-wire is_edisk       = in_range(EDISK_OFFSET, EDISK_END, dreq_in.addr);
+wire is_uart_tx     = MemMap::is_uart_tx_addr(dreq_in.addr);
+wire is_uart_rx     = MemMap::is_uart_rx_addr(dreq_in.addr);
+wire is_clint       = MemMap::is_clint_addr(dreq_in.addr);
+wire is_edisk       = MemMap::is_edisk_addr(dreq_in.addr);
 wire is_memory      = !is_uart_tx & !is_uart_rx & !is_clint & !is_edisk;
 
-wire s_is_uart_tx   = s_dreq.addr == MMIO_UARTTX;
-wire s_is_uart_rx   = in_range(MMIO_UARTRX_OFFSET, MMIO_UARTRX_END, s_dreq.addr);
-wire s_is_clint     = in_range(CLINT_OFFSET, CLINT_END, s_dreq.addr);
-wire s_is_edisk     = in_range(EDISK_OFFSET, EDISK_END, s_dreq.addr);
+wire s_is_uart_tx   = MemMap::is_uart_tx_addr(s_dreq.addr);
+wire s_is_uart_rx   = MemMap::is_uart_rx_addr(s_dreq.addr);
+wire s_is_clint     = MemMap::is_clint_addr(s_dreq.addr);
+wire s_is_edisk     = MemMap::is_edisk_addr(s_dreq.addr);
 wire s_is_memory    = !s_is_uart_tx & !s_is_uart_rx & !s_is_clint & !s_is_edisk;
 
 wire cmd_start  = !reset & (
@@ -77,6 +62,7 @@ wire s_valid   = s_dreq.valid & (
                     (s_is_edisk     & cmd_edisk_rvalid));
 /* verilator lint_on UNOPTFLAT */
 
+// TODO ここらへんの三項演算子をcaseにする
 wire UIntX s_rdata  =   s_is_memory     ? memresp_in.rdata :
                         s_is_uart_tx    ? cmd_uart_tx_rdata :
                         s_is_uart_rx    ? cmd_uart_rx_rdata :
@@ -116,7 +102,7 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
     endcase
 
     /*
-    if (can_output_log) begin
+    if (util::logEnabled()) begin
         $display("info,memstage.mmiocntr,state(%d) mready(%d)", state, memreq_in.ready);
     end
     */
@@ -149,9 +135,7 @@ assign memreq_in.wdata  = req_wdata;
 assign memreq_in.wmask  = req_wmask;
 assign memreq_in.pte    = req_pte;
 
-MMIO_uart_rx #(
-    .FMAX_MHz(FMAX_MHz)
-) memmap_uartrx (
+MMIO_uart_rx memmap_uartrx (
     .clk(clk),
     .uart_rx(uart_rx),
 
@@ -166,9 +150,7 @@ MMIO_uart_rx #(
     .uart_rx_pending(uart_rx_pending)
 );
 
-MMIO_uart_tx #(
-    .FMAX_MHz(FMAX_MHz)
-) memmap_uarttx (
+MMIO_uart_tx memmap_uarttx (
     .clk(clk),
     .uart_tx(uart_tx),
 
@@ -179,16 +161,9 @@ MMIO_uart_tx #(
     .req_wdata(req_wdata),
     .resp_valid(cmd_uart_tx_rvalid),
     .resp_rdata(cmd_uart_tx_rdata)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
-MMIO_clint #(
-    .FMAX_MHz(FMAX_MHz)
-) memmap_clint (
+MMIO_clint memmap_clint (
     .clk(clk),
 
     .req_ready(cmd_clint_ready),
@@ -198,9 +173,7 @@ MMIO_clint #(
     .req_wdata(req_wdata),
     .resp_valid(cmd_clint_rvalid),
     .resp_rdata(cmd_clint_rdata),
-
-    .mtime(mtime),
-    .mtimecmp(mtimecmp)
+    .mti_pending(mti_pending)
 );
 
 MMIO_EDisk #() edisk (

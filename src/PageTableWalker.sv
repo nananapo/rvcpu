@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 // Sv32
 module PageTableWalker #(
     parameter PAGESIZE_WIDTH    = 12,
@@ -20,11 +22,6 @@ module PageTableWalker #(
     input wire [31:0]       satp,
     input wire              mxr,
     input wire              sum
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 
@@ -152,9 +149,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
         if (preq.valid) begin
             if (EXECUTE_MODE & preq.wen) begin
                 $display("ERROR: PTE(EXECUTE MODE) with wen=1");
-                $finish;
-                $finish;
-                $finish;
+                `ffinish
             end
             state       <= WALK_READY;
             s_req       <= preq;
@@ -256,7 +251,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) if (LOG_ENABLE) begin
+always @(posedge clk) if (util::logEnabled()) if (LOG_ENABLE) begin
     if (sv32_enable) begin
         $display("data,%s.ptw.state,d,%b", LOG_AS, state);
         $display("data,%s.ptw.reset,b,%b", LOG_AS, reset);

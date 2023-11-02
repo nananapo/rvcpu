@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 module GlobalHistory2bit #(
     parameter WIDTH_PC = 10,
     parameter WIDTH_HIST = 10
@@ -6,10 +8,6 @@ module GlobalHistory2bit #(
     input wire Addr     pc,         // 予測したいアドレス
     output wire         pred_taken,
     input wire BrInfo   brinfo
-    `ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-    `endif
 );
 
 localparam SIZE_PC      = 2 ** WIDTH_PC;
@@ -51,7 +49,7 @@ end
 
 /*
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,fetchstage.glbh2.pc,h,%b", pc);
     $display("data,fetchstage.glbh2.pci,h,%b", pci);
     $display("data,fetchstage.glbh2.hist,b,%b", hist);

@@ -1,15 +1,12 @@
-module DAccessCntr (
+`include "pkg_util.svh"
+
+module MisalignCntr (
     input wire              clk,
     input wire              reset,
     inout wire CacheReq     dreq,
     inout wire CacheResp    dresp,
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 typedef enum logic [3:0] {
@@ -212,16 +209,14 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
     end
     ERROR: state <= IDLE;
     default: begin
-        $display("DAccessCntr.sv : Unknown state %d", state);
-        $finish;
-        $finish;
-        $finish;
+        $display("MisalignCntr.sv : Unknown state %d", state);
+        `ffinish
     end
     endcase
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,dmemucntr.state,d,%b", state);
     $display("data,dmemucntr.saved_rdata1,h,%b", saved_rdata1);
     $display("data,dmemucntr.saved_rdata2,h,%b", saved_rdata2);

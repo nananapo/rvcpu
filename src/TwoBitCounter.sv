@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 module TwoBitCounter #(
     parameter ADDR_WIDTH = 12
 )(
@@ -5,10 +7,6 @@ module TwoBitCounter #(
     input wire Addr     pc,         // 予測したいアドレス
     output wire         pred_taken,
     input wire BrInfo   brinfo
-    `ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-    `endif
 );
 
 localparam ADDR_SIZE = 2 ** ADDR_WIDTH;
@@ -57,7 +55,7 @@ end
 
 /*
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,btb.request_pc,h,%b", pc);
     $display("data,btb.predict_pc,h,%b", next_pc);
     $display("data,btb.pc_index,b,%b", pc2i);

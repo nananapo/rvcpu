@@ -1,3 +1,6 @@
+`include "pkg_util.svh"
+`include "basic.svh"
+
 module InstQueue #(
     parameter QUEUE_SIZE = 16,
     parameter INITIAL_ADDR = 32'h0
@@ -9,11 +12,6 @@ module InstQueue #(
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp,
     input wire BrInfo       brinfo
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -22,7 +20,9 @@ module InstQueue #(
 typedef struct packed {
     Addr    addr;
     Inst    inst;
-    IId     inst_id; // TODO IIdを削除する
+    `ifdef PRINT_DEBUGINFO
+    IId     inst_id,
+    `endif
     logic   error;
     FaultTy errty;
 } BufType;
@@ -37,13 +37,17 @@ assign buf_kill         = branch_hazard;
 assign buf_wvalid       = requested & memresp.valid;
 assign buf_wdata.addr   = request_pc;
 assign buf_wdata.inst   = memresp.error ? INST_NOP : memresp.rdata;
-assign buf_wdata.inst_id= inst_id - IID_ONE;
+`ifdef PRINT_DEBUGINFO
+assign buf_wdata.inst_id= iid::dec(inst_id);
+`endif
 assign buf_wdata.error  = memresp.error;
 assign buf_wdata.errty  = memresp.errty;
 
 assign iresp.addr       = buf_rdata.addr;
 assign iresp.inst       = buf_rdata.inst;
+`ifdef PRINT_DEBUGINFO
 assign iresp.inst_id    = buf_rdata.inst_id;
+`endif
 assign iresp.error      = buf_rdata.error;
 assign iresp.errty      = buf_rdata.errty;
 
@@ -66,8 +70,9 @@ SyncQueue #(
 );
 
 Addr    pc      = INITIAL_ADDR;
-IId     inst_id = IID_ZERO;
-
+`ifdef PRINT_DEBUGINFO
+IId     inst_id = iid::ZERO;
+`endif
 logic   requested   = 0;
 Addr    request_pc  = ADDR_ZERO;
 
@@ -126,11 +131,6 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
-
-        `ifdef PRINT_DEBUGINFO
-        ,
-        .can_output_log(can_output_log)
-        `endif
     );
     initial $display("branch pred : two bit counter");
 `elsif PRED_LOCAL
@@ -139,11 +139,6 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
-
-        `ifdef PRINT_DEBUGINFO
-        ,
-        .can_output_log(can_output_log)
-        `endif
     );
     initial $display("branch pred : local history");
 `elsif PRED_GLOBAL
@@ -152,11 +147,6 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
-
-        `ifdef PRINT_DEBUGINFO
-        ,
-        .can_output_log(can_output_log)
-        `endif
     );
     initial $display("branch pred : global history");
 `else
@@ -193,10 +183,8 @@ logic firstClk = 1;
 always @(posedge clk) begin
     // 分岐予測に失敗
     if (branch_hazard) begin
-        `ifdef PRINT_DEBUGINFO
-        if (can_output_log)
+        if (util::logEnabled())
             $display("info,fetchstage.event.branch_hazard,branch hazard");
-        `endif
         pc                  <= ireq.addr;
         requested           <= 0;
         request_pc          <= ireq.addr;
@@ -204,21 +192,17 @@ always @(posedge clk) begin
         last_fetched_inst   <= 32'h0;
     end else begin
         if (jal_hazard) begin
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
+            if (util::logEnabled())
                 $display("info,fetchstage.event.jal_detect,jal hazard");
-            `endif
         end
         if (requested) begin
             // リクエストが完了した
             if (memresp.valid) begin
-                `ifdef PRINT_DEBUGINFO
-                if (can_output_log) begin
+                if (util::logEnabled()) begin
                     $display("info,fetchstage.event.fetch_end,fetch end");
                     $display("data,fetchstage.event.pc,h,%b", request_pc);
                     $display("data,fetchstage.event.inst,h,%b", memresp.rdata);
                 end
-                `endif
 
                 last_fetched_pc   <= request_pc;
                 last_fetched_inst <= memresp.rdata;
@@ -228,9 +212,9 @@ always @(posedge clk) begin
                     requested   <= 1;
                     request_pc  <= memreq.addr;
                     pc          <= next_pc;
-                    inst_id     <= inst_id + 1;
                     `ifdef PRINT_DEBUGINFO
-                    if (can_output_log)
+                    inst_id     <= inst_id + 1;
+                    if (util::logEnabled())
                         $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
                     `endif
                 end else
@@ -242,9 +226,9 @@ always @(posedge clk) begin
                 pc          <= next_pc;
                 requested   <= 1;
                 request_pc  <= memreq.addr;
-                inst_id     <= inst_id + 1;
                 `ifdef PRINT_DEBUGINFO
-                if (can_output_log)
+                inst_id     <= inst_id + 1;
+                if (util::logEnabled())
                     $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
                 `endif
             end
@@ -266,7 +250,7 @@ end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,fetchstage.pc,h,%b", pc);
     $display("data,fetchstage.next_pc,h,%b", next_pc);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
@@ -296,7 +280,7 @@ end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,btb.update.valid,b,%b", brinfo.valid);
     $display("data,btb.update.pc,h,%b", brinfo.pc);
     $display("data,btb.update.is_br,b,%b", brinfo.is_br);

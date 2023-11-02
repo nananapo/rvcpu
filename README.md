@@ -72,7 +72,7 @@ xv6が動くcommit
         |                         |
         |          ------------DCache
         |          |              |----------
-     ICache        |         DAccessCntr    |
+     ICache        |         MisalignCntr   |
         |          |              |         |
        PTW----------          MMIO_Cntr     |
         |                         |         |

@@ -1,6 +1,7 @@
-module MMIO_uart_tx #(
-    parameter FMAX_MHz = 27
-)(
+`include "pkg_conf.svh"
+`include "pkg_util.svh"
+
+module MMIO_uart_tx (
     input  wire clk,
     output wire uart_tx,
 
@@ -12,11 +13,6 @@ module MMIO_uart_tx #(
 
     output wire         resp_valid,
     output wire UIntX   resp_rdata
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -40,7 +36,8 @@ SyncQueue #(
 );
 
 Uart_tx #(
-    .FMAX_MHz(FMAX_MHz)
+    .FREQUENCY_MHz(conf::FREQUENCY_MHz),
+    .BAUDRATE(conf::UART_BAUDRATE)
 ) txModule(
     .clk(clk),
     .uart_tx(uart_tx),
@@ -57,11 +54,9 @@ always @(posedge clk) clock_count++;
 
 always @(posedge clk) begin
     if (q_rready & q_rvalid) begin
-        `ifdef PRINT_DEBUGINFO
-            if (can_output_log) begin
-                $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
-            end
-        `endif
+        if (util::logEnabled()) begin
+            $display("info,memmapio.uart_tx.send,send : 0x%h (%d)", q_rdata, q_rdata);
+        end
 
         `ifdef PRINT_UART_CLOCK
             $write("%d : %c\n", clock_count, q_rdata);

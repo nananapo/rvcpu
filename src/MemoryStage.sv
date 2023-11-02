@@ -1,12 +1,14 @@
+`include "pkg_util.svh"
+`include "pkg_csr.svh"
+`include "basic.svh"
+
 module MemoryStage
 (
     input wire              clk,
     input wire              valid,
     input wire              is_new,
     input wire TrapInfo     trapinfo,
-    input wire Addr         pc,
-    input wire Inst         inst,
-    input wire IId          inst_id,
+    input wire StageInfo    info,
     input wire Ctrl         ctrl,
     input wire UIntX        alu_out,
     input wire UIntX        rs2_data,
@@ -18,16 +20,13 @@ module MemoryStage
     inout wire CacheResp    dresp,
 
     output logic            is_stall
-
     `ifdef PRINT_DEBUGINFO
         ,
-        input wire          can_output_log,
         input wire          invalid_by_trap
     `endif
 );
 
 `include "basicparams.svh"
-`include "csrparam.svh"
 
 typedef enum logic [1:0]
 {
@@ -103,9 +102,9 @@ assign next_trapinfo.valid = ctrl.mem_wen == MEN_X ? trapinfo.valid : dresp.erro
 assign next_trapinfo.cause =    ctrl.mem_wen == MEN_X ? trapinfo.cause :
                                 dresp.error ? (
                                     dresp.errty == FE_ACCESS_FAULT ? (
-                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_ACCESS_FAULT : CAUSE_LOAD_ACCESS_FAULT
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CsrCause::STORE_AMO_ACCESS_FAULT : CsrCause::LOAD_ACCESS_FAULT
                                     ) : (
-                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CAUSE_STORE_AMO_PAGE_FAULT : CAUSE_LOAD_PAGE_FAULT
+                                        is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CsrCause::STORE_AMO_PAGE_FAULT : CsrCause::LOAD_PAGE_FAULT
                                     )
                                 ): 0;
 
@@ -228,16 +227,16 @@ end
 /////////////////////////////////////////////////////////////////////////////
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,memstage.valid,b,%b", valid | invalid_by_trap);
     if (invalid_by_trap) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");
     end
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? inst_id : IID_X);
+    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? info.inst_id : iid::X);
     if (valid) begin
-        $display("data,memstage.pc,h,%b", pc);
-        $display("data,memstage.inst,h,%b", inst);
+        $display("data,memstage.pc,h,%b", info.pc);
+        $display("data,memstage.inst,h,%b", info.inst);
         $display("data,memstage.alu_out,h,%b", alu_out);
         $display("data,memstage.rs2_data,h,%b", rs2_data);
         $display("data,memstage.mem_wen,d,%b", mem_wen);
