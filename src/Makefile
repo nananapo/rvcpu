@@ -16,7 +16,7 @@ FILES = test.sv \
 		MMIO_uart_rx.sv \
 		MMIO_uart_tx.sv \
 		PageTableWalker.sv \
-		DAccessCntr.sv \
+		MisalignCntr.sv \
 		ALU.sv \
 		CSRStage.sv \
 		DivNbit.sv \

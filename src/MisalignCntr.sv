@@ -1,6 +1,6 @@
 `include "pkg_util.svh"
 
-module DAccessCntr (
+module MisalignCntr (
     input wire              clk,
     input wire              reset,
     inout wire CacheReq     dreq,
@@ -209,7 +209,7 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
     end
     ERROR: state <= IDLE;
     default: begin
-        $display("DAccessCntr.sv : Unknown state %d", state);
+        $display("MisalignCntr.sv : Unknown state %d", state);
         `ffinish
     end
     endcase

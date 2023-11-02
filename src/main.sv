@@ -170,7 +170,7 @@ MemCacheCmdArbiter #() dcache_arbiter2 (
     .memresp_in(dresp_arb_arb)
 );
 
-DAccessCntr #() daccesscntr (
+MisalignCntr #() dmiscntr (
     .clk(clk_in),
     .reset(1'b0),
     .dreq(dreq_mmio_acntr),
