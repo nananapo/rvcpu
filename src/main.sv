@@ -2,6 +2,7 @@
 
 `include "basic.svh"
 `include "memoryinterface.svh"
+`include "pkg_util.svh"
 
 module main #(
     parameter FMAX_MHz = 27
@@ -79,7 +80,7 @@ wire external_interrupt_pending = uart_rx_pending;
 `ifndef MEM_FILE
     initial begin
         $display("ERROR : initial memory file (MEM_FILE) is not set.");
-        $finish;
+        util::ffinish();
     end
 `endif
 `ifndef MEMORY_WIDTH

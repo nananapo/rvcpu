@@ -42,7 +42,7 @@ logic [CACHE_WIDTH-1:0] wb_loop_address;
 initial begin
     if (CACHE_WIDTH < 2) begin
         $display("DCache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
-        $finish;
+        util::ffinish();
     end
     for (int i = 0; i < CACHE_SIZE; i++) begin
         cache_valid[i] = 0;
@@ -136,9 +136,7 @@ always @(posedge clk) begin
                 $display("info,coretest.result,Test passed");
             else
                 $display("info,coretest,result,Test failed : gp(%d) is not 1", dreq_in.wdata);
-            $finish;
-            $finish;
-            $finish;
+            util::ffinish();
         end
     end
 end
@@ -332,9 +330,7 @@ always @(posedge clk) begin
     default: begin
         // TODO __LINE__ __FILE__
         $display("MemDCache : Unknown state");
-        $finish;
-        $finish;
-        $finish;
+        util::ffinish();
     end
     endcase
 end

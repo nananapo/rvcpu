@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 module MemCacheCmdArbiter (
     input wire clk,
     inout wire CacheReq     ireq_in,
@@ -79,9 +81,7 @@ always @(posedge clk) begin
         D_VALID: if (memresp_in.valid) state <= I_CHECK;
         default: begin
             $display("MemCacheCmdArbiter : Unknown state %d", state);
-            $finish;
-            $finish;
-            $finish;
+            util::ffinish();
         end
     endcase
 end

@@ -20,7 +20,7 @@ localparam ADDR_WIDTH = CACHE_WIDTH;
 initial begin
     if (CACHE_WIDTH < 2) begin
         $display("ICache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
-        $finish;
+        util::ffinish();
     end
 end
 
@@ -173,9 +173,7 @@ always @(posedge clk) begin
         MEM_RESP_VALID: state <= IDLE;
         default: begin
             $display("MemICache : Unknown state");
-            $finish;
-            $finish;
-            $finish;
+            util::ffinish();
         end
         endcase
     end

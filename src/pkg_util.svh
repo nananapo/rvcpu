@@ -18,6 +18,15 @@ function logic logEnabled();
 `endif
 endfunction
 
+// fflushして強制終了
+task ffinish();
+    $fflush;
+    $finish;
+    $finish;
+    $finish;
+    $finish;
+endtask
+
 // TODO logのlevelに応じた関数でdisplayする
 
 // TODO finisher

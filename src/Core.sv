@@ -647,10 +647,7 @@ always @(posedge clk) begin
         $display("mem(%d) pc = %h, for %d clock", mem_valid, last_mem_pc, mem_same_count);
         $display("csr(%d) pc = %h, for %d clock", csr_valid, last_csr_pc, csr_same_count);
         $display(" wb(%d) pc = %h", wb_valid, wb_pc);
-        $fflush;
-        $finish;
-        $finish;
-        $finish; // TODO なぜか2回finishしないと終了しない
+        util::ffinish();
     end
 end
 `endif

@@ -1,3 +1,4 @@
+`include "pkg_util.svh"
 `include "basic.svh"
 `include "muldiv.svh"
 
@@ -72,9 +73,7 @@ always @(posedge clk) case (state)
     end
     default: begin
         $display("MulDivModule : Unknown state %d", state);
-        $finish;
-        $finish;
-        $finish;
+        util::ffinish();
     end
 endcase
 

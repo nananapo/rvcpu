@@ -32,9 +32,7 @@ always @(posedge clk) begin
         for (int i = 0; i < `XLEN; i++) begin
             if (!(wdata[i] === 1'b0 | wdata[i] === 1'b1)) begin
                 $display("ERR-XZSTOP! %h: %h <= %h", pc, reg_addr, wdata);
-                $finish;
-                $finish;
-                $finish;
+                util::ffinish();
             end
         end
 `endif
@@ -80,9 +78,7 @@ end
 `ifdef END_CLOCK_COUNT
 always @(posedge clk) begin
     if (`END_CLOCK_COUNT >= 0 && clock_count >= `END_CLOCK_COUNT) begin
-        $finish;
-        $finish;
-        $finish;
+        util::ffinish();
     end
 end
 `endif
@@ -90,9 +86,7 @@ end
 `ifdef END_INST_COUNT
 always @(posedge clk) begin
     if (inst_count == `END_INST_COUNT) begin
-        $finish;
-        $finish;
-        $finish;
+        util::ffinish();
     end
 end
 `endif

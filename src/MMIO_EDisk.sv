@@ -1,3 +1,4 @@
+`include "pkg_util.svh"
 `include "pkg_memory.svh"
 
 module MMIO_EDisk (
@@ -73,9 +74,7 @@ always @(posedge clk) begin
     VALID: state <= IDLE;
     default: begin
         $display("ERROR MMIO_EDisk.sv : Unknown state %d", state);
-        $finish;
-        $finish;
-        $finish;
+        util::ffinish();
     end
     endcase
 end

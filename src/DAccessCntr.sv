@@ -210,9 +210,7 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
     ERROR: state <= IDLE;
     default: begin
         $display("DAccessCntr.sv : Unknown state %d", state);
-        $finish;
-        $finish;
-        $finish;
+        util::ffinish();
     end
     endcase
 end

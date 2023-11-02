@@ -89,9 +89,7 @@ always @(posedge clk) begin
         D_VALID: if (memresp_in.valid) state <= I_CHECK;
         default: begin
             $display("MemBusCntr : Unknown state %d", state);
-            $finish;
-            $finish;
-            $finish;
+            util::ffinish();
         end
     endcase
 end
