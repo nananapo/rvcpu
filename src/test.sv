@@ -24,9 +24,6 @@ main #() m(
 initial begin
   `ifdef PRINT_DEBUGINFO
       $display("START_DEBUG_LOG");
-      `ifndef INFINITE_LOG
-          #500001 $finish;
-      `endif
   `endif
 end
 

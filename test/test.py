@@ -68,6 +68,7 @@ for fileName in sorted(os.listdir(TESTS_PATH)):
         options.append("-DMEM_FILE=\\\\\\\""+abpath+"\\\\\\\"")
         if not NODEBUG_MODE:
             options.append("-DPRINT_DEBUGINFO")
+        options.append("-DEND_CLOCK_COUNT=500000")
         test(mcmd + " OPTION=\"" + " ".join(options) + "\"", fileName)
 
 results = sorted(results)
