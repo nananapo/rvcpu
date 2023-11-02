@@ -558,15 +558,10 @@ WriteBackStage #() wbstage(
 
 //////////////////////////////// 分岐情報を渡す ///////////////////////////////
 // invalidで初期化
-// TODO iidを使わなくする
-initial begin
-    brinfo.valid = 0;
-end
-IId send_brinfo_exe_last = IID_RANDOM;
+initial brinfo.valid = 0;
 always @(posedge clk) begin
-    if (exe_valid) send_brinfo_exe_last <= exe_inst_id;
     brinfo.valid    <=  exe_valid &
-                        exe_inst_id != send_brinfo_exe_last &
+                        exe_is_new &
                         (exe_ctrl.br_exe != BR_X | exe_ctrl.jmp_reg_flg);
     brinfo.pc       <= exe_pc;
     brinfo.is_br    <= exe_ctrl.br_exe != BR_X;
@@ -583,7 +578,7 @@ int all_inst_count  = 0;
 int fail_count      = 0;
 localparam COUNT    = 1_000_000;
 always @(posedge clk) begin
-    if (exe_valid & exe_inst_id != send_brinfo_exe_last) begin
+    if (exe_valid & exe_is_new) begin
         if (all_inst_count >= COUNT) begin
             $display("MPKI : %d , %d%%", fail_count / (COUNT / 1000), (all_br_count - fail_count) * 100 / all_br_count);
             fail_count      = 0;
