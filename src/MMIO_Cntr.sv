@@ -18,11 +18,6 @@ module MMIO_Cntr #(
     inout  wire CacheResp   memresp_in,
 
     output wire             uart_rx_pending
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -110,7 +105,7 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
     endcase
 
     /*
-    if (can_output_log) begin
+    if (util::logEnabled()) begin
         $display("info,memstage.mmiocntr,state(%d) mready(%d)", state, memreq_in.ready);
     end
     */
@@ -173,11 +168,6 @@ MMIO_uart_tx #(
     .req_wdata(req_wdata),
     .resp_valid(cmd_uart_tx_rvalid),
     .resp_rdata(cmd_uart_tx_rdata)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 MMIO_clint #(

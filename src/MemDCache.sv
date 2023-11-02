@@ -1,3 +1,4 @@
+`include "pkg_util.svh"
 `include "memoryinterface.svh"
 /*
 direct map
@@ -19,11 +20,6 @@ module MemDCache #(
     input wire              do_writeback,
     // すべてのデータがwritebackされている(変更されていない)かどうか
     output wire             is_writebacked_all
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -160,10 +156,8 @@ always @(posedge clk) begin
 
     if (do_writeback & state != IDLE & state != WB_LOOP_CHECK & state != WB_LOOP_READY) begin
         writeback_requested <= 1;
-        `ifdef PRINT_DEBUGINFO
-        if (can_output_log)
+        if (util::logEnabled())
             $display("info,memstage.d$.event.wb_req,force writeback requested. state : %d count : %d", state, modified_count);
-        `endif
     end
 
     case (state)
@@ -173,10 +167,8 @@ always @(posedge clk) begin
             state               <= WB_LOOP_CHECK;
             writeback_requested <= 0;
             wb_loop_address     <= 0;
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
+            if (util::logEnabled())
                 $display("info,memstage.d$.event.start,start force writeback.");
-            `endif
         end else begin
             s_dreq <= dreq_in;
             if (dreq.valid) begin
@@ -189,35 +181,27 @@ always @(posedge clk) begin
                         if (cache_modified[info_index] == 0 & cache_data[mem_index] !== dreq.wdata) begin
                             cache_modified[info_index]  <= 1;
                             modified_count              <= modified_count + 1;
-                            `ifdef PRINT_DEBUGINFO
-                            if (can_output_log)
+                            if (util::logEnabled())
                                 $display("info,memstage.d$.event.modified,cache modified %h", dreq.addr);
-                            `endif
                         end
                     end else begin
                         // PTE更新
                         if (is_pte_req) begin
-                            `ifdef PRINT_DEBUGINFO
-                            if (can_output_log)
+                            if (util::logEnabled())
                                 $display("info,memstage.d$.event.is_ptereq,addr:%h pte:%b actual:%b", dreq.addr, dreq.pte, cache_data[mem_index][7:6]);
-                            `endif
                             // Aが0か、pte.dかつDが0
                             if (cache_data[mem_index][6] === 0 || dreq.pte.d == 1 && cache_data[mem_index][7] === 0) begin
                                 cache_modified[info_index]  <= 1;
                                 cache_data[mem_index]       <= cache_data[mem_index] | {24'h0, dreq.pte.d == 1, dreq.pte.a == 1, 6'h0};
                                 if (!cache_modified[info_index])
                                     modified_count <= modified_count + 1;
-                                `ifdef PRINT_DEBUGINFO
-                                if (can_output_log)
+                                if (util::logEnabled())
                                     $display("info,memstage.d$.event.pte_modified,modified");
-                                `endif
                             end
                         end
                     end
-                    `ifdef PRINT_DEBUGINFO
-                    if (can_output_log)
+                    if (util::logEnabled())
                         $display("info,memstage.d$.event.cache_hit,%h wen:%d", dreq.addr, dreq.wen);
-                    `endif
                 end else begin
                     if (need_wb) begin
                         // ライトバック
@@ -229,10 +213,8 @@ always @(posedge clk) begin
                         cache_addrs[info_index]     <= dreq.addr;
                         cache_valid[info_index]     <= 0;
                         cache_modified[info_index]  <= 0;
-                        `ifdef PRINT_DEBUGINFO
-                        if (can_output_log)
+                        if (util::logEnabled())
                             $display("info,memstage.d$.event.need_wb,l/s with wb : %h", dreq.addr);
-                        `endif
                     end else begin
                         if (dreq.wen) begin
                             // modifiedではないので上書きする -> 終了
@@ -245,10 +227,8 @@ always @(posedge clk) begin
                             cache_modified[info_index]  <= 1;
                             modified_count              <= modified_count + 1;
 
-                            `ifdef PRINT_DEBUGINFO
-                            if (can_output_log)
+                            if (util::logEnabled())
                                 $display("info,memstage.d$.event.modified,write with no wb : %h <= %h", dreq.addr, dreq.wdata);
-                            `endif
                         end else begin
                             // 読む
                             state <= READ_READY;
@@ -278,20 +258,16 @@ always @(posedge clk) begin
                 // PTE更新
                 if (is_pte_req) begin
 
-                    `ifdef PRINT_DEBUGINFO
-                    if (can_output_log)
+                    if (util::logEnabled())
                         $display("info,memstage.d$.event.is_ptereq,addr:%h pte:%b actual:%b", dreq.addr, dreq.pte, busresp.rdata[7:6]);
-                    `endif
 
                     // Aが0か、pte.dかつDが0
                     if (busresp.rdata[6] === 0 || dreq.pte.d && busresp.rdata[7] === 0) begin
                         cache_modified[info_index]  <= 1;
                         cache_data[mem_index]       <= busresp.rdata | {24'h0, dreq.pte.d, dreq.pte.a, 6'h0};
                         modified_count              <= modified_count + 1;
-                        `ifdef PRINT_DEBUGINFO
-                        if (can_output_log)
+                        if (util::logEnabled())
                             $display("info,memstage.d$.event.pte_modified,modified");
-                        `endif
                     end else begin
                         cache_modified[info_index]  <= 0;
                         cache_data[mem_index]       <= busresp.rdata;
@@ -319,10 +295,8 @@ always @(posedge clk) begin
                 cache_valid[info_index]     <= 1;
                 cache_modified[info_index]  <= 1;
 
-                `ifdef PRINT_DEBUGINFO
-                if (can_output_log)
+                if (util::logEnabled())
                     $display("info,memstage.d$.event.write_as_mod,0x%h <= %h", dreq.addr, dreq.wdata);
-                `endif
             end else begin
                 // ライトバック -> read
                 state           <= READ_READY;
@@ -333,10 +307,8 @@ always @(posedge clk) begin
     WB_LOOP_CHECK: begin
         if (is_writebacked_all) begin
             state <= IDLE;
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
+            if (util::logEnabled())
                 $display("info,memstage.d$.event.done_wb,Writebacked all modified data on D$.");
-            `endif
         end else begin
             cache_valid[wb_loop_address]    <= 0;
             cache_modified[wb_loop_address] <= 0;
@@ -345,10 +317,8 @@ always @(posedge clk) begin
                 wb_addr <= cache_addrs[wb_loop_address];
                 wb_data <= cache_data[wb_loop_address];
 
-                `ifdef PRINT_DEBUGINFO
-                if (can_output_log)
+                if (util::logEnabled())
                     $display("info,memstage.d$.event.loop_need_wb,%h <= %h is modified. %d remains", cache_addrs[wb_loop_address], cache_data[wb_loop_address], modified_count);
-                `endif
             end
             wb_loop_address <= wb_loop_address + 1;
         end
@@ -370,7 +340,7 @@ always @(posedge clk) begin
 end
 
 // `ifdef PRINT_DEBUGINFO
-// always @(posedge clk) if (can_output_log) begin
+// always @(posedge clk) if (util::logEnabled()) begin
 //     $display("data,memstage.d$.state,d,%b", state);
 //     if (dreq_in.valid & state == IDLE) begin
 //         $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);

@@ -1,3 +1,4 @@
+`include "pkg_util.svh"
 `include "memoryinterface.svh"
 
 // direct map
@@ -12,11 +13,6 @@ module MemICache #(
     inout wire CacheResp    iresp_in,
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 localparam ADDR_WIDTH = CACHE_WIDTH;
@@ -128,10 +124,8 @@ always @(posedge clk) begin
         for (int i = 0; i < CACHE_LENGTH; i++) begin
             cache_valid[i] = 0;
         end
-        `ifdef PRINT_DEBUGINFO
-        if (can_output_log)
+        if (util::logEnabled())
             $display("info,fetchstage.i$.event.invalidated,Invalidated all cache!");
-        `endif
     end else begin
         iresp_valid_reg <=  (state == IDLE & ireq_in.valid & cache_hit) |
                             (state == MEM_RESP_VALID);
@@ -189,7 +183,7 @@ end
 
 `ifdef PRINT_DEBUGINFO
 /* verilator lint_off WIDTH */
-// always @(posedge clk) if (can_output_log) begin
+// always @(posedge clk) if (util::logEnabled()) begin
 //     $display("data,fetchstage.i$.state,d,%b", state);
 //     $display("data,fetchstage.i$.read_count,d,%b", read_count);
 

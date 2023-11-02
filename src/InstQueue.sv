@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 module InstQueue #(
     parameter QUEUE_SIZE = 16,
     parameter INITIAL_ADDR = 32'h0
@@ -9,11 +11,6 @@ module InstQueue #(
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp,
     input wire BrInfo       brinfo
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -126,11 +123,6 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
-
-        `ifdef PRINT_DEBUGINFO
-        ,
-        .can_output_log(can_output_log)
-        `endif
     );
     initial $display("branch pred : two bit counter");
 `elsif PRED_LOCAL
@@ -139,11 +131,6 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
-
-        `ifdef PRINT_DEBUGINFO
-        ,
-        .can_output_log(can_output_log)
-        `endif
     );
     initial $display("branch pred : local history");
 `elsif PRED_GLOBAL
@@ -152,11 +139,6 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
         .brinfo(brinfo)
-
-        `ifdef PRINT_DEBUGINFO
-        ,
-        .can_output_log(can_output_log)
-        `endif
     );
     initial $display("branch pred : global history");
 `else
@@ -193,10 +175,8 @@ logic firstClk = 1;
 always @(posedge clk) begin
     // 分岐予測に失敗
     if (branch_hazard) begin
-        `ifdef PRINT_DEBUGINFO
-        if (can_output_log)
+        if (util::logEnabled())
             $display("info,fetchstage.event.branch_hazard,branch hazard");
-        `endif
         pc                  <= ireq.addr;
         requested           <= 0;
         request_pc          <= ireq.addr;
@@ -204,21 +184,17 @@ always @(posedge clk) begin
         last_fetched_inst   <= 32'h0;
     end else begin
         if (jal_hazard) begin
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
+            if (util::logEnabled())
                 $display("info,fetchstage.event.jal_detect,jal hazard");
-            `endif
         end
         if (requested) begin
             // リクエストが完了した
             if (memresp.valid) begin
-                `ifdef PRINT_DEBUGINFO
-                if (can_output_log) begin
+                if (util::logEnabled()) begin
                     $display("info,fetchstage.event.fetch_end,fetch end");
                     $display("data,fetchstage.event.pc,h,%b", request_pc);
                     $display("data,fetchstage.event.inst,h,%b", memresp.rdata);
                 end
-                `endif
 
                 last_fetched_pc   <= request_pc;
                 last_fetched_inst <= memresp.rdata;
@@ -229,10 +205,8 @@ always @(posedge clk) begin
                     request_pc  <= memreq.addr;
                     pc          <= next_pc;
                     inst_id     <= inst_id + 1;
-                    `ifdef PRINT_DEBUGINFO
-                    if (can_output_log)
+                    if (util::logEnabled())
                         $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
-                    `endif
                 end else
                     requested   <= 0;
             end
@@ -243,10 +217,8 @@ always @(posedge clk) begin
                 requested   <= 1;
                 request_pc  <= memreq.addr;
                 inst_id     <= inst_id + 1;
-                `ifdef PRINT_DEBUGINFO
-                if (can_output_log)
+                if (util::logEnabled())
                     $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
-                `endif
             end
         end
     end
@@ -266,7 +238,7 @@ end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,fetchstage.pc,h,%b", pc);
     $display("data,fetchstage.next_pc,h,%b", next_pc);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
@@ -296,7 +268,7 @@ end
 `endif
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,btb.update.valid,b,%b", brinfo.valid);
     $display("data,btb.update.pc,h,%b", brinfo.pc);
     $display("data,btb.update.is_br,b,%b", brinfo.is_br);

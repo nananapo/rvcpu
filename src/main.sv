@@ -15,8 +15,6 @@ module main #(
 
 wire clk_in = clk27MHz;
 
-wire can_output_log;
-
 // Counter and Timers
 UInt64 reg_cycle = 0;
 UInt64 reg_time  = 0;
@@ -119,11 +117,6 @@ MemBusCntr #() membuscntr (
     .dresp_in(mbresp_dcache),
     .memreq_in(mbreq_mem),
     .memresp_in(mbresp_mem)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 /* ---- Inst ---- */
@@ -134,11 +127,6 @@ MemICache #() memicache (
     .iresp_in(icresp_ptw_cache),
     .busreq(mbreq_icache),
     .busresp(mbresp_icache)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 PageTableWalker #(
@@ -158,11 +146,6 @@ PageTableWalker #(
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
     .sum(cache_cntr.sum)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 InstQueue #() instqueue (
@@ -172,11 +155,6 @@ InstQueue #() instqueue (
     .memreq(icreq_iq_ptw),
     .memresp(icresp_iq_ptw),
     .brinfo(brinfo)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 /* ---- Data ---- */
@@ -188,11 +166,6 @@ MemDCache #() memdcache (
     .busresp(mbresp_dcache),
     .do_writeback(cache_cntr.do_writeback),
     .is_writebacked_all(cache_cntr.is_writebacked_all)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 MemCacheCmdArbiter #() dcache_arbiter1 (
@@ -203,10 +176,6 @@ MemCacheCmdArbiter #() dcache_arbiter1 (
     .dresp_in(dresp_arb_arb),
     .memreq_in(dreq_arb_cache),
     .memresp_in(dresp_arb_cache)
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 MemCacheCmdArbiter #() dcache_arbiter2 (
@@ -217,10 +186,6 @@ MemCacheCmdArbiter #() dcache_arbiter2 (
     .dresp_in(dresp_acntr_arb),
     .memreq_in(dreq_arb_arb),
     .memresp_in(dresp_arb_arb)
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 DAccessCntr #() daccesscntr (
@@ -230,11 +195,6 @@ DAccessCntr #() daccesscntr (
     .dresp(dresp_mmio_acntr),
     .memreq(dreq_acntr_arb),
     .memresp(dresp_acntr_arb)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 MMIO_Cntr #(
@@ -252,11 +212,6 @@ MMIO_Cntr #(
     .memresp_in(dresp_mmio_acntr),
 
     .uart_rx_pending(uart_rx_pending)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 PageTableWalker #(
@@ -276,11 +231,6 @@ PageTableWalker #(
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
     .sum(cache_cntr.sum)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 /* ---- Core ---- */
@@ -302,10 +252,6 @@ Core #(
     .cache_cntr(cache_cntr),
 
     .external_interrupt_pending(external_interrupt_pending)
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 endmodule

@@ -1,3 +1,4 @@
+`include "pkg_util.svh"
 `include "pkg_csr.svh"
 
 module MemoryStage
@@ -20,10 +21,8 @@ module MemoryStage
     inout wire CacheResp    dresp,
 
     output logic            is_stall
-
     `ifdef PRINT_DEBUGINFO
         ,
-        input wire          can_output_log,
         input wire          invalid_by_trap
     `endif
 );
@@ -229,7 +228,7 @@ end
 /////////////////////////////////////////////////////////////////////////////
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,memstage.valid,b,%b", valid | invalid_by_trap);
     if (invalid_by_trap) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");

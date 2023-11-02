@@ -23,10 +23,6 @@ module Core #(
     input wire                  external_interrupt_pending,
 
     output wire CacheCntrInfo   cache_cntr
-`ifdef PRINT_DEBUGINFO
-    ,
-    output wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -203,10 +199,8 @@ always @(posedge clk) begin
     if (branch_hazard_now | branch_hazard_last_clock) begin
         id_valid    <= 0;
         id_trap     <= 0;
-        `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
-                $display("info,decodestage.event.pipeline_flush,pipeline flush");
-        `endif
+        if (util::logEnabled())
+            $display("info,decodestage.event.pipeline_flush,pipeline flush");
     end else if (!id_stall) begin
         if (iresp.valid) begin
             id_valid        <= 1;
@@ -229,10 +223,8 @@ always @(posedge clk) begin
         ds_is_new   <= 1;
         ds_trap     <= 0;
         ds_fw       <= 0;
-        `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
-                $display("info,datastage.event.pipeline_flush,pipeline flush");
-        `endif
+        if (util::logEnabled())
+            $display("info,datastage.event.pipeline_flush,pipeline flush");
     end else if (ds_stall) begin
         ds_is_new   <= 0;
     end else begin
@@ -271,10 +263,8 @@ always @(posedge clk) begin
         exe_is_new  <= 1;
         exe_trap    <= 0;
         exe_fw      <= 0;
-        `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
-                $display("info,exestage.event.pipeline_flush,pipeline flush");
-        `endif
+        if (util::logEnabled())
+            $display("info,exestage.event.pipeline_flush,pipeline flush");
     end else if (exe_stall) begin
         exe_is_new  <= 0;
     end else begin
@@ -312,10 +302,8 @@ always @(posedge clk) begin
         mem_is_new  <= 1;
         mem_trap    <= 0;
         mem_fw      <= 0;
-        `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
-                $display("info,memstage.event.pipeline_flush,pipeline flush");
-        `endif
+        if (util::logEnabled())
+            $display("info,memstage.event.pipeline_flush,pipeline flush");
     end else if (mem_stall) begin
         mem_is_new  <= 0;
     end else begin
@@ -449,11 +437,6 @@ DataSelectStage #() dataselectstage
     .fw_mem(mem_fw),
     .fw_csr(csr_fw),
     .fw_wbk(wb_fw)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 ExecuteStage #() executestage
@@ -477,11 +460,6 @@ ExecuteStage #() executestage
     .branch_taken(exe_branch_taken),
     .branch_target(exe_branch_target),
     .is_stall(exe_calc_stall)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 // TODO CSRでmstatus.MPRVを書き込む直後にMEM系があるときのタイミングがシビアなのをどうにかする
@@ -512,11 +490,6 @@ MemoryStage #() memorystage
     .dresp(dresp),
 
     .is_stall(mem_memory_stall)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 
     `ifdef PRINT_DEBUGINFO
         ,
@@ -567,11 +540,6 @@ CSRStage #(
     .external_interrupt_pending(external_interrupt_pending),
 
     .cache_cntr(cache_cntr)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 WriteBackStage #() wbstage(
@@ -586,11 +554,6 @@ WriteBackStage #() wbstage(
     .wdata(wb_wdata),
 
     .regfile(wb_regfile)
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    .can_output_log(can_output_log)
-`endif
 );
 
 //////////////////////////////// 分岐情報を渡す ///////////////////////////////
@@ -697,7 +660,7 @@ end
 int clk_count = 0;
 always @(negedge clk) begin
     clk_count <= clk_count + 1;
-    if (can_output_log) begin
+    if (util::logEnabled()) begin
         $display("clock,%d", clk_count);
         $display("data,decodestage.trapinfo.valid,b,%b", id_trap.valid);
         $display("data,datastage.trapinfo.valid,b,%b", ds_trap.valid);
@@ -709,7 +672,7 @@ always @(negedge clk) begin
     end
 end
 
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,decodestage.valid,b,%b", id_valid);
     $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : IID_X);
     if (id_valid) begin

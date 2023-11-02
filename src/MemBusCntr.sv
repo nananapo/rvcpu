@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 module MemBusCntr (
     input wire clk,
     inout wire MemBusReq    ireq_in,
@@ -6,11 +8,6 @@ module MemBusCntr (
     inout wire MemBusResp   dresp_in,
     inout wire MemBusReq    memreq_in,
     inout wire MemBusResp   memresp_in
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -101,7 +98,7 @@ end
 
 
 // `ifdef PRINT_DEBUGINFO
-// always @(posedge clk) if (can_output_log) begin
+// always @(posedge clk) if (util::logEnabled()) begin
 //     $display("data,fetchstage.buscntr.state,d,%b", state);
 //     if (memreq_in.valid) begin
 //         $display("data,fetchstage.buscntr.memreq.ready,d,%b", memreq_in.ready);

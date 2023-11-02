@@ -1,5 +1,6 @@
-`include "memoryinterface.svh"
+`include "pkg_util.svh"
 `include "pkg_csr.svh"
+`include "memoryinterface.svh"
 
 module CSRStage #(
     parameter FMAX_MHz = 27
@@ -34,11 +35,6 @@ module CSRStage #(
     input wire          external_interrupt_pending,
 
     output wire CacheCntrInfo   cache_cntr
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -463,18 +459,14 @@ always @(posedge clk) begin
         if (trap_nochange) begin
             trap_vector <= pc + 4;
             csr_no_wb   <= 1;
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
+            if (util::logEnabled())
                 $display("info,csrstage.trap.nochange,0x%h", pc);
-            `endif
         end else if (this_raise_trap) begin
             csr_no_wb   <= 1;
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log) begin
+            if (util::logEnabled()) begin
                 $display("info,csrstage.trap.pc,0x%h", pc);
                 $display("info,csrstage.trap.cause,0x%h", cause_trap);
             end
-            `endif
             if (trap_toM) begin
                 mode            <= M_MODE;
                 mcause          <= cause_trap;
@@ -542,10 +534,8 @@ always @(posedge clk) begin
     if (valid & !is_new) begin
         inst_clock <= inst_clock + 1;
         if (cmd_is_write & can_access & !is_readonly & !csr_no_wb) begin
-            `ifdef PRINT_DEBUGINFO
-            if (can_output_log)
+            if (util::logEnabled())
                 $display("info,csrstage.event.write_csr,Write %h to %h", wdata, addr);
-            `endif
             case (addr)
                 // Machine Trap Setup
                 CsrAddr::MSTATUS: begin
@@ -623,7 +613,7 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,csrstage.valid,b,%b", valid);
     $display("data,csrstage.inst_id,h,%b", valid ? inst_id : IID_X);
     if (valid) begin

@@ -6,11 +6,6 @@ module MemCacheCmdArbiter (
     inout wire CacheResp    dresp_in,
     inout wire CacheReq     memreq_in,
     inout wire CacheResp    memresp_in
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"

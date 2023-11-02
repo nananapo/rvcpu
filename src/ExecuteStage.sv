@@ -1,4 +1,5 @@
 `include "muldiv.svh"
+`include "pkg_util.svh"
 
 module ExecuteStage
 (
@@ -21,11 +22,6 @@ module ExecuteStage
     output wire         branch_taken,
     output wire Addr    branch_target,
     output wire         is_stall
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -117,7 +113,7 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,exestage.valid,b,%b", valid);
     $display("data,exestage.inst_id,h,%b", valid ? inst_id : IID_X);
     if (valid) begin

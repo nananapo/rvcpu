@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 module DataSelectStage
 (
     input wire          clk,
@@ -23,11 +25,6 @@ module DataSelectStage
     input wire FwCtrl   fw_csr,
     input wire FwCtrl   fw_wbk,
     output wire         is_datahazard
-
-`ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-`endif
 );
 
 `include "basicparams.svh"
@@ -104,7 +101,7 @@ assign next_op2_data    = ctrl.op2_sel == OP2_RS2W ? rs2_data :
 assign next_rs2_data    = rs2_data;
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,datastage.valid,b,%b", valid);
     $display("data,datastage.inst_id,h,%b", valid ? inst_id : IID_X);
     if (valid) begin

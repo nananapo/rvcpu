@@ -1,3 +1,5 @@
+`include "pkg_util.svh"
+
 module LocalHistory2bit #(
     parameter WIDTH_PC = 5,
     parameter WIDTH_HIST = 10
@@ -6,10 +8,6 @@ module LocalHistory2bit #(
     input wire Addr     pc,         // 予測したいアドレス
     output wire         pred_taken,
     input wire BrInfo   brinfo
-    `ifdef PRINT_DEBUGINFO
-    ,
-    input wire can_output_log
-    `endif
 );
 
 localparam WIDTH_COUNTER = WIDTH_PC + WIDTH_HIST;
@@ -54,7 +52,7 @@ always @(posedge clk) begin
 end
 
 `ifdef PRINT_DEBUGINFO
-always @(posedge clk) if (can_output_log) begin
+always @(posedge clk) if (util::logEnabled()) begin
     $display("data,fetchstage.lpht.pc,h,%b", pc);
     $display("data,fetchstage.lpht.histi,h,%b", histi);
     $display("data,fetchstage.lpht.phti,b,%b", phti);
