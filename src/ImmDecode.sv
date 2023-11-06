@@ -1,4 +1,6 @@
-module ImmDecode (
+module ImmDecode
+    import basic::Inst, basic::UIntX;
+(
     input  wire Inst  inst,
     output wire UIntX imm_i,
     output wire UIntX imm_s,

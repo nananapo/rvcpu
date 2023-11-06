@@ -1,7 +1,8 @@
-`include "pkg_util.svh"
-`include "pkg_memory.svh"
-
-module MMIO_Cntr (
+module MMIO_Cntr
+    import conf::*;
+    import basic::*;
+    import meminf::*;
+(
     input  wire             clk,
     input  wire             reset,
 
@@ -16,8 +17,6 @@ module MMIO_Cntr (
     output wire             uart_rx_pending,
     output wire             mti_pending
 );
-
-`include "basicparams.svh"
 
 typedef enum logic [1:0] {
     IDLE,
@@ -176,7 +175,14 @@ MMIO_clint memmap_clint (
     .mti_pending(mti_pending)
 );
 
-MMIO_EDisk #() edisk (
+`ifndef EDISK_WIDTH
+    `define EDISK_WIDTH 23
+    initial $display("WARN: edisk width (EDISK_WIDTH) is not set. default to %d", `EDISK_WIDTH);
+`endif
+
+MMIO_EDisk #(
+    .WIDTH(`EDISK_WIDTH)
+) edisk (
     .clk(clk),
 
     .req_ready(cmd_edisk_ready),

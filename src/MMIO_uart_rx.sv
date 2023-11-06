@@ -1,7 +1,6 @@
-`include "pkg_conf.svh"
-`include "pkg_memory.svh"
-
-module MMIO_uart_rx #(
+module MMIO_uart_rx
+    import basic::*;
+#(
     parameter BUF_WIDTH = 10
 )(
     input  wire clk,
@@ -21,7 +20,7 @@ module MMIO_uart_rx #(
     output wire         uart_rx_pending
 );
 
-`include "basicparams.svh"
+import conf::*;
 
 wire UInt8  rx_rdata;
 wire        rx_rvalid;

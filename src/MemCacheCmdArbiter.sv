@@ -1,6 +1,6 @@
-`include "pkg_util.svh"
-
-module MemCacheCmdArbiter (
+module MemCacheCmdArbiter
+    import meminf::*;
+(
     input wire clk,
     inout wire CacheReq     ireq_in,
     inout wire CacheResp    iresp_in,
@@ -10,7 +10,7 @@ module MemCacheCmdArbiter (
     inout wire CacheResp    memresp_in
 );
 
-`include "basicparams.svh"
+import basic::*;
 
 CacheReq    s_ireq;
 CacheReq    s_dreq;
@@ -36,7 +36,8 @@ function [$bits(Addr) + 1 + $bits(UInt32) + $bits(MemSize) + $bits(PTE_AD) -1:0]
         D_CHECK: memcmd = {dreq_in.addr, dreq_in.wen, dreq_in.wdata, dreq_in.wmask,  dreq_in.pte};
         I_READY: memcmd = { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata,  s_ireq.wmask,   s_ireq.pte};
         D_READY: memcmd = { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata,  s_dreq.wmask,   s_dreq.pte};
-        default: memcmd = {ADDR_X, 1'b0, XBIT_32, SIZE_W, {$bits(PTE_AD){1'b0}}};
+        default: memcmd = {XLEN_X, 1'b0, 32'hx, SIZE_W, {$bits(PTE_AD){1'b0}}};
+        // TODO UInt32のxを用意する
     endcase
 endfunction
 

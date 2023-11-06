@@ -1,12 +1,12 @@
-`include "pkg_util.svh"
-`include "memoryinterface.svh"
 /*
 direct map
 
 新しく値を書き込むとき、エラーを確認しない
 すべてをライトバックするとき、エラーの発生を確認しない
 */
-module MemDCache #(
+module MemDCache
+    import meminf::*;
+#(
     parameter CACHE_WIDTH = 10
 ) (
     input wire              clk,
@@ -22,7 +22,7 @@ module MemDCache #(
     output wire             is_writebacked_all
 );
 
-`include "basicparams.svh"
+import basic::*;
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
 

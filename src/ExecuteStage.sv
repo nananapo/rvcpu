@@ -1,8 +1,6 @@
-`include "muldiv.svh"
-`include "basic.svh"
-`include "pkg_util.svh"
-
 module ExecuteStage
+    import basic::*;
+    import stageinfo::*;
 (
     input wire              clk,
     input wire              flush,
@@ -22,8 +20,6 @@ module ExecuteStage
     output wire Addr        branch_target,
     output wire             is_stall
 );
-
-`include "basicparams.svh"
 
 typedef enum logic [1:0] {
     IDLE,
@@ -54,9 +50,9 @@ ALU #(
     .branch_take(alu_branch_take)
 );
 
-wire MulDivReq mdreq;
-wire MulDivResp mdresp;
-MulDivModule #() muldiv (
+wire muldiv::Req mdreq;
+wire muldiv::Resp mdresp;
+MulDivModule #() mdm (
     .clk(clk),
     .req(mdreq),
     .resp(mdresp)
@@ -112,7 +108,7 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,exestage.valid,b,%b", valid);
-    $display("data,exestage.inst_id,h,%b", valid ? info.inst_id : iid::X);
+    $display("data,exestage.inst_id,h,%b", valid ? info.id : iid::X);
     if (valid) begin
         $display("data,exestage.pc,h,%b", info.pc);
         $display("data,exestage.inst,h,%b", info.inst);

@@ -1,10 +1,15 @@
-module IDecode (
+module IDecode
+    import basic::Inst, basic::UInt5;
+    import stageinfo::*;
+(
     input wire Inst     inst,
     output wire logic   is_illegal,
     output wire Ctrl    ctrl
 );
 
 `include "inst.svh"
+
+import meminf::MemSize;
 
 localparam X_2 = 2'b?;
 localparam X_3 = 3'b?;
@@ -13,7 +18,7 @@ localparam X_7 = 7'b?;
 localparam X_X = 10'b?;
 
 localparam WB_X = WB_ALU;
-localparam SIZE_X = SIZE_W;
+localparam SIZE_X = meminf::SIZE_W;
 
 localparam T = 1'b1;
 localparam F = 1'b0;
@@ -150,7 +155,7 @@ wire [6:0] OP       = inst[6:0];
 
 assign ctrl.mem_size = MemSize'(F3[1:0]);
 
-assign ctrl.wb_addr     = wb_addr;
+assign ctrl.wb_addr     = RegSel'(wb_addr);
 assign ctrl.jmp_pc_flg  = OP == JAL_OP;
 assign ctrl.jmp_reg_flg = F3 == JALR_F3 & OP == JALR_OP;
 assign ctrl.fence_i     = OP == MISC_MEM_OP & F3 == FENCEI_F3;

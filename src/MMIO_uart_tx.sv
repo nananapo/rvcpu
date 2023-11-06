@@ -1,7 +1,6 @@
-`include "pkg_conf.svh"
-`include "pkg_util.svh"
-
-module MMIO_uart_tx (
+module MMIO_uart_tx
+    import basic::*;
+(
     input  wire clk,
     output wire uart_tx,
 
@@ -14,8 +13,6 @@ module MMIO_uart_tx (
     output wire         resp_valid,
     output wire UIntX   resp_rdata
 );
-
-`include "basicparams.svh"
 
 wire logic q_rready;
 wire logic q_rvalid;
@@ -47,7 +44,7 @@ Uart_tx #(
 );
 
 assign resp_valid   = 1;
-assign resp_rdata   = DATA_Z;
+assign resp_rdata   = XLEN_X;
 
 int clock_count = 0;
 always @(posedge clk) clock_count++;

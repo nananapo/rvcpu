@@ -1,7 +1,6 @@
-`include "pkg_util.svh"
-`include "basic.svh"
-
 module DataSelectStage
+    import stageinfo::*;
+    import basic::*;
 (
     input wire              clk,
     input wire UIntX        regfile[31:0],
@@ -25,8 +24,6 @@ module DataSelectStage
     input wire FwCtrl       fw_wbk,
     output wire             is_datahazard
 );
-
-`include "basicparams.svh"
 
 function [$bits(UIntX)-1:0] gen_op1data(
     input Op1Sel   op1_sel,
@@ -103,7 +100,7 @@ assign next_rs2_data    = rs2_data;
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,datastage.valid,b,%b", valid);
-    $display("data,datastage.inst_id,h,%b", valid ? info.inst_id : iid::X);
+    $display("data,datastage.inst_id,h,%b", valid ? info.id : iid::X);
     if (valid) begin
         $display("data,datastage.pc,h,%b", info.pc);
         $display("data,datastage.inst,h,%b", info.inst);

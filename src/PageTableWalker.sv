@@ -1,7 +1,9 @@
-`include "pkg_util.svh"
-
 // Sv32
-module PageTableWalker #(
+module PageTableWalker
+    import meminf::*;
+    import basic::Addr, basic::UIntX;
+    import csr::*;
+#(
     parameter PAGESIZE_WIDTH    = 12,
     parameter PTESIZE_WIDTH     = 2,
     parameter LOG_ENABLE        = 0,
@@ -18,7 +20,7 @@ module PageTableWalker #(
     inout wire CacheReq     ptereq,
     inout wire CacheResp    pteresp,
 
-    input wire modetype     mode,
+    input wire csr::Mode    mode,
     input wire [31:0]       satp,
     input wire              mxr,
     input wire              sum

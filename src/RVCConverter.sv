@@ -4,8 +4,6 @@ module RVCConverter(
     inout wire IResp memresp
 );
 
-`include "basicparams.svh"
-
 assign iresp.valid  = memresp.valid;
 assign memresp.ready= iresp.ready;
 assign iresp.addr   = memresp.addr;

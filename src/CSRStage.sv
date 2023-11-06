@@ -1,10 +1,8 @@
-`include "pkg_util.svh"
-`include "pkg_csr.svh"
-`include "pkg_conf.svh"
-`include "basic.svh"
-`include "memoryinterface.svh"
-
-module CSRStage (
+module CSRStage
+    import basic::*;
+    import stageinfo::*;
+    import meminf::CacheCntrInfo;
+(
     input wire              clk,
 
     input wire              valid,
@@ -28,11 +26,10 @@ module CSRStage (
     input wire              external_interrupt_pending,
     input wire              mip_mtip,
 
-    output wire CacheCntrInfo   cache_cntr
+    inout wire CacheCntrInfo    cache_cntr
 );
 
-`include "basicparams.svh"
-
+import csr::*;
 
 typedef enum logic [1:0] {
     XTVEC_DIRECT   = 2'b00,
@@ -147,8 +144,8 @@ function [$bits(UIntX)-1:0] gen_expt_xtval(
     endcase
 endfunction
 
-modetype    mode = M_MODE;
-Addr        satp = ADDR_ZERO;
+Mode    mode = M_MODE;
+Addr        satp = XLEN_ZERO;
 
 initial begin
     // 起動時はM-mode  (EEI)
@@ -450,7 +447,7 @@ assign csr_keep_trap= trap_nochange;
 assign next_no_wb   = valid & (this_raise_trap | last_raise_trap); // TODO xretは除外
 
 assign cache_cntr.i_mode            = mode;
-assign cache_cntr.d_mode            = modetype'(mode == M_MODE & mstatus_mprv ? modetype'(mstatus_mpp) : mode);
+assign cache_cntr.d_mode            = Mode'(mode == M_MODE & mstatus_mprv ? Mode'(mstatus_mpp) : mode);
 assign cache_cntr.mxr               = mstatus_mxr;
 assign cache_cntr.sum               = mstatus_sum;
 assign cache_cntr.satp              = satp;
@@ -514,21 +511,21 @@ always @(posedge clk) begin
                 CSR_MRET: begin
                     csr_no_wb       <= 1;
                     mstatus_mie     <= mstatus_mpie;
-                    mode            <= modetype'(mstatus_mpp);
+                    mode            <= Mode'(mstatus_mpp);
                     mstatus_mpie    <= 1;
                     mstatus_mpp     <= U_MODE;
                     trap_vector     <= mepc;
-                    if (modetype'(mstatus_mpp) != M_MODE)
+                    if (mstatus_mpp != M_MODE)
                         mstatus_mprv <= 0;
                 end
                 CSR_SRET: begin
                     csr_no_wb       <= 1;
                     mstatus_sie     <= mstatus_spie;
-                    mode            <= modetype'({1'b0, mstatus_spp});
+                    mode            <= Mode'({1'b0, mstatus_spp});
                     mstatus_spie    <= 1;
                     mstatus_spp     <= U_MODE[0];
                     trap_vector     <= sepc;
-                    if (modetype'({1'b0, mstatus_spp}) != M_MODE)
+                    if (Mode'({1'b0, mstatus_spp}) != M_MODE)
                         mstatus_mprv <= 0;
                 end
                 default: begin
@@ -622,10 +619,10 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,csrstage.valid,b,%b", valid);
-    $display("data,csrstage.inst_id,h,%b", valid ? inst_id : iid::X);
+    $display("data,csrstage.inst_id,h,%b", valid ? info.id : iid::X);
     if (valid) begin
-        $display("data,csrstage.pc,h,%b", pc);
-        $display("data,csrstage.inst,h,%b", inst);
+        $display("data,csrstage.pc,h,%b", info.pc);
+        $display("data,csrstage.inst,h,%b", info.inst);
         $display("data,csrstage.is_stall,b,%b", is_stall);
     end
     $display("data,csrstage.mode,d,%b", mode);

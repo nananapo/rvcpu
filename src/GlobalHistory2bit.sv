@@ -1,6 +1,7 @@
-`include "pkg_util.svh"
-
-module GlobalHistory2bit #(
+module GlobalHistory2bit
+    import basic::*;
+    import meminf::BrInfo;
+#(
     parameter WIDTH_PC = 10,
     parameter WIDTH_HIST = 10
 )(
