@@ -25,8 +25,8 @@ typedef logic [31:0]            MemData;
 MemData mem [MEM_SIZE-1:0];
 
 initial begin
-    $display("Memory : %s", FILEPATH);
-    $display("MemoryDelay : %d cycle", DELAY_CYCLE);
+    // $display("Memory : %s", FILEPATH);
+    // $display("MemoryDelay : %d cycle", DELAY_CYCLE);
     `ifdef MEM_ZERO_CLEAR
     for (int l = 0; l < MEM_SIZE; l++)
         mem[l] = 32'b0;
