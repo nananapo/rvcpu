@@ -20,12 +20,9 @@
         <File path="src/ALU_DivUnsignedNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/ALU_MultNbit.sv" type="file.verilog" enable="1"/>
         <File path="src/ALU_MultUnsignedNbit.sv" type="file.verilog" enable="1"/>
-        <File path="src/CSRStage.sv" type="file.verilog" enable="1"/>
-        <File path="src/DataSelectStage.sv" type="file.verilog" enable="1"/>
-        <File path="src/IDecode.sv" type="file.verilog" enable="1"/>
-        <File path="src/ImmDecode.sv" type="file.verilog" enable="1"/>
-        <File path="src/ExecuteStage.sv" type="file.verilog" enable="1"/>
-        <File path="src/Stage_Fetch.sv" type="file.verilog" enable="1"/>
+        <File path="src/BP_LocalHistory2bit.sv" type="file.verilog" enable="1"/>
+        <File path="src/BP_GlobalHistory2bit.sv" type="file.verilog" enable="1"/>
+        <File path="src/BP_TwoBitCounter.sv" type="file.verilog" enable="1"/>
         <File path="src/Memory.sv" type="file.verilog" enable="1"/>
         <File path="src/MemICache.sv" type="file.verilog" enable="1"/>
         <File path="src/MemDCache.sv" type="file.verilog" enable="1"/>
@@ -37,15 +34,18 @@
         <File path="src/MMIO_UART_TX.sv" type="file.verilog" enable="1"/>
         <File path="src/MMIO_CLINT.sv" type="file.verilog" enable="1"/>
         <File path="src/MMIO_EDisk.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemoryStage.sv" type="file.verilog" enable="1"/>
+        <File path="src/Stage_Fetch.sv" type="file.verilog" enable="1"/>
+        <File path="src/Stage_RegSel.sv" type="file.verilog" enable="1"/>
+        <File path="src/Stage_Exe.sv" type="file.verilog" enable="1"/>
+        <File path="src/Stage_Mem.sv" type="file.verilog" enable="1"/>
+        <File path="src/Stage_CSR.sv" type="file.verilog" enable="1"/>
+        <File path="src/Stage_WB.sv" type="file.verilog" enable="1"/>
+        <File path="src/IDecode.sv" type="file.verilog" enable="1"/>
+        <File path="src/ImmDecode.sv" type="file.verilog" enable="1"/>
         <File path="src/PageTableWalker.sv" type="file.verilog" enable="1"/>
         <File path="src/SyncQueue.sv" type="file.verilog" enable="1"/>
-        <File path="src/BP_LocalHistory2bit.sv" type="file.verilog" enable="1"/>
-        <File path="src/BP_GlobalHistory2bit.sv" type="file.verilog" enable="1"/>
-        <File path="src/BP_TwoBitCounter.sv" type="file.verilog" enable="1"/>
         <File path="src/Uart_rx.sv" type="file.verilog" enable="1"/>
         <File path="src/Uart_tx.sv" type="file.verilog" enable="1"/>
-        <File path="src/WriteBackStage.sv" type="file.verilog" enable="1"/>
         <File path="src/tangnano9k.cst" type="file.cst" enable="1"/>
         <File path="src/rvcpu.sdc" type="file.sdc" enable="1"/>
     </FileList>
