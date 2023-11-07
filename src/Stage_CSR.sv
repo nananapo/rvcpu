@@ -1,4 +1,4 @@
-module CSRStage
+module Stage_CSR
     import basic::*;
     import stageinfo::*;
     import meminf::CacheCntrInfo;

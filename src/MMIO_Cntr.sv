@@ -134,7 +134,7 @@ assign memreq_in.wdata  = req_wdata;
 assign memreq_in.wmask  = req_wmask;
 assign memreq_in.pte    = req_pte;
 
-MMIO_uart_rx memmap_uartrx (
+MMIO_UART_RX memmap_uartrx (
     .clk(clk),
     .uart_rx(uart_rx),
 
@@ -149,7 +149,7 @@ MMIO_uart_rx memmap_uartrx (
     .uart_rx_pending(uart_rx_pending)
 );
 
-MMIO_uart_tx memmap_uarttx (
+MMIO_UART_TX memmap_uarttx (
     .clk(clk),
     .uart_tx(uart_tx),
 
@@ -162,7 +162,7 @@ MMIO_uart_tx memmap_uarttx (
     .resp_rdata(cmd_uart_tx_rdata)
 );
 
-MMIO_clint memmap_clint (
+MMIO_CLINT memmap_clint (
     .clk(clk),
 
     .req_ready(cmd_clint_ready),

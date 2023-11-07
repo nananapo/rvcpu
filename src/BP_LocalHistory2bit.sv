@@ -1,4 +1,4 @@
-module LocalHistory2bit
+module BP_LocalHistory2bit
     import basic::*;
     import meminf::BrInfo;
 #(

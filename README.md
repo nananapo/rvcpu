@@ -76,9 +76,9 @@ xv6が動くcommit
         |          |              |         |
        PTW----------          MMIO_Cntr     |
         |                         |         |
-    InstQueue                    PTW---------
+        IF                       PTW---------
         |                         |
-        IF -> ID -> DS -> EXE -> MEM -> CSR -> WB
+        |---> ID -> DS -> EXE -> MEM -> CSR -> WB
                            |
                         Mul/Div
 ```

@@ -145,7 +145,7 @@ wire if_stall   = id_stall;
 assign iresp.ready  = !if_stall;
 
 // 最後のクロックでの分岐ハザード状態
-// このレジスタを介してireqすることで、EXE, CSRステージとinstqueueが直接つながらないようにする。
+// このレジスタを介してireqすることで、EXE, CSRステージとIFが直接つながらないようにする。
 logic branch_hazard_last_clock  = 0;
 UIntX branch_target_last_clock  = 32'h0;
 
@@ -385,7 +385,7 @@ ImmDecode #() immdecode (
     .imm_z(id_imm_z)
 );
 
-DataSelectStage #() dataselectstage
+Stage_RegSel #() regselstage
 (
     .clk(clk),
     .regfile(wb_regfile),
@@ -411,7 +411,7 @@ DataSelectStage #() dataselectstage
     .fw_wbk(wb_fw)
 );
 
-ExecuteStage #() executestage
+Stage_Exe #() executestage
 (
     .clk(clk),
     .valid(exe_valid),
@@ -433,7 +433,7 @@ ExecuteStage #() executestage
 );
 
 // TODO CSRでmstatus.MPRVを書き込む直後にMEM系があるときのタイミングがシビアなのをどうにかする
-MemoryStage #() memorystage
+Stage_Mem #() memorystage
 (
     .clk(clk),
     .valid(
@@ -473,7 +473,7 @@ MemoryStage #() memorystage
     `endif
 );
 
-CSRStage #() csrstage (
+Stage_CSR #() csrstage (
     .clk(clk),
 
     .valid(csr_valid),
@@ -500,7 +500,7 @@ CSRStage #() csrstage (
     .cache_cntr(cache_cntr)
 );
 
-WriteBackStage #() wbstage(
+Stage_WB #() wbstage(
     .clk(clk),
 
     .valid(wb_valid),

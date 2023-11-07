@@ -1,4 +1,4 @@
-module MultNbit #(
+module ALU_MultNbit #(
     parameter SIZE = 32
 ) (
     input wire  clk,
@@ -30,7 +30,7 @@ wire [SIZE*2-1:0]   mod_product;
 
 assign product = result_is_minus ? $signed($signed({SIZE*2-1{1'b0}}) - $signed(mod_product)) : mod_product;
 
-MultUnsignedNbit #(
+ALU_MultUnsignedNbit #(
     .SIZE(SIZE)
 ) divuNbit
 (

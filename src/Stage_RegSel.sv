@@ -1,4 +1,4 @@
-module DataSelectStage
+module Stage_RegSel
     import stageinfo::*;
     import basic::*;
 (

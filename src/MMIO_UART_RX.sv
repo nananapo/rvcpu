@@ -1,4 +1,4 @@
-module MMIO_uart_rx
+module MMIO_UART_RX
     import basic::*;
 #(
     parameter BUF_WIDTH = 10

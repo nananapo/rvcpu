@@ -1,5 +1,5 @@
 // TODO kill
-module MulDivModule
+module ALU_MulDivModule
     import muldiv::*;
 (
     input wire          clk,
@@ -78,7 +78,7 @@ always @(posedge clk) case (state)
     end
 endcase
 
-MultNbit #(
+ALU_MultNbit #(
     .SIZE(`XLEN+1) // s * u用
 ) m (
     .clk(clk),
@@ -91,7 +91,7 @@ MultNbit #(
     .product(m_product)
 );
 
-DivNbit #(
+ALU_DivNbit #(
     .SIZE(`XLEN+1) // オーバーフロー対策
 ) d (
     .clk(clk),

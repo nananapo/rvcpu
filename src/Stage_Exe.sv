@@ -1,4 +1,4 @@
-module ExecuteStage
+module Stage_Exe
     import basic::*;
     import stageinfo::*;
 (
@@ -52,7 +52,7 @@ ALU #(
 
 wire muldiv::Req mdreq;
 wire muldiv::Resp mdresp;
-MulDivModule #() mdm (
+ALU_MulDivModule #() mdm (
     .clk(clk),
     .req(mdreq),
     .resp(mdresp)

@@ -1,4 +1,4 @@
-module MultUnsignedNbit #(
+module ALU_MultUnsignedNbit #(
     parameter SIZE = 32
 ) (
     input wire  clk,

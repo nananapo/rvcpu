@@ -1,4 +1,4 @@
-module DivNbit #(
+module ALU_DivNbit #(
     parameter SIZE = 32
 ) (
     input wire  clk,
@@ -36,7 +36,7 @@ wire UIntS mod_remainder;
 assign quotient     = !error & result_div_is_minus ? $signed($signed(0) - $signed(mod_quotient)) : mod_quotient;
 assign remainder    = !error & result_rem_is_minus ? $signed($signed(0) - $signed(mod_remainder)) : mod_remainder;
 
-DivUnsignedNbit #(
+ALU_DivUnsignedNbit #(
     .SIZE(SIZE)
 ) divuNbit
 (

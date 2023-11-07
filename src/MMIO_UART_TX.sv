@@ -1,4 +1,4 @@
-module MMIO_uart_tx
+module MMIO_UART_TX
     import basic::*;
 (
     input  wire clk,

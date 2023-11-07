@@ -6,33 +6,33 @@ FILES = test.sv \
 		Core.sv \
 		IDecode.sv \
 		ImmDecode.sv \
-		InstQueue.sv \
 		SyncQueue.sv \
+		ALU.sv \
+		ALU_MulDivModule.sv \
+		ALU_DivNbit.sv \
+		ALU_DivUnsignedNbit.sv \
+		ALU_MultNbit.sv \
+		ALU_MultUnsignedNbit.sv \
+		BP_TwoBitCounter.sv \
+		BP_LocalHistory2bit.sv \
+		BP_GlobalHistory2bit.sv \
 		MemBusCntr.sv \
 		MemICache.sv \
 		MemDCache.sv \
+		MemCacheCmdArbiter.sv \
+		MemMisalignCntr.sv \
 		MMIO_Cntr.sv \
-		MMIO_clint.sv \
-		MMIO_uart_rx.sv \
-		MMIO_uart_tx.sv \
-		PageTableWalker.sv \
-		MisalignCntr.sv \
-		ALU.sv \
-		CSRStage.sv \
-		DivNbit.sv \
-		DivUnsignedNbit.sv \
-		DataSelectStage.sv \
-		ExecuteStage.sv \
-		MemoryStage.sv \
-		MulDivModule.sv \
-		MultNbit.sv \
-		MultUnsignedNbit.sv \
-		WriteBackStage.sv \
-		TwoBitCounter.sv \
-		LocalHistory2bit.sv \
-		GlobalHistory2bit.sv \
+		MMIO_CLINT.sv \
 		MMIO_EDisk.sv \
-		MemCacheCmdArbiter.sv
+		MMIO_UART_RX.sv \
+		MMIO_UART_TX.sv \
+		PageTableWalker.sv \
+		Stage_Fetch.sv \
+		Stage_RegSel.sv \
+		Stage_Exe.sv \
+		Stage_Mem.sv \
+		Stage_CSR.sv \
+		Stage_WB.sv
 
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TESTS

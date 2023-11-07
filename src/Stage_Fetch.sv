@@ -1,4 +1,4 @@
-module InstQueue
+module Stage_Fetch
     import basic::*;
     import meminf::*;
 #(
@@ -121,7 +121,7 @@ wire Addr pred_taken_pc = pred_pc_base + imm_b_sext;
 wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
 
 `ifdef PRED_TBC
-    TwoBitCounter #(
+    BP_TwoBitCounter #(
         .ADDR_WIDTH(10)
     ) bp (
         .clk(clk),
@@ -131,7 +131,7 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
     );
     initial $display("branch pred : two bit counter");
 `elsif PRED_LOCAL
-    LocalHistory2bit #() bp (
+    BP_LocalHistory2bit #() bp (
         .clk(clk),
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
@@ -139,7 +139,7 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
     );
     initial $display("branch pred : local history");
 `elsif PRED_GLOBAL
-    GlobalHistory2bit #() bp (
+    BP_GlobalHistory2bit #() bp (
         .clk(clk),
         .pc(pred_pc_base),
         .pred_taken(pred_taken),
@@ -267,12 +267,6 @@ always @(posedge clk) if (util::logEnabled()) begin
         $display("data,fetchstage.iresp.addr,h,%b", iresp.addr);
         $display("data,fetchstage.iresp.inst,h,%b", iresp.inst);
     end
-    // $display("data,fetchstage.memreq.ready,b,%b", memreq.ready);
-    // $display("data,fetchstage.memreq.valid,b,%b", memreq.valid);
-    // $display("data,fetchstage.memreq.addr,h,%b", memreq.addr);
-    // $display("data,fetchstage.memresp.valid,b,%b", memresp.valid);
-    // $display("data,fetchstage.memresp.inst,h,%b", memresp.rdata);
-    // $display("data,fetchstage.memresp.inst_is_br,b,%b", inst_is_br);
 end
 `endif
 

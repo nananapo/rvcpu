@@ -1,4 +1,4 @@
-module TwoBitCounter
+module BP_TwoBitCounter
     import basic::*;
     import meminf::BrInfo;
 #(

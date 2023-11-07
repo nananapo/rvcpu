@@ -1,4 +1,4 @@
-module DivUnsignedNbit #(
+module ALU_DivUnsignedNbit #(
     parameter SIZE = 32
 ) (
     input wire  clk,

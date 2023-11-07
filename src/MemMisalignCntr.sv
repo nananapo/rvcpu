@@ -1,4 +1,4 @@
-module MisalignCntr
+module MemMisalignCntr
     import meminf::*;
 (
     input wire              clk,
@@ -211,7 +211,7 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
     end
     ERROR: state <= IDLE;
     default: begin
-        $display("MisalignCntr.sv : Unknown state %d", state);
+        $display("MemMisalignCntr.sv : Unknown state %d", state);
         `ffinish
     end
     endcase

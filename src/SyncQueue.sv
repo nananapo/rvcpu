@@ -4,7 +4,8 @@ module SyncQueue #(
     parameter DATA_SIZE = 32,
     parameter WIDTH = 5,
     parameter WREADY_NEXT = 0,
-    parameter LOG = 0
+    parameter LOG = 0,
+    parameter LOG_NAME = "syncqueue"
 )(
     input wire clk,
     input wire kill,
@@ -66,13 +67,13 @@ end else begin
                 head <= head + 1;
         end
     end
-    // if (LOG) always @(posedge clk) begin
-    //     $display("data,fetchstage.queue.head,d,%b", head);
-    //     $display("data,fetchstage.queue.tail,d,%b", tail);
-    //     $display("data,fetchstage.queue.wready,d,%b", wready);
-    //     $display("data,fetchstage.queue.actual_wready,d,%b", actual_wready);
-    //     $display("data,fetchstage.queue.rvalid,d,%b", rvalid);
-    // end
+    if (LOG) always @(posedge clk) begin
+        $display("data,%s.head,d,%b", LOG_NAME, head);
+        $display("data,%s.tail,d,%b", LOG_NAME, tail);
+        $display("data,%s.wready,d,%b", LOG_NAME, wready);
+        $display("data,%s.actual_wready,d,%b", LOG_NAME, actual_wready);
+        $display("data,%s.rvalid,d,%b", LOG_NAME, rvalid);
+    end
 end
 
 endgenerate endmodule

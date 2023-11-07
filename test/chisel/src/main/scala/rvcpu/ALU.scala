@@ -15,18 +15,18 @@ class DivWrapperModule (val width : Int) extends Module {
         val remainder   = Output(SInt(width.W))
     }
 
-    class DivNbit extends BlackBox(Map(
+    class ALU_DivNbit extends BlackBox(Map(
         "SIZE" -> width
     )) with HasBlackBoxResource {
         class BBIO extends DivIO {
             val clk = Input(Clock())
         }
         val io = IO(new BBIO)
-        addResource("/src/DivNbit.sv")
-        addResource("/src/DivUnsignedNbit.sv")
+        addResource("/src/ALU_DivNbit.sv")
+        addResource("/src/ALU_DivUnsignedNbit.sv")
     }
 
-    private val bb = Module(new DivNbit)
+    private val bb = Module(new ALU_DivNbit)
     val io = IO(new DivIO)
 
     bb.io.clk <> clock
@@ -44,18 +44,18 @@ class MultWrapperModule (val width : Int) extends Module {
         val product     = Output(SInt((width * 2).W))
     }
 
-    private class MultNbit extends BlackBox(Map(
+    private class ALU_MultNbit extends BlackBox(Map(
         "SIZE" -> width
     )) with HasBlackBoxResource {
         class BBIO extends MultIO {
             val clk = Input(Clock())
         }
         val io = IO(new BBIO)
-        addResource("/src/MultNbit.sv")
-        addResource("/src/MultUnsignedNbit.sv")
+        addResource("/src/ALU_MultNbit.sv")
+        addResource("/src/ALU_MultUnsignedNbit.sv")
     }
 
-    private val bb = Module(new MultNbit)
+    private val bb = Module(new ALU_MultNbit)
     val io = IO(new MultIO)
 
     bb.io.clk <> clock

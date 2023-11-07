@@ -139,7 +139,7 @@ PageTableWalker #(
     .sum(cache_cntr.sum)
 );
 
-InstQueue #() instqueue (
+Stage_Fetch #() fetchstage (
     .clk(clk_in),
     .ireq(ireq_core_iq),
     .iresp(iresp_core_iq),
@@ -179,7 +179,7 @@ MemCacheCmdArbiter #() dcache_arbiter2 (
     .memresp_in(dresp_arb_arb)
 );
 
-MisalignCntr #() dmiscntr (
+MemMisalignCntr #() dmiscntr (
     .clk(clk_in),
     .reset(1'b0),
     .dreq(dreq_mmio_acntr),

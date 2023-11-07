@@ -1,4 +1,4 @@
-module MemoryStage
+module Stage_Mem
     import basic::*;
     import stageinfo::*;
     import meminf::*;

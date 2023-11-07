@@ -1,4 +1,4 @@
-module MMIO_clint
+module MMIO_CLINT
     import basic::*;
 (
     input  wire         clk,

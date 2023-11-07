@@ -1,4 +1,4 @@
-module GlobalHistory2bit
+module BP_GlobalHistory2bit
     import basic::*;
     import meminf::BrInfo;
 #(

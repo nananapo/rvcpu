@@ -1,4 +1,4 @@
-module WriteBackStage
+module Stage_WB
     import basic::*;
     import stageinfo::*;
 (
