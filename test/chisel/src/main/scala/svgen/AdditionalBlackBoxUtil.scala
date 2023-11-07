@@ -5,6 +5,7 @@ import chisel3.experimental.{ChiselAnnotation, IntParam, StringParam}
 import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxPathAnno, BlackBoxNotFoundException}
 import firrtl.annotations.{ModuleName, CircuitName}
 import logger.LazyLogging
+import scala.util.matching.Regex
 
 // https://github.com/chipsalliance/chisel/blob/5.x/src/main/scala/chisel3/util/BlackBoxUtils.scala
 private[svgen] object BlackBoxHelpers {
@@ -37,6 +38,8 @@ import BlackBoxHelpers._
 
 trait HasBlackBoxResourceWithPortUsingStruct extends BlackBox {
   self: BlackBox =>
+
+  var dependencies : Seq[String] = Seq()
 
   abstract class PortClass(val name : String)
   case class LogicPort(override val name : String, val width : Int) extends PortClass(name)
@@ -135,6 +138,27 @@ trait HasBlackBoxResourceWithPortUsingStruct extends BlackBox {
     }
   }
 
+  def addDependency(resourceName: String) : Unit = {
+    val depPath = resourceName.reverse.dropWhile(_ != '/').reverse
+
+    addResource(resourceName)
+    dependencies = dependencies :+ resourceName.substring(depPath.length, resourceName.length)
+
+    try {
+      val pattern : Regex = "^`include \"(.*?)\"".r
+      val blackBoxFile = os.resource / os.RelPath(resourceName.dropWhile(_ == '/'))
+      for (line <- os.read.lines(blackBoxFile)) {
+        line match {
+          case pattern(fileName) => addResource(depPath + fileName)
+          case other => { }
+        }
+      }
+    } catch {
+      case e: os.ResourceNotFoundException =>
+        throw new BlackBoxNotFoundException(resourceName, e.getMessage)
+    }
+  }
+
   // ファイルを読み込むアノテーションを追加する
   // nameAsで展開されるファイル名を指定できる
   def addResource(blackBoxResource: String, nameAs : String = null) : Unit = {
@@ -145,8 +169,6 @@ trait HasBlackBoxResourceWithPortUsingStruct extends BlackBox {
   }
 
   def setResource(moduleName: String, blackBoxResource: String, nameAs : String = null): Unit = {
-    addResource(blackBoxResource, nameAs)
-
     // ioの存在チェック
     val fields = this.getClass().getDeclaredFields().filter(f => f.getName() == "io")
     if (fields.size != 1) {
@@ -167,6 +189,8 @@ trait HasBlackBoxResourceWithPortUsingStruct extends BlackBox {
       def toFirrtl() = {
         BlackBoxInlineAnno(new ModuleName(moduleName, new CircuitName(moduleName)), moduleName + ".g.sv",
         s"""
+        |${dependencies.map(s => "`include \"" + s + "\"").mkString("\n")}
+        |
         |module ${self.toNamed.name}
         |${if (params.size > 0) "#(\n  " + getParameterDefinitionInSystemVerilog().mkString(",\n  ") + ") " else ""}
         |(
@@ -181,5 +205,6 @@ trait HasBlackBoxResourceWithPortUsingStruct extends BlackBox {
     }
     }
     chisel3.experimental.annotate(anno)
+    addResource(blackBoxResource, nameAs)
   }
 }

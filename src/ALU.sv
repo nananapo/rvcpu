@@ -1,4 +1,7 @@
-module ALU #(
+module ALU
+    import basic::*;
+    import stageinfo::*;
+#(
     parameter ENABLE_ALU    = 1'b0,
     parameter ENABLE_BRANCH = 1'b0
 )(
@@ -11,7 +14,7 @@ module ALU #(
     output wire         branch_take
 );
 
-`include "basicparams.svh"
+import conf::*;
 
 // alu_out
 function [$bits(UIntX)-1:0] alu_func(
@@ -34,9 +37,9 @@ function [$bits(UIntX)-1:0] alu_func(
                                 {{XLEN-1{1'b0}}, op1_data < op2_data}; // SLTU
         ALU_JALR : alu_func = (op1_data + op2_data) & (~1);
         ALU_COPY1: alu_func = op1_data;
-        ALU_CZERO_EQ: alu_func = op2_data === DATA_ZERO ? op1_data : DATA_ZERO;
-        ALU_CZERO_NE: alu_func = op2_data !== DATA_ZERO ? op1_data : DATA_ZERO;
-        default  : alu_func = DATA_X;
+        ALU_CZERO_EQ: alu_func = op2_data === XLEN_ZERO ? op1_data : XLEN_ZERO;
+        ALU_CZERO_NE: alu_func = op2_data !== XLEN_ZERO ? op1_data : XLEN_ZERO;
+        default  : alu_func = XLEN_X;
     endcase
 endfunction
 
@@ -59,7 +62,7 @@ function br_func(
     endcase
 endfunction
 
-assign alu_out      = ENABLE_ALU    == 1'b0 ? DATA_X : alu_func(i_exe, sign_sel, op1_data, op2_data);
+assign alu_out      = ENABLE_ALU    == 1'b0 ? XLEN_X : alu_func(i_exe, sign_sel, op1_data, op2_data);
 assign branch_take  = ENABLE_BRANCH == 1'b0 ? 1'bx  : br_func(br_exe, sign_sel, op1_data, op2_data);
 
 endmodule

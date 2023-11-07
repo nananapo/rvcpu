@@ -1,9 +1,9 @@
-`include "pkg_util.svh"
-`include "memoryinterface.svh"
-
 // direct map
 // wenは無視
-module MemICache #(
+module MemICache
+    import basic::*;
+    import meminf::*;
+#(
     parameter CACHE_WIDTH = 8
 )(
     input wire              clk,
@@ -14,6 +14,7 @@ module MemICache #(
     inout wire MemBusReq    busreq,
     inout wire MemBusResp   busresp
 );
+
 
 localparam ADDR_WIDTH = CACHE_WIDTH;
 

@@ -1,8 +1,7 @@
-`include "pkg_util.svh"
-`include "pkg_csr.svh"
-`include "basic.svh"
-
 module MemoryStage
+    import basic::*;
+    import stageinfo::*;
+    import meminf::*;
 (
     input wire              clk,
     input wire              valid,
@@ -26,7 +25,7 @@ module MemoryStage
     `endif
 );
 
-`include "basicparams.svh"
+import conf::*;
 
 typedef enum logic [1:0]
 {
@@ -50,7 +49,7 @@ function [$bits(UIntX)-1:0] gen_amo_wdata(
         ASEL_AMO_OR :   gen_amo_wdata = mem_rdata | rs2_data;
         ASEL_AMO_MIN:   gen_amo_wdata =  (sign_sel == OP_SIGNED ? $signed(mem_rdata) < $signed(rs2_data) : mem_rdata < rs2_data) ? mem_rdata : rs2_data;
         ASEL_AMO_MAX:   gen_amo_wdata = !(sign_sel == OP_SIGNED ? $signed(mem_rdata) < $signed(rs2_data) : mem_rdata < rs2_data) ? mem_rdata : rs2_data;
-        default:        gen_amo_wdata = DATA_X;
+        default:        gen_amo_wdata = XLEN_X;
     endcase
 endfunction
 
@@ -71,7 +70,7 @@ LRはloadとして実行する。結果は常に成功とする
 
 AMOは、最初はloadとして実行し、replace_mem_wenをMEN_Sにすることでstoreを実行する。常に成功する。
 */
-Addr aext_reserved_address = ADDR_MAX; // TODO validを用意してXにする
+Addr aext_reserved_address = XLEN_MAX; // TODO validを用意してXにする
 wire sc_executable  = aext_reserved_address == alu_out; // SCを実行するかどうか
 logic sc_succeeded  = 0;
 
@@ -123,7 +122,7 @@ function [$bits(UIntX)-1:0] gen_rdata(
     if (mem_type == MEN_A) begin
         case (a_sel)
             ASEL_LR: gen_rdata = mem_rdata;
-            ASEL_SC: gen_rdata = sc_succeeded ? DATA_ZERO : {{XLEN-1{1'b0}}, 1'b1};
+            ASEL_SC: gen_rdata = sc_succeeded ? XLEN_ZERO : {{XLEN-1{1'b0}}, 1'b1};
             default: gen_rdata = mem_rdata; // AMO : read-modify-write
         endcase
     end else begin
@@ -133,7 +132,7 @@ function [$bits(UIntX)-1:0] gen_rdata(
             {OP_SIGNED  , SIZE_W}: gen_rdata = mem_rdata; // lw
             {OP_UNSIGNED, SIZE_B}: gen_rdata = {24'b0, mem_rdata[7:0]}; // lbu
             {OP_UNSIGNED, SIZE_H}: gen_rdata = {16'b0, mem_rdata[15:0]}; // lhu
-            default: gen_rdata = DATA_X;
+            default: gen_rdata = XLEN_X;
         endcase
     end
 endfunction
@@ -194,7 +193,7 @@ always @(posedge clk) begin
                                 sc_succeeded    <= 0;
                                 is_cmd_executed <= 1;
                             end
-                            aext_reserved_address   <= ADDR_MAX; // TODO invalidate
+                            aext_reserved_address   <= XLEN_MAX; // TODO invalidate
                         end
                         ASEL_LR: begin
                             aext_reserved_address   <= alu_out;
@@ -233,7 +232,7 @@ always @(posedge clk) if (util::logEnabled()) begin
         $display("info,memstage.valid_but_invalid,this stage is invalid.");
     end
     $display("data,memstage.state,d,%b", state);
-    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? info.inst_id : iid::X);
+    $display("data,memstage.inst_id,h,%b", valid | invalid_by_trap ? info.id : iid::X);
     if (valid) begin
         $display("data,memstage.pc,h,%b", info.pc);
         $display("data,memstage.inst,h,%b", info.inst);

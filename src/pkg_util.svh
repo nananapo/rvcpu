@@ -1,13 +1,13 @@
 `ifndef PKG_UTIL_H
 `define PKG_UTIL_H
 
-`include "basic.svh"
-
 // fflushして強制終了
 `define ffinish $fflush;$finish;$finish;$finish;$finish;
 
 // TODO logはpackageではなくclassにしてみる？
 package util;
+
+import basic::Addr, basic::UIntX;
 
 int logLevel = 0;
 

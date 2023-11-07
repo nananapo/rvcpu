@@ -1,22 +1,9 @@
-`ifndef BASIC_SVH
-`define BASIC_SVH
+`ifndef PKG_STAGEINFO_SVH
+`define PKG_STAGEINFO_SVH
 
-// `define XLEN 64
-// `define XLEN64
-`define XLEN 32
-`define XLEN32
+package stageinfo;
 
-`define IALIGN 32
-`define ILEN 32
-
-typedef logic [`ILEN-1:0]   Inst;
-typedef logic [`XLEN-1:0]   Addr;
-typedef logic [`XLEN-1:0]   UIntX;
-typedef logic [4:0]         UInt5;
-typedef logic [7:0]         UInt8;
-typedef logic [11:0]        UInt12;
-typedef logic [31:0]        UInt32;
-typedef logic [63:0]        UInt64;
+import meminf::MemSize;
 
 typedef enum logic [4:0] {
     ALU_X,
@@ -80,13 +67,6 @@ typedef enum logic {
 } SignSel;
 
 typedef enum logic [1:0] {
-    SIZE_B = 2'b00,
-    SIZE_H = 2'b01,
-    SIZE_W = 2'b10,
-    SIZE_D = 2'b11
-} MemSize;
-
-typedef enum logic [1:0] {
     WB_ALU,
     WB_MEM,
     WB_PC,
@@ -117,6 +97,49 @@ typedef enum logic [3:0] {
     ASEL_AMO_MIN
 } AextSel;
 
+typedef enum logic [4:0] {
+    REG_ZERO= 5'd0,
+    REG_RA  = 5'd1,
+    REG_SP  = 5'd2,
+    REG_GP  = 5'd3,
+    REG_TP  = 5'd4,
+    REG_T0  = 5'd5,
+    REG_T1  = 5'd6,
+    REG_T2  = 5'd7,
+    REG_S0  = 5'd8,
+    REG_S1  = 5'd9,
+    REG_A0  = 5'd10,
+    REG_A1  = 5'd11,
+    REG_A2  = 5'd12,
+    REG_A3  = 5'd13,
+    REG_A4  = 5'd14,
+    REG_A5  = 5'd15,
+    REG_A6  = 5'd16,
+    REG_A7  = 5'd17,
+    REG_S2  = 5'd18,
+    REG_S3  = 5'd19,
+    REG_S4  = 5'd20,
+    REG_S5  = 5'd21,
+    REG_S6  = 5'd22,
+    REG_S7  = 5'd23,
+    REG_S8  = 5'd24,
+    REG_S9  = 5'd25,
+    REG_S10 = 5'd26,
+    REG_S11 = 5'd27,
+    REG_T3  = 5'd28,
+    REG_T4  = 5'd29,
+    REG_T5  = 5'd30,
+    REG_T6  = 5'd31
+} RegSel;
+
+typedef struct packed {
+    basic::Addr pc;
+    basic::Inst inst;
+`ifdef PRINT_DEBUGINFO
+    iid::Ty     id;
+`endif
+} StageInfo;
+
 typedef struct packed 
 {
     AluSel  i_exe;
@@ -128,7 +151,7 @@ typedef struct packed
     MemSize mem_size;
     logic   rf_wen;
     WbSel   wb_sel;
-    UInt5   wb_addr;
+    RegSel  wb_addr;
     CsrCmd  csr_cmd;
     logic   jmp_pc_flg;
     logic   jmp_reg_flg;
@@ -141,50 +164,17 @@ typedef struct packed
 
 typedef struct packed
 {
-    logic   valid;
-    logic   fwdable;
-    UInt5   addr;
-    UIntX   wdata;
+    logic           valid;
+    logic           fwdable;
+    RegSel          addr;
+    basic::UIntX    wdata;
 } FwCtrl;
 
-typedef enum logic [1:0] {
-    M_MODE = 2'b11, // Machine Mode
-    H_MODE = 2'b10, // Hypervisor Mode
-    S_MODE = 2'b01, // Supervisor Mode
-    U_MODE = 2'b00  // User Mode
-} modetype;
-
 typedef struct packed {
-    logic   valid;
-    UIntX   cause;
+    logic           valid;
+    basic::UIntX    cause;
 } TrapInfo;
 
-`ifdef PRINT_DEBUGINFO
-package iid;
-    parameter X     = 64'bx;
-    parameter ZERO  = 64'd0;
-    parameter ONE   = 64'd1;
-
-    typedef struct packed {
-        logic [63:0] id;
-    } Ty;
-
-    function logic [63:0] inc(Ty iid);
-        inc = iid.id + ONE;
-    endfunction
-
-    function logic [63:0] dec(Ty iid);
-        inc = iid.id - ONE;
-    endfunction
 endpackage
-`endif
-
-typedef struct packed {
-    Addr    pc;
-    Inst    inst;
-`ifdef PRINT_DEBUGINFO
-    iid::Ty id;
-`endif
-} StageInfo;
 
 `endif

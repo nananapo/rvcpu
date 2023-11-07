@@ -1,10 +1,12 @@
 `default_nettype none
 
-`include "pkg_csr.svh"
-`include "pkg_util.svh"
 // TODO ステージの接続にinterfaceを多用したい
 
-module Core (
+module Core
+    import basic::*;
+    import meminf::*;
+    import stageinfo::*;
+(
     input wire  clk,
 
     inout wire IReq             ireq,
@@ -18,8 +20,6 @@ module Core (
 
     output wire CacheCntrInfo   cache_cntr
 );
-
-`include "basicparams.svh"
 
 // id reg
 logic       id_valid    = 0;
@@ -622,10 +622,10 @@ end
 
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,decodestage.valid,b,%b", id_valid);
-    $display("data,decodestage.inst_id,h,%b", id_valid ? id_inst_id : iid::X);
+    $display("data,decodestage.inst_id,h,%b", id_valid ? id_info.id : iid::X);
     if (id_valid) begin
         $display("data,decodestage.pc,h,%b", id_info.pc);
-        $display("data,decodestage.inst,h,%b", id_inst);
+        $display("data,decodestage.inst,h,%b", id_info.inst);
         $display("data,decodestage.illegal,b,%b", id_is_illegal);
         $display("data,decodestage.decode.i_exe,d,%b", id_ctrl.i_exe);
         $display("data,decodestage.decode.br_exe,d,%b", id_ctrl.br_exe);

@@ -1,6 +1,6 @@
-`include "pkg_util.svh"
-
-module MisalignCntr (
+module MisalignCntr
+    import meminf::*;
+(
     input wire              clk,
     input wire              reset,
     inout wire CacheReq     dreq,
@@ -8,6 +8,8 @@ module MisalignCntr (
     inout wire CacheReq     memreq,
     inout wire CacheResp    memresp
 );
+
+import basic::*;
 
 typedef enum logic [3:0] {
     IDLE,

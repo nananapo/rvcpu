@@ -1,6 +1,7 @@
-`include "pkg_util.svh"
-
-module LocalHistory2bit #(
+module LocalHistory2bit
+    import basic::*;
+    import meminf::BrInfo;
+#(
     parameter WIDTH_PC = 5,
     parameter WIDTH_HIST = 10
 )(

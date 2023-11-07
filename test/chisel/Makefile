@@ -1,4 +1,4 @@
-test:
+test: clean
 	sbt test
 clean:
 	rm -rf test_run_dir

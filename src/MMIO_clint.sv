@@ -1,8 +1,6 @@
-`include "basic.svh"
-`include "pkg_memory.svh"
-`include "pkg_conf.svh"
-
-module MMIO_clint (
+module MMIO_clint
+    import basic::*;
+(
     input  wire         clk,
 
     output wire         req_ready,

@@ -1,14 +1,15 @@
-`include "pkg_util.svh"
-`include "basic.svh"
-`include "muldiv.svh"
-
 // TODO kill
-
-module MulDivModule (
-    input wire              clk,
-    inout wire MulDivReq    req,
-    output wire MulDivResp  resp
+module MulDivModule
+    import muldiv::*;
+(
+    input wire          clk,
+    inout wire Req      req,
+    output wire Resp    resp
 );
+
+import conf::XLEN;
+import basic::*;
+import stageinfo::*;
 
 typedef enum logic [1:0] {
     IDLE,
@@ -18,8 +19,8 @@ typedef enum logic [1:0] {
 } statetype;
 statetype   state = IDLE;
 
-MulDivReq   s_req;
-UIntX       result;
+Req     s_req;
+UIntX   result;
 assign req.ready    = state == IDLE;
 assign resp.valid   = state == RESULT;
 assign resp.result  = result;
@@ -36,13 +37,13 @@ wire d_start = state == WAIT_READY & is_div;
 wire d_ready;
 wire d_valid;
 
-wire [`XLEN*2+1:0]  m_product;
-wire [`XLEN:0]      d_quotient;
-wire [`XLEN:0]      d_remainder;
+wire [XLEN*2+1:0]  m_product;
+wire [XLEN:0]      d_quotient;
+wire [XLEN:0]      d_remainder;
 
-wire [`XLEN:0] op1ext = s_req.is_signed ?
+wire [XLEN:0] op1ext = s_req.is_signed ?
                 {s_req.op1[`XLEN-1], s_req.op1} : {1'b0, s_req.op1};
-wire [`XLEN:0] op2ext = s_req.is_signed & (is_div | sel != ALU_MULHSU) ?
+wire [XLEN:0] op2ext = s_req.is_signed & (is_div | sel != ALU_MULHSU) ?
                 {s_req.op2[`XLEN-1], s_req.op2} : {1'b0, s_req.op2};
 
 always @(posedge clk) case (state)

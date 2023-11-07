@@ -1,7 +1,7 @@
-`include "pkg_util.svh"
-`include "basic.svh"
-
-module WriteBackStage(
+module WriteBackStage
+    import basic::*;
+    import stageinfo::*;
+(
     input wire              clk,
     input wire              valid,
     input wire StageInfo    info,
@@ -11,10 +11,9 @@ module WriteBackStage(
     output UIntX            regfile[31:0]
 );
 
-`include "basicparams.svh"
 initial begin
     regfile[0] = 0;
-    for (int i = 1; i < 32; i++) regfile[i] = ADDR_MAX;
+    for (int i = 1; i < 32; i++) regfile[i] = XLEN_MAX;
 end
 
 logic [63:0] inst_count  = 0;
@@ -43,7 +42,7 @@ import util::*;
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,wbstage.valid,b,%b", valid);
-    $display("data,wbstage.inst_id,h,%b", valid ? info.inst_id : iid::X);
+    $display("data,wbstage.inst_id,h,%b", valid ? info.id : iid::X);
     if (valid) begin
         $display("data,wbstage.pc,h,%b", info.pc);
         $display("data,wbstage.inst,h,%b", info.inst);
@@ -68,7 +67,7 @@ logic last_log_level = 0;
 always @(negedge clk) begin
     last_log_level <= debugLogEnabled;
     if (last_log_level != debugLogEnabled) begin
-        setLogLevel(debugLogEnabled);
+        setLogLevel(int'(debugLogEnabled));
     end
 end
 

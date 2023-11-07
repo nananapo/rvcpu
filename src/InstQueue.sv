@@ -1,7 +1,7 @@
-`include "pkg_util.svh"
-`include "basic.svh"
-
-module InstQueue #(
+module InstQueue
+    import basic::*;
+    import meminf::*;
+#(
     parameter QUEUE_SIZE = 16,
     parameter INITIAL_ADDR = 32'h0
 ) (
@@ -14,14 +14,11 @@ module InstQueue #(
     input wire BrInfo       brinfo
 );
 
-`include "basicparams.svh"
-`include "inst.svh"
-
 typedef struct packed {
     Addr    addr;
     Inst    inst;
     `ifdef PRINT_DEBUGINFO
-    IId     inst_id,
+    iid::Ty     inst_id;
     `endif
     logic   error;
     FaultTy errty;
@@ -71,10 +68,10 @@ SyncQueue #(
 
 Addr    pc      = INITIAL_ADDR;
 `ifdef PRINT_DEBUGINFO
-IId     inst_id = iid::ZERO;
+iid::Ty     inst_id = iid::ZERO;
 `endif
 logic   requested   = 0;
-Addr    request_pc  = ADDR_ZERO;
+Addr    request_pc  = XLEN_ZERO;
 
 wire branch_hazard  = ireq.valid;
 
@@ -108,9 +105,9 @@ wire [2:0]  inst_funct3     = fetched_inst[14:12];
 
 wire Addr   jal_target      = fetched_pc + imm_j_sext;
 
-wire inst_is_jal    = fetched_is_valid & inst_opcode == JAL_OP;
-wire inst_is_jalr   = fetched_is_valid & inst_opcode == JALR_OP & inst_funct3 == JALR_F3;
-wire inst_is_br     = fetched_is_valid & inst_opcode == BR_OP;
+wire inst_is_jal    = fetched_is_valid & inst_opcode == InstFormat::JAL_OP;
+wire inst_is_jalr   = fetched_is_valid & inst_opcode == InstFormat::JALR_OP & inst_funct3 == InstFormat::JALR_F3;
+wire inst_is_br     = fetched_is_valid & inst_opcode == InstFormat::BR_OP;
 wire jal_hazard     = inst_is_jal & /* requested &*/ request_pc != jal_target;
 // TODO ここまで
 
@@ -175,7 +172,7 @@ assign memreq.addr  =   branch_hazard ? ireq.addr :
                         inst_is_br ? next_pc_pred :
                         pc;
 assign memreq.wen   = 0;
-assign memreq.wdata = ZBIT_32;
+assign memreq.wdata = XLEN_X;
 assign memreq.wmask = SIZE_W;
 
 logic firstClk = 1;

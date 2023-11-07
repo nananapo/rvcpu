@@ -1,7 +1,8 @@
-`include "pkg_util.svh"
-`include "pkg_memory.svh"
-
-module MMIO_EDisk (
+module MMIO_EDisk
+    import basic::*;
+#(
+    parameter WIDTH = 23
+)(
     input  wire         clk,
 
     output wire         req_ready,
@@ -29,8 +30,8 @@ logic edisk_wen     = 0;
 UIntX edisk_rwdata   = 0;
 
 // サイズは適当
-wire [22:0] waddr = edisk_addr[24:2];
-UInt32 edisk[2**23-1:0];
+wire [WIDTH-1:0] waddr = edisk_addr[WIDTH+1:2];
+UInt32 edisk[2**WIDTH-1:0];
 
 `ifndef EDISK_FILEPATH
 initial

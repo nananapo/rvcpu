@@ -1,16 +1,25 @@
 `default_nettype none
 
-`include "basic.svh"
-`include "memoryinterface.svh"
-`include "pkg_util.svh"
+`include "pkg_all.svh"
 
-module main (
+module main
+(
     input  wire clk27MHz,
     input  wire uart_rx,
     output wire uart_tx,
 
     output logic [5:0]  led
 );
+
+import basic::Addr;
+import meminf::*;
+
+always @(posedge clk27MHz) begin
+    led[0] <= uart_rx;
+    led[1] <= uart_tx;
+    for (int i = 2; i < 6; i++)
+        led[i] <= 1;
+end
 
 wire clk_in = clk27MHz;
 
@@ -76,7 +85,7 @@ wire external_interrupt_pending = uart_rx_pending;
 Memory #(
     .FILEPATH(`MEM_FILE),
     .MEM_WIDTH(`MEMORY_WIDTH),
-    .ADDR_WIDTH(`XLEN),
+    .ADDR_WIDTH(conf::XLEN),
     .DELAY_CYCLE(`MEMORY_DELAY)
 ) memory (
     .clk(clk_in),

@@ -1,3 +1,7 @@
+`ifndef PKG_INST_SVH
+`define PKG_INST_SVH
+
+package InstFormat;
 /*
 funct3[2] == 0 : sext
 funct3[2] == 1 : uext
@@ -134,3 +138,6 @@ localparam ZICOND_OP = 7'b0110011;
 localparam ZICOND_F7 = 7'b0000111;
 localparam ZICOND_CZERO_EQZ_F3 = 3'b101;
 localparam ZICOND_CZERO_NEZ_F3 = 3'b111;
+
+endpackage
+`endif

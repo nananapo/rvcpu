@@ -1,6 +1,6 @@
-`include "pkg_util.svh"
-
-module MemBusCntr (
+module MemBusCntr
+    import meminf::*;
+(
     input wire clk,
     inout wire MemBusReq    ireq_in,
     inout wire MemBusResp   iresp_in,
@@ -10,7 +10,7 @@ module MemBusCntr (
     inout wire MemBusResp   memresp_in
 );
 
-`include "basicparams.svh"
+import basic::*;
 
 MemBusReq   s_ireq;
 MemBusReq   s_dreq;
@@ -36,7 +36,7 @@ function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (
         D_CHECK: memcmd = {dreq_in.addr, dreq_in.wen, dreq_in.wdata};
         I_READY: memcmd = { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata};
         D_READY: memcmd = { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata};
-        default: memcmd = {ADDR_X, 1'b0, XBIT_32};
+        default: memcmd = {XLEN_X, 1'b0, XLEN_X};
     endcase
 endfunction
 

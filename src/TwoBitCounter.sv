@@ -1,6 +1,7 @@
-`include "pkg_util.svh"
-
-module TwoBitCounter #(
+module TwoBitCounter
+    import basic::*;
+    import meminf::BrInfo;
+#(
     parameter ADDR_WIDTH = 12
 )(
     input wire          clk,

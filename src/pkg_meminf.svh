@@ -1,7 +1,23 @@
-`ifndef MEMINTERFACE_SV
-`define MEMINTERFACE_SV
+`ifndef PKG_MEMINF_SVH
+`define PKG_MEMINF_SVH
 
-`include "basic.svh"
+package meminf;
+
+import basic::Addr, basic::Inst, basic::UInt32;
+import csr::Mode;
+
+typedef enum logic [1:0] {
+    SIZE_B = 2'b00,
+    SIZE_H = 2'b01,
+    SIZE_W = 2'b10,
+    SIZE_D = 2'b11
+} MemSize;
+
+typedef enum logic {
+    // TODO Xをいれてerrorと合体する
+    FE_ACCESS_FAULT,
+    FE_PAGE_FAULT
+} FaultTy;
 
 // ready, validはChiselのデータ型に従う
 typedef struct packed {
@@ -9,12 +25,6 @@ typedef struct packed {
     logic  valid;
     Addr   addr;
 } IReq;
-
-typedef enum logic {
-    // TODO Xをいれてerrorと合体する
-    FE_ACCESS_FAULT,
-    FE_PAGE_FAULT
-} FaultTy;
 
 typedef struct packed {
     logic   ready;
@@ -24,9 +34,8 @@ typedef struct packed {
     Addr    addr;
     Inst    inst;
     `ifdef PRINT_DEBUGINFO
-    IId     inst_id;
+    iid::Ty inst_id;
     `endif
-    // logic   is_c;
 } IResp;
 
 typedef struct packed {
@@ -76,14 +85,16 @@ typedef struct packed {
 } CacheResp;
 
 typedef struct packed {
-    modetype    i_mode;
-    modetype    d_mode;
-    logic       mxr;
-    logic       sum;
-    Addr        satp;
-    logic       do_writeback;
-    logic       is_writebacked_all;
-    logic       invalidate_icache;
+    Mode    i_mode;
+    Mode    d_mode;
+    logic   mxr;
+    logic   sum;
+    Addr    satp;
+    logic   do_writeback;
+    logic   is_writebacked_all;
+    logic   invalidate_icache;
 } CacheCntrInfo; 
+
+endpackage
 
 `endif

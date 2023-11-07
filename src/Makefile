@@ -94,4 +94,9 @@ v:
 icanon:
 	gcc icanon.c -o icanon
 
+clean:
+	-rm icanon
+	-rm debug.o debug.vcd
+	-rm -rf obj_dir/
+
 .PHONY: d v

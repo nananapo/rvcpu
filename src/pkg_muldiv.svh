@@ -1,5 +1,10 @@
-`ifndef MULDIV_H
-`define MULDIV_H
+`ifndef PKG_MULDIV_H
+`define PKG_MULDIV_H
+
+package muldiv;
+
+import basic::UIntX;
+import stageinfo::AluSel;
 
 typedef struct packed {
     logic   valid;
@@ -8,11 +13,13 @@ typedef struct packed {
     logic   is_signed;
     UIntX   op1;
     UIntX   op2;
-} MulDivReq;
+} Req;
 
 typedef struct packed {
     logic   valid;
     UIntX   result;
-} MulDivResp;
+} Resp;
+
+endpackage
 
 `endif
