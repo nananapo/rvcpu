@@ -12,7 +12,7 @@
         <File path="src/pkg_conf.svh" type="file.verilog" enable="1"/>
         <File path="src/pkg_memory.svh" type="file.verilog" enable="1"/>
         <File path="src/pkg_iid.svh" type="file.verilog" enable="1"/>
-        <File path="src/inst.svh" type="file.verilog" enable="1"/>
+        <File path="src/pkg_inst.svh" type="file.verilog" enable="1"/>
         <File path="src/Core.sv" type="file.verilog" enable="1"/>
         <File path="src/ALU.sv" type="file.verilog" enable="1"/>
         <File path="src/CSRStage.sv" type="file.verilog" enable="1"/>

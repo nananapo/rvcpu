@@ -14,8 +14,6 @@ module InstQueue
     input wire BrInfo       brinfo
 );
 
-`include "inst.svh"
-
 typedef struct packed {
     Addr    addr;
     Inst    inst;
@@ -107,9 +105,9 @@ wire [2:0]  inst_funct3     = fetched_inst[14:12];
 
 wire Addr   jal_target      = fetched_pc + imm_j_sext;
 
-wire inst_is_jal    = fetched_is_valid & inst_opcode == JAL_OP;
-wire inst_is_jalr   = fetched_is_valid & inst_opcode == JALR_OP & inst_funct3 == JALR_F3;
-wire inst_is_br     = fetched_is_valid & inst_opcode == BR_OP;
+wire inst_is_jal    = fetched_is_valid & inst_opcode == InstFormat::JAL_OP;
+wire inst_is_jalr   = fetched_is_valid & inst_opcode == InstFormat::JALR_OP & inst_funct3 == InstFormat::JALR_F3;
+wire inst_is_br     = fetched_is_valid & inst_opcode == InstFormat::BR_OP;
 wire jal_hazard     = inst_is_jal & /* requested &*/ request_pc != jal_target;
 // TODO ここまで
 

@@ -7,8 +7,7 @@ module IDecode
     output wire Ctrl    ctrl
 );
 
-`include "inst.svh"
-
+import InstFormat::*;
 import meminf::MemSize;
 
 localparam X_2 = 2'b?;

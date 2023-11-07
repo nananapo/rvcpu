@@ -2,6 +2,8 @@
 `include "pkg_conf.svh"
 // iid、依存はない
 `include "pkg_iid.svh"
+// inst、依存はない
+`include "pkg_inst.svh"
 // confにのみ依存
 `include "pkg_csr.svh"
 `include "pkg_basic.svh"
