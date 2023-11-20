@@ -2,12 +2,22 @@
 `define PKG_UTIL_H
 
 // fflushして強制終了
-`define ffinish $fflush;$finish;$finish;$finish;$finish;
+`define ffinish \
+    begin \
+        `ifdef RISCV_TESTS \
+            if (util::test_success == 0) $fatal(1, "test : unexpected finish"); \
+        `endif \
+        $fflush;$finish;$finish;$finish;$finish;$finish;$finish; \
+    end
 
 // TODO logはpackageではなくclassにしてみる？
 package util;
 
 import basic::Addr, basic::UIntX;
+
+`ifdef RISCV_TESTS
+    int test_success = 0;
+`endif
 
 int logLevel = 0;
 
@@ -24,8 +34,6 @@ function logic logEnabled();
 endfunction
 
 // TODO logのlevelに応じた関数でdisplayする
-
-// TODO finisher
 
 // AddrがIALIGNにALIGNされているかどうか
 // TODO IALIGNを使う

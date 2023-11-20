@@ -123,6 +123,8 @@ end
 
 `ifdef RISCV_TESTS
 integer STDERR = 32'h8000_0002;
+
+import util::test_success;
 always @(posedge clk) begin
     if (state == IDLE &
         dreq_in.valid &
@@ -132,10 +134,12 @@ always @(posedge clk) begin
         if (dreq_in.wdata[15:8] == 8'b0101_0000) begin
             $fdisplay(STDERR, "%c", dreq_in.wdata[7:0]);
         end else begin
-            if (dreq_in.wdata === 1)
+            if (dreq_in.wdata === 1) begin
+                test_success = 1;
                 $display("info,coretest.result,Test passed");
-            else
-                $display("info,coretest,result,Test failed : gp(%d) is not 1", dreq_in.wdata);
+            end else begin
+                $fatal(1, "info,coretest,result,Test failed : gp(%d) is not 1", dreq_in.wdata);
+            end
             `ffinish
         end
     end
