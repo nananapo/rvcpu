@@ -34,6 +34,9 @@ FILES = test.sv \
 		Stage_CSR.sv \
 		Stage_WB.sv
 
+VERILATOR = verilator
+VERILATOR_OPT = --unroll-stmts 100000
+
 DEFINE_DEBUG = -DDEBUG
 DEFINE_RISCV_TESTS = $(DEFINE_DEBUG) -DRISCV_TESTS
 DEFINE_MEMORY_UART = $(DEFINE_DEBUG) -DMEMORY_UART
@@ -64,14 +67,14 @@ dm:
 dv:
 	echo "$$VERILATOR_ROOT is ${VERILATOR_ROOT}"
 	rm -rf obj_dir
-	verilator --cc $(DEFINE_DEBUG) -DFAST_UART ${OPTION} test_verilator.sv --exe test_verilator_main.cpp
+	$(VERILATOR) $(VERILATOR_OPT) --cc $(DEFINE_DEBUG) -DFAST_UART ${OPTION} test_verilator.sv --exe test_verilator_main.cpp
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
 	obj_dir/Vtest_verilator
 
 dvrv:
 	echo "$$VERILATOR_ROOT is ${VERILATOR_ROOT}"
 	rm -rf obj_dir
-	verilator --cc $(DEFINE_RISCV_TESTS) -DFAST_UART ${OPTION} test_verilator.sv --exe test_verilator_main.cpp
+	$(VERILATOR) $(VERILATOR_OPT) --cc $(DEFINE_RISCV_TESTS) -DFAST_UART ${OPTION} test_verilator.sv --exe test_verilator_main.cpp
 	make -j -C obj_dir/ -f Vtest_verilator.mk Vtest_verilator
 	obj_dir/Vtest_verilator
 
@@ -80,16 +83,16 @@ dk:
 	make dv
 
 v:
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_TBC main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_LOCAL main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_GLOBAL main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_DEBUG) main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_RISCV_TESTS) main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_MEMORY_UART) main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDETECT_ABNORMAL_STALL main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DDETECT_ABNORMAL_STALL main.sv
-	verilator --lint-only --top-module main -DMEM_FILE=\"\" -DXZSTOP main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_TBC main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_LOCAL main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DPRED_GLOBAL main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_DEBUG) main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_RISCV_TESTS) main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" $(DEFINE_MEMORY_UART) main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDETECT_ABNORMAL_STALL main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DDETECT_ABNORMAL_STALL main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DXZSTOP main.sv
 
 icanon:
 	gcc icanon.c -o icanon
