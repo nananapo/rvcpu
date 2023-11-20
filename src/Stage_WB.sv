@@ -42,7 +42,7 @@ import util::*;
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,wbstage.valid,b,%b", valid);
-    $display("data,wbstage.inst_id,h,%b", valid ? info.id : iid::X);
+    $display("data,wbstage.inst_id,h,%b", valid ? info.id.id : iid::X);
     if (valid) begin
         $display("data,wbstage.pc,h,%b", info.pc);
         $display("data,wbstage.inst,h,%b", info.inst);

@@ -210,9 +210,9 @@ always @(posedge clk) begin
                     request_pc  <= memreq.addr;
                     pc          <= next_pc;
                     `ifdef PRINT_DEBUGINFO
-                    inst_id     <= inst_id + 1;
+                    inst_id     <=  iid::inc(inst_id);
                     if (util::logEnabled())
-                        $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
+                        $display("data,fetchstage.event.fetch_start,d,%b", inst_id.id);
                     `endif
                 end else
                     requested   <= 0;
@@ -224,9 +224,9 @@ always @(posedge clk) begin
                 requested   <= 1;
                 request_pc  <= memreq.addr;
                 `ifdef PRINT_DEBUGINFO
-                inst_id     <= inst_id + 1;
+                inst_id     <= iid::inc(inst_id);
                 if (util::logEnabled())
-                    $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
+                    $display("data,fetchstage.event.fetch_start,d,%b", inst_id.id);
                 `endif
             end
         end
@@ -252,7 +252,6 @@ always @(posedge clk) if (util::logEnabled()) begin
     $display("data,fetchstage.next_pc,h,%b", next_pc);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
     $display("data,fetchstage.requesting_pc,h,%b", memreq.addr);
-    $display("data,fetchstage.requested_pc,h,%b", request_pc);
     $display("data,fetchstage.error,d,%b", memresp.error);
     $display("data,fetchstage.errty,d,%b", memresp.errty);
 
