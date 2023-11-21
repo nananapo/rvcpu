@@ -165,9 +165,9 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
                         pc + 4;
 `endif
 
-
-assign memreq.valid = buf_wready;
-assign memreq.addr  =   branch_hazard ? ireq.addr :
+// TODO フェッチもキューにする
+assign memreq.valid =   !branch_hazard && buf_wready;
+assign memreq.addr  =   //branch_hazard ? ireq.addr :
                         jal_hazard ? jal_target :
                         inst_is_br ? next_pc_pred :
                         pc;
@@ -180,6 +180,7 @@ logic firstClk = 1;
 always @(posedge clk) begin
     // 分岐予測に失敗
     if (branch_hazard) begin
+        // branchの次のクロックでフェッチを開始する
         if (util::logEnabled())
             $display("info,fetchstage.event.branch_hazard,branch hazard");
         pc                  <= ireq.addr;

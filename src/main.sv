@@ -136,7 +136,8 @@ PageTableWalker #(
     .mode(cache_cntr.i_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
-    .sum(cache_cntr.sum)
+    .sum(cache_cntr.sum),
+    .flush_tlb(cache_cntr.invalidate_tlb)
 );
 
 Stage_Fetch #() fetchstage (
@@ -218,7 +219,8 @@ PageTableWalker #(
     .mode(cache_cntr.d_mode),
     .satp(cache_cntr.satp),
     .mxr(cache_cntr.mxr),
-    .sum(cache_cntr.sum)
+    .sum(cache_cntr.sum),
+    .flush_tlb(cache_cntr.invalidate_tlb)
 );
 
 /* ---- Core ---- */

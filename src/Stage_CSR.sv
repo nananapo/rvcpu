@@ -453,6 +453,7 @@ assign cache_cntr.sum               = mstatus_sum;
 assign cache_cntr.satp              = satp;
 assign cache_cntr.do_writeback      = valid & is_new & is_fence;
 assign cache_cntr.invalidate_icache = valid & is_new & is_fence;
+assign cache_cntr.invalidate_tlb    = valid & is_new & is_fence; // TODO invalのときのみにする
 
 logic [1:0] inst_clock = 0;
 logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行されないようにするためのフラグ

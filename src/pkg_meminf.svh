@@ -93,6 +93,7 @@ typedef struct packed {
     logic   do_writeback;
     logic   is_writebacked_all;
     logic   invalidate_icache;
+    logic   invalidate_tlb;
 } CacheCntrInfo; 
 
 endpackage
