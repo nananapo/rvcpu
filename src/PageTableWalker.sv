@@ -364,7 +364,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             end else begin
                 state       <= REQ_READY;
                 level       <= 0;
-                last_addr   <= {tlb0_resp_pte_ppn[19:0], 12'b0}; // s_vpnはすでに足されているので足さない
+                last_addr   <= {tlb0_resp_pte_ppn[19:0], s_vpn0, {PTESIZE_WIDTH{1'b0}}};
                 last_pte    <= {tlb0_resp_paddr_ppn, 2'b0,
                                 tlb0_resp_pte_d, 1'b1,
                                 tlb0_resp_pte_g, tlb0_resp_pte_u,
@@ -433,7 +433,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             // 5.3.2 step 4
             level   <= level - 2'd1;
             // 2回目は必ずvpn0
-            next_addr<= {pte_ppn, 12'b0} + {22'b0, s_vpn0, {PTESIZE_WIDTH{1'b0}}};
+            next_addr<= {pte_ppn, s_vpn0, {PTESIZE_WIDTH{1'b0}}};
         end
     end
     // TODO READYに遷移するところですぐにreadyしてしまう
