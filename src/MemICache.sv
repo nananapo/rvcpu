@@ -54,9 +54,10 @@ endfunction
 
 statetype state = IDLE;
 
+// TODO 全部合体してpackする
 UInt32  cache_data[CACHE_LENGTH * LINE_INST_COUNT -1:0]; // 1列
 Addr    cache_addrs[CACHE_LENGTH-1:0];
-logic   cache_valid[CACHE_LENGTH-1:0];
+logic [CACHE_LENGTH-1:0] cache_valid;
 
 initial begin
     for (int i = 0; i < CACHE_LENGTH; i++) begin
@@ -77,8 +78,8 @@ wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index_base = {req_index, {LINE_INST_WIDT
 wire [LINE_DATA_ADDR_WIDTH-1:0] req_mem_index = req_mem_index_base + {{LINE_DATA_ADDR_WIDTH - LINE_INST_WIDTH{1'b0}}, ireq.addr[LINE_INST_WIDTH+2-1:2]};
 
 logic iresp_valid_reg = 0;
-Inst  iresp_rdata_reg;
-logic iresp_error_reg;
+Inst  iresp_rdata_reg = 0;
+logic iresp_error_reg = 0;
 
 assign ireq_in.ready    = state == IDLE;
 assign iresp_in.valid   = iresp_valid_reg;
@@ -122,9 +123,7 @@ always @(posedge clk) begin
         state           <= IDLE;
         iresp_valid_reg <= 0;
         // すべてのキャッシュをinvalidにする
-        for (int i = 0; i < CACHE_LENGTH; i++) begin
-            cache_valid[i] = 0;
-        end
+        cache_valid     <= 0;
         if (util::logEnabled())
             $display("info,fetchstage.i$.event.invalidated,Invalidated all cache!");
     end else begin
