@@ -66,6 +66,7 @@ for fileName in sorted(os.listdir(TESTS_PATH)):
         if not NODEBUG_MODE:
             options.append("-DPRINT_DEBUGINFO")
         options.append("-DEND_CLOCK_COUNT=500000")
+        options.append("-DDETECT_ABNORMAL_STALL")
         test(mcmd + " OPTION=\"" + " ".join(options) + "\"", fileName)
 
 results = sorted(results)
