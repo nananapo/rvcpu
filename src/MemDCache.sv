@@ -26,13 +26,14 @@ import basic::*;
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
 
-UInt32  cache_data[CACHE_SIZE-1:0];
-Addr    cache_addrs[CACHE_SIZE-1:0];
-logic   cache_valid[CACHE_SIZE-1:0];
-logic   cache_modified[CACHE_SIZE-1:0];
+// TODO packする
+UInt32                  cache_data[CACHE_SIZE-1:0];
+Addr                    cache_addrs[CACHE_SIZE-1:0];
+logic [CACHE_SIZE-1:0]  cache_valid;
+logic                   cache_modified[CACHE_SIZE-1:0];
 
 // 変更されているがライトバックされていない値のカウント
-logic [CACHE_WIDTH-1:0] modified_count = 0;
+logic [CACHE_WIDTH:0] modified_count = 0; // CACHE_WIDTH + 1 bitでないと数えられない
 assign is_writebacked_all = modified_count == 0 & !writeback_requested;
 
 // writebackが要求されたが処理できていないかどうか
@@ -44,8 +45,8 @@ initial begin
         $display("DCache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
         `ffinish
     end
+    cache_valid = 0;
     for (int i = 0; i < CACHE_SIZE; i++) begin
-        cache_valid[i] = 0;
         cache_modified[i] = 0;
     end
 end
@@ -342,6 +343,7 @@ end
 // `ifdef PRINT_DEBUGINFO
 // always @(posedge clk) if (util::logEnabled()) begin
 //     $display("data,memstage.d$.state,d,%b", state);
+//     $display("data,memstage.d$.modified_count,d,%b", modified_count);
 //     if (dreq_in.valid & state == IDLE) begin
 //         $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);
 //         $display("data,memstage.d$.req.addr_index,h,%b", info_index);
