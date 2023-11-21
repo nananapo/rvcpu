@@ -92,11 +92,9 @@ end
 `ifdef PRINT_LIGHT_WBLOG
 always @(posedge clk) begin
     if (valid) begin
-        if (util::logEnabled()) begin
-            $display("[%d] %h", inst_count, pc);
-            if (rf_wen & reg_addr != 0)
-                $display("reg[%d] <= %h", reg_addr, wdata);
-        end
+        $display("[%d] %h", inst_count, info.pc);
+        if (rf_wen & reg_addr != 0)
+            $display("reg[%d] <= %h", reg_addr, wdata);
     end
 end
 `endif
