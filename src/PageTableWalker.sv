@@ -340,7 +340,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             s_req       <= preq;
             // 5.3.2 step 3
             level       <= 1; // level = 2 - 1 = 1スタート
-            next_addr   <= {satp_ppn, 12'b0} + {22'b0, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
+            next_addr   <= {satp_ppn, idleonly_vpn1, {PTESIZE_WIDTH{1'b0}}};
         end
     end
     WAIT_TLB_READY: if (all_tlb_ready) state <= CHECK_TLB;
@@ -385,7 +385,7 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             end else begin
                 state       <= REQ_READY;
                 level       <= 1;
-                last_addr   <= {satp_ppn[19:0], 12'b0} + {20'b0, s_vpn1, {PTESIZE_WIDTH{1'b0}}};
+                last_addr   <= {satp_ppn[19:0], s_vpn1, {PTESIZE_WIDTH{1'b0}}};
                 last_pte    <= {tlb1_resp_ppn1, 10'b0, 2'b0,
                                 tlb1_resp_pte_d, 1'b1,
                                 tlb1_resp_pte_g, tlb1_resp_pte_u,
