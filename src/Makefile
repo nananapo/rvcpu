@@ -88,6 +88,7 @@ v:
 	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDETECT_ABNORMAL_STALL main.sv
 	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DDEBUG -DDETECT_ABNORMAL_STALL main.sv
 	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DXZSTOP main.sv
+	$(VERILATOR) $(VERILATOR_OPT) --lint-only --top-module main -DMEM_FILE=\"\" -DPRINT_LIGHT_WBLOG main.sv
 
 icanon:
 	gcc icanon.c -o icanon
