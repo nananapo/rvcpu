@@ -9,7 +9,7 @@ MAKE_COMMAND_VERILATOR = "make -C ../src/ dvrv "
 VERILATOR_MODE = False
 NODEBUG_MODE = False
 XZSTOP_MODE = False
-
+SHOW_CMD_MODE = False
 
 os.makedirs("../test/results", exist_ok=True)
 
@@ -19,7 +19,8 @@ def test(makecmd, filename):
     # run test
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
     cmd = makecmd + " > " + resultFileName
-    # print(cmd)
+    if SHOW_CMD_MODE:
+        print(cmd)
     ret = system(cmd)
     if ret == 0:
         results.append("PASS : "+ filename)
@@ -32,7 +33,7 @@ def test(makecmd, filename):
 
 args = sys.argv[1:]
 def procarg():
-    global args, VERILATOR_MODE, NODEBUG_MODE, XZSTOP_MODE
+    global args, VERILATOR_MODE, NODEBUG_MODE, XZSTOP_MODE, SHOW_CMD_MODE
     cont = True
     while cont:
         cont = False
@@ -46,6 +47,10 @@ def procarg():
             cont = True
         if len(args) >= 1 and args[0] == "-xzstop":
             XZSTOP_MODE = True
+            args = args[1:]
+            cont = True
+        if len(args) >= 1 and args[0] == "-s":
+            SHOW_CMD_MODE = True
             args = args[1:]
             cont = True
 procarg()
