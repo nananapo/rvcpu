@@ -29,26 +29,7 @@ module PageTableWalker
 );
 
 import conf::*;
-
-localparam ENABLE_TLB0_LOG = 0;
-localparam ENABLE_TLB1_LOG = 0;
-
-localparam VPN1_LEN = 10;
-localparam VPN0_LEN = 10;
-localparam VPN_LEN  = VPN1_LEN + VPN0_LEN;
-
-localparam PPN1_LEN = 12;
-localparam PPN0_LEN = 10;
-localparam PPN_LEN  = PPN1_LEN + PPN0_LEN;
-
-typedef UIntX                   PTE_t;
-typedef logic [VPN1_LEN-1:0]    VPN1_t;
-typedef logic [VPN0_LEN-1:0]    VPN0_t;
-typedef logic [VPN_LEN-1:0]     VPN_t;
-typedef logic [11:0]            Pgoff_t;
-typedef logic [PPN1_LEN-1:0]    PPN1_t;
-typedef logic [PPN0_LEN-1:0]    PPN0_t;
-typedef logic [PPN_LEN-1:0]     PPN_t;
+import Sv32::*;
 
 function logic is_leaf(
     input logic R,
@@ -58,75 +39,39 @@ function logic is_leaf(
     is_leaf = R | W | X;
 endfunction
 
-function VPN_t vpnOf(input Addr addr);
-    vpnOf = addr[XLEN - 1:XLEN - VPN_LEN];
-endfunction
-
-function VPN1_t vpn1Of(input Addr addr);
-    vpn1Of = addr[XLEN - 1:XLEN - VPN1_LEN];
-endfunction
-
-function VPN1_t vpn0Of(input Addr addr);
-    vpn0Of = addr[XLEN - VPN1_LEN - 1:XLEN - VPN_LEN];
-endfunction
-
-function PPN_t ppnOf(input UIntX pte);
-    ppnOf = pte[XLEN - 1:XLEN - PPN_LEN];
-endfunction
-
-function PPN1_t ppn1Of(input UIntX pte);
-    ppn1Of = pte[XLEN - 1:XLEN - PPN1_LEN];
-endfunction
-
-function PPN0_t ppn0Of(input UIntX pte);
-    ppn0Of = pte[XLEN - PPN1_LEN - 1:XLEN - PPN_LEN];
-endfunction
-
-function Pgoff_t pgoffOf(input Addr addr);
-    pgoffOf = addr[XLEN - VPN_LEN - 1:0];
-endfunction
-
-function Addr gen_l1pte_addr(input VPN1_t vpn1);
+function Addr gen_l1pte_addr(input VPN1 vpn1);
     gen_l1pte_addr = {satp_ppn[PPN_LEN-2-1:0], vpn1, {PTESIZE_WIDTH{1'b0}}};
 endfunction
 
 function Addr gen_l0pte_addr(
-    input PPN_t     ppn,
-    input VPN0_t    vpn0
+    input PPN     ppn,
+    input VPN0    vpn0
 );
     gen_l0pte_addr = {ppn[PPN_LEN-2-1:0], vpn0, {PTESIZE_WIDTH{1'b0}}};
 endfunction
 
 function Addr gen_l1_paddr(
-    input PPN1_t    ppn1,
-    input VPN0_t    vpn_0,
-    input Pgoff_t   pgoff
+    input PPN1    ppn1,
+    input VPN0    vpn_0,
+    input Pgoff   pgoff
 );
     gen_l1_paddr = {ppn1[PPN1_LEN-2-1:0], vpn_0, pgoff};
 endfunction
 
 function Addr gen_l0_paddr(
-    input PPN_t     ppn,
-    input Pgoff_t   pgoff
+    input PPN     ppn,
+    input Pgoff   pgoff
 );
     gen_l0_paddr = {ppn[PPN_LEN-2-1:0], pgoff};
 endfunction
 
 function logic is_page_fault(
     input logic wen,
-    input logic pte_V,
-    input logic pte_R,
-    input logic pte_W,
-    input logic pte_X,
-    input logic pte_U,
-    input logic pte_G,
-    input logic pte_A,
-    input logic pte_D,
+    input logic v,r,w,x,u,g,a,d,
     input csr::Mode mode,
     input logic mxr,
     input logic sum
 );
-    // メモリがエラー
     // Vが立っていない
     // W=1なのにR=0
     // Gが立っている
@@ -136,14 +81,14 @@ function logic is_page_fault(
     // EXECUTE, leafで、Xが立っていない
     // DATA, leftでW, Rが立っていない
     is_page_fault =
-            !pte_V |
-            pte_W & (!pte_R) |
-            pte_G |
-            !is_leaf(pte_R, pte_W, pte_X) & (pte_A | pte_D) |
-            mode == S_MODE & EXECUTE_MODE & pte_U |
-            mode == S_MODE & !EXECUTE_MODE & pte_U & !sum |
-            is_leaf(pte_R, pte_W, pte_X) & EXECUTE_MODE & !pte_X |
-            is_leaf(pte_R, pte_W, pte_X) & !EXECUTE_MODE & (wen & !pte_W | !wen & !pte_R & (!mxr | !pte_X));
+            !v |
+            w & (!r) |
+            g |
+            !is_leaf(r, w, x) & (a | d) |
+            mode == S_MODE & EXECUTE_MODE & u |
+            mode == S_MODE & !EXECUTE_MODE & u & !sum |
+            is_leaf(r, w, x) & EXECUTE_MODE & !x |
+            is_leaf(r, w, x) & !EXECUTE_MODE & (wen & !w | !wen & !r & (!mxr | !x));
 endfunction
 
 // 5.1.11
@@ -169,7 +114,7 @@ typedef enum logic [3:0] {
 
 wire        satp_mode    = satp[31];
 wire [8:0]  satp_asid    = satp[30:22];
-wire PPN_t  satp_ppn     = satp[21:0];
+wire PPN    satp_ppn     = satp[21:0];
 
 statetype   state  = IDLE;
 wire        sv32_enable = mode != M_MODE & satp_mode == 1;
@@ -201,39 +146,15 @@ CacheReq        s_req;          // preqがリクエストしたアドレス
 logic [1:0]     level;          // ページのレベル
 Addr            next_addr;      // 次にアクセスするアドレス
 logic [31:0]    result_rdata;   // 結果
-// 保存されたアドレスのvpn, offset
-wire VPN1_t     s_vpn1          = vpn1Of(s_req.addr);
-wire VPN0_t     s_vpn0          = vpn0Of(s_req.addr);
-wire VPN_t      s_vpn           = vpnOf(s_req.addr);
-wire Pgoff_t    s_pgoff         = pgoffOf(s_req.addr);
 
-/*
-X=W=R=0のとき、ポインタ
-WritableなものはReadableである。
-Reservedだと、faultが発生する。
+VAddr   n_vaddr(preq.addr);
+VAddr   s_vaddr(s_req.addr);
+VAddr   vaddr(state == IDLE ? preq.addr : s_req.addr);
 
-X W R
-0 0 0 Pointer to next level of page table.
-0 0 1 Read-only page.
-0 1 0 Reserved for future use.
-0 1 1 Read-write page.
-1 0 0 Execute-only page.
-1 0 1 Read-execute page.
-1 1 0 Reserved for future use.
-1 1 1 Read-write-execute page.
-*/
-wire pte_V  = pteresp.rdata[0] === 1'b1; // validかどうか
-wire pte_R  = pteresp.rdata[1] === 1'b1; // Readable
-wire pte_W  = pteresp.rdata[2] === 1'b1; // Writable
-wire pte_X  = pteresp.rdata[3] === 1'b1; // Executable
-// U-modeでアクセスできるかどうか
-// SUM=1のとき、S-modeでもアクセスできるようになる。
-// SUMにかかわらず、S-modeはU=1なページを実行できない
-wire pte_U  = pteresp.rdata[4] === 1'b1;
-wire pte_G  = pteresp.rdata[5] === 1'b1; // Global mappingが何かわからない
-// キャッシュの実装の都合上、命令用のPTWはAを変更しない。Dは元から変更されない。
-wire pte_A  = pteresp.rdata[6] === 1'b1; // 最後にAが0にされてからアクセスされたかどうか
-wire pte_D  = pteresp.rdata[7] === 1'b1; // 最古にDが0にされてからwriteされたかどうか
+UIntX   saved_pte_data = 0;
+Addr    saved_pte_addr = 0;
+PTE     resp_pte(pteresp.rdata);
+PTE     last_pte(saved_pte_data);
 
 /*
 ページサイズでアラインされているかをチェックする。
@@ -249,24 +170,6 @@ LR/SCはページをまたがってはいけない
 Gはとりあえず実装しないので、faultを発生させる
 */
 
-// PPN
-wire PPN1_t pte_ppn1        = ppn1Of(pteresp.rdata);
-wire PPN0_t pte_ppn0        = ppn0Of(pteresp.rdata);
-wire PPN_t  pte_ppn         = ppnOf(pteresp.rdata);
-
-PTE_t       last_pte        = 0;
-Addr        last_pte_addr   = 0;
-wire PPN1_t last_pte_ppn1   = ppn1Of(last_pte);
-wire PPN0_t last_pte_ppn0   = ppn0Of(last_pte);
-wire PPN_t  last_pte_ppn    = ppnOf(last_pte);
-wire        last_pte_R      = last_pte[1];
-wire        last_pte_W      = last_pte[2];
-wire        last_pte_X      = last_pte[3];
-wire        last_pte_U      = last_pte[4];
-wire        last_pte_G      = last_pte[5];
-wire        last_pte_A      = last_pte[6];
-wire        last_pte_D      = last_pte[7];
-
 // TLB
 wire tlb_req_valid = sv32_enable & (state == WAIT_TLB_READY | state == IDLE & preq.valid) & all_tlb_ready;
 
@@ -276,11 +179,11 @@ localparam TLB0_VLEN = PPN_LEN + PPN_LEN + 6;// PPN(paddr), PPN(PTEのアドレ�
 
 wire        tlb0_req_ready;
 wire        tlb0_req_valid  = tlb_req_valid;
-wire VPN_t  tlb0_req_vpn    = state === IDLE ? vpnOf(preq.addr) : vpnOf(s_req.addr);
+wire VPN    tlb0_req_vpn    = vaddr.vpn;
 wire        tlb0_resp_valid;
 wire        tlb0_resp_hit;
-wire PPN_t  tlb0_resp_paddr_ppn;
-wire PPN_t  tlb0_resp_pte_ppn;
+wire PPN    tlb0_resp_paddr_ppn;
+wire PPN    tlb0_resp_pte_ppn;
 wire        tlb0_resp_pte_r;
 wire        tlb0_resp_pte_w;
 wire        tlb0_resp_pte_x;
@@ -288,9 +191,9 @@ wire        tlb0_resp_pte_u;
 wire        tlb0_resp_pte_g;
 wire        tlb0_resp_pte_d;
 logic       tlb0_update_valid       = 0;
-VPN_t       tlb0_update_vpn         = 0;
-PPN_t       tlb0_update_paddr_ppn   = 0;
-PPN_t       tlb0_update_pte_ppn     = 0;
+VPN         tlb0_update_vpn         = 0;
+PPN         tlb0_update_paddr_ppn   = 0;
+PPN         tlb0_update_pte_ppn     = 0;
 logic       tlb0_update_pte_r       = 0;
 logic       tlb0_update_pte_w       = 0;
 logic       tlb0_update_pte_x       = 0;
@@ -329,10 +232,10 @@ localparam TLB1_VLEN = PPN1_LEN + 6;// PPN1(paddr), pte(R,W,U,X,G,D)
 
 wire        tlb1_req_ready;
 wire        tlb1_req_valid  = tlb_req_valid;
-wire VPN1_t tlb1_req_vpn1   = state === IDLE ? vpn1Of(preq.addr) : vpn1Of(s_req.addr);
+wire VPN1   tlb1_req_vpn1   = vaddr.vpn1;
 wire        tlb1_resp_valid;
 wire        tlb1_resp_hit;
-wire PPN1_t tlb1_resp_ppn1;
+wire PPN1   tlb1_resp_ppn1;
 wire        tlb1_resp_pte_r;
 wire        tlb1_resp_pte_w;
 wire        tlb1_resp_pte_x;
@@ -340,8 +243,8 @@ wire        tlb1_resp_pte_u;
 wire        tlb1_resp_pte_g;
 wire        tlb1_resp_pte_d;
 logic       tlb1_update_valid   = 0;
-VPN1_t      tlb1_update_vpn1    = 0;
-PPN1_t      tlb1_update_ppn1    = 0;
+VPN1        tlb1_update_vpn1    = 0;
+PPN1        tlb1_update_ppn1    = 0;
 logic       tlb1_update_pte_r   = 0;
 logic       tlb1_update_pte_w   = 0;
 logic       tlb1_update_pte_x   = 0;
@@ -415,12 +318,12 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             end else begin
                 state           <= REQ_READY;
                 level           <= 1;
-                last_pte_addr   <= gen_l1pte_addr(s_vpn1);
-                last_pte        <= {tlb1_resp_ppn1, {PPN0_LEN{1'b0}},
+                saved_pte_addr  <= gen_l1pte_addr(s_vaddr.vpn1);
+                saved_pte_data  <= {tlb1_resp_ppn1, {PPN0_LEN{1'b0}},
                                     2'b0, tlb1_resp_pte_d, 1'b1,
                                     tlb1_resp_pte_g, tlb1_resp_pte_u,
                                     tlb1_resp_pte_x, tlb1_resp_pte_w, tlb1_resp_pte_r, 1'b1};
-                next_addr       <= gen_l1_paddr(tlb1_resp_ppn1, s_vpn0, s_pgoff);
+                next_addr       <= gen_l1_paddr(tlb1_resp_ppn1, s_vaddr.vpn0, s_vaddr.pgoff);
             end
         end else if (tlb0_resp_valid & tlb0_resp_hit) begin
             if (is_page_fault(
@@ -435,55 +338,58 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             end else begin
                 state           <= REQ_READY;
                 level           <= 0;
-                last_pte_addr   <= gen_l0pte_addr(tlb0_resp_pte_ppn, s_vpn0);
-                last_pte        <= {tlb0_resp_paddr_ppn,
+                saved_pte_addr  <= gen_l0pte_addr(tlb0_resp_pte_ppn, s_vaddr.vpn0);
+                saved_pte_data  <= {tlb0_resp_paddr_ppn,
                                     2'b0, tlb0_resp_pte_d, 1'b1,
                                     tlb0_resp_pte_g, tlb0_resp_pte_u,
                                     tlb0_resp_pte_x, tlb0_resp_pte_w, tlb0_resp_pte_r, 1'b1};
-                next_addr       <= gen_l0_paddr(tlb0_resp_paddr_ppn, s_pgoff);
+                next_addr       <= gen_l0_paddr(tlb0_resp_paddr_ppn, s_vaddr.pgoff);
             end
         end else if (tlbs_all_responsed) begin
             state       <= WALK_READY;
-            next_addr   <= gen_l1pte_addr(s_vpn1);
+            next_addr   <= gen_l1pte_addr(s_vaddr.vpn1);
         end
     end
     WALK_READY: if (ptereq.ready) begin
         state           <= WALK_VALID;
-        last_pte_addr   <= next_addr;
+        saved_pte_addr  <= next_addr;
     end
     WALK_VALID: if (pteresp.valid) begin
         // FAULT判定
         if (pteresp.error |
-            is_page_fault(s_req.wen,pte_V,pte_R,pte_W,pte_X,pte_U,pte_G,pte_A,pte_D,mode,mxr,sum) |
+            is_page_fault(  s_req.wen,
+                            resp_pte.v, resp_pte.r, resp_pte.w, resp_pte.x,
+                            resp_pte.u, resp_pte.g, resp_pte.a, resp_pte.d,
+                            mode, mxr, sum) |
             level == 2'b11 | level == 2'b10)
         begin
             state           <= REQ_END;
             result_error    <= 1;
             result_errty    <= FaultTy'(pteresp.error ? FE_ACCESS_FAULT : FE_PAGE_FAULT);
-        end else if (is_leaf(pte_R, pte_W, pte_X)) begin
+        end else if (resp_pte.is_leaf) begin
             // 5.3.2 step 6
             // superpageがmisalignかどうか調べる
-            if (level == 2'b01 & pte_ppn0 != 0) begin
+            if (level == 2'b01 & resp_pte.ppn0 != 0) begin
                 state           <= REQ_END;
                 result_error    <= 1;
                 result_errty    <= FE_PAGE_FAULT;
             end else begin
-                state       <= REQ_READY;
-                last_pte    <= pteresp.rdata;
+                state           <= REQ_READY;
+                saved_pte_data  <= pteresp.rdata;
                 // 5.3.2 step 8
                 // Sv32 physical address
                 // ppn[1], ppn[0], page offset
                 // 12    , 10    , 12
                 if (level == 2'b01)
-                    next_addr <= gen_l1_paddr(pte_ppn1, s_vpn0, s_pgoff);
+                    next_addr <= gen_l1_paddr(resp_pte.ppn1, s_vaddr.vpn0, s_vaddr.pgoff);
                 else
-                    next_addr <= gen_l0_paddr(pte_ppn, s_pgoff);
+                    next_addr <= gen_l0_paddr(resp_pte.ppn, s_vaddr.pgoff);
             end
         end else begin
             // 5.3.2 step 4
             state       <= WALK_READY;
             level       <= level - 2'd1;
-            next_addr   <= gen_l0pte_addr(pte_ppn, s_vpn0);
+            next_addr   <= gen_l0pte_addr(resp_pte.ppn, s_vaddr.vpn0);
         end
     end
     // TODO READYに遷移するところですぐにreadyしてしまう
@@ -507,30 +413,30 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
         else begin
             if (level === 1) begin
                 tlb1_update_valid       <= 1;
-                tlb1_update_vpn1        <= s_vpn1;
-                tlb1_update_ppn1        <= last_pte_ppn1;
-                tlb1_update_pte_r       <= last_pte_R;
-                tlb1_update_pte_w       <= last_pte_W;
-                tlb1_update_pte_x       <= last_pte_X;
-                tlb1_update_pte_u       <= last_pte_U;
-                tlb1_update_pte_g       <= last_pte_G;
-                tlb1_update_pte_d       <= last_pte_D | s_req.wen;
+                tlb1_update_vpn1        <= s_vaddr.vpn1;
+                tlb1_update_ppn1        <= last_pte.ppn1;
+                tlb1_update_pte_r       <= last_pte.r;
+                tlb1_update_pte_w       <= last_pte.w;
+                tlb1_update_pte_x       <= last_pte.x;
+                tlb1_update_pte_u       <= last_pte.u;
+                tlb1_update_pte_g       <= last_pte.g;
+                tlb1_update_pte_d       <= last_pte.d | s_req.wen;
             end else if (level === 0) begin
                 tlb0_update_valid       <= 1;
-                tlb0_update_vpn         <= s_vpn;
-                tlb0_update_paddr_ppn   <= last_pte[31:10];
-                tlb0_update_pte_ppn     <= {2'b0, last_pte_addr[31:12]};
-                tlb0_update_pte_r       <= last_pte_R;
-                tlb0_update_pte_w       <= last_pte_W;
-                tlb0_update_pte_x       <= last_pte_X;
-                tlb0_update_pte_u       <= last_pte_U;
-                tlb0_update_pte_g       <= last_pte_G;
-                tlb0_update_pte_d       <= last_pte_D | s_req.wen;
+                tlb0_update_vpn         <= s_vaddr.vpn;
+                tlb0_update_paddr_ppn   <= last_pte.ppn;
+                tlb0_update_pte_ppn     <= {2'b0, saved_pte_addr[31:12]};
+                tlb0_update_pte_r       <= last_pte.r;
+                tlb0_update_pte_w       <= last_pte.w;
+                tlb0_update_pte_x       <= last_pte.x;
+                tlb0_update_pte_u       <= last_pte.u;
+                tlb0_update_pte_g       <= last_pte.g;
+                tlb0_update_pte_d       <= last_pte.d | s_req.wen;
             end
             // A, Dを書き込む条件がそろっている
-            if (!last_pte_A | s_req.wen & !last_pte_D) begin
+            if (!last_pte.a | s_req.wen & !last_pte.d) begin
                 state       <= WAIT_SET_AD_READY;
-                next_addr   <= last_pte_addr;
+                next_addr   <= saved_pte_addr;
             end else begin
                 state <= IDLE;
             end
@@ -552,54 +458,35 @@ always @(posedge clk) if (util::logEnabled()) if (LOG_ENABLE) begin
     if (sv32_enable) begin
         $display("data,%s.ptw.state,d,%b", LOG_AS, state);
         $display("data,%s.ptw.reset,b,%b", LOG_AS, reset);
+        $display("data,%s.ptw.csr_mode,d,%b", LOG_AS, mode);
         $display("data,%s.ptw.satp,h,%b", LOG_AS, satp);
-        $display("data,%s.ptw.mode,d,%b", LOG_AS, mode);
-        $display("data,%s.ptw.proc_pc,h,%b", LOG_AS, state == IDLE ? preq.addr : s_req.addr);
-        $display("data,%s.ptw.next_addr,h,%b", LOG_AS, next_addr);
-
-        // if (memreq.ready & memreq.valid) begin
-            $display("data,%s.ptw.memreq.ready,b,%b", LOG_AS, memreq.ready);
-            $display("data,%s.ptw.memreq.valid,b,%b", LOG_AS, memreq.valid);
-            $display("data,%s.ptw.memreq.addr,h,%b", LOG_AS, memreq.addr);
-            $display("data,%s.ptw.memreq.wen,b,%b", LOG_AS, memreq.wen);
-            $display("data,%s.ptw.memreq.wdata,h,%b", LOG_AS, memreq.wdata);
-        // end
-        // if (memresp.valid) begin
-            $display("data,%s.ptw.memresp.valid,b,%b", LOG_AS, memresp.valid);
-            $display("data,%s.ptw.memresp.error,b,%b", LOG_AS, memresp.error);
-            $display("data,%s.ptw.memresp.rdata,h,%b", LOG_AS, memresp.rdata);
-        // end
-
-        // if (ptereq.ready & ptereq.valid) begin
-            $display("data,%s.ptw.ptereq.ready,b,%b", LOG_AS, ptereq.ready);
-            $display("data,%s.ptw.ptereq.valid,b,%b", LOG_AS, ptereq.valid);
-            $display("data,%s.ptw.ptereq.addr,h,%b", LOG_AS, ptereq.addr);
-            $display("data,%s.ptw.ptereq.wen,b,%b", LOG_AS, ptereq.wen);
-            $display("data,%s.ptw.ptereq.wdata,h,%b", LOG_AS, ptereq.wdata);
-        // end
-        // if (pteresp.valid) begin
-            $display("data,%s.ptw.pteresp.valid,b,%b", LOG_AS, pteresp.valid);
-            $display("data,%s.ptw.pteresp.error,b,%b", LOG_AS, pteresp.error);
-            $display("data,%s.ptw.pteresp.rdata,h,%b", LOG_AS, pteresp.rdata);
-        // end
-
-        $display("data,%s.ptw.level,d,%b", LOG_AS, level);
-        $display("data,%s.ptw.pte.R,b,%b", LOG_AS, pte_R);
-        $display("data,%s.ptw.pte.X,b,%b", LOG_AS, pte_X);
-        $display("data,%s.ptw.pte.V,b,%b", LOG_AS, pte_V);
-
         $display("data,%s.ptw.satp.ppn,h,%b", LOG_AS, satp_ppn);
-        $display("data,%s.ptw.pte.ppn[1],h,%b", LOG_AS, pte_ppn1);
-        $display("data,%s.ptw.pte.ppn[0],h,%b", LOG_AS, pte_ppn0);
-        $display("data,%s.ptw.pte.ppn,h,%b", LOG_AS, pte_ppn);
+        $display("data,%s.ptw.proc.addr,h,%b", LOG_AS, state == IDLE ? preq.addr : s_req.addr);
+        $display("data,%s.ptw.proc.vpn[1],h,%b", LOG_AS, vaddr.vpn1);
+        $display("data,%s.ptw.proc.vpn[0],h,%b", LOG_AS, vaddr.vpn0);
+        $display("data,%s.ptw.level,d,%b", LOG_AS, level);
+        $display("data,%s.ptw.next_addr,h,%b", LOG_AS, next_addr);
+        $display("data,%s.ptw.pte.DAGUXWRV,b,%b", LOG_AS, resp_pte.pte[7:0]);
+        $display("data,%s.ptw.pte.ppn[1],h,%b", LOG_AS, resp_pte.ppn1);
+        $display("data,%s.ptw.pte.ppn[0],h,%b", LOG_AS, resp_pte.ppn0);
+        $display("data,%s.ptw.pte.ppn,h,%b", LOG_AS, resp_pte.ppn);
 
-        $display("data,%s.ptw.vpn[1],h,%b", LOG_AS, s_vpn1);
-        $display("data,%s.ptw.vpn[0],h,%b", LOG_AS, s_vpn0);
+        $display("data,%s.ptw.ptereq.ready,b,%b", LOG_AS, ptereq.ready);
+        $display("data,%s.ptw.ptereq.valid,b,%b", LOG_AS, ptereq.valid);
+        $display("data,%s.ptw.ptereq.addr,h,%b", LOG_AS, ptereq.addr);
+        $display("data,%s.ptw.ptereq.pte,h,%b", LOG_AS, ptereq.pte);
+        $display("data,%s.ptw.pteresp.valid,b,%b", LOG_AS, pteresp.valid);
+        $display("data,%s.ptw.pteresp.error,b,%b", LOG_AS, pteresp.error);
+        $display("data,%s.ptw.pteresp.rdata,h,%b", LOG_AS, pteresp.rdata);
 
-        // $display("data,%s.tlb0.resp.valid,b,%b", LOG_AS, tlb0_resp_valid);
-        // $display("data,%s.tlb0.resp.hit,b,%b", LOG_AS, tlb0_resp_hit);
-        // $display("data,%s.tlb1.resp.valid,b,%b", LOG_AS, tlb1_resp_valid);
-        // $display("data,%s.tlb1.resp.hit,b,%b", LOG_AS, tlb1_resp_hit);
+        $display("data,%s.ptw.memreq.ready,b,%b", LOG_AS, memreq.ready);
+        $display("data,%s.ptw.memreq.valid,b,%b", LOG_AS, memreq.valid);
+        $display("data,%s.ptw.memreq.addr,h,%b", LOG_AS, memreq.addr);
+        $display("data,%s.ptw.memreq.wen,b,%b", LOG_AS, memreq.wen);
+        $display("data,%s.ptw.memreq.wdata,h,%b", LOG_AS, memreq.wdata);
+        $display("data,%s.ptw.memresp.valid,b,%b", LOG_AS, memresp.valid);
+        $display("data,%s.ptw.memresp.error,b,%b", LOG_AS, memresp.error);
+        $display("data,%s.ptw.memresp.rdata,h,%b", LOG_AS, memresp.rdata);
     end
 end
 `endif
