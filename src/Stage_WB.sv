@@ -23,8 +23,18 @@ always @(posedge clk) begin
     if (valid) inst_count += 1;
 end
 
-always @(posedge clk) begin
-    if (valid & rf_wen & reg_addr != 0) begin
+`ifdef BREAKPOINT
+    `ifndef BP0
+        `define BP0 0
+        initial $fatal(1, "BP0 not set");
+    `endif
+    `ifndef BP1
+        `define BP1 32'hffffffff
+    `endif
+`endif
+
+always @(posedge clk) if (valid) begin
+    if (rf_wen & reg_addr != 0) begin
         regfile[reg_addr] <= wdata;
 `ifdef XZSTOP
         for (int i = 0; i < `XLEN; i++) begin
@@ -35,6 +45,14 @@ always @(posedge clk) begin
         end
 `endif
     end
+`ifdef BREAKPOINT
+    if (info.pc == `BP0 || info.pc == `BP1) begin
+        $display("info,wbstage.breakpoint.clock,%d", clock_count);
+        $display("info,wbstage.breakpoint.icount,%h", inst_count);
+        $display("info,wbstage.breakpoint.pc,%h", info.pc);
+        $display("info,wbstage.breakpoint.inst,%h", info.inst);
+    end
+`endif
 end
 
 import util::*;
