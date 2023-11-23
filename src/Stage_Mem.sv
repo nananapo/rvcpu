@@ -57,10 +57,10 @@ statetype state = IDLE;
 
 logic   is_cmd_executed = 0;
 
-// TODO logic   is_wen_replaced = 0;
-MemSel  replace_mem_wen = MEN_X;
-wire MemSel mem_wen     =   MemSel'(is_cmd_executed ? MEN_X :
-                                    state != IDLE ? replace_mem_wen : ctrl.mem_wen);
+// TODO readyを飛ばしたら事故りそう
+logic       is_replaced     = 0; // これはIDLEのときは無効
+MemSel      replace_mem_wen = MEN_X;
+wire MemSel mem_wen         = MemSel'(is_replaced & state != IDLE ? replace_mem_wen : ctrl.mem_wen);
 
 /*
 # A拡張の扱い
@@ -77,11 +77,18 @@ logic sc_succeeded  = 0;
 wire is_store   = mem_wen == MEN_S | (mem_wen == MEN_A & ctrl.a_sel == ASEL_SC);
 wire is_load    = mem_wen == MEN_L | (mem_wen == MEN_A & ctrl.a_sel != ASEL_SC); // sc以外(lr, amo)は必ずloadする
 
-wire memu_cmd_ready   = dreq.ready;
-wire memu_valid       = dresp.valid;
-wire UIntX memu_rdata = dresp.rdata;
+UIntX   saved_mem_rdata = 0;
+logic   saved_error = 0;
+FaultTy saved_errty = FE_ACCESS_FAULT;
 
-assign dreq.valid   = state == WAIT_READY & valid & !is_cmd_executed & mem_wen != MEN_X;
+wire memu_cmd_ready = dreq.ready;
+wire memu_valid     = dresp.valid;
+wire memu_error     =   state == IDLE ? (!is_new & is_cmd_executed & saved_error) :
+                        (state == WAIT_RVALID | state == WAIT_WVALID) & dresp.valid & dresp.error;
+wire FaultTy memu_errty  = FaultTy'(state == IDLE & !is_new ? saved_errty : dresp.errty);
+
+// TODO trapinfo.validのときに実行しないようにする
+assign dreq.valid   = valid & state == WAIT_READY & !is_cmd_executed & mem_wen != MEN_X;
 assign dreq.wen     = is_store;
 assign dreq.addr    = alu_out;
 assign dreq.wdata   =   ctrl.mem_wen != MEN_A ? rs2_data :
@@ -97,19 +104,19 @@ function is_store_cmd(
     is_store_cmd = !(cmd == MEN_L | cmd == MEN_A & asel == ASEL_LR);
 endfunction
 
-assign next_trapinfo.valid = ctrl.mem_wen == MEN_X ? trapinfo.valid : dresp.error;
-assign next_trapinfo.cause =    ctrl.mem_wen == MEN_X ? trapinfo.cause :
-                                dresp.error ? (
-                                    dresp.errty == FE_ACCESS_FAULT ? (
+
+
+wire is_memtrap = valid & ctrl.mem_wen != MEN_X & memu_error;
+assign next_trapinfo.valid =    trapinfo.valid | is_memtrap;
+assign next_trapinfo.cause =    trapinfo.valid | !is_memtrap ? trapinfo.cause :
+                                    memu_errty == FE_ACCESS_FAULT ? (
                                         is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CsrCause::STORE_AMO_ACCESS_FAULT : CsrCause::LOAD_ACCESS_FAULT
                                     ) : (
                                         is_store_cmd(ctrl.mem_wen, ctrl.a_sel) ? CsrCause::STORE_AMO_PAGE_FAULT : CsrCause::LOAD_PAGE_FAULT
-                                    )
-                                ): 0;
+                                    );
 
-assign is_stall = valid & (state != IDLE | (!is_cmd_executed & mem_wen != MEN_X));
-
-UIntX  saved_mem_rdata;
+assign is_stall = valid & ( state == IDLE & is_new & ctrl.mem_wen != MEN_X |
+                            state != IDLE);
 
 function [$bits(UIntX)-1:0] gen_rdata(
     input MemSel    mem_type,
@@ -140,10 +147,11 @@ endfunction
 assign next_mem_rdata = gen_rdata(ctrl.mem_wen, ctrl.mem_size, ctrl.sign_sel, ctrl.a_sel, saved_mem_rdata, sc_succeeded);
 
 always @(posedge clk) begin
-    if (!valid | mem_wen == MEN_X) begin
+    if (!valid | trapinfo.valid) begin // TOOD reset
         state           <= IDLE;
+        saved_error     <= 0;
+        is_replaced     <= 0;
         is_cmd_executed <= 0;
-        replace_mem_wen <= MEN_X;
     end else case (state)
         WAIT_READY: begin
             if (memu_cmd_ready) begin
@@ -154,42 +162,49 @@ always @(posedge clk) begin
                 end
             end
         end
-        WAIT_RVALID: begin
-            if (memu_valid) begin
-                saved_mem_rdata <= memu_rdata;
+        WAIT_RVALID: if (memu_valid) begin
+            saved_mem_rdata <= dresp.rdata;
+            saved_error     <= dresp.error;
+            saved_errty     <= dresp.errty;
+            if (dresp.error) begin
+                state           <= IDLE;
+                is_cmd_executed <= 1;
+            end else begin
                 // A拡張で、LR, SCではないものはStoreする
                 if (mem_wen == MEN_A & ctrl.a_sel != ASEL_LR & ctrl.a_sel != ASEL_SC) begin
                     state           <= WAIT_READY;
+                    is_replaced     <= 1;
                     replace_mem_wen <= MEN_S;
                 end else begin
                     state           <= IDLE;
                     is_cmd_executed <= 1;
-                    replace_mem_wen <= MEN_X;
                 end
             end
         end
-        WAIT_WVALID: begin
-            if (memu_valid) begin
-                state <= IDLE;
-                is_cmd_executed <= 1;
-                replace_mem_wen <= MEN_X;
-            end
+        WAIT_WVALID: if (memu_valid) begin
+            saved_error <= dresp.error;
+            saved_errty <= dresp.errty;
+            state       <= IDLE;
+            is_cmd_executed <= 1;
         end
-        default/*IDLE*/: begin
-            replace_mem_wen <= mem_wen;
-            if (mem_wen != MEN_X) begin
+        default/*IDLE*/: if (is_new) begin
+            is_replaced     <= 0;
+            saved_error     <= 0;
+            if (ctrl.mem_wen == MEN_X) begin
+                is_cmd_executed <= 0;
+            end else begin
                 // A拡張
-                if (mem_wen == MEN_A) begin
+                if (ctrl.mem_wen == MEN_A) begin
                     case (ctrl.a_sel)
                         ASEL_SC: begin
                             if (sc_executable) begin
                                 // 予約されている場合はstore
                                 state           <= WAIT_READY;
                                 sc_succeeded    <= 1;
+                                is_cmd_executed <= 0;
                             end else begin
                                 // されていないなら終了
                                 state           <= IDLE;
-                                replace_mem_wen <= MEN_X;
                                 sc_succeeded    <= 0;
                                 is_cmd_executed <= 1;
                             end
@@ -198,12 +213,17 @@ always @(posedge clk) begin
                         ASEL_LR: begin
                             aext_reserved_address   <= alu_out;
                             state                   <= WAIT_READY;
+                            is_cmd_executed         <= 0;
                         end
-                        default: state <= WAIT_READY;
+                        default: begin
+                            state           <= WAIT_READY;
+                            is_cmd_executed <= 0;
+                        end
                     endcase
                 end else begin
                     // LOAD, STORE
-                    state <= WAIT_READY;
+                    state           <= WAIT_READY;
+                    is_cmd_executed <= 0;
                 end
             end
         end
