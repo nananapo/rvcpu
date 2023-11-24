@@ -637,7 +637,7 @@ always @(posedge clk) if (util::logEnabled()) begin
         $display("data,decodestage.decode.rf_wen,d,%b", id_ctrl.rf_wen);
         $display("data,decodestage.decode.wb_sel,d,%b", id_ctrl.wb_sel);
         $display("data,decodestage.decode.wb_addr,d,%b", id_ctrl.wb_addr);
-        $display("data,decodestage.decode.csr_cmd,b,%b", id_ctrl.csr_cmd);
+        $display("data,decodestage.decode.csr_cmd,d,%b", id_ctrl.csr_cmd);
         $display("data,decodestage.decode.jmp_pc,d,%b", id_ctrl.jmp_pc_flg);
         $display("data,decodestage.decode.jmp_reg,d,%b", id_ctrl.jmp_reg_flg);
         $display("data,decodestage.decode.fence_i,d,%b", id_ctrl.fence_i);
