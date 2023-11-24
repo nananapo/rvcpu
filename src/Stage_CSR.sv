@@ -464,6 +464,8 @@ logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行�
 //   * CSR命令の場合、info.pc
 //   * それ以外の場合、前のステージのpc
 //   詳細 : https://blog.kanataso.net/20231124_myriscv_interrupt_bug.html
+// ecall, ebreakはexcption
+// w,s,c,sret,mretは実行しない
 wire Addr xepc_candidate = raise_expt ? info.pc :
                             csr_cmd == CSR_X ? valid_pc_befor_csr : info.pc;
 
@@ -472,8 +474,9 @@ assign disable_memstage = is_new & this_raise_trap | !is_new & last_raise_trap;
 always @(posedge clk) begin
     last_raise_trap <= this_raise_trap;
     if (valid & is_new) begin
-        csr_no_wb <= raise_expt | raise_intr & csr_cmd != CSR_X;
-        inst_clock <= 0;
+        csr_no_wb   <= (raise_expt & csr_cmd != CSR_EBREAK & csr_cmd != CSR_ECALL) |
+                        raise_intr & csr_cmd != CSR_X;
+        inst_clock  <= 0;
         // trapを起こす
         if (trap_nochange) begin
             trap_vector <= info.pc + 4;
