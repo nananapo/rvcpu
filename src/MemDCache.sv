@@ -147,7 +147,11 @@ always @(posedge clk) begin
 end
 `endif
 
+logic [63:0] clock_count = 0;
+
 always @(posedge clk) begin
+    clock_count <= clock_count + 1;
+
     // TODO これきれいにできない？
     dresp_valid_reg <=  (state == IDLE & (
                             cache_hit |            // cache hit
@@ -156,6 +160,21 @@ always @(posedge clk) begin
                         state == RESP_VALID | // read
                         state == WRITE_READY & (busreq.ready & dreq.wen); // writeback -> write
     dresp_rdata_reg <= cache_data[mem_index];
+
+    // if ((state == IDLE & (
+    //                         cache_hit |            // cache hit
+    //                         !need_wb & dreq.wen    // ライトバックが必要なくて、そのまま上書きする
+    //                     )) |
+    //                     state == RESP_VALID | // read
+    //                     state == WRITE_READY & (busreq.ready & dreq.wen)
+    // ) begin
+    //     if (dreq.addr == 32'h17724) begin
+    //         if (dreq.wen)
+    //             $display("%d,%d,wdata:%h", clock_count, dreq.wen, dreq.wdata);
+    //         else
+    //             $display("%d,%d,rdata:%h", clock_count, dreq.wen, cache_data[mem_index]);
+    //     end
+    // end
 
     if (do_writeback & state != IDLE & state != WB_LOOP_CHECK & state != WB_LOOP_READY) begin
         writeback_requested <= 1;
