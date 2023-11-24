@@ -127,17 +127,16 @@ FwCtrl  mem_fw;
 FwCtrl  csr_fw;
 FwCtrl  wb_fw;
 
+// 分岐予測の判定用
 // id/dsがvalidではないか、branchに失敗したクロックは保持
-wire exe_branch_stall = (!ds_valid & !id_valid & !exe_trap.valid & (exe_is_new | !exe_br_checked)) | branch_fail;
+wire exe_branch_stall = (!ds_valid & !id_valid & !exe_trap.valid) | branch_fail;
 
 // stall
 // 各ステージに新しく値を流してはいけないかどうか
 wire csr_stall  = csr_cmd_stall;
 wire mem_stall  = mem_memory_stall | (mem_valid & csr_stall);
 
-wire exe_stall  =   exe_calc_stall |
-                    (exe_valid & mem_stall) |
-                    exe_branch_stall;// 分岐予測の判定用
+wire exe_stall  =   exe_valid & (exe_calc_stall | mem_stall | exe_branch_stall);
 wire ds_stall   = ds_datahazard | (ds_valid & exe_stall);
 wire id_stall   = id_valid & ds_stall;
 wire if_stall   = id_stall;
@@ -160,12 +159,7 @@ always @(posedge clk) begin
     branch_target_last_clock <= branch_target;
 end
 
-// exeステージにある命令がすでに分岐チェックされたかどうか
-// newか!checkedのとき、チェックする必要がある
-// hazardが起きると1になり、命令がidに供給されると0に戻る
-logic exe_br_checked = 0;
-
-wire branch_fail            =   exe_valid & (exe_is_new | !exe_br_checked) &
+wire branch_fail            =   exe_valid &
                                 ( ds_valid ? (exe_branch_taken & ds_info.pc != exe_branch_target) | (!exe_branch_taken & ds_info.pc != exe_info.pc + 4)
                                 : id_valid ? (exe_branch_taken & id_info.pc != exe_branch_target) | (!exe_branch_taken & id_info.pc != exe_info.pc + 4) : 1'b0 );
 wire branch_hazard_now      =   csr_is_trap | branch_fail;
@@ -173,11 +167,6 @@ wire Addr  branch_target    =   csr_is_trap ? csr_trap_vector :
                                 exe_branch_taken ? exe_branch_target : exe_info.pc + 4;
 
 always @(posedge clk) begin
-
-    if (branch_hazard_now) begin
-        exe_br_checked <= 1;
-    end
-
     // if -> id
     if (branch_hazard_now | branch_hazard_last_clock) begin
         id_valid    <= 0;
@@ -195,7 +184,6 @@ always @(posedge clk) begin
             `ifdef PRINT_DEBUGINFO
             id_info.id      <= iresp.inst_id;
             `endif
-            exe_br_checked  <= 0;
         end else begin
             id_valid    <= 0;
             id_trap     <= 0;
