@@ -494,6 +494,10 @@ Stage_CSR #() csrstage (
     .csr_keep_trap(csr_keep_trap),
     .trap_vector(csr_trap_vector),
 
+    .valid_pc_befor_csr(
+        mem_valid ? mem_info.pc :
+        exe_valid ? exe_info.pc :
+        ds_valid ? ds_info.pc : id_info.pc),
     .external_interrupt_pending(external_interrupt_pending),
     .mip_mtip(mti_pending),
 

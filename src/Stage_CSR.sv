@@ -23,6 +23,7 @@ module Stage_CSR
     output wire             csr_keep_trap, // validのままにするtrapかどうか
     output Addr             trap_vector,
 
+    input wire Addr         valid_pc_befor_csr,
     input wire              external_interrupt_pending,
     input wire              mip_mtip,
 
@@ -113,7 +114,7 @@ case (addr)
     CsrAddr::SIP:       gen_rdata = sip;
     // Supervisor Protection and Translation
     CsrAddr::SATP:      gen_rdata = satp;
-    default:        gen_rdata = 32'b0;
+    default:            gen_rdata = 32'b0;
 endcase
 endfunction
 
@@ -458,6 +459,15 @@ assign cache_cntr.invalidate_tlb    = valid & is_new & is_fence; // TODO inval�
 logic [1:0] inst_clock = 0;
 logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行されないようにするためのフラグ
 
+// トラップのとき、xepcに格納するPC
+//   例外のとき、info.pc
+//   割り込みのとき、
+//   * CSR命令の場合、info.pc
+//   * それ以外の場合、前のステージのpc
+//   詳細 : https://blog.kanataso.net/20231124_myriscv_interrupt_bug.html
+wire Addr xepc_candidate = raise_expt ? info.pc :
+                            csr_cmd == CSR_X ? valid_pc_befor_csr : info.pc;
+
 always @(posedge clk) begin
     last_raise_trap <= this_raise_trap;
     if (valid & is_new) begin
@@ -471,13 +481,14 @@ always @(posedge clk) begin
         end else if (this_raise_trap) begin
             csr_no_wb   <= 1;
             if (util::logEnabled()) begin
-                $display("info,csrstage.trap.pc,0x%h", info.pc);
+                $display("info,csrstage.trap.info,expt:%d", raise_expt);
+                $display("info,csrstage.trap.pc,0x%h", xepc_candidate);
                 $display("info,csrstage.trap.cause,0x%h", cause_trap);
             end
             if (trap_toM) begin
                 mode            <= M_MODE;
                 mcause          <= cause_trap;
-                mepc            <= info.pc;
+                mepc            <= xepc_candidate;
                 mtval           <= raise_expt ? expt_xtval : mtval;
                 mstatus_mpie    <= mstatus_mie;
                 mstatus_mie     <= 0;
@@ -486,7 +497,7 @@ always @(posedge clk) begin
             end else begin
                 mode            <= S_MODE;
                 scause          <= cause_trap;
-                sepc            <= info.pc;
+                sepc            <= xepc_candidate;
                 stval           <= raise_expt ? expt_xtval : stval;
                 mstatus_spie    <= mstatus_sie;
                 mstatus_sie     <= 0;
