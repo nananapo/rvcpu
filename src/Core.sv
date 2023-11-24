@@ -103,6 +103,7 @@ UIntX       csr_op1_data;
 UIntX       csr_mem_rdata;
 Addr        csr_btarget;
 // csr wire
+wire        csr_disable_memstage;
 wire        csr_cmd_stall;
 wire        csr_is_trap;
 wire        csr_keep_trap;
@@ -317,21 +318,16 @@ always @(posedge clk) begin
     end
 
     // mem -> csr
-    if (csr_is_trap) begin
-        csr_valid   <= csr_keep_trap;
-        csr_is_new  <= 0;
-        csr_trap    <= 0;
-        csr_fw      <= 0;
-    end else if (csr_stall) begin
+    if (csr_stall) begin
         csr_is_new  <= 0;
     end else begin
         if (mem_memory_stall) begin
-            csr_valid       <= csr_keep_trap;
+            csr_valid       <= 0;
             csr_is_new      <= 0;
             csr_trap        <= 0;
             csr_fw          <= 0;
         end else begin
-            csr_valid       <= mem_valid;
+            csr_valid       <= mem_valid & !csr_is_trap;
             csr_is_new      <= 1;
             csr_info        <= mem_info;
             csr_ctrl        <= mem_ctrl;
@@ -443,7 +439,8 @@ Stage_Mem #() memorystage
         csr_ctrl.csr_cmd != CSR_MRET &
         !csr_ctrl.fence_i &
         !csr_ctrl.sfence &
-        !csr_ctrl.svinval),
+        !csr_ctrl.svinval &
+        !csr_disable_memstage),
     .is_new(mem_is_new),
     .info(mem_info),
     .trapinfo(mem_trap),
@@ -491,9 +488,9 @@ Stage_CSR #() csrstage (
 
     .is_stall(csr_cmd_stall),
     .csr_is_trap(csr_is_trap),
-    .csr_keep_trap(csr_keep_trap),
     .trap_vector(csr_trap_vector),
 
+    .disable_memstage(csr_disable_memstage),
     .valid_pc_befor_csr(
         mem_valid ? mem_info.pc :
         exe_valid ? exe_info.pc :

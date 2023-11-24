@@ -19,8 +19,8 @@ module Stage_CSR
     output wire             next_no_wb,
 
     output wire             is_stall,
+    output wire             disable_memstage,
     output wire             csr_is_trap,
-    output wire             csr_keep_trap, // validのままにするtrapかどうか
     output Addr             trap_vector,
 
     input wire Addr         valid_pc_befor_csr,
@@ -443,9 +443,8 @@ assign is_stall     = valid & (
                 (!is_new & undone_fence_i | fence_clocked)
 );
 assign csr_is_trap  = valid & !is_new & (last_raise_trap | cmd_is_xret | undone_fence_i | fence_clocked);
-assign csr_keep_trap= trap_nochange;
 
-assign next_no_wb   = valid & (this_raise_trap | last_raise_trap); // TODO xretは除外
+assign next_no_wb   = valid & !is_new & csr_no_wb; // csr_no_wbは!is_newでないと使えない
 
 assign cache_cntr.i_mode            = mode;
 assign cache_cntr.d_mode            = Mode'(mode == M_MODE & mstatus_mprv ? Mode'(mstatus_mpp) : mode);
@@ -468,18 +467,19 @@ logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行�
 wire Addr xepc_candidate = raise_expt ? info.pc :
                             csr_cmd == CSR_X ? valid_pc_befor_csr : info.pc;
 
+assign disable_memstage = is_new & this_raise_trap | !is_new & last_raise_trap;
+
 always @(posedge clk) begin
     last_raise_trap <= this_raise_trap;
     if (valid & is_new) begin
+        csr_no_wb <= raise_expt | raise_intr & csr_cmd != CSR_X;
         inst_clock <= 0;
         // trapを起こす
         if (trap_nochange) begin
             trap_vector <= info.pc + 4;
-            csr_no_wb   <= 1;
             if (util::logEnabled())
                 $display("info,csrstage.trap.nochange,0x%h", info.pc);
         end else if (this_raise_trap) begin
-            csr_no_wb   <= 1;
             if (util::logEnabled()) begin
                 $display("info,csrstage.trap.info,expt:%d", raise_expt);
                 $display("info,csrstage.trap.pc,0x%h", xepc_candidate);
@@ -521,7 +521,6 @@ always @(posedge clk) begin
             // mret, sretを処理する
             case (csr_cmd)
                 CSR_MRET: begin
-                    csr_no_wb       <= 1;
                     mstatus_mie     <= mstatus_mpie;
                     mode            <= Mode'(mstatus_mpp);
                     mstatus_mpie    <= 1;
@@ -531,7 +530,6 @@ always @(posedge clk) begin
                         mstatus_mprv <= 0;
                 end
                 CSR_SRET: begin
-                    csr_no_wb       <= 1;
                     mstatus_sie     <= mstatus_spie;
                     mode            <= Mode'({1'b0, mstatus_spp});
                     mstatus_spie    <= 1;
@@ -541,7 +539,6 @@ always @(posedge clk) begin
                         mstatus_mprv <= 0;
                 end
                 default: begin
-                    csr_no_wb   <= 0;
                     trap_vector <= 0;
                 end
             endcase
@@ -649,6 +646,8 @@ always @(posedge clk) if (util::logEnabled()) begin
     $display("info,csrstage.stvec,0x%h", stvec);
     $display("info,csrstage.mepc,0x%h", mepc);
     $display("info,csrstage.sepc,0x%h", sepc);
+    $display("info,csrstage.mcause,0x%h", mcause);
+    $display("info,csrstage.scause,0x%h", scause);
 
     if (valid && is_fence) begin
         $display("data,csrstage.$.do_wb,b,%b", cache_cntr.do_writeback);
