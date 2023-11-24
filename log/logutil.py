@@ -100,6 +100,6 @@ def readClockCycle(bintoint = False):
             info,name,value
             """
             if len(lineData) < 2: continue # ignore error
-            clockTextData[lineData[1]] = lineData[2]
+            clockTextData[lineData[1]] = ",".join(lineData[2:])
     if clockCount is not None:
         yield (clockCount, clockNumberData, clockTextData)
