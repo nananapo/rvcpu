@@ -23,8 +23,7 @@ typedef enum logic [3:0] {
     STORE_READY,
     STORE_VALID,
     STORE_READY2,
-    STORE_VALID2,
-    ERROR
+    STORE_VALID2
 } statetype;
 
 statetype state = IDLE;
@@ -72,8 +71,6 @@ UInt32  store_wdata1;
 UInt32  store_wdata2;
 
 UInt32  load_result;
-logic   error_result = 0;
-FaultTy errty_result = FE_ACCESS_FAULT;
 
 assign memreq.valid = state == LOAD_READY  | state == LOAD_READY2 | state == STORE_READY | state == STORE_READY2;
 assign memreq.addr  = state == LOAD_READY  | state == STORE_READY ? saddr_aligned : saddr_aligned + 32'd4;
@@ -84,9 +81,9 @@ assign memreq.pte   = sdreq.pte;
 assign dresp.valid  =   state == LOAD_PUSH |
                         state == STORE_VALID & !is_load_twice & memresp.valid |
                         state == STORE_VALID2 & memresp.valid |
-                        state == ERROR;
-assign dresp.error  = error_result;
-assign dresp.errty  = errty_result;
+                        (state == LOAD_VALID | state == LOAD_VALID2 | state == STORE_VALID | state == STORE_VALID2) & memresp.valid & memresp.error;
+assign dresp.error  = memresp.error;
+assign dresp.errty  = memresp.errty;
 assign dresp.rdata  = load_result;
 
 assign dreq.ready   = state == IDLE;
@@ -99,34 +96,22 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
             state <= statetype'(dreq.wen ? STORE_CHECK : LOAD_READY);
         end
     end
-    LOAD_READY: begin
-        if (memreq.ready) begin
-            state <= LOAD_VALID;
-        end
-    end
+    LOAD_READY: if (memreq.ready) state <= LOAD_VALID;
     LOAD_VALID: begin
         if (memresp.valid) begin
-            error_result    <= memresp.error;
-            errty_result    <= memresp.errty;
             if (memresp.error) begin
-                state           <= ERROR;
+                state           <= IDLE;
             end else begin
                 state           <= statetype'(is_load_twice ? LOAD_READY2 : LOAD_END);
                 saved_rdata1    <= memresp.rdata;
             end
         end
     end
-    LOAD_READY2: begin
-        if (memreq.ready) begin
-            state <= LOAD_VALID2;
-        end
-    end
+    LOAD_READY2: if (memreq.ready) state <= LOAD_VALID2;
     LOAD_VALID2: begin
         if (memresp.valid) begin
-            error_result    <= memresp.error;
-            errty_result    <= memresp.errty;
             if (memresp.error) begin
-                state           <= ERROR;
+                state           <= IDLE;
             end else begin
                 state           <= LOAD_END;
                 saved_rdata2    <= memresp.rdata;
@@ -170,46 +155,22 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
         end
         endcase
     end
-    LOAD_PUSH: begin
-        state <= IDLE;
-    end
+    LOAD_PUSH: state <= IDLE;
     STORE_CHECK: begin
         state <= statetype'(require_load ? LOAD_READY : STORE_READY);
         store_wdata1 <= sdreq.wdata; // すぐにSTORE_READYに行く場合のwdataの準備
     end
-    STORE_READY: begin
-        if (memreq.ready) begin
-            state <= STORE_VALID;
-        end
-    end
+    STORE_READY: if (memreq.ready) state <= STORE_VALID;
     STORE_VALID: begin
         if (memresp.valid) begin
-            error_result    <= memresp.error;
-            errty_result    <= memresp.errty;
-            if (memresp.error) begin
-                state   <= ERROR;
-            end else begin
-                state   <= statetype'(is_load_twice ? STORE_READY2 : IDLE);
-            end
-        end
-    end
-    STORE_READY2: begin
-        if (memreq.ready) begin
-            state <= STORE_VALID2;
-        end
-    end
-    STORE_VALID2: begin
-        if (memresp.valid) begin
-            error_result    <= memresp.error;
-            errty_result    <= memresp.errty;
-            if (memresp.error) begin
-                state   <= ERROR;
-            end else begin
+            if (memresp.error)
                 state   <= IDLE;
-            end
+            else
+                state   <= statetype'(is_load_twice ? STORE_READY2 : IDLE);
         end
     end
-    ERROR: state <= IDLE;
+    STORE_READY2: if (memreq.ready) state <= STORE_VALID2;
+    STORE_VALID2: if (memresp.valid) state <= IDLE;
     default: begin
         $display("MemMisalignCntr.sv : Unknown state %d", state);
         `ffinish
