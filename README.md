@@ -3,22 +3,7 @@
 [![behaviour tests](https://github.com/nananapo/rvcpu/actions/workflows/test.yml/badge.svg)](https://github.com/nananapo/rvcpu/actions/workflows/test.yml)
 [![riscv-tests](https://github.com/nananapo/rvcpu/actions/workflows/riscv-tests-verilator.yml/badge.svg)](https://github.com/nananapo/rvcpu/actions/workflows/riscv-tests-verilator.yml)
 
-```txt
-      RAM
-        |
-        |-------------------------\
-        |                      DCache
-        |          ---------------|----------
-     ICache        |         MisalignCntr   |
-        |          |              |         |
-       PTW----------          MMIO_Cntr     |
-        |                         |         |
-      Fetch                      PTW---------
-        |                         |
-        |---> ID -> DS -> EXE -> MEM -> CSR -> WB
-                           |
-                        Mul/Div
-```
+![Arch](./rvcore.drawio.png)
 
 RV32IMA_Zicsr_Zicond_Zifencei CPU written in SystemVerilog
 
