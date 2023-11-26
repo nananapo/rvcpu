@@ -1,5 +1,6 @@
 // 1 cycleで処理が終わる
 // TODO updateと同時にreqできなくする。BPも
+// TODO keyとmemが同じ長さの場合の処理 (mem_keyをなくす)
 module MemoryKeyValueStore #(
     parameter KEY_WIDTH = 0,
     parameter VAL_WIDTH = 0,
@@ -7,7 +8,8 @@ module MemoryKeyValueStore #(
     parameter LOG_ENABLE = 0,
     parameter LOG_AS = ""
 )(
-    input wire                  clk,
+    input wire  clk,
+    input wire  reset,
 
     output wire                 req_ready,
     input wire                  req_valid,
@@ -19,29 +21,25 @@ module MemoryKeyValueStore #(
 
     input wire                  update_valid,
     input wire [KEY_WIDTH-1:0]  update_key,
-    input wire [VAL_WIDTH-1:0]  update_value,
-
-    input wire                  flush
+    input wire [VAL_WIDTH-1:0]  update_value
 );
 
 initial begin
     if (KEY_WIDTH == 0) begin
-        $display("TLB : KEY_WIDTH is not set");
+        $fatal(1, "KEY_WIDTH is not set");
         `ffinish
     end
     if (VAL_WIDTH == 0) begin
-        $display("TLB : VAL_WIDTH is not set");
+        $fatal(1, "VAL_WIDTH is not set");
         `ffinish
     end
     if (MEM_WIDTH == 0) begin
-        $display("TLB : MEM_WIDTH is not set");
+        $fatal(1, "MEM_WIDTH is not set");
         `ffinish
     end
     if (MEM_WIDTH > KEY_WIDTH) begin
-        $display("TLB : MEM_WIDTH(%d) is longer than KEY_WIDTH(%d)", MEM_WIDTH, KEY_WIDTH);
+        $fatal(1, "MEM_WIDTH(%d) is longer than KEY_WIDTH(%d)", MEM_WIDTH, KEY_WIDTH);
         `ffinish
-    end
-    if (LOG_AS == "") begin
     end
 end
 
@@ -58,7 +56,6 @@ assign req_ready = 1;
 
 localparam MEM_LENGTH = 2 ** MEM_WIDTH;
 
-// TODO keyとmemが同じ長さの場合の処理 (mem_keyをなくす)
 // TODO 全部合体してpackする
 logic [MEM_LENGTH-1:0]  mem_valid;
 logic [KEY_WIDTH-1:0]   mem_key[MEM_LENGTH-1:0];
@@ -67,13 +64,12 @@ logic [VAL_WIDTH-1:0]   mem_value[MEM_LENGTH-1:0];
 wire [MEM_WIDTH-1:0]    update_mem_key = update_key[MEM_WIDTH-1:0];
 
 wire [MEM_WIDTH-1:0]    req_mem_key = req_key[MEM_WIDTH-1:0];
-wire                    mem_hit     = mem_valid[req_mem_key] & mem_key[req_mem_key] === req_key;
+wire                    mem_hit     = mem_valid[req_mem_key] === 1 & mem_key[req_mem_key] === req_key;
 wire [VAL_WIDTH-1:0]    mem_rdata   = mem_value[req_mem_key];
 
 always @(posedge clk) begin
-    if (flush) begin
-        for (int i = 0; i < MEM_LENGTH; i++)
-            mem_valid[i] <= 0;
+    if (reset) begin
+        mem_valid <= 0;
     end else begin
         if (req_valid) begin
             resp_valid  <= 1;

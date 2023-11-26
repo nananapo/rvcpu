@@ -31,6 +31,9 @@ module PageTableWalker
 import conf::*;
 import Sv32::*;
 
+localparam ENABLE_L2_TLB0_LOG = 0;
+localparam ENABLE_L2_TLB1_LOG = 0;
+
 function logic is_leaf(
     input logic R,
     input logic W,
@@ -102,8 +105,9 @@ endfunction
 // * IDLEからとりあえずREADYに遷移
 typedef enum logic [3:0] {
     IDLE,
-    WAIT_TLB_READY,
-    CHECK_TLB,
+    WAIT_L1_READY,
+    WAIT_L2_TLB_READY,
+    CHECK_L2_TLB,
     WALK_READY,
     WALK_VALID,
     REQ_READY,
@@ -112,27 +116,42 @@ typedef enum logic [3:0] {
     WAIT_SET_AD_READY
 } statetype;
 
-wire        satp_mode    = satp[31];
-wire [8:0]  satp_asid    = satp[30:22];
-wire PPN    satp_ppn     = satp[21:0];
+wire        satp_mode   = satp[31];
+wire [8:0]  satp_asid   = satp[30:22];
+wire PPN    satp_ppn    = satp[21:0];
 
-statetype   state  = IDLE;
+statetype   state       = IDLE;
 wire        sv32_enable = mode != M_MODE & satp_mode == 1;
 
-logic       result_error = 0;
-FaultTy     result_errty = FE_ACCESS_FAULT;
+logic       result_error    = 0;
+FaultTy     result_errty    = FE_ACCESS_FAULT;
 
-assign preq.ready   = sv32_enable ? state == IDLE       : memreq.ready;
-assign presp.valid  = sv32_enable ? state == REQ_END    : memresp.valid;
-assign presp.rdata  = sv32_enable ? result_rdata        : memresp.rdata;
-assign presp.error  = sv32_enable ? result_error        : memresp.error;
-assign presp.errty  = sv32_enable ? result_errty        : memresp.errty;
+// stateはIDLEだがvalid待ちであるかどうか
+// PTWはIDLEかつL1 TLBがhitした時にidle_with_wait_validを1にする。
+// このフラグによってresp.validをprespに届けることができるようになる
+logic   idle_with_wait_valid = 0;
+wire    is_idle = state == IDLE & (!idle_with_wait_valid | memresp.valid);
 
-assign memreq.valid = sv32_enable ? state == REQ_READY  : preq.valid;
-assign memreq.addr  = sv32_enable ? next_addr           : preq.addr;
-assign memreq.wen   = sv32_enable ? s_req.wen           : preq.wen;
-assign memreq.wdata = sv32_enable ? s_req.wdata         : preq.wdata;
-assign memreq.wmask = sv32_enable ? s_req.wmask         : preq.wmask;
+wire can_use_l1_tlb0 = l1_tlb0_resp_hit & !l1_tlb0_is_page_fault;
+wire can_use_l1_tlb1 = l1_tlb1_resp_hit & !l1_tlb1_is_page_fault;
+
+assign preq.ready   = sv32_enable ? is_idle : memreq.ready;
+assign presp.valid  = sv32_enable ? state == REQ_END | (state == IDLE & idle_with_wait_valid & memresp.valid) : memresp.valid;
+assign presp.rdata  = sv32_enable ? (state == IDLE ? memresp.rdata : result_rdata) : memresp.rdata;
+assign presp.error  = sv32_enable ? (state == IDLE ? memresp.error : result_error) : memresp.error;
+assign presp.errty  = sv32_enable ? (state == IDLE ? memresp.errty : result_errty) : memresp.errty;
+
+assign memreq.valid = sv32_enable ? state == REQ_READY | state == WAIT_L1_READY | (state == IDLE & (
+    (can_use_l1_tlb0 | can_use_l1_tlb1) & preq.valid & (!idle_with_wait_valid | memresp.valid) // tlbが使えて、preq.validで、validをwait中の場合はmemresp.validのとき
+    )) : preq.valid;
+assign memreq.addr  = sv32_enable ? (state == IDLE ? (
+        can_use_l1_tlb0 ?
+            gen_l0_paddr(l1_tlb0_resp_paddr_ppn, vaddr.pgoff) :
+            gen_l1_paddr(l1_tlb1_resp_ppn1, vaddr.vpn0, vaddr.pgoff)
+        ) : next_addr) : preq.addr;
+assign memreq.wen   = sv32_enable ? (state == IDLE ? preq.wen : s_req.wen) : preq.wen;
+assign memreq.wdata = sv32_enable ? (state == IDLE ? preq.wdata : s_req.wdata) : preq.wdata;
+assign memreq.wmask = sv32_enable ? (state == IDLE ? preq.wmask : s_req.wmask) : preq.wmask;
 assign memreq.pte   = PTE_AD'(2'b00);
 
 assign ptereq.valid = state == WALK_READY | state == WAIT_SET_AD_READY;
@@ -170,146 +189,305 @@ LR/SCはページをまたがってはいけない
 Gはとりあえず実装しないので、faultを発生させる
 */
 
-// TLB
-wire tlb_req_valid = sv32_enable & (state == WAIT_TLB_READY | state == IDLE & preq.valid) & all_tlb_ready;
+// TODO updateのワイヤ化
+// TODO pteの更新のFIFO化
 
-// TLB0 (PPN1 + PPN0)
-localparam TLB0_KLEN = VPN_LEN; // pteのvpn
-localparam TLB0_VLEN = PPN_LEN + PPN_LEN + 6;// PPN(paddr), PPN(PTEのアドレス用), pte(R,W,U,X,G,D)
+// L1 TLB 0
+localparam L1_TLB0_KLEN = VPN_LEN; // pteのvpn
+localparam L1_TLB0_VLEN = PPN_LEN + PPN_LEN + 6;// PPN(paddr), PPN(PTEのアドレス用), pte(R,W,U,X,G,D)
 
-wire        tlb0_req_ready;
-wire        tlb0_req_valid  = tlb_req_valid;
-wire VPN    tlb0_req_vpn    = vaddr.vpn;
-wire        tlb0_resp_valid;
-wire        tlb0_resp_hit;
-wire PPN    tlb0_resp_paddr_ppn;
-wire PPN    tlb0_resp_pte_ppn;
-wire        tlb0_resp_pte_r;
-wire        tlb0_resp_pte_w;
-wire        tlb0_resp_pte_x;
-wire        tlb0_resp_pte_u;
-wire        tlb0_resp_pte_g;
-wire        tlb0_resp_pte_d;
-logic       tlb0_update_valid       = 0;
-VPN         tlb0_update_vpn         = 0;
-PPN         tlb0_update_paddr_ppn   = 0;
-PPN         tlb0_update_pte_ppn     = 0;
-logic       tlb0_update_pte_r       = 0;
-logic       tlb0_update_pte_w       = 0;
-logic       tlb0_update_pte_x       = 0;
-logic       tlb0_update_pte_u       = 0;
-logic       tlb0_update_pte_g       = 0;
-logic       tlb0_update_pte_d       = 0;
+
+wire VPN    l1_tlb0_req_vpn    = vaddr.vpn;
+wire        l1_tlb0_resp_hit;
+wire PPN    l1_tlb0_resp_paddr_ppn;
+wire PPN    l1_tlb0_resp_pte_ppn;
+wire        l1_tlb0_resp_pte_r;
+wire        l1_tlb0_resp_pte_w;
+wire        l1_tlb0_resp_pte_x;
+wire        l1_tlb0_resp_pte_u;
+wire        l1_tlb0_resp_pte_g;
+wire        l1_tlb0_resp_pte_d;
+logic       l1_tlb0_update_valid       = 0;
+VPN         l1_tlb0_update_vpn         = 0;
+PPN         l1_tlb0_update_paddr_ppn   = 0;
+PPN         l1_tlb0_update_pte_ppn     = 0;
+logic       l1_tlb0_update_pte_r       = 0;
+logic       l1_tlb0_update_pte_w       = 0;
+logic       l1_tlb0_update_pte_x       = 0;
+logic       l1_tlb0_update_pte_u       = 0;
+logic       l1_tlb0_update_pte_g       = 0;
+logic       l1_tlb0_update_pte_d       = 0;
+
+CombinationalKeyValueStore #(
+    .KEY_WIDTH(L1_TLB0_KLEN),
+    .VAL_WIDTH(L1_TLB0_VLEN),
+    .MEM_WIDTH(5) // 適当
+) l1_tlb0 (
+    .clk(clk),
+    .reset(flush_tlb),
+    .key(l1_tlb0_req_vpn),
+    .hit(l1_tlb0_resp_hit),
+    .value({l1_tlb0_resp_paddr_ppn, l1_tlb0_resp_pte_ppn,
+            l1_tlb0_resp_pte_r, l1_tlb0_resp_pte_w, l1_tlb0_resp_pte_x,
+            l1_tlb0_resp_pte_u, l1_tlb0_resp_pte_g, l1_tlb0_resp_pte_d}),
+    .update_valid(l1_tlb0_update_valid),
+    .update_key(l1_tlb0_update_vpn),
+    .update_value( {l1_tlb0_update_paddr_ppn, l1_tlb0_update_pte_ppn,
+                    l1_tlb0_update_pte_r, l1_tlb0_update_pte_w, l1_tlb0_update_pte_x,
+                    l1_tlb0_update_pte_u, l1_tlb0_update_pte_g, l1_tlb0_update_pte_d})
+);
+
+wire l1_tlb0_is_page_fault = is_page_fault(preq.wen, 1'b1,
+                                            l1_tlb0_resp_pte_r, l1_tlb0_resp_pte_w, l1_tlb0_resp_pte_x,
+                                            l1_tlb0_resp_pte_u, l1_tlb0_resp_pte_g, 1'b1, l1_tlb0_resp_pte_d,
+                                            mode, mxr, sum);
+
+// L1 TLB1 (PPN1 + PPN0)
+localparam l1_TLB1_KLEN = VPN1_LEN; // pteのvpn
+localparam l1_TLB1_VLEN = PPN1_LEN + 6;// PPN1(paddr), pte(R,W,U,X,G,D)
+
+wire VPN1   l1_tlb1_req_vpn1   = vaddr.vpn1;
+wire        l1_tlb1_resp_hit;
+wire PPN1   l1_tlb1_resp_ppn1;
+wire        l1_tlb1_resp_pte_r;
+wire        l1_tlb1_resp_pte_w;
+wire        l1_tlb1_resp_pte_x;
+wire        l1_tlb1_resp_pte_u;
+wire        l1_tlb1_resp_pte_g;
+wire        l1_tlb1_resp_pte_d;
+logic       l1_tlb1_update_valid   = 0;
+VPN1        l1_tlb1_update_vpn1    = 0;
+PPN1        l1_tlb1_update_ppn1    = 0;
+logic       l1_tlb1_update_pte_r   = 0;
+logic       l1_tlb1_update_pte_w   = 0;
+logic       l1_tlb1_update_pte_x   = 0;
+logic       l1_tlb1_update_pte_u   = 0;
+logic       l1_tlb1_update_pte_g   = 0;
+logic       l1_tlb1_update_pte_d   = 0;
+
+CombinationalKeyValueStore #(
+    .KEY_WIDTH(l1_TLB1_KLEN),
+    .VAL_WIDTH(l1_TLB1_VLEN),
+    .MEM_WIDTH(5) // 適当
+) l1_tlb1 (
+    .clk(clk),
+    .reset(flush_tlb),
+    .key(l1_tlb1_req_vpn1),
+    .hit(l1_tlb1_resp_hit),
+    .value({l1_tlb1_resp_ppn1,
+            l1_tlb1_resp_pte_r, l1_tlb1_resp_pte_w, l1_tlb1_resp_pte_x,
+            l1_tlb1_resp_pte_u, l1_tlb1_resp_pte_g, l1_tlb1_resp_pte_d}),
+    .update_valid(l1_tlb1_update_valid),
+    .update_key(l1_tlb1_update_vpn1),
+    .update_value({ l1_tlb1_update_ppn1,
+                    l1_tlb1_update_pte_r, l1_tlb1_update_pte_w, l1_tlb1_update_pte_x,
+                    l1_tlb1_update_pte_u, l1_tlb1_update_pte_g, l1_tlb1_update_pte_d})
+);
+
+wire l1_tlb1_is_page_fault = is_page_fault(preq.wen, 1'b1,
+                                            l1_tlb1_resp_pte_r, l1_tlb1_resp_pte_w, l1_tlb1_resp_pte_x,
+                                            l1_tlb1_resp_pte_u, l1_tlb1_resp_pte_g, 1'b1, l1_tlb1_resp_pte_d,
+                                            mode, mxr, sum);
+
+// L2 TLB
+wire l2_tlb_req_valid = sv32_enable & (state == WAIT_L2_TLB_READY | state == IDLE & preq.valid) & all_l2_tlb_ready;
+
+// L2 TLB0 (PPN1 + PPN0)
+localparam L2_TLB0_KLEN = VPN_LEN; // pteのvpn
+localparam L2_TLB0_VLEN = PPN_LEN + PPN_LEN + 6;// PPN(paddr), PPN(PTEのアドレス用), pte(R,W,U,X,G,D)
+
+wire        l2_tlb0_req_ready;
+wire        l2_tlb0_req_valid  = l2_tlb_req_valid;
+wire VPN    l2_tlb0_req_vpn    = vaddr.vpn;
+wire        l2_tlb0_resp_valid;
+wire        l2_tlb0_resp_hit;
+wire PPN    l2_tlb0_resp_paddr_ppn;
+wire PPN    l2_tlb0_resp_pte_ppn;
+wire        l2_tlb0_resp_pte_r;
+wire        l2_tlb0_resp_pte_w;
+wire        l2_tlb0_resp_pte_x;
+wire        l2_tlb0_resp_pte_u;
+wire        l2_tlb0_resp_pte_g;
+wire        l2_tlb0_resp_pte_d;
+logic       l2_tlb0_update_valid       = 0;
+VPN         l2_tlb0_update_vpn         = 0;
+PPN         l2_tlb0_update_paddr_ppn   = 0;
+PPN         l2_tlb0_update_pte_ppn     = 0;
+logic       l2_tlb0_update_pte_r       = 0;
+logic       l2_tlb0_update_pte_w       = 0;
+logic       l2_tlb0_update_pte_x       = 0;
+logic       l2_tlb0_update_pte_u       = 0;
+logic       l2_tlb0_update_pte_g       = 0;
+logic       l2_tlb0_update_pte_d       = 0;
 
 MemoryKeyValueStore #(
-    .KEY_WIDTH(TLB0_KLEN),
-    .VAL_WIDTH(TLB0_VLEN),
+    .KEY_WIDTH(L2_TLB0_KLEN),
+    .VAL_WIDTH(L2_TLB0_VLEN),
     .MEM_WIDTH(10), // = 1024 適当
-    .LOG_ENABLE(LOG_ENABLE && ENABLE_TLB0_LOG),
+    .LOG_ENABLE(LOG_ENABLE && ENABLE_L2_TLB0_LOG),
     .LOG_AS({LOG_AS, ".tlb0"})
-) tlb0 (
+) l2_tlb0 (
     .clk(clk),
-    .req_ready(tlb0_req_ready),
-    .req_valid(tlb0_req_valid),
-    .req_key(tlb0_req_vpn),
-    .resp_valid(tlb0_resp_valid),
-    .resp_hit(tlb0_resp_hit),
-    .resp_value({tlb0_resp_paddr_ppn, tlb0_resp_pte_ppn, 
-                tlb0_resp_pte_r,tlb0_resp_pte_w,tlb0_resp_pte_x,
-                tlb0_resp_pte_u,tlb0_resp_pte_g,tlb0_resp_pte_d}),
-    .update_valid(tlb0_update_valid),
-    .update_key(tlb0_update_vpn),
-    .update_value({tlb0_update_paddr_ppn, tlb0_update_pte_ppn,
-                    tlb0_update_pte_r,tlb0_update_pte_w,tlb0_update_pte_x,
-                    tlb0_update_pte_u,tlb0_update_pte_g,tlb0_update_pte_d}),
-    .flush(flush_tlb)
+    .reset(flush_tlb),
+    .req_ready(l2_tlb0_req_ready),
+    .req_valid(l2_tlb0_req_valid),
+    .req_key(l2_tlb0_req_vpn),
+    .resp_valid(l2_tlb0_resp_valid),
+    .resp_hit(l2_tlb0_resp_hit),
+    .resp_value({   l2_tlb0_resp_paddr_ppn, l2_tlb0_resp_pte_ppn,
+                    l2_tlb0_resp_pte_r, l2_tlb0_resp_pte_w, l2_tlb0_resp_pte_x,
+                    l2_tlb0_resp_pte_u, l2_tlb0_resp_pte_g, l2_tlb0_resp_pte_d}),
+    .update_valid(l2_tlb0_update_valid),
+    .update_key(l2_tlb0_update_vpn),
+    .update_value({ l2_tlb0_update_paddr_ppn, l2_tlb0_update_pte_ppn,
+                    l2_tlb0_update_pte_r, l2_tlb0_update_pte_w, l2_tlb0_update_pte_x,
+                    l2_tlb0_update_pte_u, l2_tlb0_update_pte_g, l2_tlb0_update_pte_d})
 );
 
 // TODO TLBを待ちつつフェッチしたい
-// TLB1 (PPN1 + PPN0)
-localparam TLB1_KLEN = VPN1_LEN; // pteのvpn
-localparam TLB1_VLEN = PPN1_LEN + 6;// PPN1(paddr), pte(R,W,U,X,G,D)
+// L2 TLB1 (PPN1 + PPN0)
+localparam l2_TLB1_KLEN = VPN1_LEN; // pteのvpn
+localparam l2_TLB1_VLEN = PPN1_LEN + 6;// PPN1(paddr), pte(R,W,U,X,G,D)
 
-wire        tlb1_req_ready;
-wire        tlb1_req_valid  = tlb_req_valid;
-wire VPN1   tlb1_req_vpn1   = vaddr.vpn1;
-wire        tlb1_resp_valid;
-wire        tlb1_resp_hit;
-wire PPN1   tlb1_resp_ppn1;
-wire        tlb1_resp_pte_r;
-wire        tlb1_resp_pte_w;
-wire        tlb1_resp_pte_x;
-wire        tlb1_resp_pte_u;
-wire        tlb1_resp_pte_g;
-wire        tlb1_resp_pte_d;
-logic       tlb1_update_valid   = 0;
-VPN1        tlb1_update_vpn1    = 0;
-PPN1        tlb1_update_ppn1    = 0;
-logic       tlb1_update_pte_r   = 0;
-logic       tlb1_update_pte_w   = 0;
-logic       tlb1_update_pte_x   = 0;
-logic       tlb1_update_pte_u   = 0;
-logic       tlb1_update_pte_g   = 0;
-logic       tlb1_update_pte_d   = 0;
+wire        l2_tlb1_req_ready;
+wire        l2_tlb1_req_valid  = l2_tlb_req_valid;
+wire VPN1   l2_tlb1_req_vpn1   = vaddr.vpn1;
+wire        l2_tlb1_resp_valid;
+wire        l2_tlb1_resp_hit;
+wire PPN1   l2_tlb1_resp_ppn1;
+wire        l2_tlb1_resp_pte_r;
+wire        l2_tlb1_resp_pte_w;
+wire        l2_tlb1_resp_pte_x;
+wire        l2_tlb1_resp_pte_u;
+wire        l2_tlb1_resp_pte_g;
+wire        l2_tlb1_resp_pte_d;
+logic       l2_tlb1_update_valid   = 0;
+VPN1        l2_tlb1_update_vpn1    = 0;
+PPN1        l2_tlb1_update_ppn1    = 0;
+logic       l2_tlb1_update_pte_r   = 0;
+logic       l2_tlb1_update_pte_w   = 0;
+logic       l2_tlb1_update_pte_x   = 0;
+logic       l2_tlb1_update_pte_u   = 0;
+logic       l2_tlb1_update_pte_g   = 0;
+logic       l2_tlb1_update_pte_d   = 0;
 
 MemoryKeyValueStore #(
-    .KEY_WIDTH(TLB1_KLEN),
-    .VAL_WIDTH(TLB1_VLEN),
+    .KEY_WIDTH(l2_TLB1_KLEN),
+    .VAL_WIDTH(l2_TLB1_VLEN),
     .MEM_WIDTH(10), // = 1024 適当
-    .LOG_ENABLE(LOG_ENABLE && ENABLE_TLB1_LOG),
+    .LOG_ENABLE(LOG_ENABLE && ENABLE_L2_TLB1_LOG),
     .LOG_AS({LOG_AS, ".tlb1"})
-) tlb1 (
+) l2_tlb1 (
     .clk(clk),
-    .req_ready(tlb1_req_ready),
-    .req_valid(tlb1_req_valid),
-    .req_key(tlb1_req_vpn1),
-    .resp_valid(tlb1_resp_valid),
-    .resp_hit(tlb1_resp_hit),
-    .resp_value({tlb1_resp_ppn1,
-                tlb1_resp_pte_r,tlb1_resp_pte_w,tlb1_resp_pte_x,
-                tlb1_resp_pte_u,tlb1_resp_pte_g,tlb1_resp_pte_d}),
-    .update_valid(tlb1_update_valid),
-    .update_key(tlb1_update_vpn1),
-    .update_value({tlb1_update_ppn1,
-                    tlb1_update_pte_r,tlb1_update_pte_w,tlb1_update_pte_x,
-                    tlb1_update_pte_u,tlb1_update_pte_g,tlb1_update_pte_d}),
-    .flush(flush_tlb)
+    .reset(flush_tlb),
+    .req_ready(l2_tlb1_req_ready),
+    .req_valid(l2_tlb1_req_valid),
+    .req_key(l2_tlb1_req_vpn1),
+    .resp_valid(l2_tlb1_resp_valid),
+    .resp_hit(l2_tlb1_resp_hit),
+    .resp_value({   l2_tlb1_resp_ppn1,
+                    l2_tlb1_resp_pte_r, l2_tlb1_resp_pte_w, l2_tlb1_resp_pte_x,
+                    l2_tlb1_resp_pte_u, l2_tlb1_resp_pte_g, l2_tlb1_resp_pte_d}),
+    .update_valid(l2_tlb1_update_valid),
+    .update_key(l2_tlb1_update_vpn1),
+    .update_value({ l2_tlb1_update_ppn1,
+                    l2_tlb1_update_pte_r, l2_tlb1_update_pte_w, l2_tlb1_update_pte_x,
+                    l2_tlb1_update_pte_u, l2_tlb1_update_pte_g, l2_tlb1_update_pte_d})
 );
 
-wire        all_tlb_ready           = tlb0_req_ready & tlb1_req_ready;
-logic [1:0] tlbs_saved_responsed    = 0;
-wire        tlbs_all_responsed      = (tlbs_saved_responsed | {tlb0_resp_valid, tlb1_resp_valid}) == 2'b11;
+wire        all_l2_tlb_ready           = l2_tlb0_req_ready & l2_tlb1_req_ready;
+logic [1:0] l2_tlbs_saved_responsed    = 0;
+wire        l2_tlbs_all_responsed      = (l2_tlbs_saved_responsed | {l2_tlb0_resp_valid, l2_tlb1_resp_valid}) == 2'b11;
 
-always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
+always @(posedge clk) if (reset) begin
+        state <= IDLE;
+        idle_with_wait_valid <= 0;
+    end else if (sv32_enable) begin
     case (state)
     IDLE: begin
-        tlb1_update_valid   <= 0;
-        tlb0_update_valid   <= 0;
-        tlbs_saved_responsed<= 0;
-        if (preq.valid) begin
+        l1_tlb1_update_valid    <= 0;
+        l1_tlb0_update_valid    <= 0;
+        l2_tlb1_update_valid    <= 0;
+        l2_tlb0_update_valid    <= 0;
+        l2_tlbs_saved_responsed <= 0;
+
+        if (preq.valid & is_idle) begin
+            s_req <= preq;
             if (EXECUTE_MODE & preq.wen) begin
-                $display("ERROR: PTE(EXECUTE MODE) with wen=1");
+                $fatal(1, "PTW(EXECUTE MODE) with wen=1");
                 `ffinish
             end
-            state       <= all_tlb_ready ? CHECK_TLB : WAIT_TLB_READY;
-            s_req       <= preq;
-            // 5.3.2 step 3
-            level       <= 1; // level = 2 - 1 = 1スタート
+            if (l1_tlb1_resp_hit | l1_tlb0_resp_hit) begin
+                if (l1_tlb1_resp_hit & l1_tlb1_is_page_fault | l1_tlb0_resp_hit & l1_tlb0_is_page_fault) begin
+                    // TODO エラーに移行する処理をfunction化する
+                    state           <= REQ_END;
+                    result_error    <= 1;
+                    result_errty    <= FE_PAGE_FAULT;
+                    idle_with_wait_valid    <= 0;
+                end else if (l1_tlb1_resp_hit) begin
+                    next_addr <= gen_l1_paddr(l1_tlb1_resp_ppn1, vaddr.vpn0, vaddr.pgoff);
+                    // 書き込みかつdが立っていないときは、結果を確認する
+                    if (preq.wen & !(l1_tlb1_resp_pte_d === 1'b1)) begin
+                        idle_with_wait_valid    <= 0;
+                        // PTE.d書き込みに移動
+                        state           <= memreq.ready ? REQ_VALID : REQ_READY;
+                        level           <= 1;
+                        saved_pte_addr  <= gen_l1pte_addr(vaddr.vpn1);
+                        saved_pte_data  <= {l1_tlb1_resp_ppn1, {PPN0_LEN{1'b0}},
+                                            2'b0, l1_tlb1_resp_pte_d, 1'b1,
+                                            l1_tlb1_resp_pte_g, l1_tlb1_resp_pte_u,
+                                            l1_tlb1_resp_pte_x, l1_tlb1_resp_pte_w, l1_tlb1_resp_pte_r, 1'b1};
+                    end else begin
+                        // それ以外の場合は、validを確認するまでs_reqを保持しておく
+                        idle_with_wait_valid <= 1;
+                        if (!memreq.ready) state <= WAIT_L1_READY;
+                    end
+                end else /*if (l1_tlb0_resp_hit)*/ begin
+                    // READYではなかった時のためにnext_addrを保存する
+                    next_addr <= gen_l0_paddr(l1_tlb0_resp_paddr_ppn, vaddr.pgoff);
+                    // 書き込みかつdが立っていないときは、結果を確認する
+                    if (preq.wen & !(l1_tlb0_resp_pte_d === 1'b1)) begin
+                        idle_with_wait_valid    <= 0;
+                        // PTE.d書き込みに移動
+                        state           <= memreq.ready ? REQ_VALID : REQ_READY;
+                        level           <= 1;
+                        saved_pte_addr  <= gen_l0pte_addr(l1_tlb0_resp_pte_ppn, vaddr.vpn0);
+                        saved_pte_data  <= {l1_tlb0_resp_paddr_ppn,
+                                            2'b0, l1_tlb0_resp_pte_d, 1'b1,
+                                            l1_tlb0_resp_pte_g, l1_tlb0_resp_pte_u,
+                                            l1_tlb0_resp_pte_x, l1_tlb0_resp_pte_w, l1_tlb0_resp_pte_r, 1'b1};
+                    end else begin
+                        // それ以外の場合は、validを確認するまでs_reqを保持しておく
+                        idle_with_wait_valid <= 1;
+                        if (!memreq.ready) state <= WAIT_L1_READY;
+                    end
+                end
+            end else begin
+                // TODO function化
+                state   <= all_l2_tlb_ready ? CHECK_L2_TLB : WAIT_L2_TLB_READY;
+                level   <= 1; // level = 2 - 1 = 1スタート
+                idle_with_wait_valid    <= 0;
+            end
+        end else begin
+            if (idle_with_wait_valid & memresp.valid) begin
+                idle_with_wait_valid <= 0;
+            end
         end
     end
-    WAIT_TLB_READY: if (all_tlb_ready) state <= CHECK_TLB;
-    CHECK_TLB: begin
+    WAIT_L1_READY: if (memreq.ready) state <= IDLE;
+    WAIT_L2_TLB_READY: if (all_l2_tlb_ready) state <= CHECK_L2_TLB;
+    CHECK_L2_TLB: begin
         // TLBにあったら終了
         // TLBになかったらフェッチ
-        if (tlb1_resp_valid)
-            tlbs_saved_responsed[1] <= 1;
-        if (tlb0_resp_valid)
-            tlbs_saved_responsed[0] <= 1;
-        if (tlb1_resp_valid & tlb1_resp_hit) begin
+        if (l2_tlb1_resp_valid)
+            l2_tlbs_saved_responsed[1] <= 1;
+        if (l2_tlb0_resp_valid)
+            l2_tlbs_saved_responsed[0] <= 1;
+        if (l2_tlb1_resp_valid & l2_tlb1_resp_hit) begin
             if (is_page_fault(
                     s_req.wen, 1'b1,
-                    tlb1_resp_pte_r, tlb1_resp_pte_w, tlb1_resp_pte_x,
-                    tlb1_resp_pte_u, tlb1_resp_pte_g, 1'b1, tlb1_resp_pte_d,
+                    l2_tlb1_resp_pte_r, l2_tlb1_resp_pte_w, l2_tlb1_resp_pte_x,
+                    l2_tlb1_resp_pte_u, l2_tlb1_resp_pte_g, 1'b1, l2_tlb1_resp_pte_d,
                     mode, mxr, sum))
             begin
                 state           <= REQ_END;
@@ -319,17 +497,17 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
                 state           <= REQ_READY;
                 level           <= 1;
                 saved_pte_addr  <= gen_l1pte_addr(s_vaddr.vpn1);
-                saved_pte_data  <= {tlb1_resp_ppn1, {PPN0_LEN{1'b0}},
-                                    2'b0, tlb1_resp_pte_d, 1'b1,
-                                    tlb1_resp_pte_g, tlb1_resp_pte_u,
-                                    tlb1_resp_pte_x, tlb1_resp_pte_w, tlb1_resp_pte_r, 1'b1};
-                next_addr       <= gen_l1_paddr(tlb1_resp_ppn1, s_vaddr.vpn0, s_vaddr.pgoff);
+                saved_pte_data  <= {l2_tlb1_resp_ppn1, {PPN0_LEN{1'b0}},
+                                    2'b0, l2_tlb1_resp_pte_d, 1'b1,
+                                    l2_tlb1_resp_pte_g, l2_tlb1_resp_pte_u,
+                                    l2_tlb1_resp_pte_x, l2_tlb1_resp_pte_w, l2_tlb1_resp_pte_r, 1'b1};
+                next_addr       <= gen_l1_paddr(l2_tlb1_resp_ppn1, s_vaddr.vpn0, s_vaddr.pgoff);
             end
-        end else if (tlb0_resp_valid & tlb0_resp_hit) begin
+        end else if (l2_tlb0_resp_valid & l2_tlb0_resp_hit) begin
             if (is_page_fault(
                     s_req.wen, 1'b1,
-                    tlb0_resp_pte_r, tlb0_resp_pte_w, tlb0_resp_pte_x,
-                    tlb0_resp_pte_u, tlb0_resp_pte_g, 1'b1, tlb0_resp_pte_d,
+                    l2_tlb0_resp_pte_r, l2_tlb0_resp_pte_w, l2_tlb0_resp_pte_x,
+                    l2_tlb0_resp_pte_u, l2_tlb0_resp_pte_g, 1'b1, l2_tlb0_resp_pte_d,
                     mode, mxr, sum))
             begin
                 state           <= REQ_END;
@@ -338,14 +516,14 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             end else begin
                 state           <= REQ_READY;
                 level           <= 0;
-                saved_pte_addr  <= gen_l0pte_addr(tlb0_resp_pte_ppn, s_vaddr.vpn0);
-                saved_pte_data  <= {tlb0_resp_paddr_ppn,
-                                    2'b0, tlb0_resp_pte_d, 1'b1,
-                                    tlb0_resp_pte_g, tlb0_resp_pte_u,
-                                    tlb0_resp_pte_x, tlb0_resp_pte_w, tlb0_resp_pte_r, 1'b1};
-                next_addr       <= gen_l0_paddr(tlb0_resp_paddr_ppn, s_vaddr.pgoff);
+                saved_pte_addr  <= gen_l0pte_addr(l2_tlb0_resp_pte_ppn, s_vaddr.vpn0);
+                saved_pte_data  <= {l2_tlb0_resp_paddr_ppn,
+                                    2'b0, l2_tlb0_resp_pte_d, 1'b1,
+                                    l2_tlb0_resp_pte_g, l2_tlb0_resp_pte_u,
+                                    l2_tlb0_resp_pte_x, l2_tlb0_resp_pte_w, l2_tlb0_resp_pte_r, 1'b1};
+                next_addr       <= gen_l0_paddr(l2_tlb0_resp_paddr_ppn, s_vaddr.pgoff);
             end
-        end else if (tlbs_all_responsed) begin
+        end else if (l2_tlbs_all_responsed) begin
             state       <= WALK_READY;
             next_addr   <= gen_l1pte_addr(s_vaddr.vpn1);
         end
@@ -412,26 +590,49 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
             state <= IDLE;
         else begin
             if (level === 1) begin
-                tlb1_update_valid       <= 1;
-                tlb1_update_vpn1        <= s_vaddr.vpn1;
-                tlb1_update_ppn1        <= last_pte.ppn1;
-                tlb1_update_pte_r       <= last_pte.r;
-                tlb1_update_pte_w       <= last_pte.w;
-                tlb1_update_pte_x       <= last_pte.x;
-                tlb1_update_pte_u       <= last_pte.u;
-                tlb1_update_pte_g       <= last_pte.g;
-                tlb1_update_pte_d       <= last_pte.d | s_req.wen;
+                // l1
+                l1_tlb1_update_valid       <= 1;
+                l1_tlb1_update_vpn1        <= s_vaddr.vpn1;
+                l1_tlb1_update_ppn1        <= last_pte.ppn1;
+                l1_tlb1_update_pte_r       <= last_pte.r;
+                l1_tlb1_update_pte_w       <= last_pte.w;
+                l1_tlb1_update_pte_x       <= last_pte.x;
+                l1_tlb1_update_pte_u       <= last_pte.u;
+                l1_tlb1_update_pte_g       <= last_pte.g;
+                l1_tlb1_update_pte_d       <= last_pte.d | s_req.wen;
+                // l2
+                l2_tlb1_update_valid       <= 1;
+                l2_tlb1_update_vpn1        <= s_vaddr.vpn1;
+                l2_tlb1_update_ppn1        <= last_pte.ppn1;
+                l2_tlb1_update_pte_r       <= last_pte.r;
+                l2_tlb1_update_pte_w       <= last_pte.w;
+                l2_tlb1_update_pte_x       <= last_pte.x;
+                l2_tlb1_update_pte_u       <= last_pte.u;
+                l2_tlb1_update_pte_g       <= last_pte.g;
+                l2_tlb1_update_pte_d       <= last_pte.d | s_req.wen;
             end else if (level === 0) begin
-                tlb0_update_valid       <= 1;
-                tlb0_update_vpn         <= s_vaddr.vpn;
-                tlb0_update_paddr_ppn   <= last_pte.ppn;
-                tlb0_update_pte_ppn     <= {2'b0, saved_pte_addr[31:12]};
-                tlb0_update_pte_r       <= last_pte.r;
-                tlb0_update_pte_w       <= last_pte.w;
-                tlb0_update_pte_x       <= last_pte.x;
-                tlb0_update_pte_u       <= last_pte.u;
-                tlb0_update_pte_g       <= last_pte.g;
-                tlb0_update_pte_d       <= last_pte.d | s_req.wen;
+                // l1
+                l1_tlb0_update_valid       <= 1;
+                l1_tlb0_update_vpn         <= s_vaddr.vpn;
+                l1_tlb0_update_paddr_ppn   <= last_pte.ppn;
+                l1_tlb0_update_pte_ppn     <= {2'b0, saved_pte_addr[31:12]};
+                l1_tlb0_update_pte_r       <= last_pte.r;
+                l1_tlb0_update_pte_w       <= last_pte.w;
+                l1_tlb0_update_pte_x       <= last_pte.x;
+                l1_tlb0_update_pte_u       <= last_pte.u;
+                l1_tlb0_update_pte_g       <= last_pte.g;
+                l1_tlb0_update_pte_d       <= last_pte.d | s_req.wen;
+                // l2
+                l2_tlb0_update_valid       <= 1;
+                l2_tlb0_update_vpn         <= s_vaddr.vpn;
+                l2_tlb0_update_paddr_ppn   <= last_pte.ppn;
+                l2_tlb0_update_pte_ppn     <= {2'b0, saved_pte_addr[31:12]};
+                l2_tlb0_update_pte_r       <= last_pte.r;
+                l2_tlb0_update_pte_w       <= last_pte.w;
+                l2_tlb0_update_pte_x       <= last_pte.x;
+                l2_tlb0_update_pte_u       <= last_pte.u;
+                l2_tlb0_update_pte_g       <= last_pte.g;
+                l2_tlb0_update_pte_d       <= last_pte.d | s_req.wen;
             end
             // A, Dを書き込む条件がそろっている
             if (!last_pte.a | s_req.wen & !last_pte.d) begin
@@ -443,8 +644,10 @@ always @(posedge clk) if (reset) state <= IDLE; else if (sv32_enable) begin
         end
     end
     WAIT_SET_AD_READY: begin
-        tlb1_update_valid <= 0;
-        tlb0_update_valid <= 0;
+        l1_tlb1_update_valid <= 0;
+        l1_tlb0_update_valid <= 0;
+        l2_tlb1_update_valid <= 0;
+        l2_tlb0_update_valid <= 0;
         if (ptereq.ready) begin
             state <= IDLE;
         end

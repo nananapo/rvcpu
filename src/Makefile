@@ -16,6 +16,7 @@ FILES = test.sv \
 		BP_TwoBitCounter.sv \
 		BP_LocalHistory2bit.sv \
 		BP_GlobalHistory2bit.sv \
+		CombinationalKeyValueStore.sv \
 		MemBusCntr.sv \
 		MemICache.sv \
 		MemDCache.sv \
