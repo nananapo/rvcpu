@@ -165,9 +165,9 @@ wire Addr next_pc_pred = pred_taken ? pred_taken_pc : pred_pc_base + 4;
                         pc + 4;
 `endif
 
-
-assign memreq.valid = buf_wready;
-assign memreq.addr  =   branch_hazard ? ireq.addr :
+// TODO フェッチもキューにする
+assign memreq.valid =   !branch_hazard && buf_wready;
+assign memreq.addr  =   //branch_hazard ? ireq.addr :
                         jal_hazard ? jal_target :
                         inst_is_br ? next_pc_pred :
                         pc;
@@ -180,6 +180,7 @@ logic firstClk = 1;
 always @(posedge clk) begin
     // 分岐予測に失敗
     if (branch_hazard) begin
+        // branchの次のクロックでフェッチを開始する
         if (util::logEnabled())
             $display("info,fetchstage.event.branch_hazard,branch hazard");
         pc                  <= ireq.addr;
@@ -210,9 +211,9 @@ always @(posedge clk) begin
                     request_pc  <= memreq.addr;
                     pc          <= next_pc;
                     `ifdef PRINT_DEBUGINFO
-                    inst_id     <= inst_id + 1;
+                    inst_id     <=  iid::inc(inst_id);
                     if (util::logEnabled())
-                        $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
+                        $display("data,fetchstage.event.fetch_start,d,%b", inst_id.id);
                     `endif
                 end else
                     requested   <= 0;
@@ -224,9 +225,9 @@ always @(posedge clk) begin
                 requested   <= 1;
                 request_pc  <= memreq.addr;
                 `ifdef PRINT_DEBUGINFO
-                inst_id     <= inst_id + 1;
+                inst_id     <= iid::inc(inst_id);
                 if (util::logEnabled())
-                    $display("data,fetchstage.event.fetch_start,d,%b", inst_id);
+                    $display("data,fetchstage.event.fetch_start,d,%b", inst_id.id);
                 `endif
             end
         end
@@ -252,7 +253,6 @@ always @(posedge clk) if (util::logEnabled()) begin
     $display("data,fetchstage.next_pc,h,%b", next_pc);
     $display("data,fetchstage.requested_pc,h,%b", request_pc);
     $display("data,fetchstage.requesting_pc,h,%b", memreq.addr);
-    $display("data,fetchstage.requested_pc,h,%b", request_pc);
     $display("data,fetchstage.error,d,%b", memresp.error);
     $display("data,fetchstage.errty,d,%b", memresp.errty);
 

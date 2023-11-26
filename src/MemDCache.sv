@@ -26,13 +26,14 @@ import basic::*;
 
 localparam CACHE_SIZE = 2 ** CACHE_WIDTH;
 
-UInt32  cache_data[CACHE_SIZE-1:0];
-Addr    cache_addrs[CACHE_SIZE-1:0];
-logic   cache_valid[CACHE_SIZE-1:0];
-logic   cache_modified[CACHE_SIZE-1:0];
+// TODO packする
+UInt32                  cache_data[CACHE_SIZE-1:0];
+Addr                    cache_addrs[CACHE_SIZE-1:0];
+logic [CACHE_SIZE-1:0]  cache_valid;
+logic                   cache_modified[CACHE_SIZE-1:0];
 
 // 変更されているがライトバックされていない値のカウント
-logic [CACHE_WIDTH-1:0] modified_count = 0;
+logic [CACHE_WIDTH:0] modified_count = 0; // CACHE_WIDTH + 1 bitでないと数えられない
 assign is_writebacked_all = modified_count == 0 & !writeback_requested;
 
 // writebackが要求されたが処理できていないかどうか
@@ -44,8 +45,8 @@ initial begin
         $display("DCache.CACHE_WIDTH(=%d) should be greater than 1", CACHE_WIDTH);
         `ffinish
     end
+    cache_valid = 0;
     for (int i = 0; i < CACHE_SIZE; i++) begin
-        cache_valid[i] = 0;
         cache_modified[i] = 0;
     end
 end
@@ -123,6 +124,8 @@ end
 
 `ifdef RISCV_TESTS
 integer STDERR = 32'h8000_0002;
+
+import util::test_success;
 always @(posedge clk) begin
     if (state == IDLE &
         dreq_in.valid &
@@ -132,17 +135,23 @@ always @(posedge clk) begin
         if (dreq_in.wdata[15:8] == 8'b0101_0000) begin
             $fdisplay(STDERR, "%c", dreq_in.wdata[7:0]);
         end else begin
-            if (dreq_in.wdata === 1)
+            if (dreq_in.wdata === 1) begin
+                test_success = 1;
                 $display("info,coretest.result,Test passed");
-            else
-                $display("info,coretest,result,Test failed : gp(%d) is not 1", dreq_in.wdata);
+            end else begin
+                $fatal(1, "info,coretest,result,Test failed : gp(%d) is not 1", dreq_in.wdata);
+            end
             `ffinish
         end
     end
 end
 `endif
 
+logic [63:0] clock_count = 0;
+
 always @(posedge clk) begin
+    clock_count <= clock_count + 1;
+
     // TODO これきれいにできない？
     dresp_valid_reg <=  (state == IDLE & (
                             cache_hit |            // cache hit
@@ -151,6 +160,21 @@ always @(posedge clk) begin
                         state == RESP_VALID | // read
                         state == WRITE_READY & (busreq.ready & dreq.wen); // writeback -> write
     dresp_rdata_reg <= cache_data[mem_index];
+
+    // if ((state == IDLE & (
+    //                         cache_hit |            // cache hit
+    //                         !need_wb & dreq.wen    // ライトバックが必要なくて、そのまま上書きする
+    //                     )) |
+    //                     state == RESP_VALID | // read
+    //                     state == WRITE_READY & (busreq.ready & dreq.wen)
+    // ) begin
+    //     if (dreq.addr == 32'h17724) begin
+    //         if (dreq.wen)
+    //             $display("%d,%d,wdata:%h", clock_count, dreq.wen, dreq.wdata);
+    //         else
+    //             $display("%d,%d,rdata:%h", clock_count, dreq.wen, cache_data[mem_index]);
+    //     end
+    // end
 
     if (do_writeback & state != IDLE & state != WB_LOOP_CHECK & state != WB_LOOP_READY) begin
         writeback_requested <= 1;
@@ -338,6 +362,7 @@ end
 // `ifdef PRINT_DEBUGINFO
 // always @(posedge clk) if (util::logEnabled()) begin
 //     $display("data,memstage.d$.state,d,%b", state);
+//     $display("data,memstage.d$.modified_count,d,%b", modified_count);
 //     if (dreq_in.valid & state == IDLE) begin
 //         $display("data,memstage.d$.req.addr,h,%b", dreq_in.addr);
 //         $display("data,memstage.d$.req.addr_index,h,%b", info_index);

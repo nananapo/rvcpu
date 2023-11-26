@@ -3,13 +3,14 @@ from os import system
 import os
 
 TESTS_PATH = "riscv-tests/"
-MAKE_COMMAND_IVERILOG = "make riscv-tests"
-MAKE_COMMAND_VERILATOR = "make dvrv "
+MAKE_COMMAND_IVERILOG = "make -C ../src/ riscv-tests"
+MAKE_COMMAND_VERILATOR = "make -C ../src/ dvrv "
 
 VERILATOR_MODE = False
 NODEBUG_MODE = False
 XZSTOP_MODE = False
-
+SHOW_CMD_MODE = False
+SHOW_VCD_MODE = False
 
 os.makedirs("../test/results", exist_ok=True)
 
@@ -18,24 +19,22 @@ resultstatus = []
 def test(makecmd, filename):
     # run test
     resultFileName = "../test/results/" + filename.replace("/","_") + ".txt"
-    cmd = "cd ../src/ && " + makecmd + " > " + resultFileName
-    # print(cmd)
-    system(cmd)
-
-    with open(resultFileName, "r") as f:
-        result = "".join(f.readlines())
-        if "Test passed" in result:
-            results.append("PASS : "+ filename)
-            resultstatus.append(True)
-            print("PASS : "+ filename)
-        else:
-            results.append("FAIL : "+ filename)
-            resultstatus.append(False)
-            print("FAIL : "+ filename)
+    cmd = makecmd + " > " + resultFileName
+    if SHOW_CMD_MODE:
+        print(cmd)
+    ret = system(cmd)
+    if ret == 0:
+        results.append("PASS : "+ filename)
+        resultstatus.append(True)
+        print("PASS : "+ filename)
+    else:
+        results.append("FAIL : "+ filename)
+        resultstatus.append(False)
+        print("FAIL : "+ filename)
 
 args = sys.argv[1:]
 def procarg():
-    global args, VERILATOR_MODE, NODEBUG_MODE, XZSTOP_MODE
+    global args, VERILATOR_MODE, NODEBUG_MODE, XZSTOP_MODE, SHOW_CMD_MODE, SHOW_VCD_MODE
     cont = True
     while cont:
         cont = False
@@ -49,6 +48,14 @@ def procarg():
             cont = True
         if len(args) >= 1 and args[0] == "-xzstop":
             XZSTOP_MODE = True
+            args = args[1:]
+            cont = True
+        if len(args) >= 1 and args[0] == "-s":
+            SHOW_CMD_MODE = True
+            args = args[1:]
+            cont = True
+        if len(args) >= 1 and args[0] == "-vcd":
+            SHOW_VCD_MODE = True
             args = args[1:]
             cont = True
 procarg()
@@ -69,6 +76,9 @@ for fileName in sorted(os.listdir(TESTS_PATH)):
         if not NODEBUG_MODE:
             options.append("-DPRINT_DEBUGINFO")
         options.append("-DEND_CLOCK_COUNT=500000")
+        options.append("-DDETECT_ABNORMAL_STALL")
+        if SHOW_VCD_MODE:
+            options.append("-DPRINT_VCD")
         test(mcmd + " OPTION=\"" + " ".join(options) + "\"", fileName)
 
 results = sorted(results)

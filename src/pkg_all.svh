@@ -9,6 +9,7 @@
 `include "pkg_basic.svh"
 // basicにのみ依存
 `include "pkg_util.svh"
+`include "pkg_sv32.svh"
 // basic, utilに依存
 `include "pkg_memory.svh"
 // basic, iidに依存

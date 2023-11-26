@@ -103,6 +103,7 @@ UIntX       csr_op1_data;
 UIntX       csr_mem_rdata;
 Addr        csr_btarget;
 // csr wire
+wire        csr_disable_memstage;
 wire        csr_cmd_stall;
 wire        csr_is_trap;
 wire        csr_keep_trap;
@@ -126,17 +127,16 @@ FwCtrl  mem_fw;
 FwCtrl  csr_fw;
 FwCtrl  wb_fw;
 
+// 分岐予測の判定用
 // id/dsがvalidではないか、branchに失敗したクロックは保持
-wire exe_branch_stall = (!ds_valid & !id_valid & !exe_trap.valid & (exe_is_new | !exe_br_checked)) | branch_fail;
+wire exe_branch_stall = (!ds_valid & !id_valid & !exe_trap.valid) | branch_fail;
 
 // stall
 // 各ステージに新しく値を流してはいけないかどうか
 wire csr_stall  = csr_cmd_stall;
 wire mem_stall  = mem_memory_stall | (mem_valid & csr_stall);
 
-wire exe_stall  =   exe_calc_stall |
-                    (exe_valid & mem_stall) |
-                    exe_branch_stall;// 分岐予測の判定用
+wire exe_stall  =   exe_valid & (exe_calc_stall | mem_stall | exe_branch_stall);
 wire ds_stall   = ds_datahazard | (ds_valid & exe_stall);
 wire id_stall   = id_valid & ds_stall;
 wire if_stall   = id_stall;
@@ -159,12 +159,7 @@ always @(posedge clk) begin
     branch_target_last_clock <= branch_target;
 end
 
-// exeステージにある命令がすでに分岐チェックされたかどうか
-// newか!checkedのとき、チェックする必要がある
-// hazardが起きると1になり、命令がidに供給されると0に戻る
-logic exe_br_checked = 0;
-
-wire branch_fail            =   exe_valid & (exe_is_new | !exe_br_checked) &
+wire branch_fail            =   exe_valid &
                                 ( ds_valid ? (exe_branch_taken & ds_info.pc != exe_branch_target) | (!exe_branch_taken & ds_info.pc != exe_info.pc + 4)
                                 : id_valid ? (exe_branch_taken & id_info.pc != exe_branch_target) | (!exe_branch_taken & id_info.pc != exe_info.pc + 4) : 1'b0 );
 wire branch_hazard_now      =   csr_is_trap | branch_fail;
@@ -172,11 +167,6 @@ wire Addr  branch_target    =   csr_is_trap ? csr_trap_vector :
                                 exe_branch_taken ? exe_branch_target : exe_info.pc + 4;
 
 always @(posedge clk) begin
-
-    if (branch_hazard_now) begin
-        exe_br_checked <= 1;
-    end
-
     // if -> id
     if (branch_hazard_now | branch_hazard_last_clock) begin
         id_valid    <= 0;
@@ -194,7 +184,6 @@ always @(posedge clk) begin
             `ifdef PRINT_DEBUGINFO
             id_info.id      <= iresp.inst_id;
             `endif
-            exe_br_checked  <= 0;
         end else begin
             id_valid    <= 0;
             id_trap     <= 0;
@@ -317,21 +306,16 @@ always @(posedge clk) begin
     end
 
     // mem -> csr
-    if (csr_is_trap) begin
-        csr_valid   <= csr_keep_trap;
-        csr_is_new  <= 0;
-        csr_trap    <= 0;
-        csr_fw      <= 0;
-    end else if (csr_stall) begin
+    if (csr_stall) begin
         csr_is_new  <= 0;
     end else begin
         if (mem_memory_stall) begin
-            csr_valid       <= csr_keep_trap;
+            csr_valid       <= 0;
             csr_is_new      <= 0;
             csr_trap        <= 0;
             csr_fw          <= 0;
         end else begin
-            csr_valid       <= mem_valid;
+            csr_valid       <= mem_valid & !csr_is_trap;
             csr_is_new      <= 1;
             csr_info        <= mem_info;
             csr_ctrl        <= mem_ctrl;
@@ -443,7 +427,8 @@ Stage_Mem #() memorystage
         csr_ctrl.csr_cmd != CSR_MRET &
         !csr_ctrl.fence_i &
         !csr_ctrl.sfence &
-        !csr_ctrl.svinval),
+        !csr_ctrl.svinval &
+        !csr_disable_memstage),
     .is_new(mem_is_new),
     .info(mem_info),
     .trapinfo(mem_trap),
@@ -491,9 +476,13 @@ Stage_CSR #() csrstage (
 
     .is_stall(csr_cmd_stall),
     .csr_is_trap(csr_is_trap),
-    .csr_keep_trap(csr_keep_trap),
     .trap_vector(csr_trap_vector),
 
+    .disable_memstage(csr_disable_memstage),
+    .valid_pc_befor_csr(
+        mem_valid ? mem_info.pc :
+        exe_valid ? exe_info.pc :
+        ds_valid ? ds_info.pc : id_info.pc),
     .external_interrupt_pending(external_interrupt_pending),
     .mip_mtip(mti_pending),
 
@@ -622,7 +611,7 @@ end
 
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,decodestage.valid,b,%b", id_valid);
-    $display("data,decodestage.inst_id,h,%b", id_valid ? id_info.id : iid::X);
+    $display("data,decodestage.inst_id,h,%b", id_valid ? id_info.id.id : iid::X);
     if (id_valid) begin
         $display("data,decodestage.pc,h,%b", id_info.pc);
         $display("data,decodestage.inst,h,%b", id_info.inst);
@@ -636,7 +625,7 @@ always @(posedge clk) if (util::logEnabled()) begin
         $display("data,decodestage.decode.rf_wen,d,%b", id_ctrl.rf_wen);
         $display("data,decodestage.decode.wb_sel,d,%b", id_ctrl.wb_sel);
         $display("data,decodestage.decode.wb_addr,d,%b", id_ctrl.wb_addr);
-        $display("data,decodestage.decode.csr_cmd,b,%b", id_ctrl.csr_cmd);
+        $display("data,decodestage.decode.csr_cmd,d,%b", id_ctrl.csr_cmd);
         $display("data,decodestage.decode.jmp_pc,d,%b", id_ctrl.jmp_pc_flg);
         $display("data,decodestage.decode.jmp_reg,d,%b", id_ctrl.jmp_reg_flg);
         $display("data,decodestage.decode.fence_i,d,%b", id_ctrl.fence_i);

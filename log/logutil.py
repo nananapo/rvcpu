@@ -32,6 +32,8 @@ DS_PIPELINE_FLUSH   = "datastage.event.pipeline_flush"
 EXE_PIPELINE_FLUSH   = "exestage.event.pipeline_flush"
 MEM_PIPELINE_FLUSH   = "memstage.event.pipeline_flush"
 
+LOG_START_TAG = "START_DEBUG_LOG"
+
 def filter_prefix(d, prefix):
     r = dict()
     for k in d.keys():
@@ -52,12 +54,11 @@ def readClockCycle(bintoint = False):
             line = input()
         except:
             break
-        line = line.removesuffix("\n")
 
-        if line == "START_DEBUG_LOG":
-            started = True
+        if not started:
+            if line[:len(LOG_START_TAG)] == LOG_START_TAG:
+                started = True
             continue
-        if not started: continue
         
         lineData = line.split(",")
         if lineData[0] == "clock":
@@ -65,11 +66,11 @@ def readClockCycle(bintoint = False):
             clock,count
             """
             if len(lineData) < 2: continue # ignore error
+            clockCount = int(lineData[1])
             if clockCount is not None:
                 yield (clockCount, clockNumberData, clockTextData)
             clockNumberData = dict()
             clockTextData = dict()
-            clockCount = int(lineData[1])
         elif lineData[0] == "data":
             """
             data,name,value 
@@ -99,6 +100,6 @@ def readClockCycle(bintoint = False):
             info,name,value
             """
             if len(lineData) < 2: continue # ignore error
-            clockTextData[lineData[1]] = lineData[2]
+            clockTextData[lineData[1]] = ",".join(lineData[2:])
     if clockCount is not None:
         yield (clockCount, clockNumberData, clockTextData)

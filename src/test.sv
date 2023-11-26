@@ -9,7 +9,7 @@ logic uart_tx;
 always #1 clk = ~clk;
 
 initial begin
-  `ifdef PRINT_DEBUGINFO
+  `ifdef PRINT_VCD
     $dumpfile("debug.vcd");
     $dumpvars(0,test);
   `endif

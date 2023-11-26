@@ -99,12 +99,6 @@ always @(posedge clk) if (reset) state <= IDLE; else begin
         end
         default: state <= IDLE;
     endcase
-
-    /*
-    if (util::logEnabled()) begin
-        $display("info,memstage.mmiocntr,state(%d) mready(%d)", state, memreq_in.ready);
-    end
-    */
 end
 
 wire        cmd_uart_tx_ready;

@@ -19,10 +19,11 @@ module Stage_CSR
     output wire             next_no_wb,
 
     output wire             is_stall,
+    output wire             disable_memstage,
     output wire             csr_is_trap,
-    output wire             csr_keep_trap, // validのままにするtrapかどうか
     output Addr             trap_vector,
 
+    input wire Addr         valid_pc_befor_csr,
     input wire              external_interrupt_pending,
     input wire              mip_mtip,
 
@@ -113,7 +114,7 @@ case (addr)
     CsrAddr::SIP:       gen_rdata = sip;
     // Supervisor Protection and Translation
     CsrAddr::SATP:      gen_rdata = satp;
-    default:        gen_rdata = 32'b0;
+    default:            gen_rdata = 32'b0;
 endcase
 endfunction
 
@@ -442,9 +443,8 @@ assign is_stall     = valid & (
                 (!is_new & undone_fence_i | fence_clocked)
 );
 assign csr_is_trap  = valid & !is_new & (last_raise_trap | cmd_is_xret | undone_fence_i | fence_clocked);
-assign csr_keep_trap= trap_nochange;
 
-assign next_no_wb   = valid & (this_raise_trap | last_raise_trap); // TODO xretは除外
+assign next_no_wb   = valid & !is_new & csr_no_wb; // csr_no_wbは!is_newでないと使えない
 
 assign cache_cntr.i_mode            = mode;
 assign cache_cntr.d_mode            = Mode'(mode == M_MODE & mstatus_mprv ? Mode'(mstatus_mpp) : mode);
@@ -453,30 +453,45 @@ assign cache_cntr.sum               = mstatus_sum;
 assign cache_cntr.satp              = satp;
 assign cache_cntr.do_writeback      = valid & is_new & is_fence;
 assign cache_cntr.invalidate_icache = valid & is_new & is_fence;
+assign cache_cntr.invalidate_tlb    = valid & is_new & is_fence; // TODO invalのときのみにする
 
 logic [1:0] inst_clock = 0;
 logic csr_no_wb = 0; // トラップの時にCSRに書き込む命令が実行されないようにするためのフラグ
 
+// トラップのとき、xepcに格納するPC
+//   例外のとき、info.pc
+//   割り込みのとき、
+//   * CSR命令の場合、info.pc
+//   * それ以外の場合、前のステージのpc
+//   詳細 : https://blog.kanataso.net/20231124_myriscv_interrupt_bug.html
+// ecall, ebreakはexcption
+// w,s,c,sret,mretは実行しない
+wire Addr xepc_candidate = raise_expt ? info.pc :
+                            csr_cmd == CSR_X ? valid_pc_befor_csr : info.pc;
+
+assign disable_memstage = is_new & this_raise_trap | !is_new & last_raise_trap;
+
 always @(posedge clk) begin
     last_raise_trap <= this_raise_trap;
     if (valid & is_new) begin
-        inst_clock <= 0;
+        csr_no_wb   <= (raise_expt & csr_cmd != CSR_EBREAK & csr_cmd != CSR_ECALL) |
+                        raise_intr & csr_cmd != CSR_X;
+        inst_clock  <= 0;
         // trapを起こす
         if (trap_nochange) begin
             trap_vector <= info.pc + 4;
-            csr_no_wb   <= 1;
             if (util::logEnabled())
                 $display("info,csrstage.trap.nochange,0x%h", info.pc);
         end else if (this_raise_trap) begin
-            csr_no_wb   <= 1;
             if (util::logEnabled()) begin
-                $display("info,csrstage.trap.pc,0x%h", info.pc);
+                $display("info,csrstage.trap.info,expt:%d", raise_expt);
+                $display("info,csrstage.trap.pc,0x%h", xepc_candidate);
                 $display("info,csrstage.trap.cause,0x%h", cause_trap);
             end
             if (trap_toM) begin
                 mode            <= M_MODE;
                 mcause          <= cause_trap;
-                mepc            <= info.pc;
+                mepc            <= xepc_candidate;
                 mtval           <= raise_expt ? expt_xtval : mtval;
                 mstatus_mpie    <= mstatus_mie;
                 mstatus_mie     <= 0;
@@ -485,7 +500,7 @@ always @(posedge clk) begin
             end else begin
                 mode            <= S_MODE;
                 scause          <= cause_trap;
-                sepc            <= info.pc;
+                sepc            <= xepc_candidate;
                 stval           <= raise_expt ? expt_xtval : stval;
                 mstatus_spie    <= mstatus_sie;
                 mstatus_sie     <= 0;
@@ -509,7 +524,6 @@ always @(posedge clk) begin
             // mret, sretを処理する
             case (csr_cmd)
                 CSR_MRET: begin
-                    csr_no_wb       <= 1;
                     mstatus_mie     <= mstatus_mpie;
                     mode            <= Mode'(mstatus_mpp);
                     mstatus_mpie    <= 1;
@@ -519,7 +533,6 @@ always @(posedge clk) begin
                         mstatus_mprv <= 0;
                 end
                 CSR_SRET: begin
-                    csr_no_wb       <= 1;
                     mstatus_sie     <= mstatus_spie;
                     mode            <= Mode'({1'b0, mstatus_spp});
                     mstatus_spie    <= 1;
@@ -529,7 +542,6 @@ always @(posedge clk) begin
                         mstatus_mprv <= 0;
                 end
                 default: begin
-                    csr_no_wb   <= 0;
                     trap_vector <= 0;
                 end
             endcase
@@ -619,7 +631,7 @@ end
 `ifdef PRINT_DEBUGINFO
 always @(posedge clk) if (util::logEnabled()) begin
     $display("data,csrstage.valid,b,%b", valid);
-    $display("data,csrstage.inst_id,h,%b", valid ? info.id : iid::X);
+    $display("data,csrstage.inst_id,h,%b", valid ? info.id.id : iid::X);
     if (valid) begin
         $display("data,csrstage.pc,h,%b", info.pc);
         $display("data,csrstage.inst,h,%b", info.inst);
@@ -637,6 +649,8 @@ always @(posedge clk) if (util::logEnabled()) begin
     $display("info,csrstage.stvec,0x%h", stvec);
     $display("info,csrstage.mepc,0x%h", mepc);
     $display("info,csrstage.sepc,0x%h", sepc);
+    $display("info,csrstage.mcause,0x%h", mcause);
+    $display("info,csrstage.scause,0x%h", scause);
 
     if (valid && is_fence) begin
         $display("data,csrstage.$.do_wb,b,%b", cache_cntr.do_writeback);
