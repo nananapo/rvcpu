@@ -620,7 +620,7 @@ always @(posedge clk) if (util::logEnabled()) begin
         $display("data,decodestage.decode.br_exe,d,%b", id_ctrl.br_exe);
         $display("data,decodestage.decode.op1_sel,d,%b", id_ctrl.op1_sel);
         $display("data,decodestage.decode.op2_sel,d,%b", id_ctrl.op2_sel);
-        $display("data,decodestage.decode.mem_wen,d,%b", id_ctrl.mem_wen);
+        $display("data,decodestage.decode.mem_sel,d,%b", id_ctrl.mem_sel);
         $display("data,decodestage.decode.mem_size,d,%b", id_ctrl.mem_size);
         $display("data,decodestage.decode.rf_wen,d,%b", id_ctrl.rf_wen);
         $display("data,decodestage.decode.wb_sel,d,%b", id_ctrl.wb_sel);

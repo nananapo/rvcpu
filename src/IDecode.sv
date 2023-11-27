@@ -140,7 +140,7 @@ assign {
     ctrl.sign_sel,
     ctrl.op1_sel,
     ctrl.op2_sel,
-    ctrl.mem_wen,
+    ctrl.mem_sel,
     ctrl.a_sel,
     ctrl.rf_wen,
     ctrl.wb_sel,

@@ -147,7 +147,7 @@ typedef struct packed
     SignSel sign_sel;
     Op1Sel  op1_sel;
     Op2Sel  op2_sel;
-    MemSel  mem_wen;
+    MemSel  mem_sel;
     MemSize mem_size;
     logic   rf_wen;
     WbSel   wb_sel;
