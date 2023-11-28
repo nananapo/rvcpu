@@ -1,7 +1,5 @@
 `default_nettype none
 
-// TODO ステージの接続にinterfaceを多用したい
-
 module Core
     import basic::*;
     import meminf::*;
@@ -453,7 +451,8 @@ Stage_Mem #() memorystage
             csr_ctrl.csr_cmd == CSR_MRET |
             csr_ctrl.fence_i |
             csr_ctrl.sfence |
-            csr_ctrl.svinval)
+            csr_ctrl.svinval |
+            csr_disable_memstage)
         )
     `endif
 );
