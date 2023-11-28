@@ -18,8 +18,8 @@ CFLAGS = \
 	-nostdlib \
 	-nodefaultlibs \
 	-nostartfiles \
-	-mstrict-align \
 	-march=$(ARCH) \
+	# -mno-strict-align \
 
 LDFLAGS = \
 	-static \
@@ -42,7 +42,7 @@ SRCS = \
 	$(PORT_DIR)/core_portme.c \
 	$(PORT_DIR)/ee_printf.c \
 
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:.c=.o) entry.o
 
 CORE_CFLAGS = \
 	-DITERATIONS=$(ITERATIONS) \
@@ -71,3 +71,5 @@ clean:
 	
 %.o: %.c
 	$(CC) $(CFLAGS) $(CORE_CFLAGS) -o $@ -c $<
+entry.o:
+	$(CC) $(CFLAGS) $(CORE_CFLAGS) -o entry.o -c entry.S
