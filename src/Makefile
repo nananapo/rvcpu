@@ -21,7 +21,6 @@ FILES = test.sv \
 		MemICache.sv \
 		MemDCache.sv \
 		MemCacheCmdArbiter.sv \
-		MemMisalignCntr.sv \
 		MemoryKeyValueStore.sv \
 		MMIO_Cntr.sv \
 		MMIO_CLINT.sv \
