@@ -94,7 +94,19 @@ typedef struct packed {
     logic   is_writebacked_all;
     logic   invalidate_icache;
     logic   invalidate_tlb;
-} CacheCntrInfo; 
+} CacheCntrInfo;
+
+function is_naturally_aligned(
+    input basic::Addr addr,
+    input MemSize size
+);
+    case (size)
+        SIZE_B: return 1'b1;
+        SIZE_H: return addr[0] == 1'b0;
+        SIZE_W: return addr[1:0] == 2'b0;
+        SIZE_D: return addr[2:0] == 3'b0;
+    endcase
+endfunction
 
 endpackage
 
