@@ -24,7 +24,7 @@ typedef enum logic [2:0] {
     D_VALID
 } statetype;
 
-function [$bits(Addr) + 1 + $bits(UInt32) + $bits(MemSize) + $bits(PTE_AD) -1:0] memcmd (
+function [$bits(Addr) + 1 + $bits(UInt32) + $bits(WMask32) + $bits(PTE_AD) -1:0] memcmd (
     input statetype state,
     input CacheReq  ireq_in,
     input CacheReq  dreq_in,
@@ -36,8 +36,7 @@ function [$bits(Addr) + 1 + $bits(UInt32) + $bits(MemSize) + $bits(PTE_AD) -1:0]
         D_CHECK: memcmd = {dreq_in.addr, dreq_in.wen, dreq_in.wdata, dreq_in.wmask,  dreq_in.pte};
         I_READY: memcmd = { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata,  s_ireq.wmask,   s_ireq.pte};
         D_READY: memcmd = { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata,  s_dreq.wmask,   s_dreq.pte};
-        default: memcmd = {XLEN_X, 1'b0, 32'hx, SIZE_W, {$bits(PTE_AD){1'b0}}};
-        // TODO UInt32のxを用意する
+        default: memcmd = {XLEN_X, 1'b0, 32'hx, 4'b0, {$bits(PTE_AD){1'b0}}};
     endcase
 endfunction
 

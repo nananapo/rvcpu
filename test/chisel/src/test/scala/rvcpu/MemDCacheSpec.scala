@@ -18,7 +18,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       s"DCache($cacheWidth) should read correct data sequentially from Memory($delay delay)" in {
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           var addr = 0
@@ -48,7 +48,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       s"DCache($cacheWidth) should be able to random access data from Memory($delay delay)" in {
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           val lines = Source.fromFile(path.toString).getLines().toSeq
@@ -79,7 +79,7 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       s"DCache($cacheWidth) sequential write and read test to Memory($delay delay)" in {
         test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           val r = new Random
@@ -126,8 +126,8 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
     s"DCache should raise error when read address is out of Memory($delay delay) range" in {
       test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, 4)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
         m.io.do_writeback.poke(0.B)
-        m.io.req.wmask.poke(0.B)
-          m.io.req.pte.poke(0.B)
+        m.io.req.wmask.poke(15.U)
+        m.io.req.pte.poke(0.B)
 
         var addr = 1 << memWidth
         // Request

@@ -9,7 +9,7 @@ class CacheReq(xlen : Int) extends Bundle {
     val addr    = Input(UInt(xlen.W))
     val wen     = Input(Bool())
     val wdata   = Input(UInt(32.W))
-    val wmask   = Input(UInt(2.W))
+    val wmask   = Input(UInt(4.W))
     val pte     = Input(UInt(2.W))
 }
 

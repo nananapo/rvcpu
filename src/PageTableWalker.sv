@@ -158,7 +158,7 @@ assign ptereq.valid = state == WALK_READY | state == WAIT_SET_AD_READY;
 assign ptereq.addr  = next_addr;
 assign ptereq.wen   = 0;
 assign ptereq.wdata = 0;
-assign ptereq.wmask = SIZE_W;
+assign ptereq.wmask = 4'b0000;
 assign ptereq.pte   = PTE_AD'({state == WAIT_SET_AD_READY, state == WAIT_SET_AD_READY & s_req.wen}); // A & D
 
 CacheReq        s_req;          // preqがリクエストしたアドレス

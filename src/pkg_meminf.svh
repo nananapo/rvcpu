@@ -6,6 +6,17 @@ package meminf;
 import basic::Addr, basic::Inst, basic::UInt32;
 import csr::Mode;
 
+// 1byteずつのマスク
+typedef logic [3:0] WMask32;
+typedef logic [7:0] WMask64;
+
+`ifdef XLEN32
+    typedef WMask32 WMaskX;
+`endif
+`ifdef XLEN64
+    typedef WMask64 WMaskX;
+`endif
+
 typedef enum logic [1:0] {
     SIZE_B = 2'b00,
     SIZE_H = 2'b01,
@@ -73,7 +84,7 @@ typedef struct packed {
     Addr    addr;
     logic   wen;
     UInt32  wdata;
-    MemSize wmask;
+    WMask32 wmask;
     PTE_AD  pte;
 } CacheReq;
 

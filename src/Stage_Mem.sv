@@ -25,6 +25,17 @@ module Stage_Mem
     `endif
 );
 
+/*
+MEM Stageの動作
+
+基本方針 : L1 D$にヒットしない場合は、クロック数がかかってもいいので単純に書く
+
+メモリ命令が来た時、
+* 自然なアラインがされていない場合、すでにtrapとされているので無視する
+* A拡張の命令の場合、state移動後にdreq.readyを確認して、Aの命令フラグを立ててdreq.validする。結果を待つ。
+* L1 TLBにヒットした場合、ストールしない
+*/
+
 import conf::*;
 
 typedef enum logic [1:0]
@@ -42,14 +53,41 @@ function [$bits(UIntX)-1:0] gen_amo_wdata(
     input UIntX     rs2_data
 );
     case (a_sel)
-        ASEL_AMO_SWAP:  gen_amo_wdata = rs2_data;
-        ASEL_AMO_ADD:   gen_amo_wdata = mem_rdata + rs2_data;
-        ASEL_AMO_XOR:   gen_amo_wdata = mem_rdata ^ rs2_data;
-        ASEL_AMO_AND:   gen_amo_wdata = mem_rdata & rs2_data;
-        ASEL_AMO_OR :   gen_amo_wdata = mem_rdata | rs2_data;
-        ASEL_AMO_MIN:   gen_amo_wdata =  (sign_sel == OP_SIGNED ? $signed(mem_rdata) < $signed(rs2_data) : mem_rdata < rs2_data) ? mem_rdata : rs2_data;
-        ASEL_AMO_MAX:   gen_amo_wdata = !(sign_sel == OP_SIGNED ? $signed(mem_rdata) < $signed(rs2_data) : mem_rdata < rs2_data) ? mem_rdata : rs2_data;
-        default:        gen_amo_wdata = XLEN_X;
+        ASEL_AMO_SWAP:  return rs2_data;
+        ASEL_AMO_ADD:   return mem_rdata + rs2_data;
+        ASEL_AMO_XOR:   return mem_rdata ^ rs2_data;
+        ASEL_AMO_AND:   return mem_rdata & rs2_data;
+        ASEL_AMO_OR :   return mem_rdata | rs2_data;
+        ASEL_AMO_MIN:   return  (sign_sel == OP_SIGNED ? $signed(mem_rdata) < $signed(rs2_data) : mem_rdata < rs2_data) ? mem_rdata : rs2_data;
+        ASEL_AMO_MAX:   return !(sign_sel == OP_SIGNED ? $signed(mem_rdata) < $signed(rs2_data) : mem_rdata < rs2_data) ? mem_rdata : rs2_data;
+        default:        return XLEN_X;
+    endcase
+endfunction
+
+// TODO SIZE_D対応
+function [$bits(WMask32)-1:0] gen_wmask(
+    input Addr      addr,
+    input MemSize   size
+);
+    case (addr[1:0])
+    2'd0: return {size == SIZE_W, size == SIZE_W, size == SIZE_W | size == SIZE_H, 1'b1}; // 全部
+    2'd1: return 4'b0010; // SIZE_Bのみ
+    2'd2: return {size == SIZE_H, 1'b1, 2'b0}; // SIZE_B, H
+    2'd3: return 4'b1000; // SIZE_Bのみ
+    endcase
+endfunction
+
+// TODO SIZE_D対応
+function [$bits(UInt32)-1:0] gen_default_wdata(
+    input Addr      addr,
+    input MemSize   size,
+    input UInt32    wdata
+);
+    case (addr[1:0])
+    2'd0: return wdata;
+    2'd1: return {wdata[23:0], 8'bx};
+    2'd2: return {wdata[15:0], 16'bx};
+    2'd3: return {wdata[7:0], 24'bx};
     endcase
 endfunction
 
@@ -87,14 +125,18 @@ wire memu_error     =   state == IDLE ? (!is_new & is_cmd_executed & saved_error
                         (state == WAIT_RVALID | state == WAIT_WVALID) & dresp.valid & dresp.error;
 wire FaultTy memu_errty  = FaultTy'(state == IDLE & !is_new ? saved_errty : dresp.errty);
 
+// dreqに渡す用の4byteアラインされたアドレス
+wire Addr aligned_addr = {alu_out[$bits(Addr)-1:2], 2'b0};
+
 // TODO trapinfo.validのときに実行しないようにする
 assign dreq.valid   = valid & state == WAIT_READY & !is_cmd_executed & mem_sel != MEN_X;
 assign dreq.wen     = is_store;
-assign dreq.addr    = alu_out;
-assign dreq.wdata   =   ctrl.mem_sel != MEN_A ? rs2_data :
-                        ctrl.a_sel == ASEL_SC ? rs2_data :
+assign dreq.addr    = aligned_addr;
+assign dreq.wdata   =   ctrl.mem_sel != MEN_A ? gen_default_wdata(alu_out, ctrl.mem_size, rs2_data) :
+                        ctrl.a_sel == ASEL_SC ? rs2_data : // MEN_AはSIZE_Wで、今のところ必ずアラインされている
                         gen_amo_wdata(ctrl.a_sel, ctrl.sign_sel, saved_mem_rdata, rs2_data);
-assign dreq.wmask   = ctrl.mem_size;
+assign dreq.wmask   =   ctrl.mem_sel == MEN_A ? 4'b1111 :
+                        gen_wmask(alu_out, ctrl.mem_size);
 
 // MEN_Xは未定義
 function is_store_cmd(
@@ -163,7 +205,12 @@ always @(posedge clk) begin
             end
         end
         WAIT_RVALID: if (memu_valid) begin
-            saved_mem_rdata <= dresp.rdata;
+            case (alu_out[1:0])
+                2'd0: saved_mem_rdata <= dresp.rdata;
+                2'd1: saved_mem_rdata <= {8'bx, dresp.rdata[31:8]};
+                2'd2: saved_mem_rdata <= {16'bx, dresp.rdata[31:16]};
+                2'd3: saved_mem_rdata <= {24'bx, dresp.rdata[31:24]};
+            endcase
             saved_error     <= dresp.error;
             saved_errty     <= dresp.errty;
             if (dresp.error) begin
