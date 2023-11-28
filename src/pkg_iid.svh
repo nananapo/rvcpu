@@ -12,11 +12,11 @@ package iid;
     } Ty;
 
     function logic [63:0] inc(Ty iid);
-        inc = iid.id + ONE;
+        return iid.id + ONE;
     endfunction
 
     function logic [63:0] dec(Ty iid);
-        dec = iid.id - ONE;
+        return iid.id - ONE;
     endfunction
 endpackage
 `endif

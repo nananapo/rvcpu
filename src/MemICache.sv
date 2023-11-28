@@ -45,11 +45,11 @@ typedef enum logic [1:0] {
 } statetype;
 
 function [$bits(CacheIndex)-1:0] calc_cache_addr( input UIntX addr );
-    calc_cache_addr = addr[ADDR_WIDTH-1 + ADDR_DISMISS_WIDTH:ADDR_DISMISS_WIDTH];
+    return addr[ADDR_WIDTH-1 + ADDR_DISMISS_WIDTH:ADDR_DISMISS_WIDTH];
 endfunction
 
 function [$bits(UIntX)-1:0] normalize_addr( input UIntX addr );
-    normalize_addr = {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
+    return {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
 endfunction
 
 statetype state = IDLE;

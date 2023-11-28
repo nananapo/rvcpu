@@ -32,11 +32,11 @@ function [$bits(Addr) + 1 + $bits(UInt32) -1:0] memcmd (
     input MemBusReq s_dreq
 );
     case (state)
-        I_CHECK: memcmd = {ireq_in.addr, ireq_in.wen, ireq_in.wdata};
-        D_CHECK: memcmd = {dreq_in.addr, dreq_in.wen, dreq_in.wdata};
-        I_READY: memcmd = { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata};
-        D_READY: memcmd = { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata};
-        default: memcmd = {XLEN_X, 1'b0, XLEN_X};
+        I_CHECK: return {ireq_in.addr, ireq_in.wen, ireq_in.wdata};
+        D_CHECK: return {dreq_in.addr, dreq_in.wen, dreq_in.wdata};
+        I_READY: return { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata};
+        D_READY: return { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata};
+        default: return {XLEN_X, 1'b0, XLEN_X};
     endcase
 endfunction
 

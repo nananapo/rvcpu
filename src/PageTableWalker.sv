@@ -39,18 +39,18 @@ function logic is_leaf(
     input logic W,
     input logic X
 );
-    is_leaf = R | W | X;
+    return R | W | X;
 endfunction
 
-function Addr gen_l1pte_addr(input VPN1 vpn1);
-    gen_l1pte_addr = {satp_ppn[PPN_LEN-2-1:0], vpn1, {PTESIZE_WIDTH{1'b0}}};
+function Addr gen_l1pte_addr(input VPN1 vpn1); // TODO satp_ppn
+    return {satp_ppn[PPN_LEN-2-1:0], vpn1, {PTESIZE_WIDTH{1'b0}}};
 endfunction
 
 function Addr gen_l0pte_addr(
     input PPN     ppn,
     input VPN0    vpn0
 );
-    gen_l0pte_addr = {ppn[PPN_LEN-2-1:0], vpn0, {PTESIZE_WIDTH{1'b0}}};
+    return {ppn[PPN_LEN-2-1:0], vpn0, {PTESIZE_WIDTH{1'b0}}};
 endfunction
 
 function Addr gen_l1_paddr(
@@ -58,14 +58,14 @@ function Addr gen_l1_paddr(
     input VPN0    vpn_0,
     input Pgoff   pgoff
 );
-    gen_l1_paddr = {ppn1[PPN1_LEN-2-1:0], vpn_0, pgoff};
+    return {ppn1[PPN1_LEN-2-1:0], vpn_0, pgoff};
 endfunction
 
 function Addr gen_l0_paddr(
     input PPN     ppn,
     input Pgoff   pgoff
 );
-    gen_l0_paddr = {ppn[PPN_LEN-2-1:0], pgoff};
+    return {ppn[PPN_LEN-2-1:0], pgoff};
 endfunction
 
 function logic is_page_fault(
@@ -83,8 +83,7 @@ function logic is_page_fault(
     // DATA, S-modeでpte_Uかつsum = 0
     // EXECUTE, leafで、Xが立っていない
     // DATA, leftでW, Rが立っていない
-    is_page_fault =
-            !v |
+    return !v |
             w & (!r) |
             g |
             !is_leaf(r, w, x) & (a | d) |

@@ -31,9 +31,9 @@ function [$bits(UIntX)-1:0] gen_op1data(
     input UIntX    imm_z
 );
 case(op1_sel)
-    OP1_PC  : gen_op1data = pc;
-    OP1_IMZ : gen_op1data = imm_z;
-    default : gen_op1data = 0;
+    OP1_PC  : return pc;
+    OP1_IMZ : return imm_z;
+    default : return 0;
 endcase
 endfunction
 
@@ -46,11 +46,11 @@ function [$bits(UIntX)-1:0] gen_op2data(
     input UIntX     imm_u
 );
 case(op2_sel)
-    OP2_IMI : gen_op2data = imm_i;
-    OP2_IMS : gen_op2data = imm_s;
-    OP2_IMJ : gen_op2data = imm_j;
-    OP2_IMU : gen_op2data = imm_u;
-    default : gen_op2data = 0;
+    OP2_IMI : return imm_i;
+    OP2_IMS : return imm_s;
+    OP2_IMJ : return imm_j;
+    OP2_IMU : return imm_u;
+    default : return 0;
 endcase
 endfunction
 

@@ -43,10 +43,10 @@ function [31:0] gen_wdata(
     input [31:0] rdata
 );
 case (csr_cmd)
-    CSR_W  : gen_wdata = op1_data;
-    CSR_S  : gen_wdata = rdata | op1_data;
-    CSR_C  : gen_wdata = rdata & ~op1_data;
-    default: gen_wdata = 0;
+    CSR_W  : return op1_data;
+    CSR_S  : return rdata | op1_data;
+    CSR_C  : return rdata & ~op1_data;
+    default: return 0;
 endcase
 endfunction
 
@@ -78,43 +78,43 @@ function [31:0] gen_rdata(
 );
 case (addr)
     // Counters and Timers
-    CsrAddr::CYCLE:     gen_rdata = cycle[31:0];
-    CsrAddr::TIME:      gen_rdata = time_[31:0];
-    CsrAddr::CYCLEH:    gen_rdata = cycle[63:32];
-    CsrAddr::TIMEH:     gen_rdata = time_[63:32];
+    CsrAddr::CYCLE:     return cycle[31:0];
+    CsrAddr::TIME:      return time_[31:0];
+    CsrAddr::CYCLEH:    return cycle[63:32];
+    CsrAddr::TIMEH:     return time_[63:32];
     // Machine Trap Setup
-    CsrAddr::MSTATUS:   gen_rdata = mstatus;
-    CsrAddr::MISA:      gen_rdata = misa;
-    CsrAddr::MEDELEG:   gen_rdata = medeleg;
-    CsrAddr::MIDELEG:   gen_rdata = mideleg;
-    CsrAddr::MIE:       gen_rdata = mie;
-    CsrAddr::MTVEC:     gen_rdata = mtvec;
-    CsrAddr::MSTATUSH:  gen_rdata = mstatush;
+    CsrAddr::MSTATUS:   return mstatus;
+    CsrAddr::MISA:      return misa;
+    CsrAddr::MEDELEG:   return medeleg;
+    CsrAddr::MIDELEG:   return mideleg;
+    CsrAddr::MIE:       return mie;
+    CsrAddr::MTVEC:     return mtvec;
+    CsrAddr::MSTATUSH:  return mstatush;
     // Machine Trap Handling
-    CsrAddr::MSCRATCH:  gen_rdata = mscratch;
-    CsrAddr::MEPC:      gen_rdata = mepc;
-    CsrAddr::MCAUSE:    gen_rdata = mcause;
-    CsrAddr::MTVAL:     gen_rdata = mtval;
-    CsrAddr::MIP:       gen_rdata = mip;
-    CsrAddr::MTINST:    gen_rdata = mtinst;
-    CsrAddr::MTVAL2:    gen_rdata = mtval2;
+    CsrAddr::MSCRATCH:  return mscratch;
+    CsrAddr::MEPC:      return mepc;
+    CsrAddr::MCAUSE:    return mcause;
+    CsrAddr::MTVAL:     return mtval;
+    CsrAddr::MIP:       return mip;
+    CsrAddr::MTINST:    return mtinst;
+    CsrAddr::MTVAL2:    return mtval2;
     // Machine Counter/Timers
-    CsrAddr::MCYCLE:    gen_rdata = cycle[31:0];
-    CsrAddr::MCYCLEH:   gen_rdata = cycle[63:32];
+    CsrAddr::MCYCLE:    return cycle[31:0];
+    CsrAddr::MCYCLEH:   return cycle[63:32];
     // Supervisor Trap Setup
-    CsrAddr::SSTATUS:   gen_rdata = sstatus;
-    CsrAddr::SIE:       gen_rdata = sie;
-    CsrAddr::STVEC:     gen_rdata = stvec;
+    CsrAddr::SSTATUS:   return sstatus;
+    CsrAddr::SIE:       return sie;
+    CsrAddr::STVEC:     return stvec;
     // Supervisor Trap Handling
-    CsrAddr::SSCRATCH:  gen_rdata = sscratch;
-    CsrAddr::SEPC:      gen_rdata = sepc;
-    CsrAddr::SCAUSE:    gen_rdata = scause;
-    CsrAddr::STVAL:     gen_rdata = stval;
-    // CsrAddr::STVAL:     gen_rdata = stval;
-    CsrAddr::SIP:       gen_rdata = sip;
+    CsrAddr::SSCRATCH:  return sscratch;
+    CsrAddr::SEPC:      return sepc;
+    CsrAddr::SCAUSE:    return scause;
+    CsrAddr::STVAL:     return stval;
+    // CsrAddr::STVAL:     return stval;
+    CsrAddr::SIP:       return sip;
     // Supervisor Protection and Translation
-    CsrAddr::SATP:      gen_rdata = satp;
-    default:            gen_rdata = 32'b0;
+    CsrAddr::SATP:      return satp;
+    default:            return 32'b0;
 endcase
 endfunction
 
@@ -126,22 +126,21 @@ function [$bits(UIntX)-1:0] gen_expt_xtval(
 );
     case (cause)
         CsrCause::INSTRUCTION_ADDRESS_MISALIGNED:
-            gen_expt_xtval = btarget;
+            return btarget;
         CsrCause::BREAKPOINT,
         CsrCause::INSTRUCTION_ACCESS_FAULT,
         CsrCause::INSTRUCTION_PAGE_FAULT:
-            gen_expt_xtval = pc;
+            return pc;
         CsrCause::LOAD_ADDRESS_MISALIGNED,
         CsrCause::LOAD_ACCESS_FAULT,
         CsrCause::LOAD_PAGE_FAULT,
         CsrCause::STORE_AMO_ADDRESS_MISALIGNED,
         CsrCause::STORE_AMO_ACCESS_FAULT,
         CsrCause::STORE_AMO_PAGE_FAULT:
-            gen_expt_xtval = alu_out;
+            return alu_out;
         CsrCause::ILLEGAL_INSTRUCTION:
-            gen_expt_xtval = inst;
-        default:
-            gen_expt_xtval = 0;
+            return inst;
+        default: return 0;
     endcase
 endfunction
 

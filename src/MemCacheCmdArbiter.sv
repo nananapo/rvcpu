@@ -32,11 +32,11 @@ function [$bits(Addr) + 1 + $bits(UInt32) + $bits(WMask32) + $bits(PTE_AD) -1:0]
     input CacheReq  s_dreq
 );
     case (state)
-        I_CHECK: memcmd = {ireq_in.addr, ireq_in.wen, ireq_in.wdata, ireq_in.wmask,  ireq_in.pte};
-        D_CHECK: memcmd = {dreq_in.addr, dreq_in.wen, dreq_in.wdata, dreq_in.wmask,  dreq_in.pte};
-        I_READY: memcmd = { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata,  s_ireq.wmask,   s_ireq.pte};
-        D_READY: memcmd = { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata,  s_dreq.wmask,   s_dreq.pte};
-        default: memcmd = {XLEN_X, 1'b0, 32'hx, 4'b0, {$bits(PTE_AD){1'b0}}};
+        I_CHECK: return {ireq_in.addr, ireq_in.wen, ireq_in.wdata, ireq_in.wmask,  ireq_in.pte};
+        D_CHECK: return {dreq_in.addr, dreq_in.wen, dreq_in.wdata, dreq_in.wmask,  dreq_in.pte};
+        I_READY: return { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata,  s_ireq.wmask,   s_ireq.pte};
+        D_READY: return { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata,  s_dreq.wmask,   s_dreq.pte};
+        default: return {XLEN_X, 1'b0, 32'hx, 4'b0, {$bits(PTE_AD){1'b0}}};
     endcase
 endfunction
 

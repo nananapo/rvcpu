@@ -143,7 +143,7 @@ function is_store_cmd(
     input MemSel cmd,
     input AextSel asel
 );
-    is_store_cmd = !(cmd == MEN_L | cmd == MEN_A & asel == ASEL_LR);
+    return !(cmd == MEN_L | cmd == MEN_A & asel == ASEL_LR);
 endfunction
 
 
@@ -170,18 +170,18 @@ function [$bits(UIntX)-1:0] gen_rdata(
 );
     if (mem_type == MEN_A) begin
         case (a_sel)
-            ASEL_LR: gen_rdata = mem_rdata;
-            ASEL_SC: gen_rdata = sc_succeeded ? XLEN_ZERO : {{XLEN-1{1'b0}}, 1'b1};
-            default: gen_rdata = mem_rdata; // AMO : read-modify-write
+            ASEL_LR: return mem_rdata;
+            ASEL_SC: return sc_succeeded ? XLEN_ZERO : {{XLEN-1{1'b0}}, 1'b1};
+            default: return mem_rdata; // AMO : read-modify-write
         endcase
     end else begin
         case ({sign_sel, mem_size})
-            {OP_SIGNED  , SIZE_B}: gen_rdata = {{24{mem_rdata[7]}}, mem_rdata[7:0]}; // lb
-            {OP_SIGNED  , SIZE_H}: gen_rdata = {{16{mem_rdata[15]}}, mem_rdata[15:0]}; // lh
-            {OP_SIGNED  , SIZE_W}: gen_rdata = mem_rdata; // lw
-            {OP_UNSIGNED, SIZE_B}: gen_rdata = {24'b0, mem_rdata[7:0]}; // lbu
-            {OP_UNSIGNED, SIZE_H}: gen_rdata = {16'b0, mem_rdata[15:0]}; // lhu
-            default: gen_rdata = XLEN_X;
+            {OP_SIGNED  , SIZE_B}: return {{24{mem_rdata[7]}}, mem_rdata[7:0]}; // lb
+            {OP_SIGNED  , SIZE_H}: return {{16{mem_rdata[15]}}, mem_rdata[15:0]}; // lh
+            {OP_SIGNED  , SIZE_W}: return mem_rdata; // lw
+            {OP_UNSIGNED, SIZE_B}: return {24'b0, mem_rdata[7:0]}; // lbu
+            {OP_UNSIGNED, SIZE_H}: return {16'b0, mem_rdata[15:0]}; // lhu
+            default: return XLEN_X;
         endcase
     end
 endfunction
