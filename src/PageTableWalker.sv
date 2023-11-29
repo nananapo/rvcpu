@@ -124,6 +124,7 @@ wire        sv32_enable = mode != M_MODE & satp_mode == 1;
 
 logic       result_error    = 0;
 FaultTy     result_errty    = FE_ACCESS_FAULT;
+logic       result_is_mmio  = 1'bx;
 
 // stateはIDLEだがvalid待ちであるかどうか
 // PTWはIDLEかつL1 TLBがhitした時にidle_with_wait_validを1にする。
@@ -136,9 +137,10 @@ wire can_use_l1_tlb1 = l1_tlb1_resp_hit & !l1_tlb1_is_page_fault;
 
 assign preq.ready   = sv32_enable ? is_idle : memreq.ready;
 assign presp.valid  = sv32_enable ? state == REQ_END | (state == IDLE & idle_with_wait_valid & memresp.valid) : memresp.valid;
-assign presp.rdata  = sv32_enable ? (state == IDLE ? memresp.rdata : result_rdata) : memresp.rdata;
 assign presp.error  = sv32_enable ? (state == IDLE ? memresp.error : result_error) : memresp.error;
 assign presp.errty  = sv32_enable ? (state == IDLE ? memresp.errty : result_errty) : memresp.errty;
+assign presp.is_mmio= sv32_enable ? (state == IDLE ? memresp.is_mmio : result_is_mmio) : memresp.is_mmio;
+assign presp.rdata  = sv32_enable ? (state == IDLE ? memresp.rdata : result_rdata) : memresp.rdata;
 
 assign memreq.valid = sv32_enable ? state == REQ_READY | state == WAIT_L1_READY | (state == IDLE & (
     (can_use_l1_tlb0 | can_use_l1_tlb1) & preq.valid & (!idle_with_wait_valid | memresp.valid) // tlbが使えて、preq.validで、validをwait中の場合はmemresp.validのとき
@@ -422,8 +424,10 @@ always @(posedge clk) if (reset) begin
                     state           <= REQ_END;
                     result_error    <= 1;
                     result_errty    <= FE_PAGE_FAULT;
+                    result_is_mmio  <= 0;
                     idle_with_wait_valid    <= 0;
                 end else if (l1_tlb1_resp_hit) begin
+                    result_is_mmio  <= 1'bx;
                     next_addr <= gen_l1_paddr(l1_tlb1_resp_ppn1, vaddr.vpn0, vaddr.pgoff);
                     // 書き込みかつdが立っていないときは、結果を確認する
                     if (preq.wen & !(l1_tlb1_resp_pte_d === 1'b1)) begin
@@ -442,6 +446,7 @@ always @(posedge clk) if (reset) begin
                         if (!memreq.ready) state <= WAIT_L1_READY;
                     end
                 end else /*if (l1_tlb0_resp_hit)*/ begin
+                    result_is_mmio  <= 1'bx;
                     // READYではなかった時のためにnext_addrを保存する
                     next_addr <= gen_l0_paddr(l1_tlb0_resp_paddr_ppn, vaddr.pgoff);
                     // 書き込みかつdが立っていないときは、結果を確認する
@@ -466,6 +471,7 @@ always @(posedge clk) if (reset) begin
                 state   <= all_l2_tlb_ready ? CHECK_L2_TLB : WAIT_L2_TLB_READY;
                 level   <= 1; // level = 2 - 1 = 1スタート
                 idle_with_wait_valid    <= 0;
+                result_is_mmio          <= 1'bx;
             end
         end else begin
             if (idle_with_wait_valid & memresp.valid) begin
@@ -582,6 +588,7 @@ always @(posedge clk) if (reset) begin
             result_rdata    <= memresp.rdata;
             result_error    <= memresp.error;
             result_errty    <= memresp.errty;
+            result_is_mmio  <= memresp.is_mmio;
         end
     end
     REQ_END: begin

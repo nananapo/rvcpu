@@ -53,15 +53,17 @@ assign {
     memreq_in.addr, memreq_in.wen, memreq_in.wdata, memreq_in.wmask, memreq_in.pte
 } = memcmd(state, ireq_in, dreq_in, s_ireq, s_dreq);
 
-assign iresp_in.valid = state == I_VALID & memresp_in.valid;
-assign iresp_in.error = memresp_in.error;
-assign iresp_in.errty = memresp_in.errty;
-assign iresp_in.rdata = memresp_in.rdata;
+assign iresp_in.valid   = state == I_VALID & memresp_in.valid;
+assign iresp_in.error   = memresp_in.error;
+assign iresp_in.errty   = memresp_in.errty;
+assign iresp_in.is_mmio = memresp_in.is_mmio;
+assign iresp_in.rdata   = memresp_in.rdata;
 
-assign dresp_in.valid = state == D_VALID & memresp_in.valid;
-assign dresp_in.error = memresp_in.error;
-assign dresp_in.errty = memresp_in.errty;
-assign dresp_in.rdata = memresp_in.rdata;
+assign dresp_in.valid   = state == D_VALID & memresp_in.valid;
+assign dresp_in.error   = memresp_in.error;
+assign dresp_in.errty   = memresp_in.errty;
+assign dresp_in.is_mmio = memresp_in.is_mmio;
+assign dresp_in.rdata   = memresp_in.rdata;
 
 always @(posedge clk) begin
     case (state)

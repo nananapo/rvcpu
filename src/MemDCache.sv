@@ -80,15 +80,16 @@ wire CacheReq dreq = state == IDLE ? dreq_in : s_dreq;
 Addr    wb_addr;
 UInt32  wb_data;
 
-logic   dresp_valid_reg;
-UInt32  dresp_rdata_reg;
+logic   dresp_valid_reg; // 実質、前のクロックでヒットしたかどうかになっている
 logic   dresp_error_reg;
+UInt32  dresp_rdata_reg;
 
 assign dreq_in.ready    = state == IDLE;
-assign dresp_in.valid   = dresp_valid_reg;
-assign dresp_in.rdata   = dresp_rdata_reg;
+assign dresp_in.valid   = state == RESP_VALID | dresp_valid_reg;
 assign dresp_in.error   = dresp_error_reg;
 assign dresp_in.errty   = FE_ACCESS_FAULT;
+assign dresp_in.is_mmio = 0;
+assign dresp_in.rdata   = dresp_rdata_reg;
 
 assign busreq.valid =   state == READ_READY | state == WRITE_READY | state == WB_LOOP_READY;
 assign busreq.addr  =   state == READ_READY ? dreq.addr :
@@ -165,10 +166,7 @@ always @(posedge clk) begin
         `ffinish
     end
 
-    // TODO これきれいにできない？
-    dresp_valid_reg <=  (state == IDLE & cache_hit) | // cache_hit
-                        state == RESP_VALID; // writeback -> write
-    dresp_rdata_reg <= cache_data[mem_index];
+    dresp_valid_reg <= state == IDLE & cache_hit;
 
     if (do_writeback & state != IDLE & state != WB_LOOP_CHECK & state != WB_LOOP_READY) begin
         writeback_requested <= 1;
@@ -191,6 +189,7 @@ always @(posedge clk) begin
                     dresp_error_reg <= 0;
                     // 上書き
                     if (dreq.wen) begin
+                        dresp_rdata_reg         <= mask_wdata(cache_data[mem_index], dreq.wdata, dreq.wmask);
                         cache_data[mem_index]   <= mask_wdata(cache_data[mem_index], dreq.wdata, dreq.wmask);
                         // TODO modifiedが0かつ変更するならmodifiedとする
                         if (cache_modified[info_index] == 0 &
@@ -204,6 +203,7 @@ always @(posedge clk) begin
                     end else begin
                         // PTE更新
                         if (is_pte_req) begin
+                            dresp_rdata_reg <= 32'hx;
                             if (util::logEnabled())
                                 $display("info,memstage.d$.event.is_ptereq,addr:%h pte:%b actual:%b", dreq.addr, dreq.pte, cache_data[mem_index][7:6]);
                             // Aが0か、pte.dかつDが0
@@ -215,11 +215,14 @@ always @(posedge clk) begin
                                 if (util::logEnabled())
                                     $display("info,memstage.d$.event.pte_modified,modified");
                             end
+                        end else begin
+                            dresp_rdata_reg <= cache_data[mem_index];
                         end
                     end
                     if (util::logEnabled())
                         $display("info,memstage.d$.event.cache_hit,%h wen:%d", dreq.addr, dreq.wen);
                 end else begin
+                    dresp_rdata_reg <= 32'hx;
                     if (need_wb) begin
                         // ライトバック
                         state   <= WRITE_READY;
@@ -252,13 +255,15 @@ always @(posedge clk) begin
             if (busresp.error) begin
                 state <= RESP_VALID;
                 dresp_error_reg         <= 1;
+                dresp_rdata_reg         <= 32'hx;
                 cache_valid[info_index] <= 0;
             end else begin
                 state <= RESP_VALID;
                 dresp_error_reg         <= 0;
                 cache_valid[info_index] <= 1;
                 if (dreq.wen) begin
-                    cache_data[mem_index] <= mask_wdata(busresp.rdata, dreq.wdata, dreq.wmask);
+                    dresp_rdata_reg         <= mask_wdata(busresp.rdata, dreq.wdata, dreq.wmask);
+                    cache_data[mem_index]   <= mask_wdata(busresp.rdata, dreq.wdata, dreq.wmask);
                     if (busresp.rdata !== mask_wdata(busresp.rdata, dreq.wdata, dreq.wmask)) begin
                         cache_modified[mem_index]   <= 1;
                         modified_count              <= modified_count + 1;
@@ -270,6 +275,8 @@ always @(posedge clk) begin
                 end else if (is_pte_req) begin // PTE更新
                     if (util::logEnabled())
                         $display("info,memstage.d$.event.is_ptereq,addr:%h pte:%b actual:%b", dreq.addr, dreq.pte, busresp.rdata[7:6]);
+
+                    dresp_rdata_reg <= 32'hx;
 
                     // Aが0か、pte.dかつDが0
                     if (busresp.rdata[6] === 0 || dreq.pte.d && busresp.rdata[7] === 0) begin
@@ -284,6 +291,7 @@ always @(posedge clk) begin
                     end
                 end else begin
                     cache_modified[info_index]  <= 0;
+                    dresp_rdata_reg             <= busresp.rdata;
                     cache_data[mem_index]       <= busresp.rdata;
                     if (util::logEnabled())
                         $display("info,memstage.d$.event.read_end,addr:%h", dreq.addr);
@@ -327,8 +335,7 @@ always @(posedge clk) begin
         end
     end
     default: begin
-        // TODO __LINE__ __FILE__
-        $display("MemDCache : Unknown state");
+        $fatal("Unknown state");
         `ffinish
     end
     endcase

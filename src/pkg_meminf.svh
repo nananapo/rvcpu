@@ -92,6 +92,12 @@ typedef struct packed {
     logic   valid;
     logic   error;
     FaultTy errty;
+    // TODO エラー時に読もうとしたらfaultするようにする
+    // エラーの時に読んではいけないようにしたい (読む必要がないはずなので)
+    logic   is_mmio;
+    // wen = 1 かつ is_mmio = 1 のとき、不定 (wmaskに対応していないため)
+    // wen = 1 かつ is_mmio = 0 のときは、書き込んだ値をrdataとして返す。pte != 0のとき、不定(読み込み禁止)
+    // TODO この条件をinterface内のfunctionで強制したい
     UInt32  rdata;
 } CacheResp;
 

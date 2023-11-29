@@ -71,9 +71,10 @@ wire UIntX s_rdata  =   s_is_memory     ? memresp_in.rdata :
 assign dreq_in.ready    = state == IDLE | (state == WAIT_VALID & s_valid);
 
 assign dresp_in.valid   = s_valid;
-assign dresp_in.rdata   = s_rdata;
 assign dresp_in.error   = s_is_memory ? memresp_in.error : 0;
 assign dresp_in.errty   = s_is_memory ? memresp_in.errty : FE_ACCESS_FAULT;
+assign dresp_in.is_mmio = !s_is_memory;
+assign dresp_in.rdata   = s_rdata;
 
 
 wire Addr   req_addr    = state == WAIT_READY ? s_dreq.addr : dreq_in.addr;
