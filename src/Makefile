@@ -19,9 +19,8 @@ FILES = test.sv \
 		CombinationalKeyValueStore.sv \
 		MemBusCntr.sv \
 		MemICache.sv \
-		MemDCache.sv \
+		MemL2DCache.sv \
 		MemCacheCmdArbiter.sv \
-		MemMisalignCntr.sv \
 		MemoryKeyValueStore.sv \
 		MMIO_Cntr.sv \
 		MMIO_CLINT.sv \

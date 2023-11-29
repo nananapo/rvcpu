@@ -6,6 +6,17 @@ package meminf;
 import basic::Addr, basic::Inst, basic::UInt32;
 import csr::Mode;
 
+// 1byteずつのマスク
+typedef logic [3:0] WMask32;
+typedef logic [7:0] WMask64;
+
+`ifdef XLEN32
+    typedef WMask32 WMaskX;
+`endif
+`ifdef XLEN64
+    typedef WMask64 WMaskX;
+`endif
+
 typedef enum logic [1:0] {
     SIZE_B = 2'b00,
     SIZE_H = 2'b01,
@@ -73,7 +84,7 @@ typedef struct packed {
     Addr    addr;
     logic   wen;
     UInt32  wdata;
-    MemSize wmask;
+    WMask32 wmask;
     PTE_AD  pte;
 } CacheReq;
 
@@ -81,6 +92,12 @@ typedef struct packed {
     logic   valid;
     logic   error;
     FaultTy errty;
+    // TODO エラー時に読もうとしたらfaultするようにする
+    // エラーの時に読んではいけないようにしたい (読む必要がないはずなので)
+    logic   is_mmio;
+    // wen = 1 かつ is_mmio = 1 のとき、不定 (wmaskに対応していないため)
+    // wen = 1 かつ is_mmio = 0 のときは、書き込んだ値をrdataとして返す。pte != 0のとき、不定(読み込み禁止)
+    // TODO この条件をinterface内のfunctionで強制したい
     UInt32  rdata;
 } CacheResp;
 
@@ -94,7 +111,19 @@ typedef struct packed {
     logic   is_writebacked_all;
     logic   invalidate_icache;
     logic   invalidate_tlb;
-} CacheCntrInfo; 
+} CacheCntrInfo;
+
+function is_naturally_aligned(
+    input basic::Addr addr,
+    input MemSize size
+);
+    case (size)
+        SIZE_B: return 1'b1;
+        SIZE_H: return addr[0] == 1'b0;
+        SIZE_W: return addr[1:0] == 2'b0;
+        SIZE_D: return addr[2:0] == 3'b0;
+    endcase
+endfunction
 
 endpackage
 

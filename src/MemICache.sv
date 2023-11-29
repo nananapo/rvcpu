@@ -45,11 +45,11 @@ typedef enum logic [1:0] {
 } statetype;
 
 function [$bits(CacheIndex)-1:0] calc_cache_addr( input UIntX addr );
-    calc_cache_addr = addr[ADDR_WIDTH-1 + ADDR_DISMISS_WIDTH:ADDR_DISMISS_WIDTH];
+    return addr[ADDR_WIDTH-1 + ADDR_DISMISS_WIDTH:ADDR_DISMISS_WIDTH];
 endfunction
 
 function [$bits(UIntX)-1:0] normalize_addr( input UIntX addr );
-    normalize_addr = {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
+    return {addr[31:ADDR_DISMISS_WIDTH], {ADDR_DISMISS_WIDTH{1'b0}}};
 endfunction
 
 statetype state = IDLE;
@@ -83,9 +83,10 @@ logic iresp_error_reg = 0;
 
 assign ireq_in.ready    = state == IDLE;
 assign iresp_in.valid   = iresp_valid_reg;
-assign iresp_in.rdata   = iresp_rdata_reg;
 assign iresp_in.error   = iresp_error_reg;
 assign iresp_in.errty   = FE_ACCESS_FAULT;
+assign iresp_in.is_mmio = 0;
+assign iresp_in.rdata   = iresp_rdata_reg;
 
 assign busreq.valid = state == MEM_WAIT_READY;
 assign busreq.addr  = normalize_addr(ireq.addr) + read_count * 4;
@@ -119,6 +120,10 @@ end
 
 
 always @(posedge clk) begin
+    if (ireq_in.wen) begin
+        $fatal("ireq with wen == 1");
+        `ffinish
+    end
     if (reset) begin
         state           <= IDLE;
         iresp_valid_reg <= 0;

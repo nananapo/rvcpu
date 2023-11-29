@@ -19,7 +19,7 @@ class MemICacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       s"ICache($cacheWidth) should read correct data sequentially from Memory($delay delay)" in {
         test(new MemICacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.reset.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           var addr = 0
@@ -49,7 +49,7 @@ class MemICacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       s"ICache($cacheWidth) should be able to random access data from Memory($delay delay)" in {
         test(new MemICacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.reset.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           val lines = Source.fromFile(path.toString).getLines().toSeq
@@ -81,8 +81,8 @@ class MemICacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
     s"ICache should raise error when read address is out of Memory($delay delay) range" in {
       test(new MemICacheTestModule(path.toString, memWidth, xlen, delay, 4)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
         m.io.reset.poke(0.B)
-        m.io.req.wmask.poke(0.B)
-          m.io.req.pte.poke(0.B)
+        m.io.req.wmask.poke(15.U)
+        m.io.req.pte.poke(0.B)
 
         var addr = 1 << memWidth
         // Request

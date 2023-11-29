@@ -46,10 +46,8 @@ wire CacheReq   dreq_arb_cache;
 wire CacheResp  dresp_arb_cache;
 wire CacheReq   dreq_arb_arb;
 wire CacheResp  dresp_arb_arb;
-wire CacheReq   dreq_acntr_arb;
-wire CacheResp  dresp_acntr_arb;
-wire CacheReq   dreq_mmio_acntr;
-wire CacheResp  dresp_mmio_acntr;
+wire CacheReq   dreq_mmio_arb;
+wire CacheResp  dresp_mmio_arb;
 wire CacheReq   dreq_ptw_mmio;
 wire CacheResp  dresp_ptw_mmio;
 wire CacheReq   dreq_core_ptw;
@@ -150,7 +148,7 @@ Stage_Fetch #() fetchstage (
 );
 
 /* ---- Data ---- */
-MemDCache #() memdcache (
+MemL2DCache #() mem_l2dcache (
     .clk(clk_in),
     .dreq_in(dreq_arb_cache),
     .dresp_in(dresp_arb_cache),
@@ -174,19 +172,10 @@ MemCacheCmdArbiter #() dcache_arbiter2 (
     .clk(clk_in),
     .ireq_in(dptw_pte_req),
     .iresp_in(dptw_pte_resp),
-    .dreq_in(dreq_acntr_arb),
-    .dresp_in(dresp_acntr_arb),
+    .dreq_in(dreq_mmio_arb),
+    .dresp_in(dresp_mmio_arb),
     .memreq_in(dreq_arb_arb),
     .memresp_in(dresp_arb_arb)
-);
-
-MemMisalignCntr #() dmiscntr (
-    .clk(clk_in),
-    .reset(1'b0),
-    .dreq(dreq_mmio_acntr),
-    .dresp(dresp_mmio_acntr),
-    .memreq(dreq_acntr_arb),
-    .memresp(dresp_acntr_arb)
 );
 
 MMIO_Cntr memmapcntr (
@@ -196,8 +185,8 @@ MMIO_Cntr memmapcntr (
     .uart_tx(uart_tx),
     .dreq_in(dreq_ptw_mmio),
     .dresp_in(dresp_ptw_mmio),
-    .memreq_in(dreq_mmio_acntr),
-    .memresp_in(dresp_mmio_acntr),
+    .memreq_in(dreq_mmio_arb),
+    .memresp_in(dresp_mmio_arb),
 
     .mti_pending(mti_pending),
     .uart_rx_pending(uart_rx_pending)

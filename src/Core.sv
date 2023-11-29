@@ -1,7 +1,5 @@
 `default_nettype none
 
-// TODO ステージの接続にinterfaceを多用したい
-
 module Core
     import basic::*;
     import meminf::*;
@@ -293,9 +291,13 @@ always @(posedge clk) begin
             // trap
             mem_trap.valid  <= exe_valid & (
                                 exe_trap.valid |
-                                (exe_branch_taken & !util::ialigned(exe_branch_target)));
+                                exe_branch_taken & !util::ialigned(exe_branch_target) |
+                                exe_ctrl.mem_sel != MEN_X & !meminf::is_naturally_aligned(exe_alu_out, exe_ctrl.mem_size)); // TODO memステージで起こしてもいいかも
             mem_trap.cause  <= exe_trap.valid ? exe_trap.cause :
-                                (exe_branch_taken & !util::ialigned(exe_branch_target)) ? CsrCause::INSTRUCTION_ADDRESS_MISALIGNED : 0;
+                                exe_branch_taken & !util::ialigned(exe_branch_target) ? CsrCause::INSTRUCTION_ADDRESS_MISALIGNED :
+                                exe_ctrl.mem_sel != MEN_X & !meminf::is_naturally_aligned(exe_alu_out, exe_ctrl.mem_size) ?
+                                    (exe_ctrl.mem_sel == MEN_L ? CsrCause::LOAD_ADDRESS_MISALIGNED : CsrCause::STORE_AMO_ADDRESS_MISALIGNED)
+                                :0;
             mem_btarget     <= exe_branch_target;
             // forwarding
             mem_fw.valid    <= exe_valid & exe_fw.valid;
@@ -453,7 +455,8 @@ Stage_Mem #() memorystage
             csr_ctrl.csr_cmd == CSR_MRET |
             csr_ctrl.fence_i |
             csr_ctrl.sfence |
-            csr_ctrl.svinval)
+            csr_ctrl.svinval |
+            csr_disable_memstage)
         )
     `endif
 );

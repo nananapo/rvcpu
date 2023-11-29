@@ -24,7 +24,7 @@ typedef enum logic [2:0] {
     D_VALID
 } statetype;
 
-function [$bits(Addr) + 1 + $bits(UInt32) + $bits(MemSize) + $bits(PTE_AD) -1:0] memcmd (
+function [$bits(Addr) + 1 + $bits(UInt32) + $bits(WMask32) + $bits(PTE_AD) -1:0] memcmd (
     input statetype state,
     input CacheReq  ireq_in,
     input CacheReq  dreq_in,
@@ -32,12 +32,11 @@ function [$bits(Addr) + 1 + $bits(UInt32) + $bits(MemSize) + $bits(PTE_AD) -1:0]
     input CacheReq  s_dreq
 );
     case (state)
-        I_CHECK: memcmd = {ireq_in.addr, ireq_in.wen, ireq_in.wdata, ireq_in.wmask,  ireq_in.pte};
-        D_CHECK: memcmd = {dreq_in.addr, dreq_in.wen, dreq_in.wdata, dreq_in.wmask,  dreq_in.pte};
-        I_READY: memcmd = { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata,  s_ireq.wmask,   s_ireq.pte};
-        D_READY: memcmd = { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata,  s_dreq.wmask,   s_dreq.pte};
-        default: memcmd = {XLEN_X, 1'b0, 32'hx, SIZE_W, {$bits(PTE_AD){1'b0}}};
-        // TODO UInt32のxを用意する
+        I_CHECK: return {ireq_in.addr, ireq_in.wen, ireq_in.wdata, ireq_in.wmask,  ireq_in.pte};
+        D_CHECK: return {dreq_in.addr, dreq_in.wen, dreq_in.wdata, dreq_in.wmask,  dreq_in.pte};
+        I_READY: return { s_ireq.addr,  s_ireq.wen,  s_ireq.wdata,  s_ireq.wmask,   s_ireq.pte};
+        D_READY: return { s_dreq.addr,  s_dreq.wen,  s_dreq.wdata,  s_dreq.wmask,   s_dreq.pte};
+        default: return {XLEN_X, 1'b0, 32'hx, 4'b0, {$bits(PTE_AD){1'b0}}};
     endcase
 endfunction
 
@@ -54,15 +53,17 @@ assign {
     memreq_in.addr, memreq_in.wen, memreq_in.wdata, memreq_in.wmask, memreq_in.pte
 } = memcmd(state, ireq_in, dreq_in, s_ireq, s_dreq);
 
-assign iresp_in.valid = state == I_VALID & memresp_in.valid;
-assign iresp_in.error = memresp_in.error;
-assign iresp_in.errty = memresp_in.errty;
-assign iresp_in.rdata = memresp_in.rdata;
+assign iresp_in.valid   = state == I_VALID & memresp_in.valid;
+assign iresp_in.error   = memresp_in.error;
+assign iresp_in.errty   = memresp_in.errty;
+assign iresp_in.is_mmio = memresp_in.is_mmio;
+assign iresp_in.rdata   = memresp_in.rdata;
 
-assign dresp_in.valid = state == D_VALID & memresp_in.valid;
-assign dresp_in.error = memresp_in.error;
-assign dresp_in.errty = memresp_in.errty;
-assign dresp_in.rdata = memresp_in.rdata;
+assign dresp_in.valid   = state == D_VALID & memresp_in.valid;
+assign dresp_in.error   = memresp_in.error;
+assign dresp_in.errty   = memresp_in.errty;
+assign dresp_in.is_mmio = memresp_in.is_mmio;
+assign dresp_in.rdata   = memresp_in.rdata;
 
 always @(posedge clk) begin
     case (state)

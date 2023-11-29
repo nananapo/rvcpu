@@ -173,7 +173,7 @@ assign memreq.addr  =   //branch_hazard ? ireq.addr :
                         pc;
 assign memreq.wen   = 0;
 assign memreq.wdata = XLEN_X;
-assign memreq.wmask = SIZE_W;
+assign memreq.wmask = 4'b0000;
 
 logic firstClk = 1;
 

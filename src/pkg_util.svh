@@ -27,9 +27,9 @@ endfunction
 
 function logic logEnabled();
 `ifdef PRINT_DEBUGINFO
-    logEnabled = logLevel !== 0;
+    return logLevel !== 0;
 `else
-    logEnabled = 0;
+    return 0;
 `endif
 endfunction
 
@@ -38,7 +38,7 @@ endfunction
 // AddrがIALIGNにALIGNされているかどうか
 // TODO IALIGNを使う
 function logic ialigned(input Addr addr);
-    ialigned = ~|addr[1:0];
+    return ~|addr[1:0];
 endfunction
 
 // addrがleftからrightの間にあるかどうか
@@ -48,7 +48,7 @@ function logic x_in_range(
     input UIntX left,
     input UIntX right
 );
-    x_in_range = left <= addr && addr <= right;
+    return left <= addr && addr <= right;
 endfunction
 
 endpackage

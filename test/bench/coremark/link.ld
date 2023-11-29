@@ -1,10 +1,12 @@
 OUTPUT_ARCH( "riscv" )
-ENTRY(main)
+ENTRY(_entry)
 
 SECTIONS
 {
   . = 0x00000000;
   .text : { 
+    *(.entry_sec)
+    . = ALIGN(0x4000);
     *(.startup_main)
     *(.text) 
   }

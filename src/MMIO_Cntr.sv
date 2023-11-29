@@ -71,15 +71,16 @@ wire UIntX s_rdata  =   s_is_memory     ? memresp_in.rdata :
 assign dreq_in.ready    = state == IDLE | (state == WAIT_VALID & s_valid);
 
 assign dresp_in.valid   = s_valid;
-assign dresp_in.rdata   = s_rdata;
 assign dresp_in.error   = s_is_memory ? memresp_in.error : 0;
 assign dresp_in.errty   = s_is_memory ? memresp_in.errty : FE_ACCESS_FAULT;
+assign dresp_in.is_mmio = !s_is_memory;
+assign dresp_in.rdata   = s_rdata;
 
 
 wire Addr   req_addr    = state == WAIT_READY ? s_dreq.addr : dreq_in.addr;
 wire        req_wen     = state == WAIT_READY ? s_dreq.wen  : dreq_in.wen;
-wire UIntX  req_wdata   = state == WAIT_READY ? s_dreq.wdata: dreq_in.wdata;
-wire MemSize req_wmask  = MemSize'(state == WAIT_READY ? s_dreq.wmask: dreq_in.wmask);
+wire UIntX  req_wdata   = state == WAIT_READY ? s_dreq.wdata: dreq_in.wdata; // TODO Xをやめる
+wire WMask32 req_wmask  = WMask32'(state == WAIT_READY ? s_dreq.wmask: dreq_in.wmask);
 wire MemSize req_pte    = MemSize'(state == WAIT_READY ? s_dreq.pte: dreq_in.pte);
 
 always @(posedge clk) if (reset) state <= IDLE; else begin

@@ -5,8 +5,8 @@ import chisel3.util._
 import svgen._
 
 // TODO wbをテストする
-class MemDCacheWrapperModule(val xlen : Int, val cacheWidth : Int) extends Module {
-  class MemDCacheIO(xlen : Int) extends Bundle {
+class MemL2DCacheWrapperModule(val xlen : Int, val cacheWidth : Int) extends Module {
+  class MemL2DCacheIO(xlen : Int) extends Bundle {
       val dreq_in             = new CacheReq(xlen)
       val dresp_in            = new CacheResp(xlen)
       val busreq              = Flipped(new MemBusReq(xlen))
@@ -14,35 +14,35 @@ class MemDCacheWrapperModule(val xlen : Int, val cacheWidth : Int) extends Modul
       val do_writeback        = Input(Bool())
       val is_writebacked_all  = Output(Bool())
   }
-  private class MemDCacheBlackBox extends BlackBox(Map("CACHE_WIDTH" -> cacheWidth)) with HasBlackBoxResourceWithPortUsingStruct {
-      class BBIO extends MemDCacheIO(xlen) {
+  private class MemL2DCacheBlackBox extends BlackBox(Map("CACHE_WIDTH" -> cacheWidth)) with HasBlackBoxResourceWithPortUsingStruct {
+      class BBIO extends MemL2DCacheIO(xlen) {
           val clk = Input(Clock())
       }
       val io = IO(new BBIO)
       addDependency("/src/pkg_all.svh")
-      setResource("MemDCache", "/src/MemDCache.sv")
+      setResource("MemL2DCache", "/src/MemL2DCache.sv")
   }
 
-  val io = IO(new MemDCacheIO(xlen))
-  private val bb = Module(new MemDCacheBlackBox)
+  val io = IO(new MemL2DCacheIO(xlen))
+  private val bb = Module(new MemL2DCacheBlackBox)
 
   bb.io.clk <> clock
   io.unsafe :<>= bb.io.unsafe
 }
 
-class MemDCacheTestModule(val memfileName : String, val mem_width : Int, val addr_width : Int, val delay : Int, val cacheWidth : Int) extends Module{
+class MemL2DCacheTestModule(val memfileName : String, val mem_width : Int, val addr_width : Int, val delay : Int, val cacheWidth : Int) extends Module{
   val xlen = addr_width
 
-  class MemDCacheTestIO extends Bundle {
+  class MemL2DCacheTestIO extends Bundle {
     val req                 = new CacheReq(xlen)
     val resp                = new CacheResp(xlen)
     val do_writeback        = Input(Bool())
     val is_writebacked_all  = Output(Bool())
   }
-  val io = IO(new MemDCacheTestIO)
+  val io = IO(new MemL2DCacheTestIO)
 
   val mem = Module(new MemoryWrapperModule(memfileName, mem_width, addr_width, delay))
-  val cache = Module(new MemDCacheWrapperModule(xlen, cacheWidth))
+  val cache = Module(new MemL2DCacheWrapperModule(xlen, cacheWidth))
 
   mem.io.req_ready  <> cache.io.busreq.ready
   mem.io.req_valid  <> cache.io.busreq.valid

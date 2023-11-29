@@ -24,22 +24,22 @@ function [$bits(UIntX)-1:0] alu_func(
     input UIntX     op2_data
 );
     case (fun)
-        ALU_ADD  : alu_func = op1_data + op2_data;
-        ALU_SUB  : alu_func = op1_data - op2_data;
-        ALU_AND  : alu_func = op1_data & op2_data;
-        ALU_OR   : alu_func = op1_data | op2_data;
-        ALU_XOR  : alu_func = op1_data ^ op2_data;
-        ALU_SLL  : alu_func = op1_data << op2_data[4:0];
-        ALU_SRL  : alu_func = op1_data >> op2_data[4:0];
-        ALU_SRA  : alu_func = $signed($signed(op1_data) >>> op2_data[4:0]);
-        ALU_SLT  : alu_func = sign_sel == OP_SIGNED ?
-                                {{XLEN-1{1'b0}}, ($signed(op1_data) < $signed(op2_data))} : // SLT
-                                {{XLEN-1{1'b0}}, op1_data < op2_data}; // SLTU
-        ALU_JALR : alu_func = (op1_data + op2_data) & (~1);
-        ALU_COPY1: alu_func = op1_data;
-        ALU_CZERO_EQ: alu_func = op2_data === XLEN_ZERO ? op1_data : XLEN_ZERO;
-        ALU_CZERO_NE: alu_func = op2_data !== XLEN_ZERO ? op1_data : XLEN_ZERO;
-        default  : alu_func = XLEN_X;
+        ALU_ADD  : return op1_data + op2_data;
+        ALU_SUB  : return op1_data - op2_data;
+        ALU_AND  : return op1_data & op2_data;
+        ALU_OR   : return op1_data | op2_data;
+        ALU_XOR  : return op1_data ^ op2_data;
+        ALU_SLL  : return op1_data << op2_data[4:0];
+        ALU_SRL  : return op1_data >> op2_data[4:0];
+        ALU_SRA  : return $signed($signed(op1_data) >>> op2_data[4:0]);
+        ALU_SLT  : return sign_sel == OP_SIGNED ?
+                            {{XLEN-1{1'b0}}, ($signed(op1_data) < $signed(op2_data))} : // SLT
+                            {{XLEN-1{1'b0}}, op1_data < op2_data}; // SLTU
+        ALU_JALR : return (op1_data + op2_data) & (~1);
+        ALU_COPY1: return op1_data;
+        ALU_CZERO_EQ: return op2_data === XLEN_ZERO ? op1_data : XLEN_ZERO;
+        ALU_CZERO_NE: return op2_data !== XLEN_ZERO ? op1_data : XLEN_ZERO;
+        default  : return XLEN_X;
     endcase
 endfunction
 
@@ -50,15 +50,15 @@ function br_func(
     input UIntX     op2_data
 );
     case(fun)
-        BR_BEQ  : br_func = (op1_data === op2_data);
-        BR_BNE  : br_func = !(op1_data === op2_data);
-        BR_BLT  : br_func = sign_sel == OP_SIGNED ?
-                                ($signed(op1_data) < $signed(op2_data)) :
-                                (op1_data < op2_data);
-        BR_BGE  : br_func = sign_sel == OP_SIGNED ?
-                                !($signed(op1_data) < $signed(op2_data)) :
-                                !(op1_data < op2_data);
-        default : br_func = 1'b0;
+        BR_BEQ  : return (op1_data === op2_data);
+        BR_BNE  : return !(op1_data === op2_data);
+        BR_BLT  : return sign_sel == OP_SIGNED ?
+                            ($signed(op1_data) < $signed(op2_data)) :
+                            (op1_data < op2_data);
+        BR_BGE  : return sign_sel == OP_SIGNED ?
+                            !($signed(op1_data) < $signed(op2_data)) :
+                            !(op1_data < op2_data);
+        default : return 1'b0;
     endcase
 endfunction
 

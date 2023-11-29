@@ -25,10 +25,9 @@
         <File path="src/BP_TwoBitCounter.sv" type="file.verilog" enable="1"/>
         <File path="src/Memory.sv" type="file.verilog" enable="1"/>
         <File path="src/MemICache.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemDCache.sv" type="file.verilog" enable="1"/>
+        <File path="src/MemL2DCache.sv" type="file.verilog" enable="1"/>
         <File path="src/MemBusCntr.sv" type="file.verilog" enable="1"/>
         <File path="src/MemCacheCmdArbiter.sv" type="file.verilog" enable="1"/>
-        <File path="src/MemMisalignCntr.sv" type="file.verilog" enable="1"/>
         <File path="src/MMIO_Cntr.sv" type="file.verilog" enable="1"/>
         <File path="src/MMIO_UART_RX.sv" type="file.verilog" enable="1"/>
         <File path="src/MMIO_UART_TX.sv" type="file.verilog" enable="1"/>

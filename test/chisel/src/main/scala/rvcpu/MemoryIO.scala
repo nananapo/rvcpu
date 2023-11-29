@@ -9,7 +9,7 @@ class CacheReq(xlen : Int) extends Bundle {
     val addr    = Input(UInt(xlen.W))
     val wen     = Input(Bool())
     val wdata   = Input(UInt(32.W))
-    val wmask   = Input(UInt(2.W))
+    val wmask   = Input(UInt(4.W))
     val pte     = Input(UInt(2.W))
 }
 
@@ -17,6 +17,7 @@ class CacheResp(xlen : Int) extends Bundle {
     val valid   = Output(Bool())
     val error   = Output(Bool())
     val errty   = Output(Bool()) // false : ACCESS_FAULT , true : PAGE_FAULT
+    val is_mmio = Output(Bool()) // 今は使わない
     val rdata   = Output(UInt(32.W))
 }
 

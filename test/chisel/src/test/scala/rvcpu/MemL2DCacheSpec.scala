@@ -6,7 +6,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import scala.io.Source
 import scala.util.Random
 
-class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUtil {
+class MemL2DCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUtil {
   val path = os.pwd / os.RelPath("src/test/resources/bin/add.bin")
   val xlen = 32
   val memWidth = 16
@@ -15,10 +15,10 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
 
   for (delay <- 0 to 8) {
     for (cacheWidth <- 2 to 8) {
-      s"DCache($cacheWidth) should read correct data sequentially from Memory($delay delay)" in {
-        test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+      s"MemL2DCache($cacheWidth) should read correct data sequentially from Memory($delay delay)" in {
+        test(new MemL2DCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           var addr = 0
@@ -45,10 +45,10 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
         }
       }
 
-      s"DCache($cacheWidth) should be able to random access data from Memory($delay delay)" in {
-        test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+      s"MemL2DCache($cacheWidth) should be able to random access data from Memory($delay delay)" in {
+        test(new MemL2DCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           val lines = Source.fromFile(path.toString).getLines().toSeq
@@ -76,10 +76,10 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
         }
       }
       
-      s"DCache($cacheWidth) sequential write and read test to Memory($delay delay)" in {
-        test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+      s"MemL2DCache($cacheWidth) sequential write and read test to Memory($delay delay)" in {
+        test(new MemL2DCacheTestModule(path.toString, memWidth, xlen, delay, cacheWidth)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
           m.io.do_writeback.poke(0.B)
-          m.io.req.wmask.poke(0.B)
+          m.io.req.wmask.poke(15.U)
           m.io.req.pte.poke(0.B)
 
           val r = new Random
@@ -123,11 +123,11 @@ class MemDCacheSpec extends AnyFreeSpec with ChiselScalatestTester with MemoryUt
       }
     }
 
-    s"DCache should raise error when read address is out of Memory($delay delay) range" in {
-      test(new MemDCacheTestModule(path.toString, memWidth, xlen, delay, 4)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
+    s"MemL2DCache should raise error when read address is out of Memory($delay delay) range" in {
+      test(new MemL2DCacheTestModule(path.toString, memWidth, xlen, delay, 4)).withAnnotations(Seq(VerilatorBackendAnnotation)) { m =>
         m.io.do_writeback.poke(0.B)
-        m.io.req.wmask.poke(0.B)
-          m.io.req.pte.poke(0.B)
+        m.io.req.wmask.poke(15.U)
+        m.io.req.pte.poke(0.B)
 
         var addr = 1 << memWidth
         // Request
