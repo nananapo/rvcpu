@@ -18,6 +18,7 @@ runs:
       if: steps.iverilog_cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        sudo apt update
         sudo apt-get install -y autoconf gperf
         git clone https://github.com/steveicarus/iverilog.git
         cd iverilog
