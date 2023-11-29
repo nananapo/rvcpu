@@ -4,7 +4,7 @@ direct map
 新しく値を書き込むとき、エラーを確認しない
 すべてをライトバックするとき、エラーの発生を確認しない
 */
-module MemDCache
+module MemL2DCache
     import meminf::*;
 #(
     parameter CACHE_WIDTH = 10

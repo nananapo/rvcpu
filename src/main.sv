@@ -148,7 +148,7 @@ Stage_Fetch #() fetchstage (
 );
 
 /* ---- Data ---- */
-MemDCache #() memdcache (
+MemL2DCache #() mem_l2dcache (
     .clk(clk_in),
     .dreq_in(dreq_arb_cache),
     .dresp_in(dresp_arb_cache),

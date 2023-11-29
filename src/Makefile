@@ -19,7 +19,7 @@ FILES = test.sv \
 		CombinationalKeyValueStore.sv \
 		MemBusCntr.sv \
 		MemICache.sv \
-		MemDCache.sv \
+		MemL2DCache.sv \
 		MemCacheCmdArbiter.sv \
 		MemoryKeyValueStore.sv \
 		MMIO_Cntr.sv \
