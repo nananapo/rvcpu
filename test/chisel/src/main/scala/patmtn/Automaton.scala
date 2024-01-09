@@ -59,7 +59,7 @@ class BranchConnection(module: PipelineAutomatonModule, fromState : State, val c
   if (cond == null) throw new RuntimeException("argument is null")
   checkStates(Seq(statesIfTrue, statesIfFalse))
 
-  private[patmtn] val generatedCondWire : Bool = cond.generateWire(fromState)
+  private val generatedCondWire : Bool = cond.generateWire(fromState)
 
   private var isSelectedReplaceable = Map[Boolean, Bool]()
   isSelectedReplaceable(true) = generatedCondWire === true.B
@@ -102,8 +102,8 @@ sealed abstract class TransitionArbiter {
 
 class PriorityArbiter extends TransitionArbiter {
   // isSelectedValue <> isSelectedInner (<> isSelectedReplaceable)
-  private[patmtn] var isSelectedReplaceable : Seq[Bool] = null
-  private[patmtn] var isSelectedInner : Seq[Bool] = null
+  private var isSelectedReplaceable : Seq[Bool] = null
+  private var isSelectedInner : Seq[Bool] = null
   private var isSelectedValue : Seq[Bool] = null
 
   def isSelected : Seq[Bool] = isSelectedValue
@@ -116,9 +116,9 @@ class PriorityArbiter extends TransitionArbiter {
   }
 
   // TODO genericsがコンパイル時に消えるので、どうにか型を変えた
-  def this(from : State, seq : Seq[State]) = {
+  def this(target : State, fromSeq : Seq[State]) = {
     this()
-    arbiterTuples = seq.map(s => (from, s))
+    arbiterTuples = fromSeq.map(s => (s, target))
     configureWire()
   }
 
@@ -132,35 +132,42 @@ class PriorityArbiter extends TransitionArbiter {
     isSelectedValue = arbiterTuples.map(_=>Wire(Bool()))
     isSelectedInner = arbiterTuples.map(_=>Wire(Bool()))
     for (i <- 0 until arbiterTuples.length) isSelectedValue(i) := isSelectedInner(i)
+    isSelectedReplaceable = arbiterTuples.map(_=>Wire(Bool()))
   }
 
   private[patmtn] def applyArbiterLogic() : Unit = {
-    val wires = Map[(State, State), Set[(() => Bool, Bool => Unit)]]()
+    var formerW = false.B
     for (atuple <- arbiterTuples) {
       val from = atuple._1
       val target = atuple._2
-      wires((from, target)) = Set()
+      val savedW = formerW
       for (ntuple <- from.conn.get.getReplaceableNextStates()) {
         val ns = ntuple._1
         val getter = ntuple._2
         val setter = ntuple._3
         if (ns.contains(target)) {
-          wires((from, target)) += ((getter, setter))
+          formerW = formerW || getter()
+          setter(Mux(savedW, false.B, getter()))
         }
       }
     }
-
-    var w = false.B
-    for (i <- 0 until arbiterTuples.length) {
-      val aw = w
-      for ((g, _) <- wires(arbiterTuples(i)))
-        w = w | g()
-      // すでに優先順位が高いワイヤがtrueになっていたら、falseにする
-      for ((g, s) <- wires(arbiterTuples(i)))
-         s(Mux(aw, false.B, g()))
-    }
   }
+
+  // StateConnectionよりも先にfinishConfigureする必要がありそう
   private[patmtn] def finishConfigure() : Unit = {
+    for (i <- 0 until arbiterTuples.length) {
+      val atuple = arbiterTuples(i)
+      val from = atuple._1
+      val to = atuple._2
+      var w = false.B
+      for (ntuple <- from.conn.get.getReplaceableNextStates()) {
+        val nexts = ntuple._1
+        val getter = ntuple._2
+        if (nexts.contains(to))
+          w = w || getter()
+      }
+      isSelectedReplaceable(i) := w
+    }
     for (i <- 0 until arbiterTuples.length) {
       isSelectedInner(i) := isSelectedReplaceable(i)
     }
@@ -172,18 +179,19 @@ abstract class StateData[T <: Data] {
   def +(operand : StateData[T]) : StateData[T] = {
     return new MathOpStateData[T, T](MathOp.ADD, operand, this)
   }
-  def +(operand : T) : StateData[T] = {
-    return new MathOpStateData[T, T](MathOp.ADD, new RawStateData(operand), this)
-  }
+  def +(operand : T) : StateData[T] = this.+(new RawStateData(operand))
   def >(operand : StateData[T]) : StateData[Bool] = {
-    return new MathOpStateData[T, Bool](MathOp.GREATER, operand, this)
+    return new MathOpStateData[T, Bool](MathOp.GREATER, this, operand)
   }
-  def >(operand : T) : StateData[Bool] = {
-    return new MathOpStateData[T, Bool](MathOp.GREATER, new RawStateData(operand), this)
+  def >(operand : T) : StateData[Bool] = this.>(new RawStateData(operand))
+  def >=(operand : StateData[T]) : StateData[Bool] = {
+    return new MathOpStateData[T, Bool](MathOp.GREATEREQUAL, this, operand)
   }
+  def >=(operand : T) : StateData[Bool] = this.>=(new RawStateData(operand))
   private[patmtn] def getDependencyVariables() : Set[VariableTypeHolder]
   // stateにおける存在チェックは行わない
   private[patmtn] def generateWire(state: State) : T
+  // TODO このwire[T]を取得する方法を用意する
 }
 
 class RawStateData[T <: Data](val data : T) extends StateData[T] {
@@ -195,6 +203,7 @@ object MathOp {
   final val ADD = 0
   final val SUB = 1
   final val GREATER = 2
+  final val GREATEREQUAL = 3
 }
 
 class MathOpStateData[T <: Data, R <: Data](val op : Int, val source1 : StateData[T], val source2 : StateData[T]) extends StateData[R] {
@@ -204,8 +213,18 @@ class MathOpStateData[T <: Data, R <: Data](val op : Int, val source1 : StateDat
       case u : UInt => (u + source2.generateWire(state).asInstanceOf[UInt]).asInstanceOf[R]
       case _ => ???
     }
-    case MathOp.SUB => ???
-    case MathOp.GREATER => ???
+    case MathOp.SUB => source1.generateWire(state) match {
+      case u : UInt => (u - source2.generateWire(state).asInstanceOf[UInt]).asInstanceOf[R]
+      case _ => ???
+    }
+    case MathOp.GREATER => source1.generateWire(state) match {
+      case u : UInt => (u > source2.generateWire(state).asInstanceOf[UInt]).asInstanceOf[R]
+      case _ => ???
+    }
+    case MathOp.GREATEREQUAL => source1.generateWire(state) match {
+      case u : UInt => (u >= source2.generateWire(state).asInstanceOf[UInt]).asInstanceOf[R]
+      case _ => ???
+    }
   }
 }
 
@@ -259,7 +278,7 @@ class Variable[T <: Data](module : PipelineAutomatonModule, val name : String, t
       wire := reg
       dataWithState(state) = (reg, new AssignableVariable[T](module, state, wire))
     }
-  }
+  } 
 
   private[patmtn] def checkAssignedDataVariableIsExistInState() : Unit = {
     for (av <- getAssignableVariables()) { 
@@ -338,25 +357,27 @@ class State(module : PipelineAutomatonModule, val name : String) {
 
   // 条件のない遷移を設定
   // nullで終了
-  def transition(nextStates : Set[State]) : StateConnection = {
+  def transition(nextStates : Set[State]) : NoCondConnection = {
     if (!conn.isEmpty) throw new RuntimeException("connection is alraedy set")
-    conn = Some(new NoCondConnection(module, this, nextStates))
+    val c = new NoCondConnection(module, this, nextStates)
+    conn = Some(c)
     checkOnSetTransition()
-    return conn.get
+    return c
   }
 
-  def transition(nextState : State) : StateConnection = transition(Set(nextState))
+  def transition(nextState : State) : NoCondConnection = transition(Set(nextState))
 
-  def transition(cond: StateData[Bool], statesIfTrue: Set[State], statesIfFalse: Set[State]) : StateConnection = {
+  def transition(cond: StateData[Bool], statesIfTrue: Set[State], statesIfFalse: Set[State]) : BranchConnection = {
     if (!conn.isEmpty) throw new RuntimeException("connection is alraedy set")
-    conn = Some(new BranchConnection(module, this, cond, statesIfTrue, statesIfFalse))
+    val c = new BranchConnection(module, this, cond, statesIfTrue, statesIfFalse)
+    conn = Some(c)
     checkOnSetTransition()
-    return conn.get
+    return c
   }
 
-  def transition(cond: StateData[Bool], stateIfTrue: State, stateIfFalse: State) : StateConnection = transition(cond, Set(stateIfTrue), Set(stateIfFalse))
-  def transition(cond: Bool, stateIfTrue: State, stateIfFalse: State) : StateConnection = transition(new RawStateData[Bool](cond), stateIfTrue, stateIfFalse)
-  def transition(cond: Bool, statesIfTrue: Set[State], statesIfFalse: Set[State]) : StateConnection = transition(new RawStateData[Bool](cond), statesIfTrue, statesIfFalse)
+  def transition(cond: StateData[Bool], stateIfTrue: State, stateIfFalse: State) : BranchConnection = transition(cond, Set(stateIfTrue), Set(stateIfFalse))
+  def transition(cond: Bool, stateIfTrue: State, stateIfFalse: State) : BranchConnection = transition(new RawStateData[Bool](cond), stateIfTrue, stateIfFalse)
+  def transition(cond: Bool, statesIfTrue: Set[State], statesIfFalse: Set[State]) : BranchConnection = transition(new RawStateData[Bool](cond), statesIfTrue, statesIfFalse)
 
   protected def checkOnSetTransition() : Unit = {
     module.propagateVariable(false) // 変数を遷移させて、すぐにエラーを発見する
@@ -369,7 +390,7 @@ class State(module : PipelineAutomatonModule, val name : String) {
     if (!entryArbiter.isEmpty) throw new RuntimeException("entry arbiter is already set")
     entryArbiter = Some(arbiter)
     for (t <- arbiter.arbiteredStates) {
-      if (t._1 != this) throw new RuntimeException(s"fromState of entryArbiter is not State($name), not State(${t._1.name})")
+      if (t._2 != this) throw new RuntimeException(s"taegetState of entryArbiter is not State($name), not State(${t._1.name})")
     }
   }
 
@@ -483,6 +504,11 @@ class State(module : PipelineAutomatonModule, val name : String) {
     println("name: " + name)
     println("prop: " + propagatedVariables.map(_.name).mkString(","))
     println("defs: " + vardefs.map(_.name).mkString(","))
+  }
+
+  private[patmtn] def finishConfigure() : Unit = {
+    if (!conn.isEmpty) conn.get.finishConfigure()
+    if (!entryArbiter.isEmpty) entryArbiter.get.finishConfigure()
   }
 }
 
@@ -750,7 +776,7 @@ trait PipelineAutomatonModule extends Module {
       if (indict(s).size > 1) {
         if (s.entryArbiter.isEmpty)
           throw new RuntimeException(s"entryArbiter is not set on State(${s.name}). It must include {${indict(s).map(_.name).mkString(",")}}")
-        val diff = indict(s) &~ s.entryArbiter.get.arbiteredStates.map(t => t._2)
+        val diff = indict(s) &~ s.entryArbiter.get.arbiteredStates.map(t => t._1)
         if (diff.size != 0)
           throw new RuntimeException(s"entryArbiter must include {${diff.mkString(",")}}")
       }
@@ -817,13 +843,32 @@ trait PipelineAutomatonModule extends Module {
           for (n <- nexts.filterNot(_.isInstanceOf[EndState])) {
             w = w && (!n.valid || stateWillMoveWires(n))
           }
-          moveW = moveW | w
+          moveW = moveW || w
           replaceQueue :+= ((w, setter))
         }
         stateWillMoveWires(s) := moveW
       } else {
-        // TODO ループの時
-        ???
+        val loopStates = stateLoops(s).toSeq.flatten
+        def rec(now : State) : Bool = {
+          var moveW = false.B
+          for (ntuple <- now.conn.get.getReplaceableNextStates()) {
+            val nexts = ntuple._1
+            val getter = ntuple._2
+            val setter = ntuple._3
+            var w = getter()
+            for (n <- nexts.filterNot(k => k == s || k.isInstanceOf[EndState])) {
+              if (loopStates.contains(n))
+                w = w && (!n.valid || rec(n))
+              else
+                w = w && (!n.valid || stateWillMoveWires(n))
+            }
+            moveW = moveW || (getter() && w)
+            replaceQueue :+= ((w, setter))
+          }
+          return moveW
+        }
+        val r = rec(s)
+        stateWillMoveWires(s) := r
       }
     }
 
@@ -867,7 +912,7 @@ trait PipelineAutomatonModule extends Module {
 
   private def finishConfigure() : Unit = {
     for (a <- resourceArbiters) a.finishConfigure()
-    for (a <- allStates.filterNot(_.conn.isEmpty)) a.conn.get.finishConfigure()
+    for (a <- allStates) a.finishConfigure()
   }
 
   def generatePipeline() : Unit = {
